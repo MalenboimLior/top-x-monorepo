@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { auth, db, functions } from '@top-x/shared';
-import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
+import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
-import { UserProfile } from '@top-x/shared';
+import { User } from '@top-x/shared';
 
 export const useUserStore = defineStore('user', () => {
-  const user = ref<User | null>(null);
-  const profile = ref<UserProfile | null>(null);
+  const user = ref<FirebaseUser | null>(null);
+  const profile = ref<User | null>(null);
   const error = ref<string | null>(null);
 
   onAuthStateChanged(auth, (currentUser) => {
@@ -20,7 +20,7 @@ export const useUserStore = defineStore('user', () => {
       const userDoc = doc(db, 'users', currentUser.uid);
       onSnapshot(userDoc, (snapshot) => {
         if (snapshot.exists()) {
-          profile.value = snapshot.data() as UserProfile;
+          profile.value = snapshot.data() as User;
           console.log('Profile loaded:', profile.value);
         } else {
           console.log('No profile found, creating new one');
@@ -44,6 +44,7 @@ export const useUserStore = defineStore('user', () => {
       user.value = result.user;
 
       // Capture X OAuth credentials
+
       const credential = TwitterAuthProvider.credentialFromResult(result);
       if (!credential || !credential.accessToken || !credential.secret) {
         throw new Error('Failed to get X credentials');
@@ -60,14 +61,14 @@ export const useUserStore = defineStore('user', () => {
           xSecret,
           displayName: result.user.displayName || 'Anonymous',
           photoURL: result.user.photoURL
-          ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
-          : 'https://www.top-x.co/asstes/profile.png',
+            ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
+            : 'https://www.top-x.co/asstes/profile.png',
         });
         console.log('Updated user profile with X credentials');
       } else {
         await createUserProfile(result.user, { xAccessToken, xSecret });
       }
-      console.log('beore syncXUserData:');
+      console.log('before syncXUserData:');
 
       // Trigger syncXUserData
       const syncXUserData: HttpsCallable<unknown, unknown> = httpsCallable(functions, 'syncXUserData');
@@ -113,21 +114,24 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
-  async function createUserProfile(user: User, xCredentials?: { xAccessToken: string; xSecret: string }) {
-    const userProfile: UserProfile = {
+  async function createUserProfile(user: FirebaseUser, xCredentials?: { xAccessToken: string; xSecret: string }) {
+    const userProfile: User = {
       uid: user.uid,
-      displayName: user.displayName || 'Anonymous',
       username: '@Unknown',
+      displayName: user.displayName || 'Anonymous',
+      email: user.email || '',
       photoURL: user.photoURL
-      ? user.photoURL.replace('_normal.jpg', '_400x400.jpg')
-      : 'https://www.top-x.co/asstes/profile.png',
+        ? user.photoURL.replace('_normal.jpg', '_400x400.jpg')
+        : 'https://www.top-x.co/asstes/profile.png',
+      isAdmin: false,
       followersCount: 0,
       followingCount: 0,
       xAccessToken: xCredentials?.xAccessToken || '',
       xSecret: xCredentials?.xSecret || '',
-      games: { trivia: { score: 0, streak: 0 } },
       rivals: [],
       addedBy: [],
+      games: {},
+      badges: [],
     };
     try {
       console.log('Attempting to create profile:', userProfile);
@@ -234,5 +238,31 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  return { user, profile, error, loginWithX, logout, addRival, removeRival };
+  async function updateGameProgress(gameTypeId: string, gameId: string, score: number, streak: number) {
+    if (!user.value) {
+      console.log('Cannot update game progress: no user logged in');
+      error.value = 'No user logged in';
+      return;
+    }
+    try {
+      const userDocRef = doc(db, 'users', user.value.uid);
+      await setDoc(
+        userDocRef,
+        {
+          games: {
+            [gameTypeId]: {
+              [gameId]: { score, streak, lastPlayed: new Date().toISOString() },
+            },
+          },
+        },
+        { merge: true }
+      );
+      console.log(`Updated game progress for ${gameTypeId}/${gameId}`);
+    } catch (err: any) {
+      console.error('Error updating game progress:', err);
+      error.value = err.message;
+    }
+  }
+
+  return { user, profile, error, loginWithX, logout, addRival, removeRival, updateGameProgress };
 });
