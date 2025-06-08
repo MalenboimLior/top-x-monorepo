@@ -1,0 +1,31 @@
+{
+  "tiers": [
+    { "label": "S", "color": "#ff4d4d" },
+    { "label": "A", "color": "#ff944d" },
+    { "label": "B", "color": "#ffd700" },
+    { "label": "C", "color": "#4caf50" },
+    { "label": "x", "color": "#1e90ff" }
+  ],
+  "items": [
+    {
+      "id": "1",
+      "label": "Character 1",
+      "image": "https://via.placeholder.com/80?text=Char1"
+    },
+    {
+      "id": "2",
+      "label": "Character 2",
+      "image": "https://via.placeholder.com/80?text=Char2"
+    },
+    {
+      "id": "3",
+      "label": "Character 3",
+      "image": "https://via.placeholder.com/80?text=Char3"
+    },
+    {
+      "id": "4",
+      "label": "Character 4",
+      "image": "https://via.placeholder.com/80?text=Char4"
+    }
+  ]
+}

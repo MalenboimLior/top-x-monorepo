@@ -1,0 +1,35 @@
+.
+├── App.vue
+├── assets
+│   ├── background-pattern.png
+│   ├── coming-soon.jpg
+│   ├── loading.gif
+│   ├── logo.png
+│   ├── trivia.jpg
+│   └── vue.svg
+├── components
+│   └── NavBar.vue
+├── firebase.ts
+├── main.ts
+├── project-structure.txt
+├── router
+│   └── index.ts
+├── services
+│   └── trivia.ts
+├── stores
+│   ├── trivia.ts
+│   └── user.ts
+├── types
+│   └── user.ts
+├── views
+│   ├── About.vue
+│   ├── FAQ.vue
+│   ├── Home.vue
+│   ├── Profile.vue
+│   ├── RivalSearch.vue
+│   └── games
+│       └── Trivia.vue
+├── vite-env.d.ts
+└── vue-shim.d.ts
+
+9 directories, 24 files

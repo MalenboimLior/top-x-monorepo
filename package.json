@@ -1,0 +1,21 @@
+{
+  "name": "top-x-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "client:dev": "npm run dev --workspace=@top-x/client",
+    "client:build": "npm run build --workspace=@top-x/client",
+    "admin:dev": "npm run dev --workspace=@top-x/admin",
+    "admin:build": "npm run build --workspace=@top-x/admin"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase": "^11.9.0"
+  }
+}

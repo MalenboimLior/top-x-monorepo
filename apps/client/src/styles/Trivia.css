@@ -1,0 +1,179 @@
+.trivia-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+}
+
+.notification.is-danger,
+.notification.is-info {
+  max-width: 600px;
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  flex-wrap: nowrap;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+}
+
+.hud-item:last-child {
+  margin-right: 0;
+}
+
+.hud-item .label {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.hud-item img {
+  border-radius: 50%;
+}
+
+.streak-glow {
+  animation: streakGlow 0.5s;
+}
+
+@keyframes streakGlow {
+  0% { text-shadow: 0 0 5px #ffd700; }
+  50% { text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700; }
+  100% { text-shadow: 0 0 5px #ffd700; }
+}
+
+.lives span {
+  font-size: 24px;
+  margin-right: 5px;
+}
+
+.lives .is-lost {
+  opacity: 0.3;
+}
+
+.timer-bar {
+  width: 100%;
+  max-width: 600px;
+  height: 10px;
+  background-color: #444444;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.timer-progress {
+  height: 100%;
+  background-color: #4a4;
+  transition: width 1s linear;
+}
+
+.question {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.start-screen,
+.gameplay-screen,
+.gameover-screen {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.start-screen .subtitle {
+  margin-bottom: 1rem;
+}
+
+.gameover-screen .card {
+  margin: 1rem 0;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.loading-gif {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 1rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.correct-animation {
+  animation: correctFeedback 0.5s;
+}
+
+.incorrect-animation {
+  animation: incorrectFeedback 0.5s;
+}
+
+@keyframes correctFeedback {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes incorrectFeedback {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+@media (max-width: 768px) {
+  .trivia-container {
+    padding: 1rem;
+  }
+
+  .hud {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+  }
+
+  .hud-item {
+    margin-right: 0.5rem;
+    flex: 1;
+    text-align: center;
+  }
+
+  .hud-item .label {
+    font-size: 14px;
+  }
+
+  .question {
+    font-size: 18px;
+  }
+}

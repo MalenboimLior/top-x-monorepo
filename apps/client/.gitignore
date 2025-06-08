@@ -1,0 +1,23 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Firebase
+.firebase/
+functions/lib/
+functions/.env
+functions/.runtimeconfig.json
+
+# Build
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+.DS_Store
+*.log
+.env

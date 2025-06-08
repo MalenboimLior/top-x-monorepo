@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Questions collection
+    match /questions/{questionId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null &&
+                     request.auth.uid == userId &&
+                     isValidUserDocument(request.resource.data);
+
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId && isValidRivalsUpdate()) ||
+        (request.auth.uid == userId && isValidGamesUpdate()) ||
+        (request.auth.uid == userId && isValidXProfileUpdate()) ||
+        isValidAddedByUpdate()
+      );
+    }
+
+    // Leaderboards collection
+    match /leaderboards_trivia/{entryId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+  }
+
+  function isValidUserDocument(data) {
+    return data.keys().hasAll(['uid', 'displayName', 'username', 'photoURL', 'followersCount', 'followingCount', 'games', 'rivals', 'addedBy']) &&
+           !data.keys().hasAny(['createdAt', 'updatedAt']) &&
+           data.uid is string &&
+           data.uid == request.auth.uid &&
+           data.displayName is string &&
+           data.displayName.size() <= 100 &&
+           data.username is string &&
+           data.username.size() <= 50 &&
+           data.photoURL is string &&
+           data.photoURL.size() <= 500 &&
+           data.followersCount is number &&
+           data.followingCount is number &&
+           data.games is map &&
+           data.games.trivia is map &&
+           data.games.trivia.keys().hasAll(['score', 'streak']) &&
+           data.games.trivia.score is number &&
+           data.games.trivia.streak is number &&
+           data.rivals is list &&
+           data.rivals.size() <= 1000 &&
+           (data.rivals.size() == 0 || data.rivals.all(rival, rival is string)) &&
+           data.addedBy is list &&
+           data.addedBy.size() <= 1000 &&
+           (data.addedBy.size() == 0 || data.addedBy.all(uid, uid is string));
+  }
+
+  function isValidRivalsUpdate() {
+  return request.auth != null &&
+         resource.data.rivals is list &&
+         request.resource.data.rivals is list &&
+         request.resource.data.rivals.size() == resource.data.rivals.size() + 1 &&
+         request.resource.data.rivals.hasAll(resource.data.rivals) &&
+         request.resource.data.rivals.all(rival, rival is string);
+}
+
+
+  function isValidGamesUpdate() {
+    return request.auth != null &&
+           request.resource.data.games is map &&
+           request.resource.data.games.trivia is map &&
+           request.resource.data.games.trivia.keys().hasAll(['score', 'streak']) &&
+           request.resource.data.games.trivia.score is number &&
+           request.resource.data.games.trivia.streak is number;
+  }
+
+  function isValidXProfileUpdate() {
+    return request.auth != null &&
+           request.resource.data.displayName is string &&
+           request.resource.data.displayName.size() <= 100 &&
+           request.resource.data.username is string &&
+           request.resource.data.username.size() <= 50 &&
+           request.resource.data.photoURL is string &&
+           request.resource.data.photoURL.size() <= 500 &&
+           request.resource.data.followersCount is number &&
+           request.resource.data.followingCount is number;
+  }
+
+  function isValidAddedByUpdate() {
+  return request.auth != null &&
+         //request.resource.data.diff(resource.data).keys().hasOnly(['addedBy']);// &&
+         resource.data.addedBy is list &&
+         request.resource.data.addedBy is list &&
+         request.resource.data.addedBy.size() == resource.data.addedBy.size() + 1 &&
+         request.resource.data.addedBy.hasAll(resource.data.addedBy) &&
+         !resource.data.addedBy.includes(request.auth.uid) && 
+         request.resource.data.addedBy.includes(request.auth.uid);
+}
+
+}

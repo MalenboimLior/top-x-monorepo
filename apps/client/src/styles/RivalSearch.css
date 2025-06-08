@@ -1,0 +1,31 @@
+.rival-search-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+}
+
+.input {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px 0 0 8px;
+}
+
+.input::placeholder {
+  color: #888888;
+}
+
+.notification.is-warning {
+  max-width: 600px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .rival-search-container {
+    padding: 1rem;
+  }
+}
