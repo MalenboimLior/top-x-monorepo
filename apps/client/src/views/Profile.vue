@@ -55,9 +55,9 @@ import { useUserStore } from '@/stores/user';
 import { computed, ref } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import Card from '@/components/Card.vue';
+import Card from '@top-x/shared/components/Card.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
-import CustomButton from '@/components/CustomButton.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { UserProfile } from '@top-x/shared';
 
 const userStore = useUserStore();

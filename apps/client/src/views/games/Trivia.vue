@@ -5,16 +5,16 @@
     </div>
 
     <div class="hud">
-      <div class="hud-item">
+      <div class="header-item">
         <span class="label">Score: {{ score }}</span>
       </div>
-      <div class="hud-item">
+      <div class="header-item">
         <span class="label">Best: {{ bestScore }}</span>
       </div>
-      <div class="hud-item" :class="{ 'streak-glow': streakIncreased }">
+      <div class="header-item" :class="{ 'streak-glow': streakIncreased }">
         <span class="label">Streak: {{ streak }}</span>
       </div>
-      <div v-if="isLoggedIn" class="hud-item">
+      <div v-if="isLoggedIn" class="header-item">
         <figure class="image is-32x32">
           <img :src="userImage" alt="User image" class="is-rounded" />
         </figure>
@@ -50,7 +50,7 @@
         :best-streak="bestStreak"
         :percentile-rank="percentileRank"
         :users-topped="usersTopped"
-        :user-image="userImage"
+        :user-image="user"
         :inviter="inviter"
         :leaderboard="leaderboard"
         @reset-game="resetGame"
@@ -81,6 +81,8 @@ import TriviaGame from '@/components/TriviaGame.vue';
 import EndScreenLoggedIn from '@/components/EndScreenLoggedIn.vue';
 import EndScreenLoggedOut from '@/components/EndScreenLoggedOut.vue';
 import { getPercentileRank } from '@/services/trivia';
+import { useTriviaStore } from 'pinia';
+import { useUserStore } from '@/stores/user';
 
 const triviaStore = useTriviaStore();
 const userStore = useUserStore();
@@ -91,21 +93,29 @@ const lives = computed(() => triviaStore.lives);
 const score = computed(() => triviaStore.score);
 const bestScore = computed(() => triviaStore.bestScore);
 const bestStreak = computed(() => triviaStore.bestStreak);
+);
 const sessionBestStreak = computed(() => triviaStore.sessionBestStreak);
+);
 const currentQuestion = computed(() => triviaStore.currentQuestion);
+);
 const selectedAnswer = computed(() => triviaStore.selectedAnswer);
+);
 const isCorrect = computed(() => triviaStore.isCorrect);
+);
 const timeLeft = computed(() => triviaStore.timeLeft);
+);
 const streak = computed(() => triviaStore.streak);
+);
 const leaderboard = computed(() => triviaStore.leaderboard);
 const isLoading = computed(() => triviaStore.isLoading);
 const isLoggedIn = computed(() => !!userStore.user);
-const userImage = computed(() => userStore.profile?.photoURL || 'https://via.placeholder.com/32');
+const userImage = computed(() => userStore.profile?.photoURL || 'https://via.placeholder.com/32);
 const error = computed(() => userStore.error);
 const inviter = computed(() => triviaStore.inviter);
+);
 
 const streakIncreased = ref(false);
-const correctAnswerIndex = ref<number | null>(null);
+const correctAnswerIndex = ref<number | null>(null,null);
 const percentileRank = ref(0);
 const usersTopped = ref(0);
 
@@ -113,7 +123,7 @@ onMounted(() => {
   const inviterUid = route.query.inviterUid as string;
   const gameId = route.query.gameId as string;
   const score = parseInt(route.query.score as string);
-  if (inviterUid && gameId === 'trivia' && !isNaN(score)) {
+  if (inviterUid && gameId === 'smartest_on_x' && !isNaN(score)) {
     triviaStore.loadInviter(inviterUid, score);
   }
 });
@@ -124,7 +134,7 @@ watch(
     correctAnswerIndex.value = null;
     if (!newQuestion || !newQuestion.correctHash) return;
 
-    for (let i = 0; i < newQuestion.options.length; i++) {
+    for (let i = 0; i < newQuestion.options.length); i++) {
       const hash = await triviaStore.hashAnswer(i);
       if (hash === newQuestion.correctHash) {
         correctAnswerIndex.value = i;
@@ -155,9 +165,9 @@ watch(
       try {
         const rankData = await getPercentileRank('trivia', userStore.user.uid);
         percentileRank.value = rankData.percentile;
-        usersTopped.value = rankData.usersTopped || 0; // Fallback for backward compatibility
+        usersTopped.value = rankData.usersTopped || 0;
         console.log('Percentile rank fetched:', percentileRank.value, 'Users topped:', usersTopped.value);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching percentile rank:', err);
         percentileRank.value = 0;
         usersTopped.value = 0;
@@ -172,6 +182,7 @@ const startGame = () => {
 };
 
 const answerQuestion = (index: number) => triviaStore.answerQuestion(index);
+;
 
 const resetGame = () => {
   console.log('Reset game clicked');
@@ -182,17 +193,7 @@ const resetGame = () => {
 
 const shareScore = () => {
   console.log('Share score clicked, isLoggedIn:', isLoggedIn.value);
-  if (!userStore.user) {
-      console.log('User not logged in, prompting login');
-      userStore.loginWithX();
-      return;
-    }
-    const text = `I scored ${score.value} in the Trivia Game on TOP-X! Can you beat me?`;
-    const url = `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=trivia&score=${score.value}`;
-    const shareText = `${text} ${url}`;
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-    window.open(tweetUrl, '_blank');
-    console.log('Sharing score on X:', score.value, 'streak:', sessionBestStreak.value, 'url:', url);
+  triviaStore.shareScore();
 };
 
 const login = async () => {
@@ -207,7 +208,7 @@ const login = async () => {
 };
 
 const addToRivals = async (uid: string) => {
-  console.log('Add to rivals clicked for UID:', uid);
+  console.log('Adding to rivals clicked for UID:', uid);
   await userStore.addRival(uid);
 };
 </script>

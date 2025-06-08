@@ -40,8 +40,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import Card from '@/components/Card.vue';
-import CustomButton from '@/components/CustomButton.vue';
+import Card from '@top-x/shared/components/Card.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import triviaImg from '@/assets/trivia.jpg';
 import comingSoonImg from '@/assets/coming-soon.jpg';
 

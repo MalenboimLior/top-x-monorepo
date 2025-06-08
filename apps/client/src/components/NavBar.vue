@@ -64,7 +64,7 @@
 import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
-import CustomButton from '@/components/CustomButton.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 const userStore = useUserStore();
 const router = useRouter();

@@ -1,15 +1,33 @@
 {
   "name": "@top-x/shared",
   "version": "1.0.0",
-  "private": true,
-  "main": "index.ts",
-  "types": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
   "dependencies": {
-    "firebase": "^11.6.0",
-    "vuefire": "^3.2.1"
+    "firebase": "^10.12.2",
+    "vue": "^3.4.27"
   },
   "devDependencies": {
-    "@types/node": "^22.14.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.4.5",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.2.11"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./components/Card.vue": "./src/components/Card.vue",
+    "./components/CustomButton.vue": "./src/components/CustomButton.vue",
+    "./types/user": "./src/types/user.ts",
+    "./types/game": "./src/types/game.ts"
   }
 }

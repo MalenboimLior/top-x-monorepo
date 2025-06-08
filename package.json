@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@top-x/shared": "^1.0.0",
     "firebase": "^11.9.0"
   }
 }

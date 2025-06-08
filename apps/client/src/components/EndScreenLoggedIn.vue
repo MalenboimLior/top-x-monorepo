@@ -47,8 +47,8 @@
 
 <script setup lang="ts">
 // import { defineProps, defineEmits } from 'vue';
-import Card from '@/components/Card.vue';
-import CustomButton from '@/components/CustomButton.vue';
+import Card from '@top-x/shared/components/Card.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
 import PercentileRank from '@/components/PercentileRank.vue';
 import { useUserStore } from '@/stores/user';

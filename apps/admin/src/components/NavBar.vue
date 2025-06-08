@@ -13,6 +13,7 @@
     <div class="navbar-menu" :class="{ 'is-active': isMenuActive }">
       <div class="navbar-start">
         <router-link class="navbar-item" to="/">Dashboard</router-link>
+        <router-link class="navbar-item" to="/game-management">Game Management</router-link>
       </div>
       <div class="navbar-end">
         <div class="navbar-item">
@@ -28,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
 
@@ -44,4 +45,6 @@ const logout = async () => {
   await userStore.logout();
   router.push('/login');
 };
+
+const user = computed(() => userStore.user);
 </script>

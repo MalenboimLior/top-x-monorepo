@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { useUserStore } from './user';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { getTopLeaderboard } from '@/services/trivia';
 import { User } from '@top-x/shared';
@@ -25,7 +25,6 @@ interface TriviaLeaderboardEntry {
 
 type DifficultyLevel = 1 | 2 | 3 | 4 | 5;
 type DifficultyCounts = Record<DifficultyLevel, number>;
-
 
 export const useTriviaStore = defineStore('trivia', () => {
   const userStore = useUserStore();
@@ -86,7 +85,7 @@ export const useTriviaStore = defineStore('trivia', () => {
         inviter.value = {
           uid: inviterUid,
           displayName: data.displayName,
-          photoURL: data.photoURL,
+          photoURL: data.photoURL ?? '',
           score: inviterScore,
         };
         console.log('Inviter loaded:', inviter.value);
@@ -103,14 +102,16 @@ export const useTriviaStore = defineStore('trivia', () => {
   watch(
     () => userStore.profile,
     (profile) => {
-      if (profile?.games?.trivia) {
-        bestScore.value = profile.games.trivia.score || 0;
-        bestStreak.value = profile.games.trivia.streak || 0;
-        console.log('Profile loaded, bestScore:', bestScore.value, 'bestStreak:', bestStreak.value);
+      if (profile?.games?.trivia?.smartest_on_x) {
+        bestScore.value = profile.games.trivia.smartest_on_x.score || 0;
+        bestStreak.value = profile.games.trivia.smartest_on_x.streak || 0;
+        difficultyCounts.value = profile.games.trivia.smartest_on_x.custom?.difficultyCounts || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        console.log('Profile loaded, bestScore:', bestScore.value, 'bestStreak:', bestStreak.value, 'difficultyCounts:', difficultyCounts.value);
       } else {
         bestScore.value = 0;
         bestStreak.value = 0;
-        console.log('No trivia stats in profile, resetting bestScore and bestStreak to 0');
+        difficultyCounts.value = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        console.log('No trivia stats in profile, resetting bestScore, bestStreak, and difficultyCounts to defaults');
       }
     },
     { immediate: true }
@@ -150,7 +151,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     }
     if (questions.value.length === 0) {
       usedQuestionIds.value = [];
-      difficultyCounts.value = { easy: 0, medium: 0, hard: 0 };
+      difficultyCounts.value = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       await loadQuestions();
     }
     const index = Math.floor(Math.random() * questions.value.length);
@@ -166,30 +167,22 @@ export const useTriviaStore = defineStore('trivia', () => {
     console.log('Loading questions');
     isLoading.value = true;
     const targetCount = 10;
-    const desired: DifficultyCounts = { 1: 3, 2: 3, 3: 2, 4: 2, 5: 0 }; // Example: 2 questions from each level
+    const desired: DifficultyCounts = { 1: 3, 2: 3, 3: 2, 4: 2, 5: 0 };
     const newQuestions: Question[] = [];
-    console.log('before while');
-    while (newQuestions.length < targetCount && usedQuestionIds.value.length < 200) {
-      console.log('newQuestions.length:',newQuestions.length);
+    const questionCollection = collection(db, 'games', 'smartest_on_x', 'questions');
+    const snapshot = await getDocs(questionCollection);
+    const allQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
 
-      const id = Math.floor(Math.random() * 200 + 1).toString();
-      if (usedQuestionIds.value.includes(id)) continue;
-
-      const docRef = doc(db, 'questions', id);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) continue;
-
-      const question = { id, ...docSnap.data() } as Question;
+    for (const question of allQuestions) {
+      if (newQuestions.length >= targetCount) break;
+      if (usedQuestionIds.value.includes(question.id)) continue;
       const diff = question.difficulty as DifficultyLevel;
-
       if (difficultyCounts.value[diff] < desired[diff]) {
         newQuestions.push(question);
-        usedQuestionIds.value.push(id);
+        usedQuestionIds.value.push(question.id);
         difficultyCounts.value[diff]++;
       }
     }
-    console.log('after while');
-
 
     shuffleArray(newQuestions);
     questions.value = newQuestions;
@@ -204,6 +197,9 @@ export const useTriviaStore = defineStore('trivia', () => {
     if (isCorrect.value) {
       score.value += 1;
       streak.value += 1;
+      if (currentQuestion.value) {
+        difficultyCounts.value[currentQuestion.value.difficulty]++;
+      }
     } else {
       lives.value -= 1;
       streak.value = 0;
@@ -271,36 +267,21 @@ export const useTriviaStore = defineStore('trivia', () => {
       const streakToSave = pendingStreak.value !== null ? pendingStreak.value : sessionBestStreak.value;
       console.log('Updating best stats, scoreToSave:', scoreToSave, 'streakToSave:', streakToSave, 'user:', user.uid);
 
-      const shouldUpdateScore = scoreToSave > bestScore.value || !userStore.profile?.games?.trivia?.score;
+      const currentGameData = userStore.profile?.games?.trivia?.smartest_on_x || { score: 0, streak: 0 };
+      const shouldUpdateScore = scoreToSave > currentGameData.score;
 
-      if (shouldUpdateScore || streakToSave > bestStreak.value) {
-        bestScore.value = shouldUpdateScore ? scoreToSave : bestScore.value;
-        bestStreak.value = streakToSave > bestStreak.value ? streakToSave : bestStreak.value;
+      if (shouldUpdateScore || streakToSave > currentGameData.streak) {
+        bestScore.value = shouldUpdateScore ? scoreToSave : currentGameData.score;
+        bestStreak.value = streakToSave > currentGameData.streak ? streakToSave : currentGameData.streak;
         try {
-          const userDocRef = doc(db, 'users', user.uid);
-          await updateDoc(userDocRef, {
-            'games.trivia': { score: bestScore.value, streak: bestStreak.value },
-          }).catch(async (err) => {
-            if (err.code === 'not-found') {
-              console.log('User doc not found, creating new one');
-              await setDoc(userDocRef, {
-                uid: user.uid,
-                displayName: user.displayName || 'Anonymous',
-                username: '@Unknown',
-                photoURL: user.photoURL || 'https://www.top-x.co/asstes/profile.png',
-                followersCount: 0,
-                followingCount: 0,
-                games: { trivia: { score: bestScore.value, streak: bestStreak.value } },
-                rivals: [],
-                addedBy: [],
-              });
-            } else {
-              throw err;
-            }
+          await userStore.updateGameProgress('trivia', 'smartest_on_x', bestScore.value, bestStreak.value, {
+            difficultyCounts: difficultyCounts.value,
           });
-          console.log('Best stats saved to Firestore:', { score: bestScore.value, streak: bestStreak.value });
-          const updatedDoc = await getDoc(userDocRef);
-          console.log('Verified user document after update:', updatedDoc.exists() ? updatedDoc.data() : 'Not found');
+          console.log('Best stats saved to Firestore:', {
+            score: bestScore.value,
+            streak: bestStreak.value,
+            difficultyCounts: difficultyCounts.value,
+          });
           pendingScore.value = null;
           pendingStreak.value = null;
         } catch (err) {
@@ -331,7 +312,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     sessionBestStreak.value = 0;
     questions.value = [];
     usedQuestionIds.value = [];
-    difficultyCounts.value = { easy: 0, medium: 0, hard: 0 };
+    difficultyCounts.value = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     pendingScore.value = null;
     pendingStreak.value = null;
     currentQuestion.value = null;
@@ -345,7 +326,7 @@ export const useTriviaStore = defineStore('trivia', () => {
       return;
     }
     const text = `I scored ${score.value} in the Trivia Game on TOP-X! Can you beat me?`;
-    const url = `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=trivia&score=${score.value}`;
+    const url = `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=smartest_on_x&score=${score.value}`;
     const shareText = `${text} ${url}`;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
     window.open(tweetUrl, '_blank');

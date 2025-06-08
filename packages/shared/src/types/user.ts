@@ -3,6 +3,7 @@ export interface UserGameData {
   streak: number;
   lastPlayed: string;
   achievements?: Array<{ id: string; earnedAt: string }>;
+  custom?: Record<string, any>;
 }
 
 export interface User {

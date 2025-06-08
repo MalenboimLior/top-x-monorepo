@@ -43,8 +43,6 @@ export const useUserStore = defineStore('user', () => {
       console.log('Login successful:', result.user.uid);
       user.value = result.user;
 
-      // Capture X OAuth credentials
-
       const credential = TwitterAuthProvider.credentialFromResult(result);
       if (!credential || !credential.accessToken || !credential.secret) {
         throw new Error('Failed to get X credentials');
@@ -52,7 +50,6 @@ export const useUserStore = defineStore('user', () => {
       const xAccessToken = credential.accessToken;
       const xSecret = credential.secret;
 
-      // Update or create user document with X credentials
       const userDocRef = doc(db, 'users', result.user.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
@@ -62,7 +59,7 @@ export const useUserStore = defineStore('user', () => {
           displayName: result.user.displayName || 'Anonymous',
           photoURL: result.user.photoURL
             ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
-            : 'https://www.top-x.co/asstes/profile.png',
+            : 'https://www.top-x.co/assets/profile.png',
         });
         console.log('Updated user profile with X credentials');
       } else {
@@ -70,7 +67,6 @@ export const useUserStore = defineStore('user', () => {
       }
       console.log('before syncXUserData:');
 
-      // Trigger syncXUserData
       const syncXUserData: HttpsCallable<unknown, unknown> = httpsCallable(functions, 'syncXUserData');
       await syncXUserData().catch((err) => {
         console.error('Error calling syncXUserData:', err);
@@ -78,7 +74,6 @@ export const useUserStore = defineStore('user', () => {
       });
       console.log('Triggered syncXUserData');
 
-      // Wait for profile to load
       if (!profile.value) {
         console.log('Waiting for profile to load...');
         await new Promise<void>((resolve) => {
@@ -122,7 +117,7 @@ export const useUserStore = defineStore('user', () => {
       email: user.email || '',
       photoURL: user.photoURL
         ? user.photoURL.replace('_normal.jpg', '_400x400.jpg')
-        : 'https://www.top-x.co/asstes/profile.png',
+        : 'https://www.top-x.co/assets/profile.png',
       isAdmin: false,
       followersCount: 0,
       followingCount: 0,
@@ -238,7 +233,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function updateGameProgress(gameTypeId: string, gameId: string, score: number, streak: number) {
+  async function updateGameProgress(
+    gameTypeId: string,
+    gameId: string,
+    score: number,
+    streak: number,
+    custom?: Record<string, any>
+  ) {
     if (!user.value) {
       console.log('Cannot update game progress: no user logged in');
       error.value = 'No user logged in';
@@ -246,12 +247,20 @@ export const useUserStore = defineStore('user', () => {
     }
     try {
       const userDocRef = doc(db, 'users', user.value.uid);
+      const gameData: any = {
+        score,
+        streak,
+        lastPlayed: new Date().toISOString(),
+      };
+      if (custom) {
+        gameData.custom = custom;
+      }
       await setDoc(
         userDocRef,
         {
           games: {
             [gameTypeId]: {
-              [gameId]: { score, streak, lastPlayed: new Date().toISOString() },
+              [gameId]: gameData,
             },
           },
         },

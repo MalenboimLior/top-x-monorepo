@@ -27,13 +27,22 @@
 </template>
 
 <script setup lang="ts">
-import { watch, computed, ref, onMounted } from 'vue';
+import { watch, computed, ref } from 'vue';
 import TriviaQuestion from '@/components/TriviaQuestion.vue';
+
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  correctHash: string;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  group: string;
+}
 
 interface Props {
   lives: number;
   timeLeft: number;
-  currentQuestion: any;
+  currentQuestion: Question | null;
   selectedAnswer: number | null;
   isCorrect: boolean | null;
   correctAnswerIndex: number | null;
@@ -54,9 +63,8 @@ const emit = defineEmits<{
   (e: 'answer-question', index: number): void;
 }>();
 
-// Timer items for ■□ display
 const timerItems = computed(() => {
-  const filled = Math.round(props.timeLeft); // timeLeft is 0 to 10
+  const filled = Math.round(props.timeLeft);
   const empty = 10 - filled;
   const items = [];
   for (let i = 0; i < filled; i++) {
@@ -68,26 +76,19 @@ const timerItems = computed(() => {
   return items;
 });
 
-// Animation control
 const isAnimated = ref(false);
-
-onMounted(() => {
-  isAnimated.value = true;
-  console.log('TriviaGame mounted, currentQuestion:', props.currentQuestion);
-});
 
 watch(
   () => props.timeLeft,
-  (newValue) => {
+  () => {
     isAnimated.value = false;
     setTimeout(() => {
       isAnimated.value = true;
-    }, 50); // Brief delay to reset animation
-    console.log('Time left updated:', newValue);
+    }, 50);
+    console.log('Time left updated:', props.timeLeft);
   }
 );
 
-// Debug: Log currentQuestion to ensure it's being passed
 watch(
   () => props.currentQuestion,
   (newValue) => {
@@ -127,7 +128,6 @@ const answerQuestion = (index: number) => {
   text-align: center;
 }
 
-/* Progress bar character animation */
 .progress-char {
   display: inline-block;
   opacity: 0;
@@ -155,7 +155,6 @@ const answerQuestion = (index: number) => {
   }
 }
 
-/* General item animation */
 .animate-item {
   opacity: 0;
   transform: translateY(20px);
@@ -179,6 +178,5 @@ const answerQuestion = (index: number) => {
 }
 
 .loading-gif {
- 
 }
 </style>
