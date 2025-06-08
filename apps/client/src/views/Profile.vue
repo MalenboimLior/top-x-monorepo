@@ -11,7 +11,7 @@
           </div>
           <div class="media-content">
             <p class="title is-4 has-text-white">{{ displayName }}</p>
-            <p class="subtitle is-6 has-text-grey-light">{{ userStore.profile?.username }}</p>
+            <p class="subtitle is-6 has-text-grey-light">{{ username }}</p>
           </div>
         </div>
         <div class="content mt-4">
@@ -22,23 +22,29 @@
       </Card>
       <Leaderboard
         title="Your Rivals"
-        :entries="rivals"
+        :entries="rivalEntries"
         :rivals="userStore.profile?.rivals || []"
-        :currentUserId="userStore.user?.uid"
+        :current-user-id="userStore.user?.uid"
         @add-rival="addRival"
       >
-        <template v-if="!rivals.length">
+        <template v-if="loadingRivals">
+          <p class="has-text-grey-light">Loading rivals...</p>
+        </template>
+        <template v-else-if="!rivalEntries.length">
           <p class="has-text-grey-light">No rivals added yet.</p>
         </template>
       </Leaderboard>
       <Leaderboard
         title="Rivals Who’ve Added You"
-        :entries="addedBy"
+        :entries="addedByEntries"
         :rivals="userStore.profile?.rivals || []"
-        :currentUserId="userStore.user?.uid"
+        :current-user-id="userStore.user?.uid"
         @add-rival="addRival"
       >
-        <template v-if="!addedBy.length">
+        <template v-if="loadingAddedBy">
+          <p class="has-text-grey-light">Loading...</p>
+        </template>
+        <template v-else-if="!addedByEntries.length">
           <p class="has-text-grey-light">No one has added you as a rival yet.</p>
         </template>
       </Leaderboard>
@@ -52,67 +58,111 @@
 
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import Card from '@top-x/shared/components/Card.vue';
+
 import Leaderboard from '@/components/Leaderboard.vue';
+import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import type { User } from '@top-x/shared/types/user';
+import type { User, UserGameData } from '@top-x/shared/types/user';
+
+interface LeaderboardEntry {
+  uid: string;
+  displayName: string;
+  username: string;
+  photoURL: string;
+  score: number;
+}
 
 const userStore = useUserStore();
 
 const displayName = computed(() => userStore.profile?.displayName || 'Anonymous');
-const photoURL = computed(() => userStore.profile?.photoURL || 'https://www.top-x.co/asstes/profile.png');
-const triviaStats = computed(() => userStore.profile?.games?.trivia || { score: 0, streak: 0 });
+const username = computed(() => userStore.profile?.username ? `@${userStore.profile.username}` : '@Anonymous');
+const photoURL = computed(() => userStore.profile?.photoURL || 'https://www.top-x.co/assets/profile.png');
+const triviaStats = computed(() => userStore.profile?.games?.smartest_on_x?.default || { score: 0, streak: 0 } as UserGameData);
 const isLoggedIn = computed(() => !!userStore.user);
 const rivals = ref<User[]>([]);
 const addedBy = ref<User[]>([]);
+const rivalEntries = ref<LeaderboardEntry[]>([]);
+const addedByEntries = ref<LeaderboardEntry[]>([]);
+const loadingRivals = ref(false);
+const loadingAddedBy = ref(false);
 
 async function fetchRivals() {
-  if (!userStore.profile?.rivals) return;
-  rivals.value = [];
-  for (const uid of userStore.profile.rivals) {
-    const userDoc = doc(db, 'users', uid);
-    const docSnap = await getDoc(userDoc);
-    if (docSnap.exists()) {
-      const userData = docSnap.data() as User;
-      // Push userData and handle score separately if needed
-      rivals.value.push(userData);
-    }
+  if (!userStore.profile?.rivals || userStore.profile.rivals.length === 0) {
+    rivals.value = [];
+    rivalEntries.value = [];
+    return;
+  }
+  loadingRivals.value = true;
+  try {
+    const rivalPromises = userStore.profile.rivals.map(uid => getDoc(doc(db, 'users', uid)));
+    const rivalDocs = await Promise.all(rivalPromises);
+    rivals.value = rivalDocs
+      .filter(doc => doc.exists())
+      .map(doc => doc.data() as User);
+    rivalEntries.value = rivals.value.map(user => ({
+      uid: user.uid,
+      displayName: user.displayName || 'Anonymous',
+      username: user.username || '@Anonymous',
+      photoURL: user.photoURL || 'https://www.top-x.co/assets/profile.png',
+      score: user.games?.smartest_on_x?.default?.score || 0,
+    }));
+  } catch (err) {
+    console.error('Error fetching rivals:', err);
+    rivals.value = [];
+    rivalEntries.value = [];
+  } finally {
+    loadingRivals.value = false;
   }
 }
 
 async function fetchAddedBy() {
-  if (!userStore.profile?.addedBy) return;
-  addedBy.value = [];
-  for (const uid of userStore.profile.addedBy) {
-    const userDoc = doc(db, 'users', uid);
-    const docSnap = await getDoc(userDoc);
-    if (docSnap.exists()) {
-      const userData = docSnap.data() as User;
-      // Ensure score property exists for LeaderboardEntry
-    if (docSnap.exists()) {
-      const userData = docSnap.data() as User;
-      // Push userData and handle score separately if needed
-      addedBy.value.push(userData);
-    }
+  if (!userStore.profile?.addedBy || userStore.profile.addedBy.length === 0) {
+    addedBy.value = [];
+    addedByEntries.value = [];
+    return;
+  }
+  loadingAddedBy.value = true;
+  try {
+    const addedByPromises = userStore.profile.addedBy.map(uid => getDoc(doc(db, 'users', uid)));
+    const addedByDocs = await Promise.all(addedByPromises);
+    addedBy.value = addedByDocs
+      .filter(doc => doc.exists())
+      .map(doc => doc.data() as User);
+    addedByEntries.value = addedBy.value.map(user => ({
+      uid: user.uid,
+      displayName: user.displayName || 'Anonymous',
+      username: user.username || '@Anonymous',
+      photoURL: user.photoURL || 'https://www.top-x.co/assets/profile.png',
+      score: user.games?.smartest_on_x?.default?.score || 0,
+    }));
+  } catch (err) {
+    console.error('Error fetching addedBy:', err);
+    addedBy.value = [];
+    addedByEntries.value = [];
+  } finally {
+    loadingAddedBy.value = false;
+  }
+}
+
 async function addRival(uid: string) {
-  await userStore.addRival(uid);
-  await fetchRivals();
-  await fetchAddedBy();
+  try {
+    await userStore.addRival(uid);
+    await fetchRivals();
+    await fetchAddedBy();
+  } catch (err) {
+    console.error('Error adding rival:', err);
+  }
 }
 
-async function removeRival(uid: string) {
-  await userStore.removeRival(uid);
-  await fetchRivals();
-  await fetchAddedBy();
-}
-
-if (isLoggedIn.value) {
-  fetchRivals();
-  fetchAddedBy();
-}
+onMounted(() => {
+  if (isLoggedIn.value) {
+    fetchRivals();
+    fetchAddedBy();
+  }
+});
 </script>
 
 <style scoped>

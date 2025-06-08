@@ -1,34 +1,32 @@
 <template>
   <section class="section">
     <div class="container">
-      <div class="columns is-centered">
-        <div class="column is-one-third">
-          <div class="box">
-            <h1 class="title">Admin Login</h1>
-            <button class="button is-dark" @click="login">
-                <font-awesome-icon :icon="['fab', 'x-twitter']"  />Login with X
-            </button>
-          </div>
-        </div>
-      </div>
+      <h1 class="title has-text-white">Admin Dashboard</h1>
+      <Card>
+        <h2 class="subtitle has-text-white">Welcome, {{ userStore.user?.username ? `@${userStore.user.username}` : '@Anonymous' }}</h2>
+        <p class="has-text-grey-light">Manage TOP-X games and configurations.</p>
+        <router-link to="/game-management" class="button is-primary mt-3">
+          Go to Game Management
+        </router-link>
+      </Card>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
-import { useRouter } from 'vue-router';
+import Card from '@top-x/shared/components/Card.vue';
 
 const userStore = useUserStore();
-const router = useRouter();
-
-const login = async () => {
-  await userStore.login();
-  if (userStore.user?.isAdmin) {
-    router.push('/');
-  } else {
-    alert('Access denied: Admin privileges required.');
-    await userStore.logout();
-  }
-};
+console.log('Admin dashboard loaded, user:', {
+  uid: userStore.user?.uid,
+  username: userStore.user?.username,
+  isAdmin: userStore.user?.isAdmin,
+});
 </script>
+
+<style scoped>
+.mt-3 {
+  margin-top: 1rem;
+}
+</style>

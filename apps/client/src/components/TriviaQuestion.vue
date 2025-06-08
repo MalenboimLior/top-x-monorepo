@@ -20,8 +20,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import Card from './Card.vue';
-import CustomButton from './CustomButton.vue';
+import Card from '@top-x/shared/components/Card.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
 
 interface Question {
   id: string;

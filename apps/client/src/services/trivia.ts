@@ -1,6 +1,5 @@
 const FUNCTION_BASE_URL = 'u6yhyetroa-uc.a.run.app';
 
-
 interface LeaderboardEntry {
   uid: string;
   displayName: string;
@@ -25,7 +24,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export async function getTopLeaderboard(
-  gameId: string = 'trivia',
+  gameId: string = 'smartest_on_x',
   limit: number = 10
 ): Promise<LeaderboardEntry[]> {
   const url = `https://gettopleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}&limit=${limit}`;
@@ -35,7 +34,7 @@ export async function getTopLeaderboard(
 }
 
 export async function getAroundLeaderboard(
-  gameId: string = 'trivia',
+  gameId: string = 'smartest_on_x',
   uid: string
 ): Promise<LeaderboardEntry[]> {
   const url = `https://getaroundleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}&uid=${uid}`;
@@ -45,7 +44,7 @@ export async function getAroundLeaderboard(
 }
 
 export async function getFriendsLeaderboard(
-  gameId: string = 'trivia',
+  gameId: string = 'smartest_on_x',
   uid: string
 ): Promise<LeaderboardEntry[]> {
   const url = `https://getfriendsleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}&uid=${uid}`;
@@ -55,7 +54,7 @@ export async function getFriendsLeaderboard(
 }
 
 export async function getPercentileRank(
-  gameId: string = 'trivia',
+  gameId: string = 'smartest_on_x',
   uid: string
 ): Promise<{ percentile: number, usersTopped: number }> {
   const url = `https://getpercentilerank-${FUNCTION_BASE_URL}?gameId=${gameId}&uid=${uid}`;
@@ -65,7 +64,7 @@ export async function getPercentileRank(
 }
 
 export async function getVipLeaderboard(
-  gameId: string = 'trivia'
+  gameId: string = 'smartest_on_x'
 ): Promise<LeaderboardEntry[]> {
   const url = `https://getvipleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}`;
   const data = await fetchJson<LeaderboardEntry[]>(url);

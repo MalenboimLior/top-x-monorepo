@@ -1,21 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { auth, db } from '@top-x/shared';
-import { doc, getDoc } from 'firebase/firestore';
+import { useUserStore } from '../stores/user';
 import Home from '@/views/Home.vue';
+import Login from '@/views/Login.vue';
 import GameManagement from '@/views/GameManagement.vue';
 
 const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: Home,
-  },
-  {
-    path: '/game-management',
-    name: 'GameManagement',
-    component: GameManagement,
-    meta: { requiresAdmin: true },
-  },
+  { path: '/', name: 'Dashboard', component: Home, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false } },
+  { path: '/game-management', name: 'GameManagement', component: GameManagement, meta: { requiresAuth: true, requiresAdmin: true } },
 ];
 
 const router = createRouter({
@@ -24,20 +16,20 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
-  if (requiresAdmin) {
-    const user = auth.currentUser;
-    if (user) {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists() && userDoc.data().isAdmin) {
-        next();
-      } else {
-        next('/');
-      }
-    } else {
-      next('/');
-    }
+  const userStore = useUserStore();
+  console.log('Router guard: Navigating to', to.path, 'user:', {
+    uid: userStore.user?.uid,
+    isAdmin: userStore.user?.isAdmin,
+  });
+
+  if (to.meta.requiresAuth && !userStore.user) {
+    console.log('Redirecting to /login: User not authenticated');
+    next('/login');
+  } else if (to.meta.requiresAdmin && !userStore.user?.isAdmin) {
+    console.log('Redirecting to /login: User is not admin');
+    next('/login');
   } else {
+    console.log('Navigation allowed');
     next();
   }
 });

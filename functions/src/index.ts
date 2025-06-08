@@ -6,14 +6,11 @@ import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
 
-// Initialize Firebase Admin
 admin.initializeApp();
 const db = admin.firestore();
 
-// Initialize CORS middleware
-const corsHandler = cors({ origin: true }); // Allows all origins; restrict in production
+const corsHandler = cors({ origin: true });
 
-// Interface for leaderboard response
 interface LeaderboardEntry {
   uid: string;
   displayName: string;
@@ -23,14 +20,12 @@ interface LeaderboardEntry {
   streak: number;
 }
 
-// Interface for stats
 interface GameStats {
   totalPlayers: number;
   scoreDistribution: { [score: number]: number };
   updatedAt: number;
 }
 
-// X API OAuth 1.0a setup
 const oauth = new OAuth({
   consumer: {
     key: process.env.XAPI_KEY || '',
@@ -42,15 +37,11 @@ const oauth = new OAuth({
   },
 });
 
-// Sync X user data on callable
-export const syncXUserData = functions.https.onCall(async (context: functions.https.CallableRequest, data) => {
-   console.log(`start syncXUserData`);
+export const syncXUserData = functions.https.onCall(async (context: functions.https.CallableRequest) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
   const uid = context.auth.uid;
-  console.log(`uid ${uid} `);
-
   const userDoc = await db.collection('users').doc(uid).get();
   const userData = userDoc.data();
   if (!userData || !userData.xAccessToken || !userData.xSecret) {
@@ -68,18 +59,9 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
     method: 'GET',
   };
 
-  console.log(`before try`);
-
   try {
     const header = oauth.toHeader(oauth.authorize(requestData, token));
-    const headers = {
-      Authorization: header.Authorization,
-    };
-    console.log(`headers ${headers} with X token:`, token);
-
-    const response = await axios.get(requestData.url, { headers });
-    console.log(`after response`);
-
+    const response = await axios.get(requestData.url, { headers: { Authorization: header.Authorization } });
     const xData = {
       username: response.data.data.username,
       followersCount: response.data.data.public_metrics.followers_count,
@@ -94,35 +76,29 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
     });
     console.log(`Updated user ${uid} with X data:`, xData);
   } catch (error: any) {
-    console.error(`Error fetching X data for user ${uid}:`, {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
+    console.error(`Error fetching X data for user ${uid}:`, error.message);
     throw new functions.https.HttpsError('internal', 'Failed to fetch X data');
   }
 });
 
-// Sync user scores to leaderboards_trivia
 export const syncTriviaScore = functions.firestore.onDocumentWritten('users/{uid}', async (event) => {
   const uid = event.params.uid;
   const data = event.data?.after.data();
-  if (!data || !data.games?.trivia) return;
+  if (!data || !data.games?.smartest_on_x) return;
 
-  await db.collection('leaderboards_trivia').doc(uid).set({
+  await db.collection('leaderboards_smartest_on_x').doc(uid).set({
     uid,
     displayName: data.displayName || 'Anonymous',
     username: data.username || 'Anonymous',
     photoURL: data.photoURL || 'https://www.top-x.co/asstes/profile.png',
-    score: data.games.trivia.score || 0,
-    streak: data.games.trivia.streak || 0,
+    score: data.games.smartest_on_x.score || 0,
+    streak: data.games.smartest_on_x.streak || 0,
     updatedAt: Date.now(),
   });
 });
 
-// Update stats for percentile calculations (runs hourly)
-export const updateTriviaStats = onSchedule('every 60 minutes', async (event) => {
-  const scoresSnapshot = await db.collection('leaderboards_trivia').get();
+export const updateTriviaStats = onSchedule('every 60 minutes', async () => {
+  const scoresSnapshot = await db.collection('leaderboards_smartest_on_x').get();
   const totalPlayers = scoresSnapshot.size;
   const scoreDistribution: { [score: number]: number } = {};
 
@@ -131,17 +107,16 @@ export const updateTriviaStats = onSchedule('every 60 minutes', async (event) =>
     scoreDistribution[score] = (scoreDistribution[score] || 0) + 1;
   });
 
-  await db.collection('stats').doc('trivia').set({
+  await db.collection('stats').doc('smartest_on_x').set({
     totalPlayers,
     scoreDistribution,
     updatedAt: Date.now(),
   });
 });
 
-// Top N leaderboard
 export const getTopLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
-    const gameId = req.query.gameId as string || 'trivia';
+    const gameId = req.query.gameId as string || 'smartest_on_x';
     const limitParam = parseInt(req.query.limit as string) || 10;
     const validLimits = [10, 20, 30, 40, 50];
     const maxResults = validLimits.includes(limitParam) ? limitParam : 10;
@@ -169,10 +144,9 @@ export const getTopLeaderboard = functions.https.onRequest((req, res) => {
   });
 });
 
-// Around user leaderboard
 export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
-    const gameId = req.query.gameId as string || 'trivia';
+    const gameId = req.query.gameId as string || 'smartest_on_x';
     const uid = req.query.uid as string;
 
     if (!uid) {
@@ -243,10 +217,9 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
   });
 });
 
-// Friends leaderboard
 export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
-    const gameId = req.query.gameId as string || 'trivia';
+    const gameId = req.query.gameId as string || 'smartest_on_x';
     const uid = req.query.uid as string;
 
     if (!uid) {
@@ -298,7 +271,7 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
 
 export const getPercentileRank = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
-    const gameId = req.query.gameId as string || 'trivia';
+    const gameId = req.query.gameId as string || 'smartest_on_x';
     const uid = req.query.uid as string;
 
     if (!uid) {
@@ -347,10 +320,9 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
   });
 });
 
-// VIP leaderboard
 export const getVipLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
-    const gameId = req.query.gameId as string || 'trivia';
+    const gameId = req.query.gameId as string || 'smartest_on_x';
 
     try {
       const vipDoc = await db.collection('config').doc('vip_users').get();
