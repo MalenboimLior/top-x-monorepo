@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 // import { defineProps, defineEmits } from 'vue';
-import CustomButton from '@/components/CustomButton.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 interface Props {
   bestScore: number;

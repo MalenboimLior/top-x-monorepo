@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
-import CustomButton from '@/components/CustomButton.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 interface Props {
   userImage: string;

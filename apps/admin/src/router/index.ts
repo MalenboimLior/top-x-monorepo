@@ -1,19 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { auth } from '@top-x/shared';
-import Dashboard from '@/views/Dashboard.vue';
-import Login from '@/views/Login.vue';
+import { auth, db } from '@top-x/shared';
+import { doc, getDoc } from 'firebase/firestore';
+import Home from '@/views/Home.vue';
+import GameManagement from '@/views/GameManagement.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'Dashboard',
-    component: Dashboard,
-    meta: { requiresAdmin: true },
+    name: 'Home',
+    component: Home,
   },
   {
-    path: '/login',
-    name: 'Login',
-    component: Login,
+    path: '/game-management',
+    name: 'GameManagement',
+    component: GameManagement,
+    meta: { requiresAdmin: true },
   },
 ];
 
@@ -23,18 +24,19 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const user = auth.currentUser;
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
-
-  if (requiresAdmin && !user) {
-    next('/login');
-  } else if (requiresAdmin && user) {
-    const { db } = await import('@top-x/shared');
-    const { collection, doc, getDoc } = await import('firebase/firestore');
-    const userRef = doc(collection(db, 'users'), user.uid);
-    const userDoc = await getDoc(userRef);
-    const isAdmin = userDoc.exists() && userDoc.data()?.isAdmin === true;
-    isAdmin ? next() : next('/login');
+  if (requiresAdmin) {
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists() && userDoc.data().isAdmin) {
+        next();
+      } else {
+        next('/');
+      }
+    } else {
+      next('/');
+    }
   } else {
     next();
   }

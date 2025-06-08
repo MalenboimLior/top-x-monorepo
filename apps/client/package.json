@@ -14,6 +14,7 @@
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@top-x/shared": "^1.0.0",
     "axios": "^1.9.0",
     "bulma": "^1.0.3",
     "csv-parser": "^3.2.0",

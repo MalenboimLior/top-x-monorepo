@@ -19,12 +19,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import Card from '@/components/Card.vue';
-import CustomButton from '@/components/CustomButton.vue';
+import { ref, watch } from 'vue';
+import Card from './Card.vue';
+import CustomButton from './CustomButton.vue';
+
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  correctHash: string;
+  difficulty: number;
+  group: string;
+}
 
 interface Props {
-  currentQuestion: any;
+  currentQuestion: Question | null;
   selectedAnswer: number | null;
   isCorrect: boolean | null;
   correctAnswerIndex: number | null;
@@ -53,28 +62,21 @@ const getButtonType = (index: number) => {
   return 'is-light';
 };
 
-// Animation control
 const isAnimated = ref(false);
-
-onMounted(() => {
-  isAnimated.value = true;
-  console.log('TriviaQuestion mounted, currentQuestion:', props.currentQuestion);
-});
 
 watch(
   () => props.currentQuestion?.id,
-  (newValue) => {
+  () => {
     isAnimated.value = false;
     setTimeout(() => {
       isAnimated.value = true;
-    }, 50); // Brief delay to reset animation
-    console.log('Current question ID in TriviaQuestion:', newValue);
+    }, 10);
+    console.log('Current question ID in TriviaQuestion:', props.currentQuestion?.id);
   }
 );
 </script>
 
 <style scoped>
-/* General item animation */
 .animate-item {
   opacity: 0;
   transform: translateY(20px);
@@ -93,7 +95,6 @@ watch(
   }
 }
 
-/* Transition for question card */
 .question-slide-enter-active,
 .question-slide-leave-active {
   transition: all 0.3s ease;

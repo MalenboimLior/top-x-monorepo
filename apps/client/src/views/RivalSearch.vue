@@ -46,9 +46,9 @@ import { ref, watch } from 'vue';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { debounce } from 'lodash';
-import Card from '@/components/Card.vue';
+import Card from '@top-x/shared/components/Card.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
-import CustomButton from '@/components/CustomButton.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { UserProfile } from '@top-x/shared';
 
 const userStore = useUserStore();
