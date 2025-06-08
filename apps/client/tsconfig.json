@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@top-x/shared": ["../../packages/shared/index.ts"]
+    },
+    "allowSyntheticDefaultImports": true,
+    "types": ["vite/client"],
+    "lib": ["esnext", "dom"],
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*", "src/**/*.json", "src/**/*.vue", "src/vue-shim.d.ts", "../../packages/shared/types/tierData.ts", "../../packages/shared/types/user.ts", "../../packages/shared/types/vue-smooth-dnd.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

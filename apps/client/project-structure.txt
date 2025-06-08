@@ -1,0 +1,94 @@
+.
+
+├── firebase.json
+├── firestore.indexes.json
+├── firestore.rules
+├── functions
+│   ├── .DS_Store
+│   ├── .env
+│   ├── .eslintrc.js
+│   ├── .gitignore
+│   ├── lib
+│   │   ├── index.js
+│   │   └── index.js.map
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── src
+│   │   └── index.ts
+│   ├── tsconfig.dev.json
+│   └── tsconfig.json
+├── index.html
+├── package-lock.json
+├── package.json
+├── README.md
+├── seedQuestions.js
+├── serviceAccountKey.json
+├── src
+│   ├── .DS_Store
+│   ├── App.vue
+│   ├── assets
+│   │   ├── .DS_Store
+│   │   ├── background-pattern.png
+│   │   ├── coming-soon.jpg
+│   │   ├── images
+│   │   │   └── fallback.png
+│   │   ├── loading.gif
+│   │   ├── logo.png
+│   │   ├── tierData.json
+│   │   ├── trivia.jpg
+│   │   └── vue.svg
+│   ├── components
+│   │   ├── .DS_Store
+│   │   ├── Card.vue
+│   │   ├── CustomButton.vue
+│   │   ├── EndScreenLoggedIn.vue
+│   │   ├── EndScreenLoggedOut.vue
+│   │   ├── Leaderboard.vue
+│   │   ├── NavBar.vue
+│   │   ├── PercentileRank.vue
+│   │   ├── StartTrivia.vue
+│   │   ├── TierTable.vue
+│   │   ├── TriviaGame.vue
+│   │   └── TriviaQuestion.vue
+│   ├── firebase.ts
+│   ├── main.ts
+│   ├── project-structure.txt
+│   ├── router
+│   │   └── index.ts
+│   ├── services
+│   │   ├── .DS_Store
+│   │   └── trivia.ts
+│   ├── stores
+│   │   ├── tierTable.ts
+│   │   ├── trivia.ts
+│   │   └── user.ts
+│   ├── styles
+│   │   ├── Card.css
+│   │   ├── CustomButton.css
+│   │   ├── Home.css
+│   │   ├── Leaderboard.css
+│   │   ├── Profile.css
+│   │   ├── RivalSearch.css
+│   │   └── Trivia.css
+│   ├── types
+│   │   ├── tierData.ts
+│   │   ├── user.ts
+│   │   └── vue-smooth-dnd.d.ts
+│   ├── views
+│   │   ├── .DS_Store
+│   │   ├── About.vue
+│   │   ├── FAQ.vue
+│   │   ├── games
+│   │   │   ├── .DS_Store
+│   │   │   └── Trivia.vue
+│   │   ├── Home.vue
+│   │   ├── Profile.vue
+│   │   └── RivalSearch.vue
+│   ├── vite-env.d.ts
+│   └── vue-shim.d.ts
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+22 directories, 109 files
