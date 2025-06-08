@@ -3,8 +3,10 @@ import { ref, watch } from 'vue';
 import { useUserStore } from './user';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import { getTopLeaderboard } from '@/services/trivia';
-import { User } from '@top-x/shared';
+// Update the import path below to the correct relative path if the file exists, e.g.:
+import { getTopLeaderboard } from '../services/trivia';
+// Or create the file '../services/trivia.ts' and export getTopLeaderboard if it does not exist.
+import { User } from '@top-x/shared/types/user';
 
 interface Question {
   id: string;

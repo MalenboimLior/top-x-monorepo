@@ -4,7 +4,7 @@ import { auth, db, functions } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
-import { User } from '@top-x/shared';
+import { User } from '@top-x/shared/types/user';
 
 export const useUserStore = defineStore('user', () => {
   const user = ref<FirebaseUser | null>(null);

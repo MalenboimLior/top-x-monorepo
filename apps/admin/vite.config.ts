@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export default defineConfig({
   plugins: [vue()],
@@ -12,13 +15,14 @@ export default defineConfig({
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },
   define: {
-    'import.meta.env': JSON.stringify({
-      VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY,
-      VITE_AUTH_DOMAIN: process.env.VITE_AUTH_DOMAIN,
-      VITE_PROJECT_ID: process.env.VITE_PROJECT_ID,
-      VITE_STORAGE_BUCKET: process.env.VITE_STORAGE_BUCKET,
-      VITE_MESSAGING_SENDER_ID: process.env.VITE_MESSAGING_SENDER_ID,
-      VITE_APP_ID: process.env.VITE_APP_ID,
-    }),
+    'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY),
+    'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN),
+    'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID),
+    'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.VITE_FIREBASE_STORAGE_BUCKET),
+    'import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify(process.env.VITE_FIREBASE_APP_ID),
+  },
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions'],
   },
 });

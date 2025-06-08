@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import CustomButton from './CustomButton.vue';
-import type { UserProfile } from '../../../../packages/shared/types/user';
+import type { User } from '@top-x/shared/types/user';
 
 interface LeaderboardEntry {
   uid: string;

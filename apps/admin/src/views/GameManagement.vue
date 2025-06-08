@@ -60,15 +60,15 @@
 
     <!-- Game Form -->
     <Card v-if="selectedGameTypeId" class="mt-3">
-      <h2 class="subtitle has-text-white">Create Game for {{ selectedGameTypeId }}</h2>
+      <h2 class="title has-text-white">Create Game for {{ selectedGameTypeId }}</h2>
       <div class="field">
         <label class="label has-text-white">Game ID</label>
         <div class="control">
-          <input v-model="newGame.id" class="input" type="text" placeholder="e.g., smartest_on_x" />
+          <input v-model="newGame.id" class="input" type="text" placeholder="Game ID"/>
         </div>
       </div>
       <div class="field">
-        <label class="label has-text-white">Name</label>
+        <label class="label has-text">Name:</label>
         <div class="control">
           <input v-model="newGame.name" class="input" type="text" placeholder="e.g., Smartest on X" />
         </div>
@@ -131,10 +131,15 @@ const success = ref<string | null>(null);
 const customError = ref<string | null>(null);
 const gameCustomError = ref<string | null>(null);
 
-const isAdmin = computed(() => userStore.profile?.isAdmin || false);
+const isAdmin = computed(() => {
+  const adminStatus = userStore.user?.isAdmin || false;
+  console.log('isAdmin check:', { user: userStore.user, isAdmin: adminStatus });
+  return adminStatus;
+});
 
 const fetchGameTypes = async () => {
   try {
+    console.log('Fetching game types...');
     const q = query(collection(db, 'gameTypes'));
     onSnapshot(q, (snapshot) => {
       gameTypes.value = snapshot.docs.map((doc) => ({
@@ -145,12 +150,13 @@ const fetchGameTypes = async () => {
     });
   } catch (err: any) {
     error.value = `Failed to fetch game types: ${err.message}`;
-    console.error(err);
+    console.error('fetchGameTypes error:', err);
   }
 };
 
 const fetchGames = async (gameTypeId: string) => {
   try {
+    console.log(`Fetching games for gameTypeId: ${gameTypeId}`);
     const q = query(collection(db, 'games'));
     onSnapshot(q, (snapshot) => {
       games.value = snapshot.docs
@@ -160,17 +166,20 @@ const fetchGames = async (gameTypeId: string) => {
     });
   } catch (err: any) {
     error.value = `Failed to fetch games: ${err.message}`;
-    console.error(err);
+    console.error('fetchGames error:', err);
   }
 };
 
 const createGameType = async () => {
+  console.log('createGameType called', { newGameType: newGameType.value, newGameTypeCustom: newGameTypeCustom.value });
   if (!isAdmin.value) {
     error.value = 'Unauthorized: Admin access required';
+    console.log('createGameType failed: User is not admin');
     return;
   }
   if (!newGameType.value.id || !newGameType.value.name) {
     error.value = 'Game Type ID and Name are required';
+    console.log('createGameType failed: Missing ID or Name', newGameType.value);
     return;
   }
   isCreating.value = true;
@@ -182,8 +191,10 @@ const createGameType = async () => {
   if (newGameTypeCustom.value) {
     try {
       customData = JSON.parse(newGameTypeCustom.value);
+      console.log('Parsed customData for game type:', customData);
     } catch (err) {
       customError.value = 'Invalid JSON in Custom Data';
+      console.log('createGameType failed: Invalid JSON', newGameTypeCustom.value);
       isCreating.value = false;
       return;
     }
@@ -191,29 +202,41 @@ const createGameType = async () => {
 
   try {
     const gameTypeRef = doc(db, 'gameTypes', newGameType.value.id);
+    console.log('Creating game type with ref:', gameTypeRef.path);
     await setDoc(gameTypeRef, {
       name: newGameType.value.name,
       description: newGameType.value.description,
       custom: customData || null,
     });
     success.value = `Game Type '${newGameType.value.name}' created successfully`;
+    console.log('Game type created:', newGameType.value);
     newGameType.value = { id: '', name: '', description: '' };
     newGameTypeCustom.value = '';
   } catch (err: any) {
     error.value = `Failed to create game type: ${err.message}`;
-    console.error(err);
+    console.error('createGameType error:', err);
   } finally {
     isCreating.value = false;
   }
 };
 
 const createGame = async () => {
+  console.log('createGame called', {
+    selectedGameTypeId: selectedGameTypeId.value,
+    newGame: newGame.value,
+    newGameCustom: newGameCustom.value,
+  });
   if (!isAdmin.value) {
     error.value = 'Unauthorized: Admin access required';
+    console.log('createGame failed: User is not admin');
     return;
   }
   if (!selectedGameTypeId.value || !newGame.value.id || !newGame.value.name) {
     error.value = 'Game Type, Game ID, and Name are required';
+    console.log('createGame failed: Missing required fields', {
+      selectedGameTypeId: selectedGameTypeId.value,
+      newGame: newGame.value,
+    });
     return;
   }
   isCreating.value = true;
@@ -225,8 +248,10 @@ const createGame = async () => {
   if (newGameCustom.value) {
     try {
       customData = JSON.parse(newGameCustom.value);
+      console.log('Parsed customData for game:', customData);
     } catch (err) {
       gameCustomError.value = 'Invalid JSON in Custom Data';
+      console.log('createGame failed: Invalid JSON', newGameCustom.value);
       isCreating.value = false;
       return;
     }
@@ -234,6 +259,7 @@ const createGame = async () => {
 
   try {
     const gameRef = doc(db, 'games', newGame.value.id);
+    console.log('Creating game with ref:', gameRef.path);
     await setDoc(gameRef, {
       name: newGame.value.name,
       description: newGame.value.description,
@@ -241,17 +267,19 @@ const createGame = async () => {
       custom: customData || null,
     });
     success.value = `Game '${newGame.value.name}' created successfully`;
+    console.log('Game created:', newGame.value);
     newGame.value = { id: '', name: '', description: '', gameTypeId: '' };
     newGameCustom.value = '';
   } catch (err: any) {
     error.value = `Failed to create game: ${err.message}`;
-    console.error(err);
+    console.error('createGame error:', err);
   } finally {
     isCreating.value = false;
   }
 };
 
 const selectGameType = (gameTypeId: string) => {
+  console.log('selectGameType called:', gameTypeId);
   selectedGameTypeId.value = gameTypeId;
   newGame.value.gameTypeId = gameTypeId;
   fetchGames(gameTypeId);
