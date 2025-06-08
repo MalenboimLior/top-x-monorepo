@@ -1,0 +1,221 @@
+.
+├── .DS_Store
+├── .env
+├── .gitignore
+├── apps
+│   ├── .DS_Store
+│   ├── admin
+│   │   ├── .DS_Store
+│   │   ├── .gitignore
+│   │   ├── .vscode
+│   │   │   └── extensions.json
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── public
+│   │   │   └── vite.svg
+│   │   ├── src
+│   │   │   ├── .DS_Store
+│   │   │   ├── App.vue
+│   │   │   ├── assets
+│   │   │   │   └── vue.svg
+│   │   │   ├── components
+│   │   │   │   └── NavBar.vue
+│   │   │   ├── main.ts
+│   │   │   ├── router
+│   │   │   │   └── index.ts
+│   │   │   ├── stores
+│   │   │   │   └── user.ts
+│   │   │   ├── style.css
+│   │   │   ├── views
+│   │   │   │   ├── GameManagement.vue
+│   │   │   │   ├── Home.vue
+│   │   │   │   └── Login.vue
+│   │   │   ├── vite-env.d.ts
+│   │   │   └── vue-shim.d.ts
+│   │   ├── tsconfig.app.json
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.node.json
+│   │   └── vite.config.ts
+│   └── client
+│       ├── .DS_Store
+│       ├── .gitignore
+│       ├── dist
+│       │   ├── .DS_Store
+│       │   ├── assets
+│       │   │   ├── .DS_Store
+│       │   │   ├── background-pattern.png
+│       │   │   ├── coming-soon-DoLW7zQ0.jpg
+│       │   │   ├── coming-soon.jpg
+│       │   │   ├── images
+│       │   │   │   └── fallback.png
+│       │   │   ├── index-B8DsgFFa.css
+│       │   │   ├── index-DL4__c_6.js
+│       │   │   ├── loading.gif
+│       │   │   ├── profile.png
+│       │   │   ├── tierData.json
+│       │   │   ├── TierTable-D0BRIWe2.js
+│       │   │   ├── TierTable-SCq5sRs_.css
+│       │   │   ├── topx-icon-lS5Aw3xV.png
+│       │   │   ├── topx-icon.png
+│       │   │   ├── topx-logo-BwYngemC.png
+│       │   │   ├── trivia-BZxyy46Z.jpg
+│       │   │   └── trivia.jpg
+│       │   ├── favicon-dark.svg
+│       │   ├── favicon-light.svg
+│       │   ├── favicon.ico
+│       │   ├── index.html
+│       │   └── vite.svg
+│       ├── index.html
+│       ├── package-lock.json
+│       ├── package.json
+│       ├── project-structure.txt
+│       ├── public
+│       │   ├── .DS_Store
+│       │   ├── assets
+│       │   │   ├── .DS_Store
+│       │   │   ├── background-pattern.png
+│       │   │   ├── coming-soon.jpg
+│       │   │   ├── images
+│       │   │   │   └── fallback.png
+│       │   │   ├── loading.gif
+│       │   │   ├── profile.png
+│       │   │   ├── tierData.json
+│       │   │   ├── topx-icon.png
+│       │   │   └── trivia.jpg
+│       │   ├── favicon-dark.svg
+│       │   ├── favicon-light.svg
+│       │   ├── favicon.ico
+│       │   ├── index.html
+│       │   └── vite.svg
+│       ├── README.md
+│       ├── seedQuestions.js
+│       ├── src
+│       │   ├── .DS_Store
+│       │   ├── App.vue
+│       │   ├── assets
+│       │   │   ├── .DS_Store
+│       │   │   ├── background-pattern.png
+│       │   │   ├── coming-soon.jpg
+│       │   │   ├── images
+│       │   │   │   └── fallback.png
+│       │   │   ├── loading.gif
+│       │   │   ├── logo.png
+│       │   │   ├── tierData.json
+│       │   │   ├── topx-icon.png
+│       │   │   ├── topx-logo.png
+│       │   │   ├── trivia.jpg
+│       │   │   └── vue.svg
+│       │   ├── components
+│       │   │   ├── .DS_Store
+│       │   │   ├── EndScreenLoggedIn.vue
+│       │   │   ├── EndScreenLoggedOut.vue
+│       │   │   ├── Leaderboard.vue
+│       │   │   ├── NavBar.vue
+│       │   │   ├── PercentileRank.vue
+│       │   │   ├── StartTrivia.vue
+│       │   │   ├── TierTable.vue
+│       │   │   ├── TriviaGame.vue
+│       │   │   └── TriviaQuestion.vue
+│       │   ├── favicon-dark.svg
+│       │   ├── favicon-light.svg
+│       │   ├── favicon.ico
+│       │   ├── main.ts
+│       │   ├── project-structure.txt
+│       │   ├── router
+│       │   │   └── index.ts
+│       │   ├── services
+│       │   │   ├── .DS_Store
+│       │   │   └── trivia.ts
+│       │   ├── stores
+│       │   │   ├── tierTable.ts
+│       │   │   ├── trivia.ts
+│       │   │   └── user.ts
+│       │   ├── styles
+│       │   │   ├── Card.css
+│       │   │   ├── CustomButton.css
+│       │   │   ├── Home.css
+│       │   │   ├── Leaderboard.css
+│       │   │   ├── Profile.css
+│       │   │   ├── RivalSearch.css
+│       │   │   └── Trivia.css
+│       │   ├── types
+│       │   ├── views
+│       │   │   ├── .DS_Store
+│       │   │   ├── About.vue
+│       │   │   ├── FAQ.vue
+│       │   │   ├── games
+│       │   │   │   ├── .DS_Store
+│       │   │   │   └── Trivia.vue
+│       │   │   ├── Home.vue
+│       │   │   ├── Profile.vue
+│       │   │   └── RivalSearch.vue
+│       │   ├── vite-env.d.ts
+│       │   └── vue-shim.d.ts
+│       ├── tsconfig.app.json
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       ├── uploadQuestionsFromCsv.js
+│       └── vite.config.ts
+├── firebase.json
+├── firestore.indexes.json
+├── firestore.rules
+├── functions
+│   ├── .DS_Store
+│   ├── .env
+│   ├── .eslintrc.js
+│   ├── .gitignore
+│   ├── lib
+│   │   ├── index.js
+│   │   └── index.js.map
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── readme.md
+│   ├── src
+│   │   └── index.ts
+│   ├── tsconfig.dev.json
+│   └── tsconfig.json
+├── package-lock.json
+├── package.json
+├── packages
+│   ├── .DS_Store
+│   └── shared
+│       ├── .DS_Store
+│       ├── dist
+│       │   ├── index.d.ts
+│       │   ├── index.js
+│       │   ├── src
+│       │   │   ├── index.d.ts
+│       │   │   ├── index.js
+│       │   │   └── types
+│       │   │       ├── game.d.ts
+│       │   │       ├── game.js
+│       │   │       ├── index.d.ts
+│       │   │       ├── index.js
+│       │   │       ├── tierData.d.ts
+│       │   │       ├── tierData.js
+│       │   │       ├── user.d.ts
+│       │   │       └── user.js
+│       │   └── types
+│       │       ├── game.d.ts
+│       │       ├── index.d.ts
+│       │       ├── tierData.d.ts
+│       │       └── user.d.ts
+│       ├── package.json
+│       ├── src
+│       │   ├── .DS_Store
+│       │   ├── components
+│       │   │   ├── Card.vue
+│       │   │   └── CustomButton.vue
+│       │   ├── index.ts
+│       │   └── types
+│       │       ├── game.ts
+│       │       ├── index.ts
+│       │       ├── tierData.ts
+│       │       ├── user.ts
+│       │       └── vue-smooth-dnd.d.ts
+│       ├── tsconfig.json
+│       └── vite-env.d.ts
+├── project-structure.txt
+└── README.md
+
+41 directories, 178 files

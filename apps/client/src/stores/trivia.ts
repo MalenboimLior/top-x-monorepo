@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { useUserStore } from './user';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-// Update the import path below to the correct relative path if the file exists, e.g.:
 import { getTopLeaderboard } from '../services/trivia';
-// Or create the file '../services/trivia.ts' and export getTopLeaderboard if it does not exist.
 import { User } from '@top-x/shared/types/user';
 
 interface Question {
@@ -70,7 +68,7 @@ export const useTriviaStore = defineStore('trivia', () => {
 
   async function fetchLeaderboard() {
     try {
-      const topEntries = await getTopLeaderboard('trivia', 10);
+      const topEntries = await getTopLeaderboard('smartest_on_x', 10);
       leaderboard.value = topEntries;
       console.log('Leaderboard updated:', leaderboard.value);
     } catch (error) {
@@ -87,7 +85,7 @@ export const useTriviaStore = defineStore('trivia', () => {
         inviter.value = {
           uid: inviterUid,
           displayName: data.displayName,
-          photoURL: data.photoURL ?? '',
+          photoURL: data.photoURL || 'https://www.top-x.co/assets/profile.png',
           score: inviterScore,
         };
         console.log('Inviter loaded:', inviter.value);
@@ -104,16 +102,14 @@ export const useTriviaStore = defineStore('trivia', () => {
   watch(
     () => userStore.profile,
     (profile) => {
-      if (profile?.games?.trivia?.smartest_on_x) {
-        bestScore.value = profile.games.trivia.smartest_on_x.score || 0;
-        bestStreak.value = profile.games.trivia.smartest_on_x.streak || 0;
-        difficultyCounts.value = profile.games.trivia.smartest_on_x.custom?.difficultyCounts || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        console.log('Profile loaded, bestScore:', bestScore.value, 'bestStreak:', bestStreak.value, 'difficultyCounts:', difficultyCounts.value);
+      if (profile?.games?.smartest_on_x?.default) {
+        bestScore.value = profile.games.smartest_on_x.default.score || 0;
+        bestStreak.value = profile.games.smartest_on_x.default.streak || 0;
+        console.log('Profile loaded, bestScore:', bestScore.value, 'bestStreak:', bestStreak.value);
       } else {
         bestScore.value = 0;
         bestStreak.value = 0;
-        difficultyCounts.value = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        console.log('No trivia stats in profile, resetting bestScore, bestStreak, and difficultyCounts to defaults');
+        console.log('No trivia stats in profile, resetting bestScore and bestStreak to 0');
       }
     },
     { immediate: true }
@@ -149,12 +145,12 @@ export const useTriviaStore = defineStore('trivia', () => {
 
   async function loadNextQuestion() {
     if (questions.value.length === 0) {
-      await loadQuestions();
+      await loadQuestions('smartest_on_x');
     }
     if (questions.value.length === 0) {
       usedQuestionIds.value = [];
       difficultyCounts.value = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      await loadQuestions();
+      await loadQuestions('smartest_on_x');
     }
     const index = Math.floor(Math.random() * questions.value.length);
     currentQuestion.value = questions.value[index];
@@ -165,14 +161,15 @@ export const useTriviaStore = defineStore('trivia', () => {
     startTimer();
   }
 
-  async function loadQuestions() {
-    console.log('Loading questions');
+  async function loadQuestions(gameId: string = 'smartest_on_x') {
+    console.log('Loading questions for game:', gameId);
     isLoading.value = true;
     const targetCount = 10;
     const desired: DifficultyCounts = { 1: 3, 2: 3, 3: 2, 4: 2, 5: 0 };
     const newQuestions: Question[] = [];
-    const questionCollection = collection(db, 'games', 'smartest_on_x', 'questions');
-    const snapshot = await getDocs(questionCollection);
+
+    const questionsRef = collection(db, 'games', gameId, 'questions');
+    const snapshot = await getDocs(questionsRef);
     const allQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
 
     for (const question of allQuestions) {
@@ -199,9 +196,6 @@ export const useTriviaStore = defineStore('trivia', () => {
     if (isCorrect.value) {
       score.value += 1;
       streak.value += 1;
-      if (currentQuestion.value) {
-        difficultyCounts.value[currentQuestion.value.difficulty]++;
-      }
     } else {
       lives.value -= 1;
       streak.value = 0;
@@ -215,9 +209,9 @@ export const useTriviaStore = defineStore('trivia', () => {
         pendingStreak.value = sessionBestStreak.value;
         console.log('Game over, pendingScore:', pendingScore.value, 'pendingStreak:', pendingStreak.value);
         if (userStore.user) {
-          console.log('User logged in, saving score and streak immediately');
+          console.log('User logged in, saving score');
           await updateBestStats();
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1));
           await fetchLeaderboard();
         }
       }
@@ -253,9 +247,9 @@ export const useTriviaStore = defineStore('trivia', () => {
         pendingStreak.value = sessionBestStreak.value;
         console.log('Timeout game over, pendingScore:', pendingScore.value, 'pendingStreak:', pendingStreak.value);
         if (userStore.user) {
-          console.log('User logged in, saving score and streak immediately');
+          console.log('User logged in, saving score');
           await updateBestStats();
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 200));
           await fetchLeaderboard();
         }
       }
@@ -269,33 +263,60 @@ export const useTriviaStore = defineStore('trivia', () => {
       const streakToSave = pendingStreak.value !== null ? pendingStreak.value : sessionBestStreak.value;
       console.log('Updating best stats, scoreToSave:', scoreToSave, 'streakToSave:', streakToSave, 'user:', user.uid);
 
-      const currentGameData = userStore.profile?.games?.trivia?.smartest_on_x || { score: 0, streak: 0 };
-      const shouldUpdateScore = scoreToSave > currentGameData.score;
+      const shouldUpdateScore = scoreToSave > bestScore.value || !userStore.profile?.games?.smartest_on_x?.default?.score;
 
-      if (shouldUpdateScore || streakToSave > currentGameData.streak) {
-        bestScore.value = shouldUpdateScore ? scoreToSave : currentGameData.score;
-        bestStreak.value = streakToSave > currentGameData.streak ? streakToSave : currentGameData.streak;
+      if (shouldUpdateScore || streakToSave > bestStreak.value) {
+        bestScore.value = shouldUpdateScore ? scoreToSave : bestScore.value;
+        bestStreak.value = streakToSave > bestStreak.value ? streakToSave : bestStreak.value;
         try {
-          await userStore.updateGameProgress('trivia', 'smartest_on_x', bestScore.value, bestStreak.value, {
-            difficultyCounts: difficultyCounts.value,
+          const userDocRef = doc(db, 'users', user.uid);
+          await updateDoc(userDocRef, {
+            'games.smartest_on_x.default': {
+              score: bestScore.value,
+              streak: bestStreak.value,
+              lastPlayed: new Date().toISOString(),
+            },
+          }).catch(async err => {
+            if (err.code === 'not-found') {
+              console.log('User doc not found, creating new one');
+              await setDoc(userDocRef, {
+                uid: user.uid,
+                displayName: user.displayName || 'Anonymous',
+                username: '@Anonymous',
+                email: user.email || '',
+                photoURL: user.photoURL || 'https://www.top-x.co/assets/images/profile.png',
+                followersCount: 0,
+                followingCount: 0,
+                rivals: [],
+                addedBy: [],
+                games: {
+                  smartest_on_x: {
+                    default: {
+                      score: bestScore.value,
+                      streak: bestStreak.value,
+                      lastPlayed: new Date().toISOString(),
+                    },
+                  },
+                },
+                badges: [],
+              });
+            } else {
+              throw err;
+            }
           });
-          console.log('Best stats saved to Firestore:', {
-            score: bestScore.value,
-            streak: bestStreak.value,
-            difficultyCounts: difficultyCounts.value,
-          });
+          console.log('Scores saved to database:', { score: bestScore.value, streak: bestStreak.value });
           pendingScore.value = null;
           pendingStreak.value = null;
         } catch (err) {
-          console.error('Error updating best stats:', err);
+          console.error('Error updating:', err);
         }
       } else {
-        console.log('No update needed, scoreToSave:', scoreToSave, 'bestScore:', bestScore.value);
+        console.log('No updates needed, scoreToSave:', scoreToSave, 'bestScore:', bestScore.value);
         pendingScore.value = null;
         pendingStreak.value = null;
       }
     } else {
-      console.log('No user logged in, cannot update best stats');
+      console.log('No user logged in, cannot update stats');
     }
   }
 
@@ -307,7 +328,7 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function resetGame() {
-    console.log('Resetting game, clearing pendingScore and pendingStreak');
+    console.log('Resetting game, clearing pendingScore and pending');
     stopTimer();
     currentScreen.value = 'start';
     streak.value = 0;
@@ -340,7 +361,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     if (userStore.user && pendingScore.value !== null) {
       console.log('User logged in:', userStore.user.uid);
       await updateBestStats();
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200));
       await fetchLeaderboard();
     } else {
       console.log('No user or no pending stats to save');
