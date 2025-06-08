@@ -50,7 +50,7 @@
         :best-streak="bestStreak"
         :percentile-rank="percentileRank"
         :users-topped="usersTopped"
-        :user-image="user"
+        :user-image="userImage"
         :inviter="inviter"
         :leaderboard="leaderboard"
         @reset-game="resetGame"

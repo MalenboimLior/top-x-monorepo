@@ -1,24 +1,29 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "strict": true,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
     "esModuleInterop": true,
+    "lib": ["ESNext", "DOM"],
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@top-x/shared": ["../../packages/shared/index.ts"]
+      "@/*": ["./src/*"],
+      "@top-x/shared": ["../../packages/shared/src/index.ts"],
+      "@top-x/shared/*": ["../../packages/shared/src/*"]
     },
-    "allowSyntheticDefaultImports": true,
-    "types": ["vite/client"],
-    "lib": ["esnext", "dom"],
-    "noEmit": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true
+    "types": ["vite/client", "node"]
   },
-  "include": ["src/**/*", "src/**/*.json", "src/**/*.vue", "src/vue-shim.d.ts", "../../packages/shared/types/tierData.ts", "../../packages/shared/types/user.ts", "../../packages/shared/types/vue-smooth-dnd.d.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "vite.config.ts", "migrateUsers.js", "vite-env.d.ts"],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

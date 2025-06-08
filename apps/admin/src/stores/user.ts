@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { auth, db } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { User } from '@top-x/shared';
+import { User } from '@top-x/shared/types/user';
 
 export const useUserStore = defineStore('user', () => {
   const user = ref<User | null>(null);

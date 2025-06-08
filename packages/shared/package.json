@@ -2,7 +2,7 @@
   "name": "@top-x/shared",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "src"
@@ -22,12 +22,24 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     },
     "./components/Card.vue": "./src/components/Card.vue",
     "./components/CustomButton.vue": "./src/components/CustomButton.vue",
-    "./types/user": "./src/types/user.ts",
-    "./types/game": "./src/types/game.ts"
+    "./types/user": {
+      "types": "./src/types/user.ts",
+      "default": "./src/types/user.ts"
+    },
+    "./types/game": {
+      "types": "./src/types/game.ts",
+      "default": "./src/types/game.ts"
+    }
   }
 }

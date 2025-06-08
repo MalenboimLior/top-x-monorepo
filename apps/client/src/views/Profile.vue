@@ -58,7 +58,7 @@ import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import type { UserProfile } from '@top-x/shared';
+import type { User } from '@top-x/shared/types/user';
 
 const userStore = useUserStore();
 
@@ -66,8 +66,8 @@ const displayName = computed(() => userStore.profile?.displayName || 'Anonymous'
 const photoURL = computed(() => userStore.profile?.photoURL || 'https://www.top-x.co/asstes/profile.png');
 const triviaStats = computed(() => userStore.profile?.games?.trivia || { score: 0, streak: 0 });
 const isLoggedIn = computed(() => !!userStore.user);
-const rivals = ref<UserProfile[]>([]);
-const addedBy = ref<UserProfile[]>([]);
+const rivals = ref<User[]>([]);
+const addedBy = ref<User[]>([]);
 
 async function fetchRivals() {
   if (!userStore.profile?.rivals) return;
@@ -76,7 +76,9 @@ async function fetchRivals() {
     const userDoc = doc(db, 'users', uid);
     const docSnap = await getDoc(userDoc);
     if (docSnap.exists()) {
-      rivals.value.push(docSnap.data() as UserProfile);
+      const userData = docSnap.data() as User;
+      // Push userData and handle score separately if needed
+      rivals.value.push(userData);
     }
   }
 }
@@ -88,11 +90,13 @@ async function fetchAddedBy() {
     const userDoc = doc(db, 'users', uid);
     const docSnap = await getDoc(userDoc);
     if (docSnap.exists()) {
-      addedBy.value.push(docSnap.data() as UserProfile);
+      const userData = docSnap.data() as User;
+      // Ensure score property exists for LeaderboardEntry
+    if (docSnap.exists()) {
+      const userData = docSnap.data() as User;
+      // Push userData and handle score separately if needed
+      addedBy.value.push(userData);
     }
-  }
-}
-
 async function addRival(uid: string) {
   await userStore.addRival(uid);
   await fetchRivals();

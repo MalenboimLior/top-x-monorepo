@@ -15,6 +15,7 @@
     "@fortawesome/vue-fontawesome": "^3.0.8",
     "@top-x/shared": "^1.0.0",
     "bulma": "^1.0.3",
+    "dotenv": "^16.5.0",
     "firebase": "^11.6.0",
     "pinia": "^3.0.2",
     "pinia-plugin-persistedstate": "^4.2.0",
