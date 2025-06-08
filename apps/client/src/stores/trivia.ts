@@ -4,7 +4,7 @@ import { useUserStore } from './user';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { getTopLeaderboard } from '@/services/trivia';
-import { UserProfile } from '@top-x/shared';
+import { User } from '@top-x/shared';
 
 interface Question {
   id: string;
@@ -82,7 +82,7 @@ export const useTriviaStore = defineStore('trivia', () => {
       const userDoc = doc(db, 'users', inviterUid);
       const docSnap = await getDoc(userDoc);
       if (docSnap.exists()) {
-        const data = docSnap.data() as UserProfile;
+        const data = docSnap.data() as User;
         inviter.value = {
           uid: inviterUid,
           displayName: data.displayName,

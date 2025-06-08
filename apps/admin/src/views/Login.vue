@@ -6,7 +6,7 @@
           <div class="box">
             <h1 class="title">Admin Login</h1>
             <button class="button is-dark" @click="login">
-              <font-awesome-icon icon="x-twitter" /> Login with X
+                <font-awesome-icon :icon="['fab', 'x-twitter']"  />Login with X
             </button>
           </div>
         </div>

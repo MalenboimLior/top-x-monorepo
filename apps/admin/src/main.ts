@@ -5,11 +5,11 @@ import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
-import {  faSignOutAlt, faTachometerAlt, faGamepad } from '@fortawesome/free-solid-svg-icons';
+import { faSignOutAlt, faTachometerAlt, faGamepad } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import 'bulma/css/bulma.min.css';
 
 library.add(faXTwitter, faSignOutAlt, faTachometerAlt, faGamepad);
+import 'bulma/css/bulma.min.css';
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);

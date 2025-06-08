@@ -29,8 +29,11 @@ router.beforeEach(async (to, from, next) => {
   if (requiresAdmin && !user) {
     next('/login');
   } else if (requiresAdmin && user) {
-    const userDoc = await import('@top-x/shared').then((m) => m.db).collection('users').doc(user.uid).get();
-    const isAdmin = userDoc.exists && userDoc.data()?.isAdmin === true;
+    const { db } = await import('@top-x/shared');
+    const { collection, doc, getDoc } = await import('firebase/firestore');
+    const userRef = doc(collection(db, 'users'), user.uid);
+    const userDoc = await getDoc(userRef);
+    const isAdmin = userDoc.exists() && userDoc.data()?.isAdmin === true;
     isAdmin ? next() : next('/login');
   } else {
     next();
