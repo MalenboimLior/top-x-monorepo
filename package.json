@@ -4,19 +4,22 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "functions"
   ],
   "scripts": {
-    "client:dev": "npm run dev --workspace=@top-x/client",
-    "client:build": "npm run build --workspace=@top-x/client",
-    "admin:dev": "npm run dev --workspace=@top-x/admin",
-    "admin:build": "npm run build --workspace=@top-x/admin"
+    "build:shared": "pnpm --filter ./packages/shared build",
+    "build:admin": "pnpm --filter ./apps/admin build",
+    "build:client": "pnpm --filter ./apps/client build",
+    "build:functions": "pnpm --filter ./functions build",
+    "build": "pnpm build:shared && pnpm build:admin && pnpm build:client && pnpm build:functions",
+    "deploy": "pnpm build && firebase deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@top-x/shared": "^1.0.0",
-    "firebase": "^11.9.0"
+     "@top-x/shared": "workspace:*" ,
+    "firebase": "^11.6.0"
   }
 }

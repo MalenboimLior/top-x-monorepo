@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "prod": "top-x-co"
+  },
+  "targets": {
+    "top-x-co": {
+      "hosting": {
+        "top-x-co": [
+          "top-x-co"
+        ],
+        "admin-top-x-co": [
+          "admin-top-x-co"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

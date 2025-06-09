@@ -38,6 +38,8 @@ export const useUserStore = defineStore('user', () => {
 
   const loginWithX = async () => {
     const provider = new TwitterAuthProvider();
+    console.log("Using provider ID:", provider.providerId); // should be 'twitter.com'
+
     try {
       const result = await signInWithPopup(auth, provider);
       console.log('Login successful:', result.user.uid);

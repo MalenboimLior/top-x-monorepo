@@ -1,5 +1,6 @@
 export * from './user';
 export * from './tierData';
+export * from './pyramid';
 
 export interface TriviaQuestion {
   id: string;

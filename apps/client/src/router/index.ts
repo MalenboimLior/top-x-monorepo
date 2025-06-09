@@ -4,11 +4,14 @@ import Profile from '@/views/Profile.vue';
 import About from '@/views/About.vue';
 import FAQ from '@/views/FAQ.vue';
 import Trivia from '@/views/games/Trivia.vue';
+import PyramidTier from '@/views/games/PyramidTier.vue';
+import PyramidResultLoggedIn from '@/components/PyramidResultLoggedIn.vue';
+import PyramidResultLoggedOut from '@/components/PyramidResultLoggedOut.vue';
 // import TierTable from '@/views/games/TierTable.vue';
 
 import RivalSearch from '@/views/RivalSearch.vue';
 
-import { useUserStore } from '@/stores/user';
+import { useUserStore } from '../stores/user';
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -22,6 +25,21 @@ const routes = [
   { path: '/faq', name: 'FAQ', component: FAQ },
   { path: '/rivals', name: 'RivalSearch', component: RivalSearch },
   { path: '/games/trivia', name: 'Trivia', component: Trivia },
+  {
+    path: '/games/PyramidTier',
+    name: 'PyramidTier',
+    component: PyramidTier,
+  },
+  {
+    path: '/games/PyramidTier/result/logged-in',
+    name: 'PyramidResultLoggedIn',
+    component: PyramidResultLoggedIn,
+  },
+  {
+    path: '/games/PyramidTier/result/logged-out',
+    name: 'PyramidResultLoggedOut',
+    component: PyramidResultLoggedOut,
+  },
   // {path: '/games/tier-table', name: 'TierTable', component: TierTable},
 {
   path: '/tier-table',

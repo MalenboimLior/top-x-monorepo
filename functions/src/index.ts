@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v2';
-import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
+import { FirestoreEvent, Change } from 'firebase-functions/v2/firestore';
+import { DocumentSnapshot } from 'firebase-admin/firestore';
 import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
@@ -81,37 +82,84 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
   }
 });
 
-export const syncTriviaScore = functions.firestore.onDocumentWritten('users/{uid}', async (event) => {
+export const syncScores = functions.firestore.onDocumentWritten('users/{uid}', async (event: FirestoreEvent<Change<DocumentSnapshot> | undefined, { uid: string }>) => {
   const uid = event.params.uid;
-  const data = event.data?.after.data();
-  if (!data || !data.games?.smartest_on_x) return;
+  const change = event.data;
 
-  await db.collection('leaderboards_smartest_on_x').doc(uid).set({
-    uid,
-    displayName: data.displayName || 'Anonymous',
-    username: data.username || 'Anonymous',
-    photoURL: data.photoURL || 'https://www.top-x.co/asstes/profile.png',
-    score: data.games.smartest_on_x.score || 0,
-    streak: data.games.smartest_on_x.streak || 0,
-    updatedAt: Date.now(),
-  });
-});
+  if (!change || !change.after.data()) {
+    console.log(`User ${uid} deleted or no data, no action taken`);
+    return;
+  }
 
-export const updateTriviaStats = onSchedule('every 60 minutes', async () => {
-  const scoresSnapshot = await db.collection('leaderboards_smartest_on_x').get();
-  const totalPlayers = scoresSnapshot.size;
-  const scoreDistribution: { [score: number]: number } = {};
+  const beforeData = change.before.data();
+  const afterData = change.after.data();
 
-  scoresSnapshot.forEach(doc => {
-    const score = doc.data().score;
-    scoreDistribution[score] = (scoreDistribution[score] || 0) + 1;
-  });
+  if (!afterData) {
+    console.log(`No data after change for user ${uid}, no action taken`);
+    return;
+  }
 
-  await db.collection('stats').doc('smartest_on_x').set({
-    totalPlayers,
-    scoreDistribution,
-    updatedAt: Date.now(),
-  });
+  const gamesAfter = afterData.games || {};
+  const gamesBefore = beforeData?.games || {};
+
+  for (const gameId in gamesAfter) {
+    const gameDataAfter = gamesAfter[gameId];
+    const gameDataBefore = gamesBefore[gameId];
+
+    if (JSON.stringify(gameDataAfter) !== JSON.stringify(gameDataBefore)) {
+      console.log(`Updating leaderboard and stats for game ${gameId} for user ${uid}`);
+
+      await db.runTransaction(async (tx) => {
+        // Update leaderboard
+        const leaderboardRef = db.collection(`leaderboards_${gameId}`).doc(uid);
+        const statsRef = db.collection('stats').doc(gameId);
+
+        const statsDoc = await tx.get(statsRef);
+        const currentStats = statsDoc.exists
+          ? statsDoc.data()!
+          : { totalPlayers: 0, scoreDistribution: {} };
+
+        const distribution = { ...currentStats.scoreDistribution };
+        let totalPlayers = currentStats.totalPlayers;
+
+        const beforeScore = gameDataBefore?.default?.score || null;
+        const afterScore = gameDataAfter?.default?.score || null;
+
+        if (!gameDataBefore && afterScore !== null) {
+          distribution[afterScore] = (distribution[afterScore] || 0) + 1;
+          totalPlayers++;
+        } else if (!gameDataAfter && beforeScore !== null) {
+          distribution[beforeScore] = Math.max((distribution[beforeScore] || 1) - 1, 0);
+          totalPlayers = Math.max(totalPlayers - 1, 0);
+        } else if (beforeScore !== afterScore) {
+          if (beforeScore !== null) {
+            distribution[beforeScore] = Math.max((distribution[beforeScore] || 1) - 1, 0);
+          }
+          if (afterScore !== null) {
+            distribution[afterScore] = (distribution[afterScore] || 0) + 1;
+          }
+        }
+
+        // Set leaderboard data
+        tx.set(leaderboardRef, {
+          uid,
+          displayName: afterData.displayName || 'Anonymous',
+          username: afterData.username || 'Anonymous',
+          photoURL: afterData.photoURL || 'https://www.top-x.co/assets/profile.png',
+          score: afterScore || 0,
+          streak: gameDataAfter?.default?.streak || 0,
+          updatedAt: Date.now(),
+        });
+
+        // Update stats
+        tx.set(statsRef, {
+          scoreDistribution: distribution,
+          totalPlayers,
+          updatedAt: Date.now(),
+        });
+      });
+    }
+  }
 });
 
 export const getTopLeaderboard = functions.https.onRequest((req, res) => {
