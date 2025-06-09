@@ -1,5 +1,5 @@
 export interface ImageItem {
-  id: number;
+  id: string;
   label: string;
   src: string;
 }
