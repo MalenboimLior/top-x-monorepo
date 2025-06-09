@@ -20,3 +20,10 @@ Admin App (apps/admin): Features Login.vue (admin-only X login with debug logs),
 Functions: Firebase Cloud Functions (functions/src/index.ts) handle backend logic.
 Tech Stack: Vue 3 Composition API, TypeScript, Vite, Firebase (auth, Firestore, functions), Bulma, FontAwesome, Pinia, Axios, html2canvas, vue-draggable-plus.
 Style: Mobile-first, X.com-inspired dark theme.
+
+https://top-x.co/__/auth/handler?apiKey=AIzaSyAMCJDhKNbPsFPUv04rZSM1LvsUxHugASs&appName=%5BDEFAULT%5D&authType=signInViaPopup&redirectUrl=http%3A%2F%2Flocalhost%3A5173%2F&v=11.9.0&eventId=8027640721&providerId=twitter.com
+https://top-x.co/__/auth/handler?apiKey=AIzaSyAMCJDhKNbPsFPUv04rZSM1LvsUxHugASs&appName=%5BDEFAULT%5D&authType=signInViaPopup&redirectUrl=https%3A%2F%2Ftop-x.co%2F&v=10.14.1&eventId=1620789127&providerId=twitter.com
+https://top-x.co/__/auth/handler?apiKey=AIzaSyAMCJDhKNbPsFPUv04rZSM1LvsUxHugASs&appName=%5BDEFAULT%5D&authType=signInViaPopup&redirectUrl=https%3A%2F%2Ftop-x.co%2F&v=10.14.1&eventId=2697766382
+
+
+http://localhost:5173/games/PyramidTier?game=Pyramid_Cities

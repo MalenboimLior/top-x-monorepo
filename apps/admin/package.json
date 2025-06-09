@@ -13,7 +13,7 @@
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
-    "@top-x/shared": "^1.0.0",
+    "@top-x/shared": "workspace:*",
     "bulma": "^1.0.3",
     "dotenv": "^16.5.0",
     "firebase": "^11.6.0",

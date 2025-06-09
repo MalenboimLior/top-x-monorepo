@@ -68,7 +68,7 @@
         </div>
       </div>
       <div class="field">
-        <label class="label has-text">Name:</label>
+        <label class="label has-text-white">Name</label>
         <div class="control">
           <input v-model="newGame.name" class="input" type="text" placeholder="e.g., Smartest on X" />
         </div>
@@ -101,30 +101,70 @@
           <h3 class="title is-5 has-text-white">{{ game.name }}</h3>
           <p class="has-text-grey-light">{{ game.description }}</p>
           <p v-if="game.custom" class="has-text-grey-light">Custom: {{ JSON.stringify(game.custom) }}</p>
+          <CustomButton
+            v-if="game.id === 'Pyramid_Cities'"
+            type="is-info"
+            label="Manage Items"
+            @click="selectGameForItems(game.id)"
+            class="mt-2"
+          />
         </div>
       </div>
       <p v-else class="has-text-grey-light">No games found for this game type.</p>
+    </Card>
+
+    <!-- Item Management for Pyramid Cities -->
+    <Card v-if="selectedGameId === 'Pyramid_Cities'" class="mt-3">
+      <h2 class="subtitle has-text-white">Manage Items for Pyramid Cities</h2>
+      <AdminAddItems />
+      <div v-if="items.length" class="mt-3">
+        <h3 class="subtitle has-text-white">Current Items</h3>
+        <div v-for="item in items" :key="item.id" class="box">
+          <div class="media">
+            <div class="media-left">
+              <figure class="image is-48x48">
+                <img :src="item.src" :alt="item.label" />
+              </figure>
+            </div>
+            <div class="media-content">
+              <p class="title is-6 has-text-white">{{ item.label }}</p>
+              <p class="subtitle is-7 has-text-grey-light">ID: {{ item.id }}</p>
+            </div>
+          </div>
+          <CustomButton
+            type="is-danger"
+            label="Remove"
+            @click="removeItem(item.id)"
+            class="mt-2"
+          />
+        </div>
+      </div>
+      <p v-else class="has-text-grey-light">No items found for this game.</p>
     </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { collection, doc, setDoc, query, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, query, onSnapshot, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import AdminAddItems from '@/components/AdminAddItems.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
+import type { ImageItem } from '@top-x/shared/types/pyramid';
 
 const userStore = useUserStore();
 const gameTypes = ref<GameType[]>([]);
 const games = ref<Game[]>([]);
+const items = ref<ImageItem[]>([]);
 const newGameType = ref<GameType>({ id: '', name: '', description: '' });
 const newGameTypeCustom = ref<string>('');
 const newGame = ref<Game>({ id: '', name: '', description: '', gameTypeId: '' });
 const newGameCustom = ref<string>('');
 const selectedGameTypeId = ref<string | null>(null);
+const selectedGameId = ref<string | null>(null);
 const isCreating = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
@@ -167,6 +207,26 @@ const fetchGames = async (gameTypeId: string) => {
   } catch (err: any) {
     error.value = `Failed to fetch games: ${err.message}`;
     console.error('fetchGames error:', err);
+  }
+};
+
+const fetchGameItems = async (gameId: string) => {
+  try {
+    console.log(`Fetching items for game: ${gameId}`);
+    const gameDocRef = doc(db, 'games', gameId);
+    onSnapshot(gameDocRef, (doc) => {
+      if (doc.exists()) {
+        const gameData = doc.data();
+        items.value = gameData.custom?.items || [];
+        console.log(`Items fetched for ${gameId}:`, items.value);
+      } else {
+        items.value = [];
+        console.log(`No items found for ${gameId}`);
+      }
+    });
+  } catch (err: any) {
+    error.value = `Failed to fetch items: ${err.message}`;
+    console.error('fetchGameItems error:', err);
   }
 };
 
@@ -264,7 +324,7 @@ const createGame = async () => {
       name: newGame.value.name,
       description: newGame.value.description,
       gameTypeId: selectedGameTypeId.value,
-      custom: customData || null,
+      custom: customData || { items: [] }, // Initialize with empty items array
     });
     success.value = `Game '${newGame.value.name}' created successfully`;
     console.log('Game created:', newGame.value);
@@ -283,6 +343,39 @@ const selectGameType = (gameTypeId: string) => {
   selectedGameTypeId.value = gameTypeId;
   newGame.value.gameTypeId = gameTypeId;
   fetchGames(gameTypeId);
+  selectedGameId.value = null; // Reset selected game when changing game type
+};
+
+const selectGameForItems = (gameId: string) => {
+  console.log('selectGameForItems called:', gameId);
+  selectedGameId.value = gameId;
+  fetchGameItems(gameId);
+};
+
+const removeItem = async (itemId: string | number) => {
+  console.log('removeItem called:', itemId);
+  if (!isAdmin.value) {
+    error.value = 'Unauthorized: Admin access required';
+    console.log('removeItem failed: User is not admin');
+    return;
+  }
+  try {
+    const gameDocRef = doc(db, 'games', 'Pyramid_Cities');
+    const gameDoc = await getDoc(gameDocRef);
+    if (gameDoc.exists()) {
+      const items = gameDoc.data().custom?.items || [];
+      const updatedItems = items.filter((item: ImageItem) => item.id !== itemId);
+      await updateDoc(gameDocRef, { 'custom.items': updatedItems });
+      console.log(`Item ${itemId} removed from Pyramid_Cities`);
+      success.value = `Item ${itemId} removed successfully`;
+    } else {
+      error.value = 'Game not found';
+      console.log('removeItem failed: Game not found');
+    }
+  } catch (err: any) {
+    error.value = `Failed to remove item: ${err.message}`;
+    console.error('removeItem error:', err);
+  }
 };
 
 fetchGameTypes();
@@ -301,5 +394,10 @@ fetchGameTypes();
   background-color: #2a2a2a;
   border-radius: 6px;
   padding: 1rem;
+}
+
+.image.is-48x48 {
+  width: 48px;
+  height: 48px;
 }
 </style>
