@@ -1,22 +1,50 @@
 .home-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+  padding: 1rem;
+}
+
+.columns {
+  margin: 0 auto;
+}
+
+/* Ensure cards are wider on desktop */
+@media screen and (min-width: 1024px) {
+  .column.is-half-desktop {
+    max-width: 600px; /* Adjust as needed for desired card width */
+    flex: none; /* Prevent stretching */
+  }
+  .columns {
+    justify-content: center; /* Center cards horizontally */
+    gap: 1rem; /* Add spacing between cards */
+  }
+}
+
+/* Maintain mobile-first styling */
+@media screen and (max-width: 767px) {
+  .column.is-full-mobile {
+    width: 100%;
+  }
+}
+
+/* Tablet styling */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .column.is-half-tablet {
+    width: 50%;
+  }
+}
+
+/* Card styling */
+.card {
+  background-color: #2a2a2a; /* Dark theme background */
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .card-image img {
-  border-radius: 8px 8px 0 0;
+  object-fit: cover;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
 }
 
 .card-content {
-  padding: 1.5rem;
-}
-
-@media (max-width: 768px) {
-  .home-container {
-    padding: 1rem;
-  }
+  padding: 1rem;
 }
