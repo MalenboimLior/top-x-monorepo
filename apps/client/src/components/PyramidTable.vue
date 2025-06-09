@@ -41,17 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-
-interface ImageItem {
-  id: number;
-  label: string;
-  src: string;
-}
-
-interface PyramidSlot {
-  image: ImageItem | null;
-}
+import { ref, watch } from 'vue';
+import { ImageItem, PyramidSlot } from '@top-x/shared/types/pyramid';
 
 const props = defineProps<{
   items: ImageItem[];
@@ -61,7 +52,7 @@ const emit = defineEmits<{
   (e: 'submit', pyramid: PyramidSlot[][]): void;
 }>();
 
-const imagePool = ref<ImageItem[]>(props.items);
+const imagePool = ref<ImageItem[]>([]);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
   [{ image: null }, { image: null }],
@@ -71,24 +62,42 @@ const pyramid = ref<PyramidSlot[][]>([
 
 const draggedItem = ref<ImageItem | null>(null);
 
+// Initialize imagePool with props.items
+watch(
+  () => props.items,
+  (newItems) => {
+    console.log('PyramidTable: Items prop updated:', newItems);
+    imagePool.value = [...newItems];
+    console.log('PyramidTable: imagePool initialized:', imagePool.value);
+  },
+  { immediate: true }
+);
+
 function onDragStart(image: ImageItem) {
   draggedItem.value = image;
+  console.log('PyramidTable: Drag started for item:', image);
 }
 
 function onTapSelect(image: ImageItem) {
   draggedItem.value = image;
+  console.log('PyramidTable: Item selected via tap:', image);
 }
 
 function onSlotClick(row: number, col: number) {
+  console.log('PyramidTable: Slot clicked:', { row, col });
   const targetSlot = pyramid.value[row][col];
   const targetImage = targetSlot.image;
 
   if (!draggedItem.value && targetImage) {
     draggedItem.value = targetImage;
+    console.log('PyramidTable: Selected image from slot:', targetImage);
     return;
   }
 
-  if (!draggedItem.value) return;
+  if (!draggedItem.value) {
+    console.log('PyramidTable: No dragged item, ignoring click');
+    return;
+  }
 
   const fromSlot = findSlotContaining(draggedItem.value.id);
   const fromInPool = imagePool.value.some(i => i.id === draggedItem.value!.id);
@@ -97,37 +106,52 @@ function onSlotClick(row: number, col: number) {
     if (fromInPool) {
       imagePool.value = imagePool.value.filter(i => i.id !== draggedItem.value!.id);
       imagePool.value.push(targetImage);
+      console.log('PyramidTable: Swapped pool item with slot item:', { pool: imagePool.value });
     } else if (fromSlot) {
       fromSlot.image = targetImage;
+      console.log('PyramidTable: Swapped slot items:', { fromSlot, targetImage });
     }
   } else if (!fromInPool && fromSlot) {
     fromSlot.image = null;
+    console.log('PyramidTable: Removed item from slot:', fromSlot);
   } else if (fromInPool) {
     imagePool.value = imagePool.value.filter(i => i.id !== draggedItem.value!.id);
+    console.log('PyramidTable: Removed item from pool:', imagePool.value);
   }
 
   targetSlot.image = draggedItem.value;
   draggedItem.value = null;
+  console.log('PyramidTable: Placed item in slot:', { row, col, image: targetSlot.image });
 }
 
 function onDropToSlot(row: number, col: number) {
+  console.log('PyramidTable: Drop to slot:', { row, col });
   onSlotClick(row, col);
 }
 
 function onDropToPool() {
-  if (!draggedItem.value) return;
+  if (!draggedItem.value) {
+    console.log('PyramidTable: No dragged item for pool drop');
+    return;
+  }
   const slot = findSlotContaining(draggedItem.value.id);
-  if (slot) slot.image = null;
+  if (slot) {
+    slot.image = null;
+    console.log('PyramidTable: Removed item from slot for pool drop:', slot);
+  }
   if (!imagePool.value.some(i => i.id === draggedItem.value!.id)) {
     imagePool.value.push(draggedItem.value);
+    console.log('PyramidTable: Added item back to pool:', imagePool.value);
   }
   draggedItem.value = null;
 }
 
-function findSlotContaining(imageId: number): PyramidSlot | null {
+function findSlotContaining(imageId: string): PyramidSlot | null {
   for (const row of pyramid.value) {
     for (const slot of row) {
-      if (slot.image?.id === imageId) return slot;
+      if (slot.image?.id === imageId) {
+        return slot;
+      }
     }
   }
   return null;
@@ -139,6 +163,7 @@ function toRoman(num: number): string {
 }
 
 function submitPyramid() {
+  console.log('PyramidTable: Submitting pyramid:', pyramid.value);
   emit('submit', pyramid.value);
 }
 </script>
