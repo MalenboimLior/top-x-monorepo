@@ -83,4 +83,4 @@ onMounted(() => {
 
 <style scoped>
 @import '../styles/Home.css';
-</style>  
+</style>
