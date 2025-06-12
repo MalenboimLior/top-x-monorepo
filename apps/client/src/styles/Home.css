@@ -9,8 +9,9 @@
 /* Ensure cards are wider on desktop */
 @media screen and (min-width: 1024px) {
   .column.is-half-desktop {
-    max-width: 600px; /* Adjust as needed for desired card width */
-    flex: none; /* Prevent stretching */
+    max-width: 600px; /* Adjust this value to make cards wider */
+    flex: none;
+    width: 50%;
   }
   .columns {
     justify-content: center; /* Center cards horizontally */
