@@ -45,30 +45,44 @@ import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useUserStore } from '@/stores/user';
+import { ImageItem } from '@top-x/shared/types/pyramid';
 
-const props = defineProps<{ items: Array<{ id: string; image?: { src: string } }> }>();
+const props = defineProps<{
+  items: ImageItem[];
+}>();
+const items = props.items;
 
 const route = useRoute();
 const userStore = useUserStore();
 const gameId = route.query.game as string;
 const score = ref(Number(route.query.score));
-type PyramidSlot = { image: { src: string } | null };
-const pyramid = ref<PyramidSlot[][]>([]);
-const itemRanks = ref({});
+const pyramid = ref<Array<Array<{ image: ImageItem | null }>>>([]);
+const itemRanks = ref<Record<string, Record<number, number>>>({});
 
 onMounted(async () => {
+  console.log('PyramidResultLoggedIn: Fetching user game data for gameId:', gameId);
   const userGameData = userStore.profile?.games?.PyramidTier?.[gameId];
   if (userGameData?.custom?.pyramid) {
-    pyramid.value = userGameData.custom.pyramid.map((row: any[]) =>
-      row.map((itemId: string | null) => ({
-        image: itemId ? props.items.find(i => i.id === itemId) : null,
+    pyramid.value = userGameData.custom.pyramid.map((tier: { tier: number; slots: Array<string | null> }) =>
+      tier.slots.map((itemId: string | null) => ({
+        image: itemId ? items.find(i => i.id === itemId) : null,
       }))
     );
+    console.log('PyramidResultLoggedIn: Pyramid reconstructed:', pyramid.value);
+  } else {
+    console.warn('PyramidResultLoggedIn: No pyramid data found in user profile');
   }
 
-  const statsDoc = await getDoc(doc(db, 'games', gameId, 'stats', 'general'));
-  if (statsDoc.exists()) {
-    itemRanks.value = statsDoc.data().itemRanks || {};
+  try {
+    const statsDoc = await getDoc(doc(db, 'games', gameId, 'stats', 'general'));
+    if (statsDoc.exists()) {
+      itemRanks.value = statsDoc.data().itemRanks || {};
+      console.log('PyramidResultLoggedIn: Stats fetched:', itemRanks.value);
+    } else {
+      console.warn('PyramidResultLoggedIn: No stats found for gameId:', gameId);
+    }
+  } catch (err: any) {
+    console.error('PyramidResultLoggedIn: Error fetching stats:', err.message, err);
   }
 });
 
@@ -78,7 +92,7 @@ function toRoman(num: number): string {
 }
 
 function sharePyramid() {
-  // Implement share functionality, e.g., copy URL or social media share
+  console.log('PyramidResultLoggedIn: Share pyramid triggered');
   alert('Share functionality to be implemented');
 }
 </script>
