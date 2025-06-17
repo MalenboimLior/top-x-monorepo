@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, runTransaction, Firestore } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import PyramidTable from '@/components/PyramidTable.vue';
 import { useUserStore } from '@/stores/user';
@@ -60,8 +60,13 @@ const handleSubmit = async (pyramid: PyramidSlot[][]) => {
   const userId = userStore.user.uid;
   const gameTypeId = 'PyramidTier';
   const score = pyramid.flat().filter(slot => slot.image).length;
-  const custom = { pyramid: pyramid.map(row => row.map(slot => slot.image?.id || null)) };
-  console.log('PyramidTier: Saving user progress:', { userId, gameTypeId, gameId, score, custom });
+  const custom = {
+    pyramid: pyramid.map((row, index) => ({
+      tier: index + 1,
+      slots: row.map(slot => slot.image?.id || null)
+    }))
+  };
+  console.log('PyramidTier: Prepared custom data for saving:', custom);
 
   try {
     await userStore.updateGameProgress(gameTypeId, gameId, score, 0, custom);
@@ -74,19 +79,50 @@ const handleSubmit = async (pyramid: PyramidSlot[][]) => {
     console.log('PyramidTier: Redirecting to logged in result');
   } catch (err: any) {
     console.error('PyramidTier: Error in handleSubmit:', err.message, err);
+    throw err;
   }
 };
 
 async function updateGameStats(gameId: string, pyramid: PyramidSlot[][]) {
   console.log('PyramidTier: updateGameStats called for gameId:', gameId);
   const statsRef = doc(db, 'games', gameId, 'stats', 'general');
-  
-  // @ts-ignore
-  await db.runTransaction(async (transaction: any) => {
+
+  // Check if runTransaction is available
+  if (typeof runTransaction === 'function') {
+    console.log('PyramidTier: Using runTransaction for stats update');
     try {
-      const statsDoc = await transaction.get(statsRef);
+      await runTransaction(db as Firestore, async (transaction) => {
+        const statsDoc = await transaction.get(statsRef);
+        let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {} };
+        console.log('PyramidTier: Current stats:', stats);
+
+        stats.totalPlayers = (stats.totalPlayers || 0) + 1;
+
+        pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
+          row.forEach((slot: PyramidSlot) => {
+            if (slot.image) {
+              const itemId = slot.image.id;
+              if (!stats.itemRanks[itemId]) {
+                stats.itemRanks[itemId] = { 1: 0, 2: 0, 3: 0, 4: 0 };
+              }
+              stats.itemRanks[itemId][rowIndex + 1] += 1;
+            }
+          });
+        });
+        console.log('PyramidTier: Updated stats:', stats);
+
+        transaction.set(statsRef, stats);
+      });
+    } catch (err: any) {
+      console.error('PyramidTier: Error in runTransaction:', err.message, err);
+      throw err;
+    }
+  } else {
+    console.warn('PyramidTier: runTransaction not available, using setDoc fallback');
+    try {
+      const statsDoc = await getDoc(statsRef);
       let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {} };
-      console.log('PyramidTier: Current stats:', stats);
+      console.log('PyramidTier: Current stats (fallback):', stats);
 
       stats.totalPlayers = (stats.totalPlayers || 0) + 1;
 
@@ -101,14 +137,15 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][]) {
           }
         });
       });
-      console.log('PyramidTier: Updated stats:', stats);
+      console.log('PyramidTier: Updated stats (fallback):', stats);
 
-      transaction.set(statsRef, stats);
+      await setDoc(statsRef, stats, { merge: true });
+      console.log('PyramidTier: Stats updated successfully with setDoc');
     } catch (err: any) {
-      console.error('PyramidTier: Error in updateGameStats transaction:', err.message, err);
+      console.error('PyramidTier: Error in setDoc fallback:', err.message, err);
       throw err;
     }
-  });
+  }
 }
 </script>
 
