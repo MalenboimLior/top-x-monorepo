@@ -5,7 +5,9 @@ import { signInWithPopup, TwitterAuthProvider, signOut, onAuthStateChanged } fro
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from '@top-x/shared/types/user';
 
-export const useUserStore = defineStore('user', () => {
+export const useUserStore = defineStore(
+  'user',
+  () => {
   const user = ref<User | null>(null);
 
   onAuthStateChanged(auth, async (currentUser) => {
@@ -112,4 +114,6 @@ export const useUserStore = defineStore('user', () => {
   };
 
   return { user, login, logout };
-});
+  },
+  { persist: true }
+);
