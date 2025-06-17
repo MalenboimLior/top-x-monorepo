@@ -75,8 +75,12 @@ const handleSubmit = async (pyramid: PyramidSlot[][]) => {
     await updateGameStats(gameId, pyramid);
     console.log('PyramidTier: Game stats updated successfully');
     
-    router.push({ name: 'PyramidResultLoggedIn', query: { game: gameId, score: score.toString() } });
-    console.log('PyramidTier: Redirecting to logged in result');
+    router.push({
+      name: 'PyramidResultLoggedIn',
+      query: { game: gameId, score: score.toString() },
+      state: { items: items.value } // Pass items via route state
+    });
+    console.log('PyramidTier: Redirecting to logged in result with items:', items.value);
   } catch (err: any) {
     console.error('PyramidTier: Error in handleSubmit:', err.message, err);
     throw err;
@@ -87,7 +91,6 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][]) {
   console.log('PyramidTier: updateGameStats called for gameId:', gameId);
   const statsRef = doc(db, 'games', gameId, 'stats', 'general');
 
-  // Check if runTransaction is available
   if (typeof runTransaction === 'function') {
     console.log('PyramidTier: Using runTransaction for stats update');
     try {
