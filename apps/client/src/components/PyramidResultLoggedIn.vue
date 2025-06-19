@@ -289,7 +289,7 @@ async function copyScreenshot() {
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  max-width: 600px;
+  max-width: 90vw; /* Responsive width */
   margin: 0 auto;
 }
 .user-image-container {
@@ -298,8 +298,8 @@ async function copyScreenshot() {
   left: 10px;
 }
 .user-image {
-  width: 50px;
-  height: 50px;
+  width: 40px; /* Smaller for mobile */
+  height: 40px;
   border-radius: 50%;
   border: 2px solid #fff;
   object-fit: cover;
@@ -308,15 +308,21 @@ async function copyScreenshot() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 .pyramid-row {
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 .pyramid-slot {
-  width: 100px;
-  height: 100px;
-  margin: 5px;
+  width: 18vw; /* Scale with viewport */
+  height: 18vw;
+  max-width: 80px; /* Cap for larger screens */
+  max-height: 80px;
+  min-width: 50px; /* Minimum for small screens */
+  min-height: 50px;
+  margin: 3px;
   background-color: #2c2d30;
   border-radius: 4px;
   display: flex;
@@ -325,21 +331,51 @@ async function copyScreenshot() {
   overflow: hidden;
 }
 .draggable-image {
-  max-width: 80px;
-  max-height: 80px;
+  max-width: 90%;
+  max-height: 90%;
   object-fit: cover;
 }
 .tier-label {
-  font-size: 1.5rem;
+  font-size: 1.2rem; /* Smaller for mobile */
   font-weight: bold;
 }
 .top-x-label {
-  font-size: 1.2rem;
+  font-size: 1rem; /* Adjusted for mobile */
   font-weight: bold;
 }
 .table {
   width: 100%;
-  max-width: 600px;
+  max-width: 90vw;
   margin: 0 auto;
+}
+
+/* Mobile-specific adjustments */
+@media screen and (max-width: 767px) {
+  .pyramid-container {
+    padding: 10px;
+  }
+  .user-image {
+    width: 30px;
+    height: 30px;
+  }
+  .pyramid-slot {
+    width: 20vw;
+    height: 20vw;
+    min-width: 40px;
+    min-height: 40px;
+    margin: 2px;
+  }
+  .tier-label {
+    font-size: 1rem;
+  }
+  .top-x-label {
+    font-size: 0.9rem;
+  }
+  .title {
+    font-size: 1.5rem;
+  }
+  .subtitle {
+    font-size: 1.2rem;
+  }
 }
 </style>
