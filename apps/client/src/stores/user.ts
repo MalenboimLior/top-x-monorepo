@@ -6,9 +6,7 @@ import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } f
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
 import { User } from '@top-x/shared/types/user';
 
-export const useUserStore = defineStore(
-  'user',
-  () => {
+export const useUserStore = defineStore('user',() => {
   const user = ref<FirebaseUser | null>(null);
   const profile = ref<User | null>(null);
   const error = ref<string | null>(null);

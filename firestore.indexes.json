@@ -1,28 +1,4 @@
 {
-    "indexes": [
-      {
-        "collectionGroup": "leaderboards_trivia",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {
-            "fieldPath": "score",
-            "order": "DESCENDING"
-          },
-          {
-            "fieldPath": "streak",
-            "order": "DESCENDING"
-          }
-        ]
-      },
-      {
-        "collectionGroup": "users",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {
-            "fieldPath": "displayName",
-            "order": "ASCENDING"
-          }
-        ]
-      }
-    ]
-  }
+  "indexes": [],
+  "fieldOverrides": []
+}
