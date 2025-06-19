@@ -1,3 +1,4 @@
+<!-- Shows how a user's score ranks globally -->
 <template>
   <div class="percentile-rank-container">
     <div class="rank-content">

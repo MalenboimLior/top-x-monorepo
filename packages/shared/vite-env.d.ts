@@ -1,3 +1,4 @@
+// Shared Vite environment variables for all apps
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {

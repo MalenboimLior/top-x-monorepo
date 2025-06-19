@@ -1,3 +1,4 @@
+// Pinia store containing trivia game state
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { useUserStore } from './user';

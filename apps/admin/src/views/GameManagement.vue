@@ -1,3 +1,4 @@
+<!-- Admin view for creating and editing games -->
 <template>
   <div class="container">
     <h1 class="title has-text-white">Game Management</h1>

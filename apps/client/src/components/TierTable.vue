@@ -1,3 +1,4 @@
+<!-- Interactive tier placement table -->
 <script setup lang="ts">
 import { ref } from 'vue'
 const isDark = ref(false)

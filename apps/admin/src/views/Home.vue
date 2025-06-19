@@ -1,3 +1,4 @@
+<!-- Admin dashboard landing page -->
 <template>
   <section class="section">
     <div class="container">

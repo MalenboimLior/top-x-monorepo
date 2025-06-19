@@ -1,3 +1,4 @@
+<!-- Search for other players to compare ranks -->
 <template>
   <div class="rival-search-container">
     <h1 class="title has-text-white">Find Rivals</h1>
