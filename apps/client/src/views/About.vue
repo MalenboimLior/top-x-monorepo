@@ -1,3 +1,4 @@
+<!-- Informational about page -->
 <template>
     <div class="container">
       <h1 class="title">About TOP-X</h1>

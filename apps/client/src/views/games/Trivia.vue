@@ -1,3 +1,4 @@
+<!-- Container page for the trivia game -->
 <template>
   <div class="trivia-container">
     <div v-if="error" class="notification is-danger">

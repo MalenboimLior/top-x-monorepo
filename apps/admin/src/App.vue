@@ -1,3 +1,4 @@
+<!-- Root component for admin app layout and routing -->
 <template>
   <div class="container is-fluid">
     <NavBar />

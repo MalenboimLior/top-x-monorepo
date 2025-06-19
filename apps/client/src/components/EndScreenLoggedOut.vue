@@ -1,3 +1,4 @@
+<!-- Game over screen for guests -->
 <template>
     <div class="gameover-screen">
       <h2 class="title has-text-white">Game Over</h2>

@@ -1,3 +1,4 @@
+// Type definitions for games and game types
 export interface GameType {
   id: string;
   name: string;

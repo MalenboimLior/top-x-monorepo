@@ -1,3 +1,4 @@
+<!-- Table display for leaderboard entries -->
 <template>
   <div class="leaderboard-container">
     <h2 class="title is-3 has-text-white animate-item" style="--animation-delay: 0s;">{{ title }}</h2>
