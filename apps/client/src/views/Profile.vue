@@ -1,3 +1,4 @@
+<!-- Shows stats and info about the logged in user -->
 <template>
   <div class="profile-container">
     <h1 class="title has-text-white">Your Profile</h1>

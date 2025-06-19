@@ -1,3 +1,4 @@
+// Barrel file exporting common shared types
 export * from './user';
 export * from './tierData';
 export * from './pyramid';

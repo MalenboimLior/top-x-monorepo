@@ -1,3 +1,4 @@
+<!-- Admin form for adding new pyramid items -->
 <template>
   <div>
     <h2>Add Items to Pyramid Cities</h2>

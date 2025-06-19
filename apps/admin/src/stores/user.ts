@@ -1,3 +1,4 @@
+// Pinia store managing admin authentication
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { auth, db } from '@top-x/shared';

@@ -1,3 +1,4 @@
+// Vue Router setup for the client site
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/views/Home.vue';
 import Profile from '@/views/Profile.vue';

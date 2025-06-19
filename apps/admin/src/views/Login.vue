@@ -1,3 +1,4 @@
+<!-- Login screen for admin users -->
 <template>
   <section class="section">
     <div class="container">

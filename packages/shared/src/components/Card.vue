@@ -1,3 +1,4 @@
+<!-- Basic dark-themed card container component -->
 <template>
   <div class="card">
     <div class="card-content">
@@ -7,9 +8,11 @@
 </template>
 
 <script setup lang="ts">
+// Simple wrapper component to provide a dark themed card container.
 </script>
 
 <style scoped>
+/* Dark card styling used throughout the app */
 .card {
   background-color: #2a2a2a;
   border-radius: 6px;

@@ -1,3 +1,4 @@
+<!-- Core gameplay component for trivia -->
 <template>
   <div class="gameplay-screen">
     <div v-if="isLoading" class="loading animate-item" style="--animation-delay: 0s;">
