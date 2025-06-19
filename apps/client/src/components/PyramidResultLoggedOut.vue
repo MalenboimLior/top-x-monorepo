@@ -1,3 +1,4 @@
+<!-- Final pyramid result for anonymous players -->
 <template>
   <div class="result-screen">
     <h2 class="title has-text-white">Game Over</h2>

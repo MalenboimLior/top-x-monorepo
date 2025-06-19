@@ -1,3 +1,4 @@
+<!-- Displays a single trivia question -->
 <template>
   <transition name="question-slide" mode="out-in">
     <Card v-if="currentQuestion" :key="currentQuestion.id" class="question-card">

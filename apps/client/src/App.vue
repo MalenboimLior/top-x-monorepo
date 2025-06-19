@@ -1,3 +1,4 @@
+<!-- Root component for the client game portal -->
 <template>
   <NavBar />
   <router-view />

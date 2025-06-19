@@ -1,3 +1,4 @@
+// Pinia store handling user state and auth
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { auth, db, functions } from '@top-x/shared';

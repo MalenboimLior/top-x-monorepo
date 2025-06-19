@@ -1,3 +1,4 @@
+// Pinia store for the pyramid tier table
 import { defineStore } from 'pinia';
 
 export interface TierItem {

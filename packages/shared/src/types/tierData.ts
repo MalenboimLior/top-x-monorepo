@@ -1,3 +1,4 @@
+// Tier definitions used for pyramid layouts
 export interface Tier {
   label: string;
   color: string;
