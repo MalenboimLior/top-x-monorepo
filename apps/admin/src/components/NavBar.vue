@@ -1,3 +1,4 @@
+<!-- Admin navigation bar with user controls -->
 <template>
   <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
     <div class="navbar-brand">

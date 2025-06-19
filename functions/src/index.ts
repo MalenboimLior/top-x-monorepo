@@ -1,3 +1,4 @@
+// Firebase Cloud Functions for backend APIs
 import * as functions from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
 import { FirestoreEvent, Change } from 'firebase-functions/v2/firestore';
@@ -6,6 +7,15 @@ import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
+
+// -------------------------------------------------------------
+// Cloud Functions used by the TOP-X backend
+// -------------------------------------------------------------
+// This file exposes a set of HTTPS callable functions and REST
+// endpoints that keep user data in sync with X (Twitter) and
+// manage various leaderboard queries. It also updates aggregated
+// statistics for each game as users play.
+// -------------------------------------------------------------
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -38,6 +48,9 @@ const oauth = new OAuth({
   },
 });
 
+// Sync basic user information from X (Twitter) when the client
+// explicitly calls this function. The client must be authenticated
+// and have previously stored access credentials in Firestore.
 export const syncXUserData = functions.https.onCall(async (context: functions.https.CallableRequest) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -82,6 +95,9 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
   }
 });
 
+// Firestore trigger that updates the leaderboard and aggregate
+// statistics every time a user document changes. It keeps the
+// per-game leaderboards and score distributions consistent.
 export const syncScores = functions.firestore.onDocumentWritten('users/{uid}', async (event: FirestoreEvent<Change<DocumentSnapshot> | undefined, { uid: string }>) => {
   const uid = event.params.uid;
   const change = event.data;
@@ -162,6 +178,9 @@ export const syncScores = functions.firestore.onDocumentWritten('users/{uid}', a
   }
 });
 
+// Returns the top N players for a given game ordered by score
+// and streak. The number of results is controlled by the optional
+// 'limit' query parameter.
 export const getTopLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
@@ -192,6 +211,9 @@ export const getTopLeaderboard = functions.https.onRequest((req, res) => {
   });
 });
 
+// Returns a slice of the leaderboard centered around the
+// requesting user. It fetches a few users above and below the
+// given uid so the client can show relative ranking.
 export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
@@ -265,6 +287,8 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
   });
 });
 
+// Returns leaderboard entries for the friends of a given user
+// based on the list of friend UIDs stored in that user's document.
 export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
@@ -317,6 +341,9 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
   });
 });
 
+// Calculates the percentile rank for a user in a given game. It
+// looks up the user's score in the leaderboard and compares it
+// against the stored score distribution statistics.
 export const getPercentileRank = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
@@ -368,6 +395,8 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
   });
 });
 
+// Fetches leaderboard information for a curated list of VIP users.
+// The list of UIDs is stored in the 'config/vip_users' document in Firestore.
 export const getVipLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';

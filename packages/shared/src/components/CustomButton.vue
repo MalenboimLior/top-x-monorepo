@@ -1,3 +1,4 @@
+<!-- Reusable button with optional icon styling -->
 <template>
   <button :class="['button', type]" :disabled="disabled" @click="$emit('click')">
     <span v-if="icon" class="icon">
@@ -8,6 +9,7 @@
 </template>
 
 <script setup lang="ts">
+// A reusable button component with optional icon and styling.
 defineProps<{
   type?: string;
   label?: string;
@@ -21,6 +23,7 @@ defineEmits<{
 </script>
 
 <style scoped>
+/* Basic styling that can be overridden by passing a Bulma type */
 .button {
   border-radius: 6px;
   font-weight: 500;

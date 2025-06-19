@@ -1,3 +1,4 @@
+<!-- Top navigation bar for the client app -->
 <template>
   <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="navbar-brand">

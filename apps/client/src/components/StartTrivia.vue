@@ -1,3 +1,4 @@
+<!-- Start screen for the trivia game -->
 <template>
   <div class="start-screen">
     <h1 class="title has-text-white">Trivia Game</h1>
