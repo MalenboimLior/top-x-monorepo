@@ -1,3 +1,4 @@
+// Helper functions for calling trivia-related Cloud Functions
 const FUNCTION_BASE_URL = 'u6yhyetroa-uc.a.run.app';
 
 interface LeaderboardEntry {

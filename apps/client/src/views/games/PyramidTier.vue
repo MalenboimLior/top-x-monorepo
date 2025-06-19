@@ -1,3 +1,4 @@
+<!-- Wrapper page for the pyramid tier game -->
 <template>
   <div class="pyramid-tier">
     <h1>{{ gameDescription }}</h1>

@@ -1,3 +1,4 @@
+<!-- Drag-and-drop pyramid game board -->
 <template>
   <section class="section">
     <div class="container has-text-centered">

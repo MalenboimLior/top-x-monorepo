@@ -1,3 +1,4 @@
+// Vue Router configuration for admin pages
 import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '../stores/user';
 import Home from '@/views/Home.vue';

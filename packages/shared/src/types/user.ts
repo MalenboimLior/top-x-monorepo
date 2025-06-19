@@ -1,3 +1,4 @@
+// User and user game data models
 export interface UserGameData {
   score: number;
   streak: number;

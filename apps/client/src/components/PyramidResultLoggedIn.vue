@@ -1,3 +1,4 @@
+<!-- Shows the final pyramid placement when logged in -->
 <template>
   <div class="result-screen">
     <div ref="pyramidContainer" class="pyramid-container has-background-dark p-4">
