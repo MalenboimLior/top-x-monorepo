@@ -23,7 +23,6 @@
       <h2 class="title has-text-white has-text-centered">{{ gameTitle || 'Your Pyramid' }}</h2>
       <!-- Pyramid -->
       <Card>
-        <p class="has-text-white has-text-centered mb-4">You placed {{ score }} items in the pyramid.</p>
         <div class="pyramid mx-auto">
           <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row">
             <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot">
@@ -43,41 +42,70 @@
         <p class="top-x-label has-text-white has-text-centered mt-4">top-x.co</p>
       </Card>
     </div>
-    <!-- Share Buttons -->
+    <!-- Share Button -->
     <div class="buttons is-centered mt-4">
       <CustomButton
         type="is-primary"
-        label="Download Image"
+        label="Download Pyramid"
+        :icon="['fas', 'download']"
         :disabled="isImageLoading"
         @click="downloadPyramid"
-      />
-      <CustomButton
-        type="is-info"
-        label="Copy Screenshot"
-        :disabled="isImageLoading"
-        @click="copyScreenshot"
       />
       <span v-if="isImageLoading" class="has-text-white ml-2">Loading images...</span>
     </div>
     <!-- Stats Table -->
     <h3 class="subtitle has-text-white mt-6">Total Stats</h3>
-    <table class="table is-striped has-background-dark has-text-white">
+    <table class="table is-striped is-hoverable has-background-dark has-text-white">
       <thead>
         <tr>
-          <th class="has-text-white">Item ID</th>
+          <th class="has-text-white">Rank</th>
+          <th class="has-text-white">Image</th>
+          <th class="has-text-white">Item</th>
           <th class="has-text-white">Tier 1</th>
           <th class="has-text-white">Tier 2</th>
           <th class="has-text-white">Tier 3</th>
           <th class="has-text-white">Tier 4</th>
+          <th class="has-text-white">Score</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(ranks, itemId) in itemRanks" :key="itemId">
-          <td>{{ itemId }}</td>
-          <td>{{ ranks[1] }}</td>
-          <td>{{ ranks[2] }}</td>
-          <td>{{ ranks[3] }}</td>
-          <td>{{ ranks[4] }}</td>
+        <tr v-for="(item, index) in sortedItemStats" :key="item.id" :class="getRowClass(index)">
+          <td class="rank-column">
+            <font-awesome-icon
+              v-if="index === 0"
+              :icon="['fas', 'medal']"
+              class="medal gold"
+              title="1st Place"
+            />
+            <font-awesome-icon
+              v-else-if="index === 1"
+              :icon="['fas', 'medal']"
+              class="medal silver"
+              title="2nd Place"
+            />
+            <font-awesome-icon
+              v-else-if="index === 2"
+              :icon="['fas', 'medal']"
+              class="medal bronze"
+              title="3rd Place"
+            />
+            <span v-else>{{ index + 1 }}</span>
+          </td>
+          <td>
+            <img
+              v-if="item.imageSrc"
+              :src="item.imageSrc"
+              :alt="item.name"
+              class="item-image"
+              crossorigin="anonymous"
+            />
+          </td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.ranks[1] || 0 }}</td>
+          <td>{{ item.ranks[2] || 0 }}</td>
+          <td>{{ item.ranks[3] || 0 }}</td>
+          <td>{{ item.ranks[4] || 0 }}</td>
+          <td>{{ item.score }}</td>
         </tr>
       </tbody>
     </table>
@@ -85,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
@@ -107,6 +135,26 @@ const pyramidContainer = ref<HTMLElement | null>(null);
 const userImage = ref<HTMLImageElement | null>(null);
 const pyramidImages = ref<HTMLImageElement[]>([]);
 const isImageLoading = ref(true);
+
+// Compute sorted item stats with score and item details
+const sortedItemStats = computed(() => {
+  const stats = Object.entries(itemRanks.value).map(([itemId, ranks]) => {
+    const item = items.value.find(i => i.id === itemId);
+    const score =
+      (ranks[1] || 0) * 10 + // Tier 1: 10 points
+      (ranks[2] || 0) * 5 +  // Tier 2: 5 points
+      (ranks[3] || 0) * 3 +  // Tier 3: 3 points
+      (ranks[4] || 0) * 1;   // Tier 4: 1 point
+    return {
+      id: itemId,
+      name: item?.label || itemId,
+      imageSrc: item?.src || '',
+      ranks,
+      score,
+    };
+  });
+  return stats.sort((a, b) => b.score - a.score); // Sort by score descending
+});
 
 onMounted(async () => {
   console.log('PyramidResultLoggedIn: onMounted called with gameId:', gameId);
@@ -227,6 +275,18 @@ function toRoman(num: number): string {
   return numerals[num - 1] || `${num}`;
 }
 
+// Dynamic row class for colorful table
+function getRowClass(index: number): string {
+  const colors = [
+    'has-background-primary-light', // Light blue
+    'has-background-success-light', // Light green
+    'has-background-warning-light', // Light yellow
+    'has-background-info-light', // Light cyan
+    'has-background-danger-light', // Light red
+  ];
+  return colors[index % colors.length] || '';
+}
+
 async function downloadPyramid() {
   if (!pyramidContainer.value) {
     console.error('PyramidResultLoggedIn: Pyramid container not found');
@@ -250,35 +310,6 @@ async function downloadPyramid() {
   } catch (err: any) {
     console.error('PyramidResultLoggedIn: Error generating download image:', err.message, err);
     alert('Failed to download image. Some images may not be accessible due to CORS restrictions.');
-  }
-}
-
-async function copyScreenshot() {
-  if (!pyramidContainer.value) {
-    console.error('PyramidResultLoggedIn: Pyramid container not found');
-    alert('Failed to copy screenshot. Please try again.');
-    return;
-  }
-  try {
-    console.log('PyramidResultLoggedIn: Generating screenshot for clipboard');
-    const canvas = await html2canvas(pyramidContainer.value, {
-      backgroundColor: '#1a1b1e', // Match dark theme
-      scale: 2, // Higher resolution
-      useCORS: true, // Handle external images
-      logging: true, // Debug html2canvas
-      allowTaint: false, // Prevent tainted canvas errors
-    });
-    const blob = await new Promise<Blob>((resolve) =>
-      canvas.toBlob((b) => resolve(b!), 'image/png')
-    );
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/png': blob })
-    ]);
-    console.log('PyramidResultLoggedIn: Screenshot copied to clipboard');
-    alert('Pyramid screenshot copied to clipboard!');
-  } catch (err: any) {
-    console.error('PyramidResultLoggedIn: Error copying screenshot:', err.message, err);
-    alert('Failed to copy screenshot. Some images may not be accessible due to CORS restrictions.');
   }
 }
 </script>
@@ -349,6 +380,29 @@ async function copyScreenshot() {
   max-width: 90vw;
   margin: 0 auto;
 }
+.item-image {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.rank-column {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.medal {
+  font-size: 1.2rem;
+}
+.medal.gold {
+  color: #ffd700; /* Gold */
+}
+.medal.silver {
+  color: #c0c0c0; /* Silver */
+}
+.medal.bronze {
+  color: #cd7f32; /* Bronze */
+}
 
 /* Mobile-specific adjustments */
 @media screen and (max-width: 767px) {
@@ -377,6 +431,13 @@ async function copyScreenshot() {
   }
   .subtitle {
     font-size: 1.2rem;
+  }
+  .item-image {
+    width: 30px;
+    height: 30px;
+  }
+  .medal {
+    font-size: 1rem;
   }
 }
 </style>
