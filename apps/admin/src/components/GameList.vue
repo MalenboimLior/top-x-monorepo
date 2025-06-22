@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
@@ -40,6 +40,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'select', id: string): void;
   (e: 'edit', game: Game): void;
+  (e: 'mounted'): void;
 }>();
 
 const userStore = useUserStore();
@@ -117,6 +118,15 @@ const createNew = () => {
     console.log('createNew blocked: No selectedGameTypeId');
   }
 };
+
+onMounted(() => {
+  console.log('GameList mounted with initial selectedGameTypeId:', props.selectedGameTypeId);
+  emit('mounted');
+  if (props.selectedGameTypeId) {
+    console.log('Calling fetchGames on mount with gameTypeId:', props.selectedGameTypeId);
+    fetchGames(props.selectedGameTypeId);
+  }
+});
 
 watch(() => props.selectedGameTypeId, (newId, oldId) => {
   console.log('selectedGameTypeId watch triggered:', { newId, oldId });
