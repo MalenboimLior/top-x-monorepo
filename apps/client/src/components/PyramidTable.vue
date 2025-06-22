@@ -34,6 +34,31 @@
         </div>
       </div>
 
+      <!-- Worst Item Slot -->
+      <div class="worst-item-container mt-4" :class="{ dark: isDark }">
+        <h3 class="subtitle has-text-centered" :class="{ 'has-text-white': isDark }">Worst Item</h3>
+        <div
+          class="pyramid-slot box worst-slot"
+          :class="[
+            { 'selected': isSelected(worstItem) },
+            { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
+            { 'drop-hover': isDroppable(-1, -1) },
+            isDark ? 'dark-slot' : ''
+          ]"
+          @dragover.prevent
+          @dragenter.prevent="onDragEnterSlot(-1, -1)"
+          @dragleave.prevent="onDragLeaveSlot"
+          @drop="onDropToWorst"
+          @click="onWorstSlotClick"
+        >
+          <div v-if="worstItem" class="draggable-item slot-style">
+            <img :src="worstItem.src" class="draggable-image" />
+            <div class="image-label">{{ worstItem.label }}</div>
+          </div>
+          <div v-else class="tier-label has-text-danger">Worst</div>
+        </div>
+      </div>
+
       <h2 class="subtitle mt-6" :class="{ 'has-text-white': isDark }">Image Pool</h2>
       <div
         class="image-pool drop-zone"
@@ -62,14 +87,14 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ImageItem, PyramidSlot } from '@top-x/shared/types/pyramid';
+import { ImageItem, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 
 const props = defineProps<{
   items: ImageItem[];
 }>();
 
 const emit = defineEmits<{
-  (e: 'submit', pyramid: PyramidSlot[][]): void;
+  (e: 'submit', data: PyramidData): void;
 }>();
 
 const isDark = ref(false);
@@ -80,6 +105,7 @@ const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }, { image: null }, { image: null }],
   [{ image: null }, { image: null }, { image: null }, { image: null }],
 ]);
+const worstItem = ref<ImageItem | null>(null);
 const draggedItem = ref<ImageItem | null>(null);
 const selectedItem = ref<ImageItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
@@ -148,6 +174,7 @@ function onSlotClick(row: number, col: number) {
 
   const fromSlot = findSlotContaining(selectedItem.value.id);
   const fromInPool = imagePool.value.some(i => i.id === selectedItem.value!.id);
+  const fromWorst = worstItem.value?.id === selectedItem.value.id;
 
   if (targetImage) {
     if (fromInPool) {
@@ -157,6 +184,9 @@ function onSlotClick(row: number, col: number) {
     } else if (fromSlot) {
       fromSlot.image = targetImage;
       console.log('PyramidTable: Swapped slot items:', { fromSlot, targetImage });
+    } else if (fromWorst) {
+      worstItem.value = targetImage;
+      console.log('PyramidTable: Swapped worst item with slot item:', { worstItem: worstItem.value });
     }
   } else if (!fromInPool && fromSlot) {
     fromSlot.image = null;
@@ -164,6 +194,9 @@ function onSlotClick(row: number, col: number) {
   } else if (fromInPool) {
     imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
     console.log('PyramidTable: Removed item from pool:', imagePool.value);
+  } else if (fromWorst) {
+    worstItem.value = null;
+    console.log('PyramidTable: Removed worst item:', worstItem.value);
   }
 
   targetSlot.image = selectedItem.value;
@@ -178,15 +211,65 @@ function onDropToSlot(row: number, col: number) {
   onSlotClick(row, col);
 }
 
+function onWorstSlotClick() {
+  console.log('PyramidTable: Worst slot clicked');
+  if (!selectedItem.value && worstItem.value) {
+    selectedItem.value = worstItem.value;
+    draggedItem.value = worstItem.value;
+    console.log('PyramidTable: Selected worst item:', worstItem.value);
+    return;
+  }
+
+  if (!selectedItem.value) {
+    console.log('PyramidTable: No selected item, ignoring worst slot click');
+    return;
+  }
+
+  const fromSlot = findSlotContaining(selectedItem.value.id);
+  const fromInPool = imagePool.value.some(i => i.id === selectedItem.value!.id);
+
+  if (worstItem.value) {
+    if (fromInPool) {
+      imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
+      imagePool.value.push(worstItem.value);
+      console.log('PyramidTable: Swapped pool item with worst item:', { pool: imagePool.value });
+    } else if (fromSlot) {
+      fromSlot.image = worstItem.value;
+      console.log('PyramidTable: Swapped slot item with worst item:', { fromSlot, worstItem: worstItem.value });
+    }
+  } else if (!fromInPool && fromSlot) {
+    fromSlot.image = null;
+    console.log('PyramidTable: Removed item from slot for worst:', fromSlot);
+  } else if (fromInPool) {
+    imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
+    console.log('PyramidTable: Removed item from pool for worst:', imagePool.value);
+  }
+
+  worstItem.value = selectedItem.value;
+  selectedItem.value = null;
+  draggedItem.value = null;
+  droppableSlot.value = null;
+  console.log('PyramidTable: Placed item in worst slot:', worstItem.value);
+}
+
+function onDropToWorst() {
+  console.log('PyramidTable: Drop to worst slot');
+  onWorstSlotClick();
+}
+
 function onDropToPool() {
   if (!selectedItem.value) {
     console.log('PyramidTable: No selected item for pool drop');
     return;
   }
   const slot = findSlotContaining(selectedItem.value.id);
+  const fromWorst = worstItem.value?.id === selectedItem.value.id;
   if (slot) {
     slot.image = null;
     console.log('PyramidTable: Removed item from slot for pool drop:', slot);
+  } else if (fromWorst) {
+    worstItem.value = null;
+    console.log('PyramidTable: Removed worst item for pool drop:', worstItem.value);
   }
   if (!imagePool.value.some(i => i.id === selectedItem.value!.id)) {
     imagePool.value.push(selectedItem.value);
@@ -214,8 +297,8 @@ function toRoman(num: number): string {
 }
 
 function submitPyramid() {
-  console.log('PyramidTable: Submitting pyramid:', pyramid.value);
-  emit('submit', pyramid.value);
+  console.log('PyramidTable: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
+  emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 </script>
 
@@ -269,19 +352,37 @@ function submitPyramid() {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   text-align: center;
   overflow: hidden;
-  margin-bottom: 0px !important;
-
 }
 .pyramid-slot.drop-hover {
   background-color: #def0ff;
   transform: scale(1.05);
   border-color: #3298dc;
 }
+.worst-item-container {
+  width: fit-content;
+  margin: 0 auto;
+}
+.worst-slot {
+  border: 2px dashed #ff5555 !important;
+  background-color: #ffe6e6 !important;
+}
+.worst-slot.dark-slot {
+  background-color: #3d1f1f !important;
+  border-color: #ff7777 !important;
+}
+.worst-slot.drop-hover {
+  background-color: #ffcccc !important;
+  border-color: #ff3333 !important;
+  transform: scale(1.05);
+}
 .tier-label {
   color: #bbb;
   font-size: 1.2rem;
   font-weight: bold;
   pointer-events: none;
+}
+.tier-label.has-text-danger {
+  color: #ff5555;
 }
 .image-pool {
   display: flex;

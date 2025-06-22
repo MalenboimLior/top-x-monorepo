@@ -17,3 +17,5 @@ build/
 .env
 .firebase/hosting.YXBwcy9hZG1pbi9kaXN0.cache
 .firebase/hosting.YXBwcy9jbGllbnQvZGlzdA.cache
+/.firebase
+content.html
