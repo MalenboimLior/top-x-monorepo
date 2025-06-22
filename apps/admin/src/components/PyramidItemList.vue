@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
@@ -57,6 +57,16 @@ const fetchItems = async () => {
   }
 };
 
+// Refetch items whenever the game changes. This ensures the list updates
+// when a different game is selected without remounting the component.
+watch(
+  () => props.gameId,
+  () => {
+    fetchItems();
+  },
+  { immediate: true }
+);
+
 const deleteItem = async (itemId: string) => {
   if (!isAdmin.value) {
     error.value = 'Unauthorized: Admin access required';
@@ -77,8 +87,6 @@ const deleteItem = async (itemId: string) => {
 const createNew = () => {
   emit('edit', { id: '', src: '', label: '' });
 };
-
-onMounted(fetchItems);
 </script>
 
 <style scoped>
