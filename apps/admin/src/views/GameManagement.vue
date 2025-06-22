@@ -81,6 +81,30 @@
         </div>
       </div>
       <div class="field">
+        <label class="label has-text-white">Game Header</label>
+        <div class="control">
+          <input v-model="newGame.gameHeader" class="input" type="text" placeholder="Header above pyramid" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Pool Header</label>
+        <div class="control">
+          <input v-model="newGame.poolHeader" class="input" type="text" placeholder="Header above image pool" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Wordt Header</label>
+        <div class="control">
+          <input v-model="newGame.wordtHeader" class="input" type="text" placeholder="Header for worst item" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Share Text</label>
+        <div class="control">
+          <input v-model="newGame.shareText" class="input" type="text" placeholder="Text used when sharing results" />
+        </div>
+      </div>
+      <div class="field">
         <label class="label has-text-white">Custom Data (JSON)</label>
         <div class="control">
           <textarea v-model="newGameCustom" class="textarea" placeholder='e.g., {"maxQuestions": 10}'></textarea>
@@ -162,7 +186,16 @@ const games = ref<Game[]>([]);
 const items = ref<ImageItem[]>([]);
 const newGameType = ref<GameType>({ id: '', name: '', description: '' });
 const newGameTypeCustom = ref<string>('');
-const newGame = ref<Game>({ id: '', name: '', description: '', gameTypeId: '' });
+const newGame = ref<Game>({
+  id: '',
+  name: '',
+  description: '',
+  gameTypeId: '',
+  gameHeader: '',
+  poolHeader: '',
+  wordtHeader: '',
+  shareText: '',
+});
 const newGameCustom = ref<string>('');
 const selectedGameTypeId = ref<string | null>(null);
 const selectedGameId = ref<string | null>(null);
@@ -325,11 +358,24 @@ const createGame = async () => {
       name: newGame.value.name,
       description: newGame.value.description,
       gameTypeId: selectedGameTypeId.value,
+      gameHeader: newGame.value.gameHeader,
+      poolHeader: newGame.value.poolHeader,
+      wordtHeader: newGame.value.wordtHeader,
+      shareText: newGame.value.shareText,
       custom: customData || { items: [] }, // Initialize with empty items array
     });
     success.value = `Game '${newGame.value.name}' created successfully`;
     console.log('Game created:', newGame.value);
-    newGame.value = { id: '', name: '', description: '', gameTypeId: '' };
+    newGame.value = {
+      id: '',
+      name: '',
+      description: '',
+      gameTypeId: '',
+      gameHeader: '',
+      poolHeader: '',
+      wordtHeader: '',
+      shareText: '',
+    };
     newGameCustom.value = '';
   } catch (err: any) {
     error.value = `Failed to create game: ${err.message}`;

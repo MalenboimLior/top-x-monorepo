@@ -7,6 +7,8 @@
         </button>
       </div>
 
+      <h2 class="subtitle" :class="{ 'has-text-white': isDark }">{{ props.gameHeader }}</h2>
+
       <div class="pyramid" :class="{ dark: isDark }">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row">
           <div
@@ -36,7 +38,7 @@
 
       <!-- Worst Item Slot -->
       <div class="worst-item-container mt-4" :class="{ dark: isDark }">
-        <h3 class="subtitle has-text-centered" :class="{ 'has-text-white': isDark }">Worst Item</h3>
+        <h3 class="subtitle has-text-centered" :class="{ 'has-text-white': isDark }">{{ props.wordtHeader }}</h3>
         <div
           class="pyramid-slot box worst-slot"
           :class="[
@@ -59,7 +61,7 @@
         </div>
       </div>
 
-      <h2 class="subtitle mt-6" :class="{ 'has-text-white': isDark }">Image Pool</h2>
+      <h2 class="subtitle mt-6" :class="{ 'has-text-white': isDark }">{{ props.poolHeader }}</h2>
       <div
         class="image-pool drop-zone"
         :class="{ dark: isDark }"
@@ -89,9 +91,18 @@
 import { ref, watch } from 'vue';
 import { ImageItem, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   items: ImageItem[];
-}>();
+  gameHeader?: string;
+  poolHeader?: string;
+  wordtHeader?: string;
+  shareText?: string;
+}>(), {
+  gameHeader: 'Your Pyramid',
+  poolHeader: 'Image Pool',
+  wordtHeader: 'Worst Item',
+  shareText: '',
+});
 
 const emit = defineEmits<{
   (e: 'submit', data: PyramidData): void;
