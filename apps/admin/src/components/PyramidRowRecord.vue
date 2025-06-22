@@ -1,28 +1,28 @@
 <template>
   <Card>
-    <h2 class="subtitle has-text-white">{{ item.id ? 'Edit' : 'Create' }} Pyramid Item</h2>
+    <h2 class="subtitle has-text-white">{{ row.id ? 'Edit' : 'Create' }} Pyramid Row</h2>
     <div class="field">
-      <label class="label has-text-white">Item ID</label>
+      <label class="label has-text-white">Row ID</label>
       <div class="control">
-        <input v-model="localItem.id" class="input" type="text" placeholder="e.g., item_1" :disabled="!!item.id" />
+        <input v-model.number="localRow.id" class="input" type="number" placeholder="e.g., 1" :disabled="!!row.id" />
       </div>
     </div>
     <div class="field">
       <label class="label has-text-white">Label</label>
       <div class="control">
-        <input v-model="localItem.label" class="input" type="text" placeholder="e.g., City Name" />
+        <input v-model="localRow.label" class="input" type="text" placeholder="e.g., Top Tier" />
       </div>
     </div>
     <div class="field">
-      <label class="label has-text-white">Image URL</label>
+      <label class="label has-text-white">Points</label>
       <div class="control">
-        <input v-model="localItem.src" class="input" type="text" placeholder="e.g., https://example.com/image.jpg" />
+        <input v-model.number="localRow.points" class="input" type="number" placeholder="e.g., 100" />
       </div>
     </div>
     <div class="field">
       <label class="label has-text-white">Color (Optional)</label>
       <div class="control">
-        <input v-model="localItem.color" class="input" type="text" placeholder="e.g., #FF0000" />
+        <input v-model="localRow.color" class="input" type="text" placeholder="e.g., #ff0000" />
       </div>
     </div>
     <div class="field is-grouped">
@@ -45,10 +45,10 @@ import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import type { PyramidItem } from '@top-x/shared/types/pyramid';
+import type { PyramidRow } from '@top-x/shared/types/pyramid';
 
 const props = defineProps<{
-  item: PyramidItem;
+  row: PyramidRow;
   gameId: string | null;
 }>();
 
@@ -59,19 +59,19 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localItem = ref<PyramidItem>({ ...props.item });
+const localRow = ref<PyramidRow>({ ...props.row });
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
 
 const isAdmin = computed(() => {
   const adminStatus = userStore.user?.isAdmin || false;
-  console.log('PyramidItemRecord isAdmin check:', { user: userStore.user, isAdmin: adminStatus });
+  console.log('PyramidRowRecord isAdmin check:', { user: userStore.user, isAdmin: adminStatus });
   return adminStatus;
 });
 
 const save = async () => {
-  console.log('save called with localItem:', localItem.value, 'gameId:', props.gameId);
+  console.log('save called with localRow:', localRow.value, 'gameId:', props.gameId);
   if (!isAdmin.value) {
     error.value = 'Unauthorized: Admin access required';
     console.log('save blocked: User is not admin');
@@ -82,9 +82,9 @@ const save = async () => {
     console.log('save blocked: No gameId');
     return;
   }
-  if (!localItem.value.id || !localItem.value.label || !localItem.value.src) {
-    error.value = 'Item ID, Label, and Image URL are required';
-    console.log('save blocked: Missing required fields', localItem.value);
+  if (!localRow.value.id || !localRow.value.label || localRow.value.points == null) {
+    error.value = 'Row ID, Label, and Points are required';
+    console.log('save blocked: Missing required fields', localRow.value);
     return;
   }
   isSaving.value = true;
@@ -96,14 +96,14 @@ const save = async () => {
     const gameDoc = await getDoc(gameDocRef);
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
-      const currentItems: PyramidItem[] = gameData.custom?.items || [];
-      const updatedItems = currentItems.some(item => item.id === localItem.value.id)
-        ? currentItems.map(item => (item.id === localItem.value.id ? localItem.value : item))
-        : [...currentItems, localItem.value];
-      console.log('Updating Firestore with items:', updatedItems);
-      await updateDoc(gameDocRef, { 'custom.items': updatedItems });
-      success.value = `Item '${localItem.value.label}' saved successfully`;
-      console.log('Item saved successfully:', { item: localItem.value, gameId: props.gameId });
+      const currentRows: PyramidRow[] = gameData.custom?.rows || [];
+      const updatedRows = currentRows.some(row => row.id === localRow.value.id)
+        ? currentRows.map(row => (row.id === localRow.value.id ? localRow.value : row))
+        : [...currentRows, localRow.value];
+      console.log('Updating Firestore with rows:', updatedRows);
+      await updateDoc(gameDocRef, { 'custom.rows': updatedRows });
+      success.value = `Row '${localRow.value.label}' saved successfully`;
+      console.log('Row saved successfully:', { row: localRow.value, gameId: props.gameId });
       emit('save');
       emit('refresh');
     } else {
@@ -111,7 +111,7 @@ const save = async () => {
       console.error('Game not found for save:', props.gameId);
     }
   } catch (err: any) {
-    error.value = `Failed to save item: ${err.message}`;
+    error.value = `Failed to save row: ${err.message}`;
     console.error('save error:', { error: err.message, code: err.code });
   } finally {
     isSaving.value = false;

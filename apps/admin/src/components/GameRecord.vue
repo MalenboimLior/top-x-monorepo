@@ -45,13 +45,7 @@
     </div>
     <div v-if="gameTypeCustom === 'PyramidConfig'">
       <h3 class="subtitle has-text-white">Pyramid Config</h3>
-      <div class="field">
-        <label class="label has-text-white">Rows (JSON)</label>
-        <div class="control">
-          <textarea v-model="pyramidRowsJson" class="textarea" placeholder='e.g., [{"id": 1, "label": "Top", "points": 100}]'></textarea>
-        </div>
-        <p v-if="customError" class="help is-danger">{{ customError }}</p>
-      </div>
+      <p class="has-text-grey-light">Rows are managed in the Rows tab.</p>
     </div>
     <div v-if="gameTypeCustom === 'TriviaConfig'">
       <h3 class="subtitle has-text-white">Trivia Config</h3>
@@ -93,9 +87,6 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const localGame = ref<Game>({ ...props.game });
-const pyramidRowsJson = ref<string>(
-  props.game.custom && 'rows' in props.game.custom ? JSON.stringify((props.game.custom as PyramidConfig).rows, null, 2) : '[]'
-);
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
@@ -156,20 +147,12 @@ const save = async () => {
 
   let customData: PyramidConfig | TriviaConfig;
   if (gameTypeCustom.value === 'PyramidConfig') {
-    console.log('Processing PyramidConfig with rows JSON:', pyramidRowsJson.value);
-    try {
-      const rows: PyramidRow[] = JSON.parse(pyramidRowsJson.value);
-      customData = {
-        items: 'items' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).items : [],
-        rows,
-      };
-      console.log('PyramidConfig customData created:', customData);
-    } catch (err: any) {
-      customError.value = 'Invalid JSON in Rows';
-      console.error('save PyramidConfig error:', { error: err.message });
-      isSaving.value = false;
-      return;
-    }
+    console.log('Processing PyramidConfig');
+    customData = {
+      items: 'items' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).items : [],
+      rows: 'rows' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).rows : [],
+    };
+    console.log('PyramidConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'TriviaConfig') {
     customData = {
       questions: 'questions' in (localGame.value.custom || {}) ? (localGame.value.custom as TriviaConfig).questions : [],
@@ -190,7 +173,7 @@ const save = async () => {
       custom: customData,
       gameHeader: localGame.value.gameHeader || null,
       poolHeader: localGame.value.poolHeader || null,
-      wordHeader: localGame.value.worstHeader || null,
+      worstHeader: localGame.value.worstHeader || null,
       shareText: localGame.value.shareText || null,
     };
     console.log('Saving game to Firestore:', { id: localGame.value.id, data: gameData });
