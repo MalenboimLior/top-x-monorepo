@@ -22,6 +22,7 @@
       :selectedGameTypeId="selectedGameTypeId"
       @select="selectGame"
       @edit="editGame"
+      @mounted="logGameListMounted"
     />
     <GameRecord
       v-if="editingGame"
@@ -86,6 +87,7 @@ const selectGameType = async (gameTypeId: string) => {
   console.log('Selecting GameType:', gameTypeId);
   selectedGameTypeId.value = gameTypeId;
   activeTab.value = 'games';
+  console.log('selectGameType updated state:', { selectedGameTypeId: selectedGameTypeId.value, activeTab: activeTab.value });
   const gameTypeDoc = await getDoc(doc(db, 'gameTypes', gameTypeId));
   if (gameTypeDoc.exists()) {
     gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
@@ -148,6 +150,10 @@ const cancelEdit = () => {
   editingGame.value = null;
   editingItem.value = null;
   editingQuestion.value = null;
+};
+
+const logGameListMounted = () => {
+  console.log('GameList component mounted with selectedGameTypeId:', selectedGameTypeId.value);
 };
 </script>
 
