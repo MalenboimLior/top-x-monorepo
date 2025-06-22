@@ -1,6 +1,5 @@
 // Barrel file exporting common shared types
 export * from './user';
-export * from './tierData';
 export * from './pyramid';
 
 export interface TriviaQuestion {
@@ -9,11 +8,4 @@ export interface TriviaQuestion {
   options: string[];
   correctAnswer: string;
   category?: string;
-}
-
-export interface TierTableItem {
-  id: string;
-  name: string;
-  description: string;
-  imageURL?: string;
 }
