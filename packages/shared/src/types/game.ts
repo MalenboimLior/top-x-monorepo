@@ -11,5 +11,9 @@ export interface Game {
   name: string;
   description: string;
   gameTypeId: string;
+  gameHeader?: string;
+  poolHeader?: string;
+  wordtHeader?: string;
+  shareText?: string;
   custom?: Record<string, any>;
 }
