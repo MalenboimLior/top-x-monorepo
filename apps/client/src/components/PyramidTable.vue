@@ -352,6 +352,7 @@ function submitPyramid() {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   text-align: center;
   overflow: hidden;
+  margin-bottom: 0px !important;
 }
 .pyramid-slot.drop-hover {
   background-color: #def0ff;
