@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
@@ -66,6 +66,11 @@ watch(
   },
   { immediate: true }
 );
+
+onMounted(() => {
+  // Ensure items are loaded when the component first appears
+  fetchItems();
+});
 
 const deleteItem = async (itemId: string) => {
   if (!isAdmin.value) {
