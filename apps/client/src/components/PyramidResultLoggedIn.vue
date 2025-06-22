@@ -38,6 +38,20 @@
             </div>
           </div>
         </div>
+        <!-- Worst Item -->
+        <div v-if="worstItem" class="worst-item mt-4">
+          <h3 class="subtitle has-text-white has-text-centered">Worst Item</h3>
+          <div class="pyramid-slot worst-slot mx-auto">
+            <img
+              :src="worstItem.src"
+              :alt="worstItem.label"
+              class="draggable-image"
+              ref="worstImage"
+              crossorigin="anonymous"
+            />
+            <div class="image-label has-text-white">{{ worstItem.label }}</div>
+          </div>
+        </div>
         <!-- Top-X Label -->
         <p class="top-x-label has-text-white has-text-centered mt-4">top-x.co</p>
       </Card>
@@ -120,7 +134,7 @@ import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useUserStore } from '@/stores/user';
-import { ImageItem } from '@top-x/shared/types/pyramid';
+import { ImageItem, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 import html2canvas from 'html2canvas';
 
 const route = useRoute();
@@ -128,12 +142,14 @@ const userStore = useUserStore();
 const gameId = route.query.game as string;
 const score = ref(Number(route.query.score));
 const pyramid = ref<Array<Array<{ image: ImageItem | null }>>>([]);
+const worstItem = ref<ImageItem | null>(null);
 const itemRanks = ref<Record<string, Record<number, number>>>({});
 const items = ref<ImageItem[]>([]);
 const gameTitle = ref<string>('');
 const pyramidContainer = ref<HTMLElement | null>(null);
 const userImage = ref<HTMLImageElement | null>(null);
 const pyramidImages = ref<HTMLImageElement[]>([]);
+const worstImage = ref<HTMLImageElement | null>(null);
 const isImageLoading = ref(true);
 
 // Compute sorted item stats with score and item details
@@ -174,18 +190,21 @@ onMounted(async () => {
     console.error('PyramidResultLoggedIn: Error fetching game data:', err.message, err);
   }
 
-  // Reconstruct pyramid
+  // Reconstruct pyramid and worst item
   const userGameData = userStore.profile?.games?.PyramidTier?.[gameId];
-  if (userGameData?.custom?.pyramid && items.value.length) {
+  if (userGameData?.custom && items.value.length) {
     pyramid.value = userGameData.custom.pyramid.map((tier: { tier: number; slots: Array<string | null> }) =>
       tier.slots.map((itemId: string | null) => ({
         image: itemId ? items.value.find(i => i.id === itemId) || null : null,
       }))
     );
-    console.log('PyramidResultLoggedIn: Pyramid reconstructed:', pyramid.value);
+    worstItem.value = userGameData.custom && userGameData.custom.worstItem
+      ? items.value.find(i => i.id === userGameData.custom!.worstItem.id) || null
+      : null;
+    console.log('PyramidResultLoggedIn: Pyramid and worst item reconstructed:', { pyramid: pyramid.value, worstItem: worstItem.value });
   } else {
     console.warn('PyramidResultLoggedIn: No pyramid data or items available', {
-      userGameData: userGameData?.custom?.pyramid,
+      userGameData: userGameData?.custom,
       items: items.value,
     });
   }
@@ -242,7 +261,7 @@ async function preloadImages() {
   // Add user profile image
   if (userImage.value?.src) {
     uniqueImageUrls.add(userImage.value.src);
-    userImage.value.crossOrigin = 'anonymous'; // Enable CORS
+    userImage.value.crossOrigin = 'anonymous';
     imagePromises.push(loadImageWithTimeout(userImage.value));
   }
 
@@ -253,6 +272,12 @@ async function preloadImages() {
       imagePromises.push(loadImageWithTimeout(img));
     }
   });
+
+  // Add worst item image
+  if (worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
+    uniqueImageUrls.add(worstImage.value.src);
+    imagePromises.push(loadImageWithTimeout(worstImage.value));
+  }
 
   console.log('PyramidResultLoggedIn: Preloading images:', uniqueImageUrls);
   try {
@@ -266,7 +291,7 @@ async function preloadImages() {
     isImageLoading.value = false;
   } catch (err: any) {
     console.error('PyramidResultLoggedIn: Error preloading images:', err.message, err);
-    isImageLoading.value = false; // Enable buttons even on error
+    isImageLoading.value = false;
   }
 }
 
@@ -321,7 +346,7 @@ async function downloadPyramid() {
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  max-width: 90vw; /* Responsive width */
+  max-width: 90vw;
   margin: 0 auto;
 }
 .user-image-container {
@@ -330,7 +355,7 @@ async function downloadPyramid() {
   left: 10px;
 }
 .user-image {
-  width: 40px; /* Smaller for mobile */
+  width: 40px;
   height: 40px;
   border-radius: 50%;
   border: 2px solid #fff;
@@ -348,11 +373,11 @@ async function downloadPyramid() {
   width: 100%;
 }
 .pyramid-slot {
-  width: 18vw; /* Scale with viewport */
+  width: 18vw;
   height: 18vw;
-  max-width: 80px; /* Cap for larger screens */
+  max-width: 80px;
   max-height: 80px;
-  min-width: 50px; /* Minimum for small screens */
+  min-width: 50px;
   min-height: 50px;
   margin: 3px;
   background-color: #2c2d30;
@@ -362,17 +387,29 @@ async function downloadPyramid() {
   justify-content: center;
   overflow: hidden;
 }
+.worst-slot {
+  background-color: #3d1f1f;
+  border: 2px dashed #ff5555;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 .draggable-image {
   max-width: 90%;
   max-height: 90%;
   object-fit: cover;
 }
+.image-label {
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
 .tier-label {
-  font-size: 1.2rem; /* Smaller for mobile */
+  font-size: 1.2rem;
   font-weight: bold;
 }
 .top-x-label {
-  font-size: 1rem; /* Adjusted for mobile */
+  font-size: 1rem;
   font-weight: bold;
 }
 .table {
@@ -395,13 +432,13 @@ async function downloadPyramid() {
   font-size: 1.2rem;
 }
 .medal.gold {
-  color: #ffd700; /* Gold */
+  color: #ffd700;
 }
 .medal.silver {
-  color: #c0c0c0; /* Silver */
+  color: #c0c0c0;
 }
 .medal.bronze {
-  color: #cd7f32; /* Bronze */
+  color: #cd7f32;
 }
 
 /* Mobile-specific adjustments */
@@ -438,6 +475,9 @@ async function downloadPyramid() {
   }
   .medal {
     font-size: 1rem;
+  }
+  .image-label {
+    font-size: 0.7rem;
   }
 }
 </style>
