@@ -60,6 +60,13 @@ const isAdmin = computed(() => {
 
 const fetchItems = async (gameId: string) => {
   console.log('fetchItems called with gameId:', gameId);
+  if (!gameId) {
+    console.log('fetchItems blocked: gameId is empty');
+    error.value = 'No game selected';
+    isLoading.value = false;
+    items.value = [];
+    return;
+  }
   isLoading.value = true;
   error.value = null;
 
@@ -79,7 +86,7 @@ const fetchItems = async (gameId: string) => {
       items.value = [];
     }
 
-    // Set up onSnapshot for real-time updates
+    // Optional onSnapshot for real-time updates
     if (unsubscribe) {
       unsubscribe();
       console.log('Previous onSnapshot unsubscribed for gameId:', gameId);
@@ -90,21 +97,16 @@ const fetchItems = async (gameId: string) => {
         const gameData = doc.data();
         items.value = (gameData.custom?.items || []) as PyramidItem[];
         console.log('Items fetched via onSnapshot:', { count: items.value.length, items: items.value });
-        if (!items.value.length) {
-          console.log('No items found in onSnapshot for gameId:', gameId);
-        }
       } else {
-        error.value = 'Game not found';
         console.log('Game not found in onSnapshot:', gameId);
         items.value = [];
       }
     }, (err) => {
       console.error('fetchItems snapshot error:', { error: err.message, code: err.code });
-      error.value = `Failed to fetch items via onSnapshot: ${err.message}`;
     });
   } catch (err: any) {
     error.value = `Failed to fetch items: ${err.message}`;
-    console.error('fetchItems try-catch error:', { error: err.message, code: err.code });
+    console.error('fetchItems error:', { error: err.message, code: err.code });
     items.value = [];
   } finally {
     isLoading.value = false;
