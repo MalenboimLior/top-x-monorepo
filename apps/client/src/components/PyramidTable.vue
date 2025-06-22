@@ -38,7 +38,7 @@
 
       <!-- Worst Item Slot -->
       <div class="worst-item-container mt-4" :class="{ dark: isDark }">
-        <h3 class="subtitle has-text-centered" :class="{ 'has-text-white': isDark }">{{ props.wordtHeader }}</h3>
+        <h3 class="subtitle has-text-centered" :class="{ 'has-text-white': isDark }">{{ props.worstHeader }}</h3>
         <div
           class="pyramid-slot box worst-slot"
           :class="[
@@ -95,12 +95,12 @@ const props = withDefaults(defineProps<{
   items: ImageItem[];
   gameHeader?: string;
   poolHeader?: string;
-  wordtHeader?: string;
+  worstHeader?: string;
   shareText?: string;
 }>(), {
   gameHeader: 'Your Pyramid',
   poolHeader: 'Image Pool',
-  wordtHeader: 'Worst Item',
+  worstHeader: 'Worst Item',
   shareText: '',
 });
 

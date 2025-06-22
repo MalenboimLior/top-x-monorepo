@@ -1,0 +1,216 @@
+<template>
+  <Card>
+    <h2 class="subtitle has-text-white">{{ game.id ? 'Edit' : 'Create' }} Game</h2>
+    <div class="field">
+      <label class="label has-text-white">Game ID</label>
+      <div class="control">
+        <input v-model="localGame.id" class="input" type="text" placeholder="e.g., smartest_on_x" :disabled="!!game.id" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Name</label>
+      <div class="control">
+        <input v-model="localGame.name" class="input" type="text" placeholder="e.g., Smartest on X" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Description</label>
+      <div class="control">
+        <textarea v-model="localGame.description" class="textarea" placeholder="Describe the game"></textarea>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Game Header (Optional)</label>
+      <div class="control">
+        <input v-model="localGame.gameHeader" class="input" type="text" placeholder="e.g., Welcome to the Game" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Pool Header (Optional)</label>
+      <div class="control">
+        <input v-model="localGame.poolHeader" class="input" type="text" placeholder="e.g., Question Pool" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Word Header (Optional)</label>
+      <div class="control">
+        <input v-model="localGame.worstHeader" class="input" type="text" placeholder="e.g., Key Terms" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Share Text (Optional)</label>
+      <div class="control">
+        <input v-model="localGame.shareText" class="input" type="text" placeholder="e.g., Share your score!" />
+      </div>
+    </div>
+    <div v-if="gameTypeCustom === 'PyramidConfig'">
+      <h3 class="subtitle has-text-white">Pyramid Config</h3>
+      <div class="field">
+        <label class="label has-text-white">Rows (JSON)</label>
+        <div class="control">
+          <textarea v-model="pyramidRowsJson" class="textarea" placeholder='e.g., [{"id": 1, "label": "Top", "points": 100}]'></textarea>
+        </div>
+        <p v-if="customError" class="help is-danger">{{ customError }}</p>
+      </div>
+    </div>
+    <div v-if="gameTypeCustom === 'TriviaConfig'">
+      <h3 class="subtitle has-text-white">Trivia Config</h3>
+      <p class="has-text-grey-light">Questions will be managed separately.</p>
+    </div>
+    <div class="field is-grouped">
+      <div class="control">
+        <CustomButton type="is-primary" label="Save" @click="save" :disabled="isSaving" />
+      </div>
+      <div class="control">
+        <CustomButton type="is-light" label="Cancel" @click="$emit('cancel')" />
+      </div>
+    </div>
+    <p v-if="error" class="notification is-danger">{{ error }}</p>
+    <p v-if="success" class="notification is-success">{{ success }}</p>
+  </Card>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '@top-x/shared';
+import { useUserStore } from '@/stores/user';
+import Card from '@top-x/shared/components/Card.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import type { Game, ConfigType } from '@top-x/shared/types/game';
+import type { PyramidConfig, PyramidRow } from '@top-x/shared/types/pyramid';
+import type { TriviaConfig } from '@top-x/shared/types';
+
+const props = defineProps<{
+  game: Game;
+  gameTypeId: string | null;
+}>();
+
+const emit = defineEmits<{
+  (e: 'save'): void;
+  (e: 'cancel'): void;
+}>();
+
+const userStore = useUserStore();
+const localGame = ref<Game>({ ...props.game });
+const pyramidRowsJson = ref<string>(
+  props.game.custom && 'rows' in props.game.custom ? JSON.stringify((props.game.custom as PyramidConfig).rows, null, 2) : '[]'
+);
+const isSaving = ref(false);
+const error = ref<string | null>(null);
+const success = ref<string | null>(null);
+const customError = ref<string | null>(null);
+
+const isAdmin = computed(() => {
+  const adminStatus = userStore.user?.isAdmin || false;
+  console.log('isAdmin check:', { user: userStore.user, isAdmin: adminStatus });
+  return adminStatus;
+});
+
+const gameTypeCustom = ref<ConfigType | null>(null);
+
+const fetchGameTypeCustom = async () => {
+  console.log('fetchGameTypeCustom called with gameTypeId:', props.gameTypeId);
+  if (props.gameTypeId) {
+    try {
+      const gameTypeDoc = await getDoc(doc(db, 'gameTypes', props.gameTypeId));
+      console.log('GameType doc fetched:', { exists: gameTypeDoc.exists(), id: props.gameTypeId });
+      if (gameTypeDoc.exists()) {
+        gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
+        console.log('gameTypeCustom set:', gameTypeCustom.value);
+      } else {
+        error.value = 'Game Type not found';
+        console.log('GameType not found in Firestore:', props.gameTypeId);
+      }
+    } catch (err: any) {
+      error.value = `Failed to fetch game type: ${err.message}`;
+      console.error('fetchGameTypeCustom error:', { error: err.message, code: err.code });
+    }
+  } else {
+    error.value = 'No Game Type ID provided';
+    console.log('fetchGameTypeCustom: No gameTypeId provided');
+  }
+};
+
+const save = async () => {
+  console.log('save called with localGame:', localGame.value);
+  if (!isAdmin.value) {
+    error.value = 'Unauthorized: Admin access required';
+    console.log('save blocked: User is not admin');
+    return;
+  }
+  if (!props.gameTypeId || !localGame.value.id || !localGame.value.name) {
+    error.value = 'Game Type, Game ID, and Name are required';
+    console.log('save blocked: Missing required fields', { gameTypeId: props.gameTypeId, id: localGame.value.id, name: localGame.value.name });
+    return;
+  }
+  if (!gameTypeCustom.value) {
+    error.value = 'Game Type configuration not loaded';
+    console.log('save blocked: gameTypeCustom not set');
+    return;
+  }
+  isSaving.value = true;
+  error.value = null;
+  success.value = null;
+  customError.value = null;
+
+  let customData: PyramidConfig | TriviaConfig;
+  if (gameTypeCustom.value === 'PyramidConfig') {
+    console.log('Processing PyramidConfig with rows JSON:', pyramidRowsJson.value);
+    try {
+      const rows: PyramidRow[] = JSON.parse(pyramidRowsJson.value);
+      customData = {
+        items: 'items' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).items : [],
+        rows,
+      };
+      console.log('PyramidConfig customData created:', customData);
+    } catch (err: any) {
+      customError.value = 'Invalid JSON in Rows';
+      console.error('save PyramidConfig error:', { error: err.message });
+      isSaving.value = false;
+      return;
+    }
+  } else if (gameTypeCustom.value === 'TriviaConfig') {
+    customData = {
+      questions: 'questions' in (localGame.value.custom || {}) ? (localGame.value.custom as TriviaConfig).questions : [],
+    };
+    console.log('TriviaConfig customData created:', customData);
+  } else {
+    error.value = 'Invalid game type configuration';
+    console.log('save blocked: Invalid gameTypeCustom:', gameTypeCustom.value);
+    isSaving.value = false;
+    return;
+  }
+
+  try {
+    const gameData = {
+      name: localGame.value.name,
+      description: localGame.value.description,
+      gameTypeId: props.gameTypeId,
+      custom: customData,
+      gameHeader: localGame.value.gameHeader || null,
+      poolHeader: localGame.value.poolHeader || null,
+      wordHeader: localGame.value.worstHeader || null,
+      shareText: localGame.value.shareText || null,
+    };
+    console.log('Saving game to Firestore:', { id: localGame.value.id, data: gameData });
+    await setDoc(doc(db, 'games', localGame.value.id), gameData);
+    success.value = `Game '${localGame.value.name}' saved successfully`;
+    console.log('Game saved successfully:', gameData);
+    emit('save');
+  } catch (err: any) {
+    error.value = `Failed to save game: ${err.message}`;
+    console.error('save error:', { error: err.message, code: err.code });
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+fetchGameTypeCustom();
+</script>
+
+<style scoped>
+.mt-3 {
+  margin-top: 1rem;
+}
+</style>
