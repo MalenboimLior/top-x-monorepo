@@ -50,7 +50,7 @@
       @refresh="refreshRows"
     />
     <PyramidItemList
-      v-if="shouldRenderItemList && gameTypeCustom === 'PyramidConfig'"
+      v-if="activeTab === 'items' && gameTypeCustom === 'PyramidConfig' && selectedGameId"
       ref="pyramidItemList"
       :gameId="selectedGameId"
       @edit="editItem"
@@ -65,7 +65,7 @@
       @refresh="refreshItems"
     />
     <QuestionList
-      v-if="shouldRenderItemList && gameTypeCustom === 'TriviaConfig'"
+      v-if="activeTab === 'items' && gameTypeCustom === 'TriviaConfig' && selectedGameId"
       :gameId="selectedGameId"
       @edit="editQuestion"
     />
@@ -110,22 +110,22 @@ const pyramidRowList = ref<InstanceType<typeof PyramidRowList> | null>(null);
 const pyramidItemList = ref<InstanceType<typeof PyramidItemList> | null>(null);
 
 const shouldRenderRowList = computed(() => {
-  const render = activeTab.value === 'rows' && selectedGameTypeId.value && selectedGameId.value && gameTypeCustom.value === 'PyramidConfig';
+  const render = selectedGameTypeId.value && selectedGameId.value && gameTypeCustom.value === 'PyramidConfig';
   console.log('shouldRenderRowList evaluated:', { render, activeTab: activeTab.value, selectedGameTypeId: selectedGameTypeId.value, selectedGameId: selectedGameId.value, gameTypeCustom: gameTypeCustom.value });
   return render;
 });
 
 const shouldRenderItemList = computed(() => {
-  const render = activeTab.value === 'items' && selectedGameTypeId.value && selectedGameId.value;
+  const render = selectedGameTypeId.value && selectedGameId.value && gameTypeCustom.value === 'PyramidConfig';
   console.log('shouldRenderItemList evaluated:', { render, activeTab: activeTab.value, selectedGameTypeId: selectedGameTypeId.value, selectedGameId: selectedGameId.value, gameTypeCustom: gameTypeCustom.value });
   return render;
 });
 
 const switchTab = (tab: typeof activeTab.value) => {
-  console.log('switchTab called:', { tab, currentTab: activeTab.value });
+  console.log('switchTab called:', { tab, currentTab: activeTab.value, selectedGameId: selectedGameId.value, gameTypeCustom: gameTypeCustom.value });
   activeTab.value = tab;
   if (tab === 'items' && pyramidItemList.value && selectedGameId.value) {
-    console.log('Forcing item list refresh on tab switch');
+    console.log('Forcing PyramidItemList refresh on items tab switch');
     pyramidItemList.value.refresh();
   }
 };
@@ -154,7 +154,7 @@ const selectGameType = async (gameTypeId: string) => {
 const selectGame = (gameId: string) => {
   console.log('Selecting Game:', gameId);
   selectedGameId.value = gameId;
-  activeTab.value = gameTypeCustom.value === 'PyramidConfig' ? 'rows' : 'items';
+  activeTab.value = gameTypeCustom.value === 'PyramidConfig' ? 'items' : 'items';
   console.log('selectGame updated state:', { selectedGameId: selectedGameId.value, activeTab: activeTab.value });
 };
 
@@ -226,13 +226,6 @@ const refreshRows = () => {
 
 const refreshItems = () => {
   console.log('refreshItems called');
-  if (pyramidItemList.value && selectedGameId.value) {
-    pyramidItemList.value.refresh();
-  }
-};
-
-const forceRefreshItems = () => {
-  console.log('forceRefreshItems called');
   if (pyramidItemList.value && selectedGameId.value) {
     pyramidItemList.value.refresh();
   }
