@@ -4,13 +4,16 @@
     <div class="tabs is-boxed">
       <ul>
         <li :class="{ 'is-active': activeTab === 'gameTypes' }">
-          <a @click="activeTab = 'gameTypes'">Game Types</a>
+          <a @click="switchTab('gameTypes')">Game Types</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'games' }">
-          <a @click="activeTab = 'games'">Games</a>
+          <a @click="switchTab('games')">Games</a>
         </li>
-        <li v-if="selectedGameTypeId" :class="{ 'is-active': activeTab === 'items' }">
-          <a @click="activeTab = 'items'">Items/Questions</a>
+        <li v-if="shouldRenderRowList" :class="{ 'is-active': activeTab === 'rows' }">
+          <a @click="switchTab('rows')">Rows</a>
+        </li>
+        <li v-if="shouldRenderItemList" :class="{ 'is-active': activeTab === 'items' }">
+          <a @click="switchTab('items')">Items/Questions</a>
         </li>
       </ul>
     </div>
@@ -31,10 +34,27 @@
       @save="saveGame"
       @cancel="cancelEdit"
     />
+    <PyramidRowList
+      v-if="shouldRenderRowList"
+      ref="pyramidRowList"
+      :gameId="selectedGameId"
+      @edit="editRow"
+      @refresh="refreshRows"
+    />
+    <PyramidRowRecord
+      v-if="editingRow && gameTypeCustom === 'PyramidConfig'"
+      :row="editingRow"
+      :gameId="selectedGameId"
+      @save="saveRow"
+      @cancel="cancelEdit"
+      @refresh="refreshRows"
+    />
     <PyramidItemList
-      v-if="activeTab === 'items' && selectedGameTypeId && selectedGameId && gameTypeCustom === 'PyramidConfig'"
+      v-if="shouldRenderItemList && gameTypeCustom === 'PyramidConfig'"
+      ref="pyramidItemList"
       :gameId="selectedGameId"
       @edit="editItem"
+      @refresh="refreshItems"
     />
     <PyramidItemRecord
       v-if="editingItem && gameTypeCustom === 'PyramidConfig'"
@@ -42,9 +62,10 @@
       :gameId="selectedGameId"
       @save="saveItem"
       @cancel="cancelEdit"
+      @refresh="refreshItems"
     />
     <QuestionList
-      v-if="activeTab === 'items' && selectedGameTypeId && selectedGameId && gameTypeCustom === 'TriviaConfig'"
+      v-if="shouldRenderItemList && gameTypeCustom === 'TriviaConfig'"
       :gameId="selectedGameId"
       @edit="editQuestion"
     />
@@ -66,34 +87,66 @@ import GameTypeList from '@/components/GameTypeList.vue';
 import GameTypeRecord from '@/components/GameTypeRecord.vue';
 import GameList from '@/components/GameList.vue';
 import GameRecord from '@/components/GameRecord.vue';
+import PyramidRowList from '@/components/PyramidRowList.vue';
+import PyramidRowRecord from '@/components/PyramidRowRecord.vue';
 import PyramidItemList from '@/components/PyramidItemList.vue';
 import PyramidItemRecord from '@/components/PyramidItemRecord.vue';
 import QuestionList from '@/components/QuestionList.vue';
 import QuestionRecord from '@/components/QuestionRecord.vue';
 import type { GameType, Game, ConfigType } from '@top-x/shared/types/game';
-import type { PyramidItem } from '@top-x/shared/types/pyramid';
+import type { PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 import type { TriviaQuestion } from '@top-x/shared/types';
 
-const activeTab = ref<'gameTypes' | 'games' | 'items'>('gameTypes');
+const activeTab = ref<'gameTypes' | 'games' | 'rows' | 'items'>('gameTypes');
 const selectedGameTypeId = ref<string | null>(null);
 const selectedGameId = ref<string | null>(null);
 const gameTypeCustom = ref<ConfigType | null>(null);
 const editingGameType = ref<GameType | null>(null);
 const editingGame = ref<Game | null>(null);
+const editingRow = ref<PyramidRow | null>(null);
 const editingItem = ref<PyramidItem | null>(null);
 const editingQuestion = ref<TriviaQuestion | null>(null);
+const pyramidRowList = ref<InstanceType<typeof PyramidRowList> | null>(null);
+const pyramidItemList = ref<InstanceType<typeof PyramidItemList> | null>(null);
+
+const shouldRenderRowList = computed(() => {
+  const render = activeTab.value === 'rows' && selectedGameTypeId.value && selectedGameId.value && gameTypeCustom.value === 'PyramidConfig';
+  console.log('shouldRenderRowList evaluated:', { render, activeTab: activeTab.value, selectedGameTypeId: selectedGameTypeId.value, selectedGameId: selectedGameId.value, gameTypeCustom: gameTypeCustom.value });
+  return render;
+});
+
+const shouldRenderItemList = computed(() => {
+  const render = activeTab.value === 'items' && selectedGameTypeId.value && selectedGameId.value;
+  console.log('shouldRenderItemList evaluated:', { render, activeTab: activeTab.value, selectedGameTypeId: selectedGameTypeId.value, selectedGameId: selectedGameId.value, gameTypeCustom: gameTypeCustom.value });
+  return render;
+});
+
+const switchTab = (tab: typeof activeTab.value) => {
+  console.log('switchTab called:', { tab, currentTab: activeTab.value });
+  activeTab.value = tab;
+  if (tab === 'items' && pyramidItemList.value && selectedGameId.value) {
+    console.log('Forcing item list refresh on tab switch');
+    pyramidItemList.value.refresh();
+  }
+};
 
 const selectGameType = async (gameTypeId: string) => {
   console.log('Selecting GameType:', gameTypeId);
   selectedGameTypeId.value = gameTypeId;
+  selectedGameId.value = null;
   activeTab.value = 'games';
-  console.log('selectGameType updated state:', { selectedGameTypeId: selectedGameTypeId.value, activeTab: activeTab.value });
-  const gameTypeDoc = await getDoc(doc(db, 'gameTypes', gameTypeId));
-  if (gameTypeDoc.exists()) {
-    gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
-    console.log('GameType custom fetched:', gameTypeCustom.value);
-  } else {
-    console.log('GameType not found:', gameTypeId);
+  console.log('selectGameType updated state:', { selectedGameTypeId: selectedGameTypeId.value, selectedGameId: selectedGameId.value, activeTab: activeTab.value });
+  try {
+    const gameTypeDoc = await getDoc(doc(db, 'gameTypes', gameTypeId));
+    if (gameTypeDoc.exists()) {
+      gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
+      console.log('GameType custom fetched:', gameTypeCustom.value);
+    } else {
+      console.log('GameType not found:', gameTypeId);
+      gameTypeCustom.value = null;
+    }
+  } catch (err: any) {
+    console.error('selectGameType error:', { error: err.message, code: err.code });
     gameTypeCustom.value = null;
   }
 };
@@ -101,7 +154,8 @@ const selectGameType = async (gameTypeId: string) => {
 const selectGame = (gameId: string) => {
   console.log('Selecting Game:', gameId);
   selectedGameId.value = gameId;
-  activeTab.value = 'items';
+  activeTab.value = gameTypeCustom.value === 'PyramidConfig' ? 'rows' : 'items';
+  console.log('selectGame updated state:', { selectedGameId: selectedGameId.value, activeTab: activeTab.value });
 };
 
 const editGameType = (gameType: GameType) => {
@@ -112,6 +166,11 @@ const editGameType = (gameType: GameType) => {
 const editGame = (game: Game) => {
   console.log('Editing Game:', game);
   editingGame.value = { ...game };
+};
+
+const editRow = (row: PyramidRow) => {
+  console.log('Editing Row:', row);
+  editingRow.value = { ...row };
 };
 
 const editItem = (item: PyramidItem) => {
@@ -134,6 +193,11 @@ const saveGame = () => {
   editingGame.value = null;
 };
 
+const saveRow = () => {
+  console.log('Row saved');
+  editingRow.value = null;
+};
+
 const saveItem = () => {
   console.log('Item saved');
   editingItem.value = null;
@@ -148,8 +212,30 @@ const cancelEdit = () => {
   console.log('Edit cancelled');
   editingGameType.value = null;
   editingGame.value = null;
+  editingRow.value = null;
   editingItem.value = null;
   editingQuestion.value = null;
+};
+
+const refreshRows = () => {
+  console.log('refreshRows called');
+  if (pyramidRowList.value) {
+    pyramidRowList.value.refresh();
+  }
+};
+
+const refreshItems = () => {
+  console.log('refreshItems called');
+  if (pyramidItemList.value && selectedGameId.value) {
+    pyramidItemList.value.refresh();
+  }
+};
+
+const forceRefreshItems = () => {
+  console.log('forceRefreshItems called');
+  if (pyramidItemList.value && selectedGameId.value) {
+    pyramidItemList.value.refresh();
+  }
 };
 
 const logGameListMounted = () => {
