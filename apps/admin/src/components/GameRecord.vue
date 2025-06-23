@@ -72,7 +72,7 @@ import { useUserStore } from '@/stores/user';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { Game, ConfigType } from '@top-x/shared/types/game';
-import type { PyramidConfig, PyramidRow } from '@top-x/shared/types/pyramid';
+import type { PyramidConfig, PyramidRow } from '@top-x/shared/types';
 import type { TriviaConfig } from '@top-x/shared/types';
 
 const props = defineProps<{

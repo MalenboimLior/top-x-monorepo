@@ -1,24 +1,13 @@
-export interface ImageItem {
-  id: string;
-  src: string;
-  label: string;
-}
-
-export interface PyramidSlot {
-  image: ImageItem | null;
-}
-
-export interface PyramidData {
-  pyramid: PyramidSlot[][];
-  worstItem: ImageItem | null; // New field for worst item
-}
 export interface PyramidItem {
   id: string;
-  src: string;
   label: string;
+  src: string;
   color?: string;
 }
-
+export interface PyramidConfig {
+  items: PyramidItem[];
+  rows: PyramidRow[];
+}
 export interface PyramidRow {
   id: number;
   label: string;
@@ -26,7 +15,11 @@ export interface PyramidRow {
   color?: string;
 }
 
-export interface PyramidConfig {
-  items: PyramidItem[];
-  rows: PyramidRow[];
+export interface PyramidSlot {
+  image: PyramidItem | null;
+}
+
+export interface PyramidData {
+  pyramid: PyramidSlot[][];
+  worstItem: PyramidItem | null;
 }
