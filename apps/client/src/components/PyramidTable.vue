@@ -10,28 +10,34 @@
       <h2 class="subtitle" :class="{ 'has-text-white': isDark }">{{ props.gameHeader }}</h2>
 
       <div class="pyramid" :class="{ dark: isDark }">
-        <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row">
-          <div
-            v-for="(slot, colIndex) in row"
-            :key="colIndex"
-            class="pyramid-slot box"
-            :class="[
-              { 'selected': isSelected(slot.image) },
-              { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
-              { 'drop-hover': isDroppable(rowIndex, colIndex) },
-              isDark ? 'dark-slot' : ''
-            ]"
-            @dragover.prevent
-            @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
-            @dragleave.prevent="onDragLeaveSlot"
-            @drop="() => onDropToSlot(rowIndex, colIndex)"
-            @click="onSlotClick(rowIndex, colIndex)"
-          >
-            <div v-if="slot.image" class="draggable-item slot-style">
-              <img :src="slot.image.src" class="draggable-image" />
-              <div class="image-label">{{ slot.image.label }}</div>
+        <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
+          <div class="row-label" :class="{ 'has-text-white': isDark }">
+            {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
+          </div>
+          <div class="pyramid-row">
+            <div
+              v-for="(slot, colIndex) in row"
+              :key="colIndex"
+              class="pyramid-slot box"
+              :class="[
+                { 'selected': isSelected(slot.image) },
+                { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
+                { 'drop-hover': isDroppable(rowIndex, colIndex) },
+                isDark ? 'dark-slot' : ''
+              ]"
+              :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
+              @dragover.prevent
+              @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
+              @dragleave.prevent="onDragLeaveSlot"
+              @drop="() => onDropToSlot(rowIndex, colIndex)"
+              @click="onSlotClick(rowIndex, colIndex)"
+            >
+              <div v-if="slot.image" class="draggable-item slot-style">
+                <img :src="slot.image.src" class="draggable-image" />
+                <div class="image-label">{{ slot.image.label }}</div>
+              </div>
+              <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
             </div>
-            <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
           </div>
         </div>
       </div>
@@ -89,17 +95,20 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ImageItem, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@top-x/shared';
+import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 
 const props = withDefaults(defineProps<{
-  items: ImageItem[];
+  items: PyramidItem[];
+  rows: PyramidRow[];
   gameHeader?: string;
   poolHeader?: string;
   worstHeader?: string;
   shareText?: string;
 }>(), {
   gameHeader: 'Your Pyramid',
-  poolHeader: 'Image Pool',
+  poolHeader: 'Item Pool',
   worstHeader: 'Worst Item',
   shareText: '',
 });
@@ -109,16 +118,16 @@ const emit = defineEmits<{
 }>();
 
 const isDark = ref(false);
-const imagePool = ref<ImageItem[]>([]);
+const imagePool = ref<PyramidItem[]>([]);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
   [{ image: null }, { image: null }],
   [{ image: null }, { image: null }, { image: null }],
   [{ image: null }, { image: null }, { image: null }, { image: null }],
 ]);
-const worstItem = ref<ImageItem | null>(null);
-const draggedItem = ref<ImageItem | null>(null);
-const selectedItem = ref<ImageItem | null>(null);
+const worstItem = ref<PyramidItem | null>(null);
+const draggedItem = ref<PyramidItem | null>(null);
+const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
 
 watch(
@@ -131,8 +140,8 @@ watch(
   { immediate: true }
 );
 
-function isSelected(image: ImageItem | null): boolean {
-  return image !== null && selectedItem.value?.id === image.id;
+function isSelected(item: PyramidItem | null): boolean {
+  return item !== null && selectedItem.value?.id === item.id;
 }
 
 function isDroppable(row: number, col: number): boolean {
@@ -142,14 +151,14 @@ function isDroppable(row: number, col: number): boolean {
   return droppableSlot.value?.row === row && droppableSlot.value?.col === col;
 }
 
-function onDragStart(image: ImageItem) {
-  draggedItem.value = image;
-  selectedItem.value = image;
-  console.log('PyramidTable: Drag started for item:', image);
+function onDragStart(item: PyramidItem) {
+  draggedItem.value = item;
+  selectedItem.value = item;
+  console.log('PyramidTable: Drag started for item:', item);
 }
 
-function onTapSelect(image: ImageItem) {
-  selectedItem.value = selectedItem.value?.id === image.id ? null : image;
+function onTapSelect(item: PyramidItem) {
+  selectedItem.value = selectedItem.value?.id === item.id ? null : item;
   draggedItem.value = selectedItem.value;
   console.log('PyramidTable: Item selected via tap:', selectedItem.value);
 }
@@ -169,12 +178,12 @@ function onDragLeaveSlot() {
 function onSlotClick(row: number, col: number) {
   console.log('PyramidTable: Slot clicked:', { row, col });
   const targetSlot = pyramid.value[row][col];
-  const targetImage = targetSlot.image;
+  const targetItem = targetSlot.image;
 
-  if (!selectedItem.value && targetImage) {
-    selectedItem.value = targetImage;
-    draggedItem.value = targetImage;
-    console.log('PyramidTable: Selected image from slot:', targetImage);
+  if (!selectedItem.value && targetItem) {
+    selectedItem.value = targetItem;
+    draggedItem.value = targetItem;
+    console.log('PyramidTable: Selected item from slot:', targetItem);
     return;
   }
 
@@ -187,16 +196,16 @@ function onSlotClick(row: number, col: number) {
   const fromInPool = imagePool.value.some(i => i.id === selectedItem.value!.id);
   const fromWorst = worstItem.value?.id === selectedItem.value.id;
 
-  if (targetImage) {
+  if (targetItem) {
     if (fromInPool) {
       imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-      imagePool.value.push(targetImage);
+      imagePool.value.push(targetItem);
       console.log('PyramidTable: Swapped pool item with slot item:', { pool: imagePool.value });
     } else if (fromSlot) {
-      fromSlot.image = targetImage;
-      console.log('PyramidTable: Swapped slot items:', { fromSlot, targetImage });
+      fromSlot.image = targetItem;
+      console.log('PyramidTable: Swapped slot items:', { fromSlot, targetItem });
     } else if (fromWorst) {
-      worstItem.value = targetImage;
+      worstItem.value = targetItem;
       console.log('PyramidTable: Swapped worst item with slot item:', { worstItem: worstItem.value });
     }
   } else if (!fromInPool && fromSlot) {
@@ -214,7 +223,7 @@ function onSlotClick(row: number, col: number) {
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
-  console.log('PyramidTable: Placed item in slot:', { row, col, image: targetSlot.image });
+  console.log('PyramidTable: Placed item in slot:', { row, col, item: targetSlot.image });
 }
 
 function onDropToSlot(row: number, col: number) {
@@ -291,10 +300,10 @@ function onDropToPool() {
   droppableSlot.value = null;
 }
 
-function findSlotContaining(imageId: string): PyramidSlot | null {
+function findSlotContaining(itemId: string): PyramidSlot | null {
   for (const row of pyramid.value) {
     for (const slot of row) {
-      if (slot.image?.id === imageId) {
+      if (slot.image?.id === itemId) {
         return slot;
       }
     }
@@ -337,6 +346,17 @@ function submitPyramid() {
   width: fit-content;
   margin: 0 auto;
 }
+.pyramid-row-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.row-label {
+  width: 100px;
+  text-align: right;
+  font-weight: bold;
+  font-size: 1rem;
+}
 .pyramid-row {
   display: flex;
   justify-content: center;
@@ -356,10 +376,10 @@ function submitPyramid() {
   background-color: #f5f5f5;
   border: 1px dashed #ccc;
   cursor: pointer;
-  padding: 0.25rem;
-  transition: background-color 0.2s, transform 0.2s;
+  padding: 4px;
+  transition: all 0.2s ease;
   position: relative;
-  border-radius: 0.75rem;
+  border-radius: 4px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   text-align: center;
   overflow: hidden;
@@ -495,6 +515,10 @@ function submitPyramid() {
   }
   .subtitle {
     font-size: 1.2rem;
+  }
+  .row-label {
+    width: 80px;
+    font-size: 0.9rem;
   }
 }
 </style>
