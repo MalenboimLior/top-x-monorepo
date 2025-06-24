@@ -14,6 +14,12 @@
       </div>
     </div>
     <div class="field">
+      <label class="label has-text-white">Name</label>
+      <div class="control">
+        <input v-model="localItem.name" class="input" type="text" placeholder="e.g., city_name" />
+      </div>
+    </div>
+    <div class="field">
       <label class="label has-text-white">Image URL</label>
       <div class="control">
         <input v-model="localItem.src" class="input" type="text" placeholder="e.g., https://example.com/image.jpg" />
@@ -82,8 +88,8 @@ const save = async () => {
     console.log('save blocked: No gameId');
     return;
   }
-  if (!localItem.value.id || !localItem.value.label || !localItem.value.src) {
-    error.value = 'Item ID, Label, and Image URL are required';
+  if (!localItem.value.id || !localItem.value.name || !localItem.value.label || !localItem.value.src) {
+    error.value = 'Item ID, Name, Label, and Image URL are required';
     console.log('save blocked: Missing required fields', localItem.value);
     return;
   }
