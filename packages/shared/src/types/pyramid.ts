@@ -1,6 +1,7 @@
 export interface PyramidItem {
   id: string;
   label: string;
+  name: string;
   src: string;
   color?: string;
 }

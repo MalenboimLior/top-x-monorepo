@@ -13,6 +13,7 @@
           </div>
           <div class="media-content">
             <p class="title is-6 has-text-white">{{ item.label }}</p>
+            <p class="subtitle is-7 has-text-grey-light">Name: {{ item.name }}</p>
             <p class="subtitle is-7 has-text-grey-light">ID: {{ item.id }}</p>
             <p v-if="item.color" class="has-text-grey-light">Color: {{ item.color }}</p>
           </div>
@@ -143,7 +144,7 @@ const createNew = () => {
     return;
   }
   console.log('createNew called, emitting edit with new item');
-  emit('edit', { id: '', src: '', label: '' });
+  emit('edit', { id: '', src: '', label: '', name: '' });
 };
 
 const refresh = () => {
