@@ -12,6 +12,7 @@
       <div v-for="game in games" :key="game.id" class="box">
         <h3 class="title is-5 has-text-white">{{ game.name }}</h3>
         <p class="has-text-grey-light">{{ game.description }}</p>
+        <p class="has-text-grey-light">Active: {{ game.active ? 'Yes' : 'No' }}</p>
         <div class="buttons mt-2">
           <CustomButton type="is-info" label="Select" @click="$emit('select', game.id)" />
           <CustomButton type="is-warning" label="Edit" @click="$emit('edit', game)" />
@@ -111,6 +112,7 @@ const createNew = () => {
       poolHeader: '',
       worstHeader: '',
       shareText: '',
+      active: false,
     };
     console.log('createNew called, emitting edit with new game:', newGame);
     emit('edit', newGame);

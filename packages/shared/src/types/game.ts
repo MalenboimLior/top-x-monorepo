@@ -14,6 +14,7 @@ export interface Game {
   name: string;
   description: string;
   gameTypeId: string;
+  active: boolean;
   gameHeader?: string;
   poolHeader?: string;
   worstHeader?: string;
