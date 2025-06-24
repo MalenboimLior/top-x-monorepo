@@ -1,7 +1,7 @@
 <template>
   <div class="pyramid-tier">
     <h1>{{ gameDescription }}</h1>
-    <PyramidTable :items="items" :rows="rows" @submit="handleSubmit" />
+    <PyramidTable :items="items" :rows="rows" :sort-items="sortItems" @submit="handleSubmit" />
   </div>
 </template>
 
@@ -12,7 +12,7 @@ import { doc, getDoc, setDoc, runTransaction, Firestore } from 'firebase/firesto
 import { db } from '@top-x/shared';
 import PyramidTable from '@/components/PyramidTable.vue';
 import { useUserStore } from '@/stores/user';
-import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
+import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +21,7 @@ const gameId = route.query.game as string;
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
 const rows = ref<PyramidRow[]>([]);
+const sortItems = ref<SortOption>({ orderBy: 'id', order: 'asc' });
 
 onMounted(async () => {
   console.log('PyramidTier: onMounted called with gameId:', gameId);
@@ -37,6 +38,7 @@ onMounted(async () => {
       gameDescription.value = gameData.description || '';
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [] as PyramidRow[];
+      sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
       console.log('PyramidTier: Game data fetched:', gameData);
       console.log('Pyramid: Items and rows assigned:', { items: items.value, rows: rows.value });
     } else {
