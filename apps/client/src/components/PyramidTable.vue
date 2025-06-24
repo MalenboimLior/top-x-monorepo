@@ -1,17 +1,11 @@
 <template>
   <section class="section">
     <div class="container has-text-centered">
-      <div class="theme-toggle">
-        <button class="button is-small" @click="isDark = !isDark">
-          Toggle {{ isDark ? 'Light' : 'Dark' }} Mode
-        </button>
-      </div>
+      <h2 class="subtitle has-text-white">{{ props.gameHeader }}</h2>
 
-      <h2 class="subtitle" :class="{ 'has-text-white': isDark }">{{ props.gameHeader }}</h2>
-
-      <div class="pyramid" :class="{ dark: isDark }">
+      <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div class="row-label" :class="{ 'has-text-white': isDark }">
+          <div class="row-label has-text-white">
             {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
           </div>
           <div class="pyramid-row">
@@ -23,7 +17,7 @@
                 { 'selected': isSelected(slot.image) },
                 { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
                 { 'drop-hover': isDroppable(rowIndex, colIndex) },
-                isDark ? 'dark-slot' : ''
+                'dark-slot'
               ]"
               :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
               @dragover.prevent
@@ -35,6 +29,7 @@
               <div v-if="slot.image" class="draggable-item slot-style">
                 <img :src="slot.image.src" class="draggable-image" />
                 <div class="image-label">{{ slot.image.label }}</div>
+                <div class="color-indicator" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
               </div>
               <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
             </div>
@@ -43,15 +38,14 @@
       </div>
 
       <!-- Worst Item Slot -->
-      <div class="worst-item-container mt-4" :class="{ dark: isDark }">
-        <h3 class="subtitle has-text-centered" :class="{ 'has-text-white': isDark }">{{ props.worstHeader }}</h3>
+      <div class="worst-item-container">
+        <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
         <div
-          class="pyramid-slot box worst-slot"
+          class="pyramid-slot box worst-slot dark-slot"
           :class="[
             { 'selected': isSelected(worstItem) },
             { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
-            { 'drop-hover': isDroppable(-1, -1) },
-            isDark ? 'dark-slot' : ''
+            { 'drop-hover': isDroppable(-1, -1) }
           ]"
           @dragover.prevent
           @dragenter.prevent="onDragEnterSlot(-1, -1)"
@@ -62,33 +56,34 @@
           <div v-if="worstItem" class="draggable-item slot-style">
             <img :src="worstItem.src" class="draggable-image" />
             <div class="image-label">{{ worstItem.label }}</div>
+            <div class="color-indicator" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
           </div>
           <div v-else class="tier-label has-text-danger">Worst</div>
         </div>
       </div>
 
-      <h2 class="subtitle mt-6" :class="{ 'has-text-white': isDark }">{{ props.poolHeader }}</h2>
+      <button class="button is-primary" @click="submitPyramid">Submit</button>
+
+      <h2 class="subtitle has-text-white">{{ props.poolHeader }}</h2>
       <div
         class="image-pool drop-zone"
-        :class="{ dark: isDark }"
         @dragover.prevent
         @drop="onDropToPool"
       >
         <div
           v-for="image in imagePool"
           :key="image.id"
-          class="pyramid-slot image-box slot-style"
-          :class="[{ 'selected': isSelected(image) }, isDark ? 'dark-slot' : '']"
+          class="pyramid-slot image-box slot-style dark-slot"
+          :class="{ 'selected': isSelected(image) }"
           draggable="true"
           @dragstart="() => onDragStart(image)"
           @click.stop="() => onTapSelect(image)"
         >
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
+          <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
         </div>
       </div>
-
-      <button class="button is-primary mt-4" @click="submitPyramid">Submit</button>
     </div>
   </section>
 </template>
@@ -119,7 +114,6 @@ const emit = defineEmits<{
   (e: 'submit', data: PyramidData): void;
 }>();
 
-const isDark = ref(false);
 const imagePool = ref<PyramidItem[]>([]);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
@@ -142,10 +136,8 @@ watch(
       const valA = a[field as keyof PyramidItem] || '';
       const valB = b[field as keyof PyramidItem] || '';
       if (field === 'id') {
-        // Numeric comparison for IDs
         return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
       }
-      // String comparison for label and color
       return String(valA).localeCompare(String(valB)) * dir;
     });
     imagePool.value = sorted;
@@ -163,10 +155,8 @@ watch(
       const valA = a[field as keyof PyramidItem] || '';
       const valB = b[field as keyof PyramidItem] || '';
       if (field === 'id') {
-        // Numeric comparison for IDs
         return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
       }
-      // String comparison for label and color
       return String(valA).localeCompare(String(valB)) * dir;
     });
     console.log('PyramidTable: imagePool sorted:', imagePool.value);
@@ -357,92 +347,82 @@ function submitPyramid() {
 
 <style scoped>
 .section {
-  padding: 1rem;
-}
-.theme-toggle {
-  margin-bottom: 1rem;
-  text-align: right;
-}
-.dark {
+  padding: 0.5rem;
   background-color: #121212;
   color: #eee;
+  display: flex;
+  justify-content: center;
 }
-.dark-slot {
-  background-color: #1f1f1f !important;
-  border-color: #444 !important;
+.container {
+  width: 100%;
+  max-width: 100%;
 }
 .pyramid {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.1rem;
   width: fit-content;
   margin: 0 auto;
 }
 .pyramid-row-container {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 .row-label {
-  width: 100px;
+  width: 60px;
   text-align: right;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.8rem;
 }
 .pyramid-row {
   display: flex;
   justify-content: center;
-  gap: 0.2rem;
+  gap: 0.1rem;
 }
 .pyramid-slot {
-  width: 18vw;
-  height: 18vw;
-  max-width: 80px;
-  max-height: 80px;
+  width: 22vw;
+  height: 22vw;
+  max-width: 90px;
+  max-height: 90px;
   min-width: 50px;
   min-height: 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  border: 1px dashed #ccc;
+  background-color: #1f1f1f;
+  border: 1px dashed #444;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px;
   transition: all 0.2s ease;
-  position: relative;
   border-radius: 4px;
-  box-shadow: -ND8sQzYk8rR4I4r5zO2A==0 4px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   text-align: center;
   overflow: hidden;
-  margin-bottom: 0px !important;
 }
 .pyramid-slot.drop-hover {
-  background-color: #def0ff;
+  background-color: #3298dc;
   transform: scale(1.05);
   border-color: #3298dc;
 }
 .worst-item-container {
   width: fit-content;
-  margin: 0 auto;
+  margin: 0.5rem auto;
 }
 .worst-slot {
-  border: 2px dashed #ff5555 !important;
-  background-color: #ffe6e6 !important;
-}
-.worst-slot.dark-slot {
+  border: 2px dashed #ff7777 !important;
   background-color: #3d1f1f !important;
-  border-color: #ff7777 !important;
 }
 .worst-slot.drop-hover {
-  background-color: #ffcccc !important;
+  background-color: #ff3333 !important;
   border-color: #ff3333 !important;
   transform: scale(1.05);
 }
 .tier-label {
   color: #bbb;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: bold;
   pointer-events: none;
 }
@@ -452,18 +432,18 @@ function submitPyramid() {
 .image-pool {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.3rem;
   justify-content: center;
-  border: 2px dashed #999;
-  padding: 1rem;
-  margin-top: 1rem;
-  background-color: #fff;
+  border: 2px dashed #666;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: #1f1f1f;
 }
 .image-box {
-  width: 18vw;
-  height: 18vw;
-  max-width: 80px;
-  max-height: 80px;
+  width: 22vw;
+  height: 22vw;
+  max-width: 90px;
+  max-height: 90px;
   min-width: 50px;
   min-height: 50px;
   padding: 0;
@@ -471,87 +451,90 @@ function submitPyramid() {
 .slot-style {
   width: 100%;
   height: 100%;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  background: linear-gradient(to bottom, #ffffff, #f1f1f1);
-  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, #2a2a2a, #1f1f1f);
+  border: 1px solid #444;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .draggable-image {
-  max-width: 80%;
-  max-height: 60px;
+  max-width: 90%;
+  max-height: 70px;
   user-select: none;
   touch-action: none;
   transition: transform 0.2s ease;
 }
 .image-label {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  margin-top: 0.2rem;
-  color: #333;
+  color: #ddd;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0 0.2rem;
+}
+.color-indicator {
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0.5rem 0.5rem;
 }
 .selected {
   border: 2px solid #3273dc;
   box-shadow: 0 0 0 2px #3273dc33;
 }
 .highlight-empty {
-  background-color: #fffae6;
+  background-color: #ffd35c;
   border-color: #ffd35c;
   animation: pulse 1s infinite alternate;
 }
 @keyframes pulse {
   from { box-shadow: 0 0 0 0 rgba(255, 211, 92, 0.6); }
-  to { box-shadow: 0 0 0 8px rgba(255, 211, 92, 0); }
+  to { box-shadow: 0 0 0 6px rgba(255, 211, 92, 0); }
 }
 .subtitle {
-  color: #333;
+  color: #eee;
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
 }
 .button.is-primary {
   background-color: #3273dc;
+  margin: 0.5rem 0;
 }
 
 /* Mobile-specific adjustments */
 @media screen and (max-width: 767px) {
   .section {
-    padding: 0.5rem;
+    padding: 0.3rem;
   }
   .pyramid-slot,
   .image-box {
-    width: 20vw;
-    height: 20vw;
-    min-width: 40px;
-    min-height: 40px;
-    margin: 2px;
+    width: 22vw;
+    height: 22vw;
+    min-width: 50px;
+    min-height: 50px;
+    margin: 1px;
   }
   .pyramid-row {
-    min-height: 20vw;
+    min-height: 22vw;
   }
   .draggable-image {
-    max-height: 50px;
+    max-height: 65px;
   }
   .image-label {
-    font-size: 0.65rem;
-    margin-top: 0.1rem;
+    font-size: 0.6rem;
   }
   .tier-label {
-    font-size: 1rem;
-  }
-  .subtitle {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
   }
   .row-label {
-    width: 80px;
-    font-size: 0.9rem;
+    width: 50px;
+    font-size: 0.8rem;
   }
 }
 </style>
