@@ -15,8 +15,6 @@ build/
 .DS_Store
 *.log
 .env
-.firebase/hosting.YXBwcy9hZG1pbi9kaXN0.cache
-.firebase/hosting.YXBwcy9jbGllbnQvZGlzdA.cache
-/.firebase
+.firebase
 content.html
 /.firebase
