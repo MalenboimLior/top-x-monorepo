@@ -141,6 +141,11 @@ watch(
       const dir = props.sortItems.order === 'asc' ? 1 : -1;
       const valA = a[field as keyof PyramidItem] || '';
       const valB = b[field as keyof PyramidItem] || '';
+      if (field === 'id') {
+        // Numeric comparison for IDs
+        return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+      }
+      // String comparison for label and color
       return String(valA).localeCompare(String(valB)) * dir;
     });
     imagePool.value = sorted;
@@ -157,8 +162,14 @@ watch(
       const dir = props.sortItems.order === 'asc' ? 1 : -1;
       const valA = a[field as keyof PyramidItem] || '';
       const valB = b[field as keyof PyramidItem] || '';
+      if (field === 'id') {
+        // Numeric comparison for IDs
+        return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+      }
+      // String comparison for label and color
       return String(valA).localeCompare(String(valB)) * dir;
     });
+    console.log('PyramidTable: imagePool sorted:', imagePool.value);
   }
 );
 
@@ -402,7 +413,7 @@ function submitPyramid() {
   transition: all 0.2s ease;
   position: relative;
   border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: -ND8sQzYk8rR4I4r5zO2A==0 4px 10px rgba(0, 0, 0, 0.12);
   text-align: center;
   overflow: hidden;
   margin-bottom: 0px !important;
