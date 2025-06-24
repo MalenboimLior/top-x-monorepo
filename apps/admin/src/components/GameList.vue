@@ -107,7 +107,7 @@ const createNew = () => {
       name: '',
       description: '',
       gameTypeId: props.selectedGameTypeId,
-      custom: { items: [], rows: [] }, // Default for PyramidConfig
+      custom: { items: [], rows: [], sortItems: { orderBy: 'id', order: 'asc' } }, // Default for PyramidConfig
       gameHeader: '',
       poolHeader: '',
       worstHeader: '',

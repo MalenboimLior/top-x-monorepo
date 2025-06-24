@@ -52,6 +52,27 @@
     <div v-if="gameTypeCustom === 'PyramidConfig'">
       <h3 class="subtitle has-text-white">Pyramid Config</h3>
       <p class="has-text-grey-light">Rows are managed in the Rows tab.</p>
+
+      <div class="field">
+        <label class="label has-text-white">Sort Items By</label>
+        <div class="control select">
+          <select v-model="(localGame.custom as PyramidConfig).sortItems.orderBy">
+            <option value="id">ID</option>
+            <option value="label">Label</option>
+            <option value="color">Color</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label has-text-white">Sort Order</label>
+        <div class="control select">
+          <select v-model="(localGame.custom as PyramidConfig).sortItems.order">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div v-if="gameTypeCustom === 'TriviaConfig'">
       <h3 class="subtitle has-text-white">Trivia Config</h3>
@@ -93,6 +114,13 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const localGame = ref<Game>({ active: false, ...props.game });
+if (
+  'custom' in localGame.value &&
+  (localGame.value.custom as any) &&
+  !(localGame.value.custom as any).sortItems
+) {
+  (localGame.value.custom as PyramidConfig).sortItems = { orderBy: 'id', order: 'asc' };
+}
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
@@ -157,6 +185,9 @@ const save = async () => {
     customData = {
       items: 'items' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).items : [],
       rows: 'rows' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).rows : [],
+      sortItems: 'sortItems' in (localGame.value.custom || {})
+        ? (localGame.value.custom as PyramidConfig).sortItems
+        : { orderBy: 'id', order: 'asc' },
     };
     console.log('PyramidConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'TriviaConfig') {
