@@ -347,7 +347,7 @@ function submitPyramid() {
 
 <style scoped>
 .section {
-  padding: 0.5rem;
+  padding: 0.2rem 0.1rem;
   background-color: #121212;
   color: #eee;
   display: flex;
@@ -361,33 +361,34 @@ function submitPyramid() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.05rem;
   width: fit-content;
   margin: 0 auto;
 }
 .pyramid-row-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.2rem;
 }
 .row-label {
-  width: 60px;
-  text-align: right;
+  width: 100%;
+  text-align: center;
   font-weight: bold;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 .pyramid-row {
   display: flex;
   justify-content: center;
-  gap: 0.1rem;
+  gap: 0.05rem;
 }
 .pyramid-slot {
   width: 22vw;
   height: 22vw;
-  max-width: 90px;
-  max-height: 90px;
-  min-width: 50px;
-  min-height: 50px;
+  max-width: 80px;
+  max-height: 80px;
+  min-width: 45px;
+  min-height: 45px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -395,7 +396,7 @@ function submitPyramid() {
   background-color: #1f1f1f;
   border: 1px dashed #444;
   cursor: pointer;
-  padding: 2px;
+  padding: 1px;
   transition: all 0.2s ease;
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -409,7 +410,7 @@ function submitPyramid() {
 }
 .worst-item-container {
   width: fit-content;
-  margin: 0.5rem auto;
+  margin: 0.3rem auto;
 }
 .worst-slot {
   border: 2px dashed #ff7777 !important;
@@ -422,7 +423,7 @@ function submitPyramid() {
 }
 .tier-label {
   color: #bbb;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: bold;
   pointer-events: none;
 }
@@ -430,22 +431,20 @@ function submitPyramid() {
   color: #ff5555;
 }
 .image-pool {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.2rem;
   justify-content: center;
   border: 2px dashed #666;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
+  padding: 0.3rem;
+  margin-top: 0.3rem;
   background-color: #1f1f1f;
 }
 .image-box {
-  width: 22vw;
+  width: 100%;
   height: 22vw;
-  max-width: 90px;
-  max-height: 90px;
-  min-width: 50px;
-  min-height: 50px;
+  max-height: 80px;
+  min-height: 45px;
   padding: 0;
 }
 .slot-style {
@@ -463,13 +462,13 @@ function submitPyramid() {
 }
 .draggable-image {
   max-width: 90%;
-  max-height: 70px;
+  max-height: 60px;
   user-select: none;
   touch-action: none;
   transition: transform 0.2s ease;
 }
 .image-label {
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   font-weight: 600;
   color: #ddd;
   text-align: center;
@@ -477,7 +476,7 @@ function submitPyramid() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 0.2rem;
+  padding: 0 0.1rem;
 }
 .color-indicator {
   width: 100%;
@@ -499,42 +498,40 @@ function submitPyramid() {
 }
 .subtitle {
   color: #eee;
-  font-size: 1.1rem;
-  margin: 0.5rem 0;
+  font-size: 1rem;
+  margin: 0.3rem 0;
 }
 .button.is-primary {
   background-color: #3273dc;
-  margin: 0.5rem 0;
+  margin: 0.3rem 0;
 }
 
 /* Mobile-specific adjustments */
 @media screen and (max-width: 767px) {
   .section {
-    padding: 0.3rem;
+    padding: 0.1rem 0.05rem;
   }
   .pyramid-slot,
   .image-box {
-    width: 22vw;
     height: 22vw;
-    min-width: 50px;
-    min-height: 50px;
-    margin: 1px;
+    min-width: 40px;
+    min-height: 40px;
+    margin: 0.5px;
   }
   .pyramid-row {
     min-height: 22vw;
   }
   .draggable-image {
-    max-height: 65px;
+    max-height: 55px;
   }
   .image-label {
-    font-size: 0.6rem;
+    font-size: 0.5rem;
   }
   .tier-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   .row-label {
-    width: 50px;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 }
 </style>
