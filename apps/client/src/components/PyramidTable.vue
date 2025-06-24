@@ -97,11 +97,12 @@
 import { ref, watch } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
+import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 
 const props = withDefaults(defineProps<{
   items: PyramidItem[];
   rows: PyramidRow[];
+  sortItems: SortOption;
   gameHeader?: string;
   poolHeader?: string;
   worstHeader?: string;
@@ -111,6 +112,7 @@ const props = withDefaults(defineProps<{
   poolHeader: 'Item Pool',
   worstHeader: 'Worst Item',
   shareText: '',
+  sortItems: () => ({ orderBy: 'id', order: 'asc' } as SortOption),
 });
 
 const emit = defineEmits<{
@@ -134,10 +136,30 @@ watch(
   () => props.items,
   (newItems) => {
     console.log('PyramidTable: Items prop updated:', newItems);
-    imagePool.value = [...newItems];
+    const sorted = [...newItems].sort((a, b) => {
+      const field = props.sortItems.orderBy;
+      const dir = props.sortItems.order === 'asc' ? 1 : -1;
+      const valA = a[field as keyof PyramidItem] || '';
+      const valB = b[field as keyof PyramidItem] || '';
+      return String(valA).localeCompare(String(valB)) * dir;
+    });
+    imagePool.value = sorted;
     console.log('PyramidTable: imagePool initialized:', imagePool.value);
   },
   { immediate: true }
+);
+
+watch(
+  () => props.sortItems,
+  () => {
+    imagePool.value = [...imagePool.value].sort((a, b) => {
+      const field = props.sortItems.orderBy;
+      const dir = props.sortItems.order === 'asc' ? 1 : -1;
+      const valA = a[field as keyof PyramidItem] || '';
+      const valB = b[field as keyof PyramidItem] || '';
+      return String(valA).localeCompare(String(valB)) * dir;
+    });
+  }
 );
 
 function isSelected(item: PyramidItem | null): boolean {
