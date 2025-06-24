@@ -43,6 +43,12 @@
         <input v-model="localGame.shareText" class="input" type="text" placeholder="e.g., Share your score!" />
       </div>
     </div>
+    <div class="field">
+      <label class="label has-text-white">Active</label>
+      <div class="control">
+        <input type="checkbox" v-model="localGame.active" />
+      </div>
+    </div>
     <div v-if="gameTypeCustom === 'PyramidConfig'">
       <h3 class="subtitle has-text-white">Pyramid Config</h3>
       <p class="has-text-grey-light">Rows are managed in the Rows tab.</p>
@@ -86,7 +92,7 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGame = ref<Game>({ ...props.game });
+const localGame = ref<Game>({ active: false, ...props.game });
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
@@ -175,6 +181,7 @@ const save = async () => {
       poolHeader: localGame.value.poolHeader || null,
       worstHeader: localGame.value.worstHeader || null,
       shareText: localGame.value.shareText || null,
+      active: localGame.value.active || false,
     };
     console.log('Saving game to Firestore:', { id: localGame.value.id, data: gameData });
     await setDoc(doc(db, 'games', localGame.value.id), gameData);

@@ -53,6 +53,7 @@ interface Game {
   gameTypeId: string;
   image: string;
   isComingSoon: boolean;
+  active: boolean;
   route: string;
 }
 
@@ -60,8 +61,8 @@ const games = ref<Game[]>([]);
 
 onMounted(() => {
   console.log('Home: Fetching games from Firestore...');
-  const q = query(collection(db, 'games'));
-  onSnapshot(q, (snapshot) => {
+    const q = query(collection(db, 'games'));
+    onSnapshot(q, (snapshot) => {
     games.value = snapshot.docs.map((doc) => {
       const data = doc.data();
       console.log('Home: Game fetched:', { id: doc.id, data });
@@ -72,9 +73,10 @@ onMounted(() => {
         gameTypeId: data.gameTypeId || '',
         image: data.custom?.image || fallbackImg,
         isComingSoon: data.custom?.isComingSoon || false,
+        active: data.active ?? false,
         route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
-      };
-    });
+      } as Game;
+    }).filter(g => g.active);
     console.log('Home: Games updated:', games.value);
   }, (err) => {
     console.error('Home: Error fetching games:', err.message, err);
