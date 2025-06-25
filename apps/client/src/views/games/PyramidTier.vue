@@ -1,14 +1,24 @@
 <template>
   <div class="pyramid-tier">
     <h1>{{ gameDescription }}</h1>
-    <PyramidTable :items="items" :rows="rows" :sort-items="sortItems" :hide-row-label="hideRowLabel" @submit="handleSubmit" />
+    <PyramidTable
+      :items="items"
+      :rows="rows"
+      :sort-items="sortItems"
+      :hide-row-label="hideRowLabel"
+      :game-header="gameHeader"
+      :pool-header="poolHeader"
+      :worst-header="worstHeader"
+      :share-text="shareText"
+      @submit="handleSubmit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { doc, getDoc, setDoc, runTransaction, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import PyramidTable from '@/components/PyramidTable.vue';
 import { useUserStore } from '@/stores/user';
@@ -23,6 +33,10 @@ const items = ref<PyramidItem[]>([]);
 const rows = ref<PyramidRow[]>([]);
 const sortItems = ref<SortOption>({ orderBy: 'id', order: 'asc' });
 const hideRowLabel = ref(false);
+const gameHeader = ref('Your Pyramid');
+const poolHeader = ref('Item Pool');
+const worstHeader = ref('Worst Item');
+const shareText = ref('');
 
 onMounted(async () => {
   console.log('PyramidTier: onMounted called with gameId:', gameId);
@@ -32,17 +46,41 @@ onMounted(async () => {
   }
 
   try {
-    const gameDocRef = doc(db, 'games', gameId);    const gameDoc = await getDoc(gameDocRef);
-    
+    const gameDocRef = doc(db, 'games', gameId);
+    const gameDoc = await getDoc(gameDocRef);
+
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
+      console.log('PyramidTier: Raw game data from Firestore:', gameData);
+
       gameDescription.value = gameData.description || '';
+      gameHeader.value = gameData.gameHeader || 'Your Pyramid';
+      poolHeader.value = gameData.poolHeader || 'Item Pool';
+      worstHeader.value = gameData.worstHeader || 'Worst Item';
+      shareText.value = gameData.shareText || '';
       items.value = gameData.custom?.items || [];
-      rows.value = gameData.custom?.rows || [] as PyramidRow[];
+      rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
-      hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
-      console.log('PyramidTier: Game data fetched:', gameData);
-      console.log('Pyramid: Items and rows assigned:', { items: items.value, rows: rows.value });
+      hideRowLabel.value = gameData.custom?.hideRowLabel ?? false;
+
+      console.log('PyramidTier: Game data fetched:', {
+        gameDescription: gameDescription.value,
+        gameHeader: gameHeader.value,
+        poolHeader: poolHeader.value,
+        worstHeader: worstHeader.value,
+        shareText: shareText.value,
+        items: items.value,
+        rows: rows.value,
+        sortItems: sortItems.value,
+        hideRowLabel: hideRowLabel.value
+      });
+
+      if (!items.value.length) {
+        console.warn('PyramidTier: No items found in game data for ID:', gameId);
+      }
+      if (!rows.value.length) {
+        console.warn('PyramidTier: No rows found in game data for ID:', gameId);
+      }
     } else {
       console.error('PyramidTier: Game document not found for ID:', gameId);
     }
@@ -53,7 +91,7 @@ onMounted(async () => {
 
 async function handleSubmit({ pyramid, worstItem }: PyramidData) {
   console.log('PyramidTier: handleSubmit called with data:', { pyramid, worstItem });
-  
+
   if (!gameId) {
     console.error('PyramidTier: No gameId provided, cannot submit');
     alert('Error: No game ID provided. Please select a game.');
@@ -76,7 +114,7 @@ async function handleSubmit({ pyramid, worstItem }: PyramidData) {
           tier: index + 1,
           slots: row.map(slot => slot.image?.id || null)
         }))
-      : [], // Fallback to empty array if pyramid is not an array
+      : [],
     worstItem: worstItem ? { id: worstItem.id, label: worstItem.label, src: worstItem.src } : null,
   };
   console.log('PyramidTier: Prepared custom data for saving:', custom);
@@ -84,10 +122,10 @@ async function handleSubmit({ pyramid, worstItem }: PyramidData) {
   try {
     await userStore.updateGameProgress(gameTypeId, gameId, score, 0, custom);
     console.log('PyramidTier: User progress updated successfully');
-    
+
     await updateGameStats(gameId, pyramid, rows.value, worstItem);
     console.log('PyramidTier: Game stats updated successfully');
-    
+
     router.push({
       name: 'PyramidResultLoggedIn',
       query: { game: gameId, score: score.toString() },
@@ -110,7 +148,6 @@ function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null)
       }
     });
   });
-  // Optional: Add points for worst item (e.g., 0 or negative)
   if (worstItem) {
     score += 0; // Adjust as needed
   }
@@ -132,7 +169,6 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
 
         stats.totalPlayers = (stats.totalPlayers || 0) + 1;
 
-        // Update item ranks for pyramid tiers
         pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
           row.forEach((slot: PyramidSlot) => {
             if (slot.image) {
@@ -146,7 +182,6 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
           });
         });
 
-        // Update worst item counts
         if (worstItem) {
           const itemId = worstItem.id;
           stats.worstItemCounts[itemId] = (stats.worstItemCounts[itemId] || 0) + 1;
