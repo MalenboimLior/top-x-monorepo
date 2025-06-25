@@ -5,8 +5,8 @@
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div v-if="!props.hideRowLabel" class="row-label has-text-white">
-            {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
+          <div class="row-label has-text-white" v-if="!props.hideRowLabel">
+            {{ rows[rowIndex]?.label }}
           </div>
           <div class="pyramid-row">
             <div
@@ -35,28 +35,28 @@
         </div>
       </div>
 
-      <!-- Worst Item Slot -->
-      <div class="worst-item-container">
-        <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
-        <div
-          class="pyramid-slot box worst-slot dark-slot"
-          :class="[
-            { 'selected': isSelected(worstItem) },
-            { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
-            { 'drop-hover': isDroppable(-1, -1) }
-          ]"
-          @dragover.prevent
-          @dragenter.prevent="onDragEnterSlot(-1, -1)"
-          @dragleave.prevent="onDragLeaveSlot"
-          @drop="onDropToWorst"
-          @click="onWorstSlotClick"
-        >
-          <div v-if="worstItem" class="draggable-item slot-style">
-            <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
-          </div>
-          <div v-else class="tier-label has-text-danger">Worst</div>
-        </div>
-      </div>
+     <!-- Worst Item Slot -->
+<div class="worst-item-container">
+  <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
+  <div
+    class="pyramid-slot box worst-slot dark-slot"
+    :class="[
+      { 'selected': isSelected(worstItem) },
+      { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
+      { 'drop-hover': isDroppable(-1, -1) }
+    ]"
+    @dragover.prevent
+    @dragenter.prevent="onDragEnterSlot(-1, -1)"
+    @dragleave.prevent="onDragLeaveSlot"
+    @drop="onDropToWorst"
+    @click="onWorstSlotClick"
+  >
+    <div v-if="worstItem" class="draggable-item slot-style">
+      <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
+    </div>
+    <div v-else class="tier-label has-text-danger">Worst</div>
+  </div>
+</div>
 
       <button class="button is-primary" @click="submitPyramid">Submit</button>
 
@@ -89,23 +89,16 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   items: PyramidItem[];
   rows: PyramidRow[];
   sortItems: SortOption;
-  hideRowLabel?: boolean;
-  gameHeader?: string;
-  poolHeader?: string;
-  worstHeader?: string;
+  hideRowLabel: boolean;
+  gameHeader: string;
+  poolHeader: string;
+  worstHeader: string;
   shareText?: string;
-}>(), {
-  gameHeader: 'Your Pyramid',
-  poolHeader: 'Item Pool',
-  worstHeader: 'Worst Item',
-  shareText: '',
-  sortItems: () => ({ orderBy: 'id', order: 'asc' } as SortOption),
-  hideRowLabel: false,
-});
+}>();
 
 const emit = defineEmits<{
   (e: 'submit', data: PyramidData): void;
@@ -341,7 +334,6 @@ function submitPyramid() {
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 </script>
-
 <style scoped>
 .box {
   padding: 0 !important;
@@ -410,8 +402,16 @@ function submitPyramid() {
   border-color: #3298dc;
 }
 .worst-item-container {
-  width: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: max-content;
   margin: 0.3rem auto;
+}
+.worst-item-container .subtitle {
+  width: 100%;
+  text-align: center;
 }
 .worst-slot {
   border: 2px dashed #ff7777;
@@ -545,6 +545,18 @@ function submitPyramid() {
     max-height: 90px;
     min-width: 50px;
     min-height: 50px;
+  }
+  .worst-item-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: max-content;
+    margin: 0.3rem auto;
+  }
+  .worst-item-container .subtitle {
+    width: 100%;
+    text-align: center;
   }
   .worst-slot {
     max-width: 90px;
