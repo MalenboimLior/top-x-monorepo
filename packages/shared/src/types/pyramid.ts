@@ -14,6 +14,7 @@ export interface PyramidConfig {
   items: PyramidItem[];
   rows: PyramidRow[];
   sortItems: SortOption;
+  HideRowLabel: boolean;
 }
 export interface PyramidRow {
   id: number;

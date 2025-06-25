@@ -73,6 +73,12 @@
           </select>
         </div>
       </div>
+      <div class="field">
+        <label class="label has-text-white">Hide Row Labels</label>
+        <div class="control">
+          <input type="checkbox" v-model="(localGame.custom as PyramidConfig).HideRowLabel" />
+        </div>
+      </div>
     </div>
     <div v-if="gameTypeCustom === 'TriviaConfig'">
       <h3 class="subtitle has-text-white">Trivia Config</h3>
@@ -120,6 +126,13 @@ if (
   !(localGame.value.custom as any).sortItems
 ) {
   (localGame.value.custom as PyramidConfig).sortItems = { orderBy: 'id', order: 'asc' };
+}
+if (
+  'custom' in localGame.value &&
+  (localGame.value.custom as any) &&
+  (localGame.value.custom as any).HideRowLabel === undefined
+) {
+  (localGame.value.custom as PyramidConfig).HideRowLabel = false;
 }
 const isSaving = ref(false);
 const error = ref<string | null>(null);
@@ -188,6 +201,9 @@ const save = async () => {
       sortItems: 'sortItems' in (localGame.value.custom || {})
         ? (localGame.value.custom as PyramidConfig).sortItems
         : { orderBy: 'id', order: 'asc' },
+      HideRowLabel: 'HideRowLabel' in (localGame.value.custom || {})
+        ? (localGame.value.custom as PyramidConfig).HideRowLabel
+        : false,
     };
     console.log('PyramidConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'TriviaConfig') {
