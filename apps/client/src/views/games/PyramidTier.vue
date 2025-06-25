@@ -1,7 +1,7 @@
 <template>
   <div class="pyramid-tier">
     <h1>{{ gameDescription }}</h1>
-    <PyramidTable :items="items" :rows="rows" :sort-items="sortItems" @submit="handleSubmit" />
+    <PyramidTable :items="items" :rows="rows" :sort-items="sortItems" :hide-row-label="hideRowLabel" @submit="handleSubmit" />
   </div>
 </template>
 
@@ -22,6 +22,7 @@ const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
 const rows = ref<PyramidRow[]>([]);
 const sortItems = ref<SortOption>({ orderBy: 'id', order: 'asc' });
+const hideRowLabel = ref(false);
 
 onMounted(async () => {
   console.log('PyramidTier: onMounted called with gameId:', gameId);
@@ -39,6 +40,7 @@ onMounted(async () => {
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [] as PyramidRow[];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
+      hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
       console.log('PyramidTier: Game data fetched:', gameData);
       console.log('Pyramid: Items and rows assigned:', { items: items.value, rows: rows.value });
     } else {
