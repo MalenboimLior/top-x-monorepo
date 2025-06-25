@@ -9,7 +9,7 @@
       <router-link to="/games" class="button is-light mt-2">Back to Games</router-link>
     </div>
     <div v-else>
-      <div ref="pyramidContainer" class="pyramid-container has-background-dark p-4">
+      <div ref="pyramidContainer" class="pyramid-container has-background-dark p-2">
         <!-- User Image -->
         <div class="user-image-container">
           <img
@@ -37,41 +37,47 @@
                 {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
               </div>
               <div class="pyramid-row">
-                <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot">
-                  <img
-                    v-if="slot.image"
-                    :src="slot.image.src"
-                    :alt="slot.image.label"
-                    class="draggable-image"
-                    ref="pyramidImages"
-                    crossorigin="anonymous"
-                  />
+                <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot box">
+                  <div v-if="slot.image" class="slot-style">
+                    <img
+                      :src="slot.image.src"
+                      :alt="slot.image.label"
+                      class="draggable-image"
+                      ref="pyramidImages"
+                      crossorigin="anonymous"
+                    />
+                    <div class="image-label has-text-white">{{ slot.image.label }}</div>
+                    <div class="color-indicator" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+                  </div>
                   <div v-else class="tier-label has-text-white">{{ toRoman(rowIndex + 1) }}</div>
                 </div>
               </div>
             </div>
           </div>
           <!-- Worst Item -->
-          <div v-if="worstItem" class="worst-item mt-4">
+          <div v-if="worstItem" class="worst-item-container">
             <h3 class="subtitle has-text-white has-text-centered">Worst Item</h3>
-            <div class="pyramid-slot worst-slot mx-auto">
-              <img
-                v-if="worstItem"
-                :src="worstItem.src"
-                :alt="worstItem.label"
-                class="draggable-image"
-                ref="worstImage"
-                crossorigin="anonymous"
-              />
-              <div class="image-label has-text-white">Worst</div>
+            <div class="pyramid-slot box worst-slot mx-auto">
+              <div v-if="worstItem" class="slot-style">
+                <img
+                  :src="worstItem.src"
+                  :alt="worstItem.label"
+                  class="draggable-image"
+                  ref="worstImage"
+                  crossorigin="anonymous"
+                />
+                <div class="image-label has-text-white">{{ worstItem.label }}</div>
+                <div class="color-indicator" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
+              </div>
+              <div v-else class="tier-label has-text-danger">Worst</div>
             </div>
           </div>
           <!-- Top-X Label -->
-          <p class="top-x-label has-text-white has-text-centered mt-4">top-x.co</p>
+          <p class="top-x-label has-text-white has-text-centered mt-2">top-x.co</p>
         </Card>
       </div>
       <!-- Share Button -->
-      <div class="buttons is-centered mt-4">
+      <div class="buttons is-centered mt-2">
         <CustomButton
           type="is-primary"
           label="Download Pyramid"
@@ -82,9 +88,9 @@
         <span v-if="isImageLoading" class="has-text-white ml-2">Loading images...</span>
       </div>
       <!-- Stats Table -->
-      <h3 class="subtitle has-text-white mt-6">Total Stats</h3>
+      <h3 class="subtitle has-text-white mt-4">Total Stats</h3>
       <div class="table-container">
-        <table class="table is-striped is-hoverable has-background-dark has-text-white">
+        <table class="table is-fullwidth is-hoverable has-background-dark">
           <thead>
             <tr>
               <th class="has-text-centered">
@@ -126,37 +132,41 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in sortedItemStats" :key="item.id" :class="getRowClass(index)">
-              <td class="rank-column has-text-centered">
-                <span>{{ index + 1 }}</span>
-                <font-awesome-icon
-                  v-if="index === 0"
-                  :icon="['fas', 'medal']"
-                  class="medal gold"
-                  title="1st Place"
-                />
-                <font-awesome-icon
-                  v-else-if="index === 1"
-                  :icon="['fas', 'medal']"
-                  class="medal silver"
-                  title="2nd Place"
-                />
-                <font-awesome-icon
-                  v-else-if="index === 2"
-                  :icon="['fas', 'medal']"
-                  class="medal bronze"
-                  title="3rd Place"
-                />
+            <tr v-for="(item, index) in sortedItemStats" :key="item.id">
+              <td class="has-text-centered">
+                <div class="rank-column">
+                  <span>{{ index + 1 }}</span>
+                  <font-awesome-icon
+                    v-if="index === 0"
+                    :icon="['fas', 'medal']"
+                    class="medal gold"
+                    title="1st Place"
+                  />
+                  <font-awesome-icon
+                    v-else-if="index === 1"
+                    :icon="['fas', 'medal']"
+                    class="medal silver"
+                    title="2nd Place"
+                  />
+                  <font-awesome-icon
+                    v-else-if="index === 2"
+                    :icon="['fas', 'medal']"
+                    class="medal bronze"
+                    title="3rd Place"
+                  />
+                </div>
               </td>
               <td class="has-text-centered">
-                <img
-                  v-if="item.imageSrc"
-                  :src="item.imageSrc"
-                  :alt="item.name"
-                  class="item-image"
-                  crossorigin="anonymous"
-                />
-                <span>{{ item.name }}</span>
+                <div class="item-column">
+                  <img
+                    v-if="item.imageSrc"
+                    :src="item.imageSrc"
+                    :alt="item.name"
+                    class="item-image"
+                    crossorigin="anonymous"
+                  />
+                  <span>{{ item.name }}</span>
+                </div>
               </td>
               <td v-for="row in rows" :key="row.id" class="has-text-centered">{{ item.ranks[row.id] || 0 }}</td>
               <td class="has-text-centered">{{ item.score }}</td>
@@ -198,7 +208,15 @@ const isImageLoading = ref(true);
 const sortColumn = ref<string>('score');
 const sortDirection = ref<'asc' | 'desc'>('desc');
 
-// Compute sorted item stats with score and item details
+function sortBy(column: string) {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'desc';
+  }
+}
+
 const sortedItemStats = computed(() => {
   const stats = Object.entries(itemRanks.value).map(([itemId, ranks]) => {
     const item = items.value.find(i => i.id === itemId);
@@ -208,7 +226,7 @@ const sortedItemStats = computed(() => {
     return {
       id: itemId,
       name: item?.label || itemId,
-      imageSrc: item?.src || '',
+      imageSrc: item?.src ?? '',
       ranks,
       score,
     };
@@ -239,7 +257,6 @@ onMounted(async () => {
   }
 
   try {
-    // Fetch game data (items, rows, title)
     const gameDocRef = doc(db, 'games', gameId.value);
     const gameDoc = await getDoc(gameDocRef);
     if (gameDoc.exists()) {
@@ -264,11 +281,9 @@ onMounted(async () => {
     console.error('PyramidResultLoggedIn: Error fetching game data:', err.message, err);
   }
 
-  // Reconstruct pyramid and worst item
   const userGameData = userStore.profile?.games?.PyramidTier?.[gameId.value];
   if (userGameData && userGameData.custom && items.value.length) {
     try {
-      // Handle both direct array and nested pyramid structure
       const pyramidData = userGameData.custom.pyramid?.pyramid ?? userGameData.custom.pyramid;
       if (Array.isArray(pyramidData)) {
         pyramid.value = pyramidData.map((tier: { tier: number; slots: Array<string | null> }) =>
@@ -296,7 +311,6 @@ onMounted(async () => {
     });
   }
 
-  // Fetch game stats
   try {
     const statsDoc = await getDoc(doc(db, 'games', gameId.value, 'stats', 'general'));
     if (statsDoc.exists()) {
@@ -309,7 +323,6 @@ onMounted(async () => {
     console.error('PyramidResultLoggedIn: Error fetching stats:', err.message, err);
   }
 
-  // Preload images
   await nextTick();
   await preloadImages();
 });
@@ -343,14 +356,12 @@ async function preloadImages() {
       }),
     ]);
 
-  // Add user profile image
   if (userImage.value?.src) {
     uniqueImageUrls.add(userImage.value.src);
     userImage.value.crossOrigin = 'anonymous';
     imagePromises.push(loadImageWithTimeout(userImage.value));
   }
 
-  // Add pyramid images
   pyramidImages.value.forEach((img) => {
     if (img.src && !uniqueImageUrls.has(img.src)) {
       uniqueImageUrls.add(img.src);
@@ -358,7 +369,6 @@ async function preloadImages() {
     }
   });
 
-  // Add worst item image
   if (worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
     uniqueImageUrls.add(worstImage.value.src);
     imagePromises.push(loadImageWithTimeout(worstImage.value));
@@ -385,26 +395,6 @@ function toRoman(num: number): string {
   return numerals[num - 1] || `${num}`;
 }
 
-function getRowClass(index: number): string {
-  const colors = [
-    'has-background-primary-light',
-    'has-background-success-light',
-    'has-background-warning-light',
-    'has-background-info-light',
-    'has-background-danger-light',
-  ];
-  return colors[index % colors.length] || '';
-}
-
-function sortBy(column: string) {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'desc';
-  }
-}
-
 async function downloadPyramid() {
   if (!pyramidContainer.value) {
     console.error('PyramidResultLoggedIn: Pyramid container not found');
@@ -414,7 +404,7 @@ async function downloadPyramid() {
   try {
     console.log('PyramidResultLoggedIn: Generating download image');
     const canvas = await html2canvas(pyramidContainer.value, {
-      backgroundColor: '#1a1b1e',
+      backgroundColor: '#121212',
       scale: 2,
       useCORS: true,
       logging: true,
@@ -434,22 +424,26 @@ async function downloadPyramid() {
 
 <style scoped>
 .result-screen {
-  padding: 1rem;
+  padding: 0.2rem 0.1rem;
+  background-color: #121212;
+  color: #eee;
+  display: flex;
+  justify-content: center;
 }
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  max-width: 90vw;
+  max-width: 100%;
   margin: 0 auto;
 }
 .user-image-container {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: 0.3rem;
+  left: 0.3rem;
 }
 .user-image {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 2px solid #fff;
   object-fit: cover;
@@ -458,93 +452,147 @@ async function downloadPyramid() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
+  gap: 0.05rem;
+  width: fit-content;
+  margin: 0 auto;
 }
 .pyramid-row-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: 0.2rem;
 }
 .row-label {
-  width: 5rem;
-  text-align: right;
+  width: 100%;
+  text-align: center;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
 }
 .pyramid-row {
   display: flex;
   justify-content: center;
-  width: 100%;
+  gap: 0.05rem;
 }
 .pyramid-slot {
-  width: 18vw;
-  height: 18vw;
-  max-width: 4.5rem;
-  max-height: 4.5rem;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
-  margin: 0.15rem;
-  background-color: #2c2d30;
+  height: 25vw;
+  max-width: 100px;
+  max-height: 100px;
+  min-width: 60px;
+  min-height: 60px;
+  background-color: #1f1f1f;
+  border: 1px dashed #444;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  text-align: center;
   overflow: hidden;
 }
+.worst-item-container {
+  width: fit-content;
+  margin: 0.3rem auto;
+}
 .worst-slot {
+  border: 2px dashed #ff7777;
   background-color: #3d1f1f;
-  border: 2px dashed #ff5555;
+  max-width: 100px;
+  max-height: 100px;
+  min-width: 60px;
+  min-height: 60px;
+}
+.slot-style {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, #2a2a2a, #1f1f1f);
+  border: 1px solid #444;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  width: 4.5rem;
-  height: 4.5rem;
+  justify-content: space-between;
+  padding: 0.2rem;
 }
 .draggable-image {
   max-width: 90%;
-  max-height: 90%;
+  max-height: 80px;
+  user-select: none;
+  touch-action: none;
   object-fit: cover;
 }
 .image-label {
-  font-size: 0.7rem;
-  margin-top: 0.25rem;
+  font-size: 0.6rem;
+  font-weight: 600;
   text-align: center;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 0.2rem;
+}
+.color-indicator {
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0.5rem 0.5rem;
 }
 .tier-label {
-  font-size: 0.9rem;
+  color: #bbb;
+  font-size: 0.8rem;
   font-weight: bold;
 }
+.tier-label.has-text-danger {
+  color: #ff5555;
+}
 .top-x-label {
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   font-weight: bold;
 }
 .table-container {
   overflow-x: auto;
   max-width: 100%;
+  margin: 0.3rem 0;
 }
 .table {
-  width: 100%;
-  min-width: 600px; /* Ensures table is scrollable on mobile */
-  max-width: 90vw;
-  margin: 0 auto;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+th, td {
+  padding: 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+th {
+  background-color: #2a2a2a;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #eee;
+}
+td {
+  font-size: 0.8rem;
+  color: #ddd;
+}
+tr:hover {
+  background-color: #222;
+}
+.item-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
 }
 .item-image {
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
   object-fit: cover;
   border-radius: 4px;
-  margin-right: 0.5rem;
 }
 .rank-column {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 .medal {
-  font-size: 0.9rem;
+  font-size: 0.7rem;
 }
 .medal.gold {
   color: #ffd700;
@@ -555,64 +603,64 @@ async function downloadPyramid() {
 .medal.bronze {
   color: #cd7f32;
 }
+.title {
+  font-size: 1.2rem;
+  margin: 0.3rem 0;
+}
+.subtitle {
+  font-size: 1rem;
+  margin: 0.3rem 0;
+}
+.buttons {
+  margin: 0.3rem 0;
+}
 
 /* Mobile-specific adjustments */
 @media screen and (max-width: 767px) {
   .result-screen {
-    padding: 0.5rem;
+    padding: 0.1rem 0.05rem;
   }
   .pyramid-container {
-    padding: 0.5rem;
-  }
-  .user-image {
-    width: 2rem;
-    height: 2rem;
+    padding: 0.3rem;
   }
   .pyramid-slot {
-    width: 20vw;
-    height: 20vw;
-    max-width: 3.5rem;
-    max-height: 3.5rem;
-    min-width: 2rem;
-    min-height: 2rem;
-    margin: 0.1rem;
+    height: 25vw;
+    max-width: 90px;
+    max-height: 90px;
+    min-width: 50px;
+    min-height: 50px;
   }
   .worst-slot {
-    width: 3.5rem;
-    height: 3.5rem;
+    max-width: 90px;
+    max-height: 90px;
+    min-width: 50px;
+    min-height: 50px;
   }
-  .tier-label {
-    font-size: 0.8rem;
-  }
-  .top-x-label {
-    font-size: 0.8rem;
-  }
-  .title {
-    font-size: 1.2rem;
-  }
-  .subtitle {
-    font-size: 1rem;
-  }
-  .item-image {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-  .medal {
-    font-size: 0.8rem;
+  .draggable-image {
+    max-height: 70px;
   }
   .image-label {
+    font-size: 0.55rem;
+  }
+  .tier-label {
+    font-size: 0.7rem;
+  }
+  .top-x-label {
     font-size: 0.6rem;
   }
-  .row-label {
-    width: 4rem;
-    font-size: 0.8rem;
+  .item-image {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+  .medal {
+    font-size: 0.6rem;
   }
   .table {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    min-width: 320px;
   }
-  th,
-  td {
-    padding: 0.25rem;
+  th, td {
+    padding: 0.3rem;
   }
 }
 </style>

@@ -27,9 +27,7 @@
               @click="onSlotClick(rowIndex, colIndex)"
             >
               <div v-if="slot.image" class="draggable-item slot-style">
-                <img :src="slot.image.src" class="draggable-image" />
-                <div class="image-label">{{ slot.image.label }}</div>
-                <div class="color-indicator" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+                <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
               </div>
               <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
             </div>
@@ -54,9 +52,7 @@
           @click="onWorstSlotClick"
         >
           <div v-if="worstItem" class="draggable-item slot-style">
-            <img :src="worstItem.src" class="draggable-image" />
-            <div class="image-label">{{ worstItem.label }}</div>
-            <div class="color-indicator" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
+            <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
           </div>
           <div v-else class="tier-label has-text-danger">Worst</div>
         </div>
@@ -81,7 +77,6 @@
         >
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
-          <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
         </div>
       </div>
     </div>
@@ -314,7 +309,7 @@ function onDropToPool() {
     console.log('PyramidTable: Removed item from slot for pool drop:', slot);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidTable: Removed worst item for pool drop:', worstItem.value);
+    console.log('PyramidTable: Removed item from worst for pool drop:', worstItem.value);
   }
   if (!imagePool.value.some(i => i.id === selectedItem.value!.id)) {
     imagePool.value.push(selectedItem.value);
@@ -348,10 +343,13 @@ function submitPyramid() {
 </script>
 
 <style scoped>
+.box {
+  padding: 0 !important;
+}
 .section {
   padding: 0.2rem 0.1rem;
   background-color: #121212;
-  color: #eee;
+  color: white;
   display: flex;
   justify-content: center;
 }
@@ -373,24 +371,24 @@ function submitPyramid() {
   align-items: center;
   gap: 0.2rem;
 }
+.pyramid-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.05rem;
+}
 .row-label {
   width: 100%;
   text-align: center;
   font-weight: bold;
   font-size: 0.7rem;
 }
-.pyramid-row {
-  display: flex;
-  justify-content: center;
-  gap: 0.05rem;
-}
 .pyramid-slot {
-  width: 22vw;
-  height: 22vw;
-  max-width: 80px;
-  max-height: 80px;
-  min-width: 45px;
-  min-height: 45px;
+  width: 25vw;
+  height: 25vw;
+  max-width: 100px;
+  max-height: 100px;
+  min-width: 60px;
+  min-height: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -398,12 +396,13 @@ function submitPyramid() {
   background-color: #1f1f1f;
   border: 1px dashed #444;
   cursor: pointer;
-  padding: 1px;
   transition: all 0.2s ease;
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   text-align: center;
   overflow: hidden;
+  box-sizing: border-box;
+  margin-bottom: 0 !important;
 }
 .pyramid-slot.drop-hover {
   background-color: #3298dc;
@@ -415,12 +414,17 @@ function submitPyramid() {
   margin: 0.3rem auto;
 }
 .worst-slot {
-  border: 2px dashed #ff7777 !important;
-  background-color: #3d1f1f !important;
+  border: 2px dashed #ff7777;
+  background-color: #3d1f1f;
+  max-width: 100px;
+  max-height: 100px;
+  min-width: 60px;
+  min-height: 60px;
+  box-sizing: border-box;
 }
 .worst-slot.drop-hover {
-  background-color: #ff3333 !important;
-  border-color: #ff3333 !important;
+  background-color: #ff3333;
+  border-color: #ff3333;
   transform: scale(1.05);
 }
 .tier-label {
@@ -445,9 +449,11 @@ function submitPyramid() {
 .image-box {
   width: 100%;
   height: 22vw;
+  max-width: 80px;
   max-height: 80px;
   min-height: 45px;
   padding: 0;
+  position: relative;
 }
 .slot-style {
   width: 100%;
@@ -460,30 +466,50 @@ function submitPyramid() {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+.pyramid-slot .slot-style,
+.worst-slot .slot-style {
+  padding: 0 !important;
+}
+.image-box .slot-style {
+  padding: 0 !important;
+  position: relative;
 }
 .draggable-image {
-  max-width: 90%;
-  max-height: 60px;
   user-select: none;
   touch-action: none;
   transition: transform 0.2s ease;
 }
+.pyramid-slot .draggable-image,
+.worst-slot .draggable-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+.image-box .draggable-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
 .image-label {
-  font-size: 0.55rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  font-size: 0.5rem;
   font-weight: 600;
-  color: #ddd;
+  color: #fff;
+  background-color: #000;
   text-align: center;
   line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 0.1rem;
-}
-.color-indicator {
-  width: 100%;
-  height: 4px;
-  border-radius: 0 0 0.5rem 0.5rem;
+  padding: 0.1rem;
+  z-index: 10;
 }
 .selected {
   border: 2px solid #3273dc;
@@ -513,21 +539,41 @@ function submitPyramid() {
   .section {
     padding: 0.1rem 0.05rem;
   }
-  .pyramid-slot,
+  .pyramid-slot {
+    height: 25vw;
+    max-width: 90px;
+    max-height: 90px;
+    min-width: 50px;
+    min-height: 50px;
+  }
+  .worst-slot {
+    max-width: 90px;
+    max-height: 90px;
+    min-width: 50px;
+    min-height: 50px;
+  }
+  .pyramid-slot .draggable-image,
+  .worst-slot .draggable-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
   .image-box {
-    height: 22vw;
     min-width: 40px;
     min-height: 40px;
-    margin: 0.5px;
+    max-height: 80px;
   }
-  .pyramid-row {
-    min-height: 22vw;
-  }
-  .draggable-image {
-    max-height: 55px;
+  .image-box .draggable-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .image-label {
-    font-size: 0.5rem;
+    font-size: 0.45rem;
+    padding: 0.05rem;
+  }
+  .pyramid-row {
+    min-height: 25vw;
   }
   .tier-label {
     font-size: 0.8rem;
