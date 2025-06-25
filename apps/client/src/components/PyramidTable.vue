@@ -5,7 +5,7 @@
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div class="row-label has-text-white">
+          <div v-if="!props.hideRowLabel" class="row-label has-text-white">
             {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
           </div>
           <div class="pyramid-row">
@@ -98,6 +98,7 @@ const props = withDefaults(defineProps<{
   items: PyramidItem[];
   rows: PyramidRow[];
   sortItems: SortOption;
+  hideRowLabel?: boolean;
   gameHeader?: string;
   poolHeader?: string;
   worstHeader?: string;
@@ -108,6 +109,7 @@ const props = withDefaults(defineProps<{
   worstHeader: 'Worst Item',
   shareText: '',
   sortItems: () => ({ orderBy: 'id', order: 'asc' } as SortOption),
+  hideRowLabel: false,
 });
 
 const emit = defineEmits<{
