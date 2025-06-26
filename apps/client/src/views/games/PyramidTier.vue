@@ -52,6 +52,8 @@ onMounted(async () => {
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
       console.log('PyramidTier: Raw game data from Firestore:', gameData);
+      console.log('PyramidTier: Custom field from Firestore:', gameData.custom);
+      console.log('PyramidTier: HideRowLabel value:', gameData.custom?.HideRowLabel);
 
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
@@ -61,7 +63,7 @@ onMounted(async () => {
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
-      hideRowLabel.value = gameData.custom?.hideRowLabel ?? false;
+      hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
 
       console.log('PyramidTier: Game data fetched:', {
         gameDescription: gameDescription.value,
@@ -75,11 +77,14 @@ onMounted(async () => {
         hideRowLabel: hideRowLabel.value
       });
 
+      if (!gameData.custom) {
+        console.warn('PyramidTier: No custom field found in game data for ID:', gameId);
+      }
       if (!items.value.length) {
-        console.warn('PyramidTier: No items found in game data for ID:', gameId);
+        console.warn('PyramidTier: No items found in gameData.custom.items for ID:', gameId);
       }
       if (!rows.value.length) {
-        console.warn('PyramidTier: No rows found in game data for ID:', gameId);
+        console.warn('PyramidTier: No rows found in gameData.custom.rows for ID:', gameId);
       }
     } else {
       console.error('PyramidTier: Game document not found for ID:', gameId);
