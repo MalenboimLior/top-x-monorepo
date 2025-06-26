@@ -6,7 +6,7 @@
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
           <div class="row-label has-text-white" v-if="!props.hideRowLabel">
-            {{ rows[rowIndex]?.label }}
+            {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
           </div>
           <div class="pyramid-row">
             <div
@@ -28,6 +28,7 @@
             >
               <div v-if="slot.image" class="draggable-item slot-style">
                 <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
+                <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
               </div>
               <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
             </div>
@@ -35,28 +36,28 @@
         </div>
       </div>
 
-     <!-- Worst Item Slot -->
-<div class="worst-item-container">
-  <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
-  <div
-    class="pyramid-slot box worst-slot dark-slot"
-    :class="[
-      { 'selected': isSelected(worstItem) },
-      { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
-      { 'drop-hover': isDroppable(-1, -1) }
-    ]"
-    @dragover.prevent
-    @dragenter.prevent="onDragEnterSlot(-1, -1)"
-    @dragleave.prevent="onDragLeaveSlot"
-    @drop="onDropToWorst"
-    @click="onWorstSlotClick"
-  >
-    <div v-if="worstItem" class="draggable-item slot-style">
-      <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
-    </div>
-    <div v-else class="tier-label has-text-danger">Worst</div>
-  </div>
-</div>
+      <!-- Worst Item Slot -->
+      <div class="worst-item-container">
+        <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
+        <div
+          class="pyramid-slot box worst-slot dark-slot"
+          :class="[
+            { 'selected': isSelected(worstItem) },
+            { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
+            { 'drop-hover': isDroppable(-1, -1) }
+          ]"
+          @dragover.prevent
+          @dragenter.prevent="onDragEnterSlot(-1, -1)"
+          @dragleave.prevent="onDragLeaveSlot"
+          @drop="onDropToWorst"
+          @click="onWorstSlotClick"
+        >
+          <div v-if="worstItem" class="draggable-item slot-style">
+            <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
+          </div>
+          <div v-else class="tier-label has-text-danger">Worst</div>
+        </div>
+      </div>
 
       <button class="button is-primary" @click="submitPyramid">Submit</button>
 
@@ -77,6 +78,7 @@
         >
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
+          <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
         </div>
       </div>
     </div>
@@ -84,9 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { ref, watch, computed } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 
 const props = defineProps<{
@@ -116,10 +116,24 @@ const draggedItem = ref<PyramidItem | null>(null);
 const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
 
+// Debug imagePool rendering
+const imagePoolDebug = computed(() => {
+  console.log('PyramidTable: imagePool computed:', {
+    length: imagePool.value.length,
+    items: imagePool.value
+  });
+  return imagePool.value;
+});
+
 watch(
   () => props.items,
   (newItems) => {
     console.log('PyramidTable: Items prop updated:', newItems);
+    if (!newItems || !Array.isArray(newItems)) {
+      console.warn('PyramidTable: Invalid or empty items prop:', newItems);
+      imagePool.value = [];
+      return;
+    }
     const sorted = [...newItems].sort((a, b) => {
       const field = props.sortItems.orderBy;
       const dir = props.sortItems.order === 'asc' ? 1 : -1;
@@ -139,6 +153,11 @@ watch(
 watch(
   () => props.sortItems,
   () => {
+    console.log('PyramidTable: sortItems prop updated:', props.sortItems);
+    if (!imagePool.value.length) {
+      console.warn('PyramidTable: imagePool is empty, skipping sort');
+      return;
+    }
     imagePool.value = [...imagePool.value].sort((a, b) => {
       const field = props.sortItems.orderBy;
       const dir = props.sortItems.order === 'asc' ? 1 : -1;
@@ -151,6 +170,14 @@ watch(
     });
     console.log('PyramidTable: imagePool sorted:', imagePool.value);
   }
+);
+
+watch(
+  () => props.hideRowLabel,
+  (newValue) => {
+    console.log('PyramidTable: hideRowLabel prop updated:', newValue);
+  },
+  { immediate: true }
 );
 
 function isSelected(item: PyramidItem | null): boolean {
@@ -334,6 +361,7 @@ function submitPyramid() {
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 </script>
+
 <style scoped>
 .box {
   padding: 0 !important;
@@ -484,19 +512,19 @@ function submitPyramid() {
 .pyramid-slot .draggable-image,
 .worst-slot .draggable-image {
   width: 100%;
-  height: 100%;
+ /* height: 100%;*/
   object-fit: cover;
   border-radius: 0.5rem;
 }
 .image-box .draggable-image {
   width: 100%;
-  height: 100%;
+  /* height: 100%;*/
   object-fit: cover;
   border-radius: 0.5rem;
 }
 .image-label {
   position: absolute;
-  bottom: 0;
+  bottom: 4px;
   left: 0;
   width: 100%;
   font-size: 0.5rem;
@@ -567,7 +595,7 @@ function submitPyramid() {
   .pyramid-slot .draggable-image,
   .worst-slot .draggable-image {
     width: 100%;
-    height: 100%;
+    /* height: 100%;*/
     object-fit: cover;
   }
   .image-box {
@@ -585,7 +613,7 @@ function submitPyramid() {
     padding: 0.05rem;
   }
   .pyramid-row {
-    min-height: 25vw;
+   /* min-height: 25vw;*/
   }
   .tier-label {
     font-size: 0.8rem;
@@ -593,5 +621,18 @@ function submitPyramid() {
   .row-label {
     font-size: 0.7rem;
   }
+  .color-indicator {
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0.5rem 0.5rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  }
+  .color-indicator-pyramid {
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
 }
 </style>
