@@ -361,7 +361,6 @@ function submitPyramid() {
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 </script>
-
 <style scoped>
 .box {
   padding: 0 !important;
@@ -466,7 +465,7 @@ function submitPyramid() {
 }
 .image-pool {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Dynamic columns on desktop */
   gap: 0.2rem;
   justify-content: center;
   border: 2px dashed #666;
@@ -476,9 +475,9 @@ function submitPyramid() {
 }
 .image-box {
   width: 100%;
-  height: 22vw;
+  height: 27vw;
   max-width: 80px;
-  max-height: 80px;
+  max-height: 100px;
   min-height: 45px;
   padding: 0;
   position: relative;
@@ -495,6 +494,7 @@ function submitPyramid() {
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
+  position: relative;
 }
 .pyramid-slot .slot-style,
 .worst-slot .slot-style {
@@ -512,15 +512,17 @@ function submitPyramid() {
 .pyramid-slot .draggable-image,
 .worst-slot .draggable-image {
   width: 100%;
- /* height: 100%;*/
+  height: calc(100% - 4px);
   object-fit: cover;
-  border-radius: 0.5rem;
+  object-position: top;
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 .image-box .draggable-image {
   width: 100%;
-  /* height: 100%;*/
+  height: calc(100% - 8px);
   object-fit: cover;
-  border-radius: 0.5rem;
+  object-position: top;
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 .image-label {
   position: absolute;
@@ -537,6 +539,24 @@ function submitPyramid() {
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0.1rem;
+  z-index: 10;
+}
+.color-indicator {
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0.5rem 0.5rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+}
+.color-indicator-pyramid {
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0.5rem 0.5rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
   z-index: 10;
 }
 .selected {
@@ -595,26 +615,33 @@ function submitPyramid() {
   .pyramid-slot .draggable-image,
   .worst-slot .draggable-image {
     width: 100%;
-    /* height: 100%;*/
+    height: calc(100% - 4px);
     object-fit: cover;
+    object-position: top;
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+  .image-pool {
+    grid-template-columns: repeat(4, 1fr); /* Fixed 4 columns on mobile */
   }
   .image-box {
     min-width: 40px;
-    min-height: 40px;
-    max-height: 80px;
+    min-height: 45px;
+    max-height: 100px;
   }
   .image-box .draggable-image {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 8px);
     object-fit: cover;
+    object-position: top;
+    border-radius: 0.5rem 0.5rem 0 0;
   }
   .image-label {
     font-size: 0.45rem;
     padding: 0.05rem;
   }
-  .pyramid-row {
-   /* min-height: 25vw;*/
-  }
+ /* .pyramid-row {
+     min-height: 25vw;
+  } */
   .tier-label {
     font-size: 0.8rem;
   }
@@ -622,17 +649,22 @@ function submitPyramid() {
     font-size: 0.7rem;
   }
   .color-indicator {
-  width: 100%;
-  height: 4px;
-  border-radius: 0 0 0.5rem 0.5rem;
-  position: absolute;
-  bottom: 0;
-  left: 0;
+    width: 100%;
+    height: 4px;
+    border-radius: 0 0 0.5rem 0.5rem;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
   }
   .color-indicator-pyramid {
-  width: 100%;
-  height: 4px;
-  border-radius: 0 0 0.5rem 0.5rem;
-}
+    width: 100%;
+    height: 4px;
+    border-radius: 0 0 0.5rem 0.5rem;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+  }
 }
 </style>
