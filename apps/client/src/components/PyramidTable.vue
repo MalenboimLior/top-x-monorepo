@@ -62,11 +62,7 @@
       <button class="button is-primary" @click="submitPyramid">Submit</button>
 
       <h2 class="subtitle has-text-white">{{ props.poolHeader }}</h2>
-      <div
-        class="image-pool drop-zone"
-        @dragover.prevent
-        @drop="onDropToPool"
-      >
+      <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToPool">
         <div
           v-for="image in imagePool"
           :key="image.id"
@@ -79,6 +75,16 @@
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
+          <span class="info-icon" @click.stop="showDescription(image)">ℹ️</span>
+        </div>
+      </div>
+
+      <!-- Description Tab -->
+      <div v-show="showTab" :class="['description-tab', { show: showTab }]">
+        <div class="tab-content">
+          <p>Hi @Gork, what can you say about {{ describedItem?.label }}?</p>
+          <p>{{ displayedDescription }}</p>
+          <button @click="closeTab">Close</button>
         </div>
       </div>
     </div>
@@ -115,6 +121,12 @@ const worstItem = ref<PyramidItem | null>(null);
 const draggedItem = ref<PyramidItem | null>(null);
 const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
+
+// Description Tab State
+const showTab = ref(false);
+const describedItem = ref<PyramidItem | null>(null);
+const displayedDescription = ref('');
+let typingInterval: ReturnType<typeof setInterval> | null = null;
 
 // Debug imagePool rendering
 const imagePoolDebug = computed(() => {
@@ -360,7 +372,42 @@ function submitPyramid() {
   console.log('PyramidTable: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
+
+// Description Tab Methods
+function showDescription(item: PyramidItem) {
+  describedItem.value = item;
+  showTab.value = true;
+  displayedDescription.value = '';
+  startTypingAnimation(item.description || 'No description available.');
+}
+
+function startTypingAnimation(fullDescription: string) {
+  if (typingInterval) {
+    clearInterval(typingInterval);
+  }
+  let index = 0;
+  typingInterval = setInterval(() => {
+    if (index < fullDescription.length) {
+      displayedDescription.value += fullDescription[index];
+      index++;
+    } else {
+      clearInterval(typingInterval!);
+      typingInterval = null;
+    }
+  }, 50); // Adjust typing speed as needed
+}
+
+function closeTab() {
+  showTab.value = false;
+  if (typingInterval) {
+    clearInterval(typingInterval);
+    typingInterval = null;
+  }
+  describedItem.value = null;
+  displayedDescription.value = '';
+}
 </script>
+
 <style scoped>
 .box {
   padding: 0 !important;
@@ -465,7 +512,7 @@ function submitPyramid() {
 }
 .image-pool {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Dynamic columns on desktop */
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 0.2rem;
   justify-content: center;
   border: 2px dashed #666;
@@ -581,6 +628,41 @@ function submitPyramid() {
   background-color: #3273dc;
   margin: 0.3rem 0;
 }
+.info-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #fff;
+  background-color: #000;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.description-tab {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1f1f1f;
+  color: white;
+  padding: 1rem;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+}
+.description-tab.show {
+  transform: translateY(0);
+}
+.tab-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
 
 /* Mobile-specific adjustments */
 @media screen and (max-width: 767px) {
@@ -621,7 +703,7 @@ function submitPyramid() {
     border-radius: 0.5rem 0.5rem 0 0;
   }
   .image-pool {
-    grid-template-columns: repeat(4, 1fr); /* Fixed 4 columns on mobile */
+    grid-template-columns: repeat(4, 1fr);
   }
   .image-box {
     min-width: 40px;
@@ -639,9 +721,6 @@ function submitPyramid() {
     font-size: 0.45rem;
     padding: 0.05rem;
   }
- /* .pyramid-row {
-     min-height: 25vw;
-  } */
   .tier-label {
     font-size: 0.8rem;
   }
