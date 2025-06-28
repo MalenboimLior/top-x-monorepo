@@ -16,8 +16,6 @@ export interface Game {
   gameTypeId: string;
   active: boolean;
   gameHeader?: string;
-  poolHeader?: string;
-  worstHeader?: string;
   shareText?: string;
   custom: PyramidConfig | TriviaConfig; // Union of possible config types
 }
