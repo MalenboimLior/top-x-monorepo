@@ -3,6 +3,7 @@ export interface PyramidItem {
   label: string;
   name: string;
   src: string;
+  description?: string;
   color?: string;
 }
 
@@ -15,6 +16,9 @@ export interface PyramidConfig {
   rows: PyramidRow[];
   sortItems: SortOption;
   HideRowLabel: boolean;
+  poolHeader?: string;
+  worstHeader?: string;
+  worstPoints?: number;
 }
 export interface PyramidRow {
   id: number;
