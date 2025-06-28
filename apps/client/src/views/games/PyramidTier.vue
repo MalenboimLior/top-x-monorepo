@@ -93,7 +93,6 @@ onMounted(async () => {
     console.error('PyramidTier: Error fetching game data:', error.message, error);
   }
 });
-
 async function handleSubmit({ pyramid, worstItem }: PyramidData) {
   console.log('PyramidTier: handleSubmit called with data:', { pyramid, worstItem });
 
@@ -110,9 +109,29 @@ async function handleSubmit({ pyramid, worstItem }: PyramidData) {
     return;
   }
 
+  if (!pyramid || !Array.isArray(pyramid)) {
+    console.error('PyramidTier: Invalid pyramid data:', pyramid);
+    alert('Error: Invalid pyramid data. Please try again.');
+    router.push('/games');
+    return;
+  }
+
   const userId = userStore.user.uid;
   const gameTypeId = 'PyramidTier';
   const score = calculateScore(pyramid, worstItem);
+
+  // Serialize pyramid and worstItem for route state
+  const serializedPyramid = pyramid.map(row =>
+    row.map(slot => ({
+      image: slot.image
+        ? { id: slot.image.id, label: slot.image.label, src: slot.image.src, color: slot.image.color }
+        : null
+    }))
+  );
+  const serializedWorstItem = worstItem
+    ? { id: worstItem.id, label: worstItem.label, src: worstItem.src, color: worstItem.color }
+    : null;
+
   const custom = {
     pyramid: Array.isArray(pyramid)
       ? pyramid.map((row, index) => ({
@@ -131,12 +150,31 @@ async function handleSubmit({ pyramid, worstItem }: PyramidData) {
     await updateGameStats(gameId, pyramid, rows.value, worstItem);
     console.log('PyramidTier: Game stats updated successfully');
 
+    console.log('PyramidTier: Pushing to PyramidResultLoggedIn with state:', {
+      items: items.value,
+      rows: rows.value,
+      pyramid: serializedPyramid,
+      worstItem: serializedWorstItem,
+      gameHeader: gameHeader.value,
+      worstHeader: worstHeader.value,
+      hideRowLabel: hideRowLabel.value,
+      gameTitle: gameDescription.value,
+    });
+
     router.push({
       name: 'PyramidResultLoggedIn',
       query: { game: gameId, score: score.toString() },
-      state: { items: items.value, rows: rows.value }
+      state: {
+        items: items.value,
+        rows: rows.value,
+        pyramid: serializedPyramid,
+        worstItem: serializedWorstItem,
+        gameHeader: gameHeader.value,
+        worstHeader: worstHeader.value,
+        hideRowLabel: hideRowLabel.value,
+        gameTitle: gameDescription.value,
+      }
     });
-    console.log('PyramidTier: Redirecting to logged in result with items and rows:', { items: items.value, rows: rows.value });
   } catch (err: any) {
     console.error('PyramidTier: Error in handleSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');
