@@ -5,39 +5,32 @@
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div class="row-container">
-            <div class="row-label-points">
-              <div v-if="!props.hideRowLabel" class="row-label-container">
-                <span class="row-label has-text-white">{{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}</span>
-                <span class="row-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</span>
+          <div class="pyramid-row">
+            <div
+              v-for="(slot, colIndex) in row"
+              :key="colIndex"
+              class="pyramid-slot box"
+              :class="[
+                { 'selected': isSelected(slot.image) },
+                { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
+                { 'drop-hover': isDroppable(rowIndex, colIndex) },
+                { 'points-animating': animatedSlot?.row === rowIndex && animatedSlot?.col === colIndex },
+                'dark-slot'
+              ]"
+              :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
+              @dragover.prevent
+              @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
+              @dragleave.prevent="onDragLeaveSlot"
+              @drop="() => onDropToSlot(rowIndex, colIndex)"
+              @click="onSlotClick(rowIndex, colIndex)"
+            >
+              <div v-if="slot.image" class="draggable-item slot-style">
+                <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
+                <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
               </div>
-              <div v-else class="row-points-container">
-                <span class="row-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</span>
-              </div>
-            </div>
-            <div class="pyramid-row">
-              <div
-                v-for="(slot, colIndex) in row"
-                :key="colIndex"
-                class="pyramid-slot box"
-                :class="[
-                  { 'selected': isSelected(slot.image) },
-                  { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
-                  { 'drop-hover': isDroppable(rowIndex, colIndex) },
-                  'dark-slot'
-                ]"
-                :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
-                @dragover.prevent
-                @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
-                @dragleave.prevent="onDragLeaveSlot"
-                @drop="() => onDropToSlot(rowIndex, colIndex)"
-                @click="onSlotClick(rowIndex, colIndex)"
-              >
-                <div v-if="slot.image" class="draggable-item slot-style">
-                  <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
-                  <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
-                </div>
-                <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+              <div v-else class="slot-label-container">
+                <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+                <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</div>
               </div>
             </div>
           </div>
@@ -136,6 +129,7 @@ const worstItem = ref<PyramidItem | null>(null);
 const draggedItem = ref<PyramidItem | null>(null);
 const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
+const animatedSlot = ref<{ row: number; col: number } | null>(null);
 
 // Description Tab State
 const showTab = ref(false);
@@ -287,6 +281,11 @@ function onSlotClick(row: number, col: number) {
   }
 
   targetSlot.image = selectedItem.value;
+  // Trigger animation for the slot
+  animatedSlot.value = { row, col };
+  setTimeout(() => {
+    animatedSlot.value = null;
+  }, 1000); // Reset after animation duration (1s)
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
@@ -445,40 +444,13 @@ function closeTab() {
   gap: 0.05rem;
   width: fit-content;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 .pyramid-row-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-}
-.row-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.row-label-points {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.row-label-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
-}
-.row-label {
-  font-weight: bold;
-  font-size: 0.7rem;
-}
-.row-points-container {
-  display: flex;
-  justify-content: flex-end;
-}
-.row-points {
-  font-size: 0.6rem;
-  font-weight: bold;
 }
 .pyramid-row {
   display: flex;
@@ -512,6 +484,29 @@ function closeTab() {
   transform: scale(1.05);
   border-color: #3298dc;
 }
+.points-animating .slot-label-container .slot-points {
+  animation: floatAndFade 1s ease-out forwards;
+}
+@keyframes floatAndFade {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+.slot-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.slot-points {
+  font-size: 0.6rem;
+  font-weight: bold;
+}
 .worst-item-container {
   display: flex;
   flex-direction: column;
@@ -519,6 +514,7 @@ function closeTab() {
   width: 100%;
   max-width: max-content;
   margin: 0.3rem auto;
+  overflow-x: hidden;
 }
 .worst-item-container .subtitle {
   width: 100%;
@@ -542,6 +538,7 @@ function closeTab() {
   font-size: 0.6rem;
   font-weight: bold;
   margin-top: 0.2rem;
+  white-space: nowrap;
 }
 .tier-label {
   color: #bbb;
@@ -717,6 +714,12 @@ function closeTab() {
   .section {
     padding: 0.1rem 0.05rem;
   }
+  .pyramid {
+    overflow-x: hidden;
+  }
+  .pyramid-row-container {
+    width: 100%;
+  }
   .pyramid-slot {
     height: 25vw;
     max-width: 90px;
@@ -724,13 +727,14 @@ function closeTab() {
     min-width: 50px;
     min-height: 50px;
   }
+  .slot-label-container {
+    gap: 0.1rem;
+  }
+  .slot-points {
+    font-size: 0.45rem;
+  }
   .worst-item-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: max-content;
-    margin: 0.3rem auto;
+    overflow-x: hidden;
   }
   .worst-item-container .subtitle {
     width: 100%;
@@ -747,7 +751,8 @@ function closeTab() {
     border: 2px solid #ff3333;
   }
   .worst-points {
-    font-size: 0.5rem;
+    font-size: 0.45rem;
+    white-space: nowrap;
   }
   .pyramid-slot .draggable-image,
   .worst-slot .draggable-image {
@@ -778,12 +783,6 @@ function closeTab() {
   }
   .tier-label {
     font-size: 0.8rem;
-  }
-  .row-label {
-    font-size: 0.7rem;
-  }
-  .row-points {
-    font-size: 0.5rem;
   }
   .color-indicator {
     width: 100%;
