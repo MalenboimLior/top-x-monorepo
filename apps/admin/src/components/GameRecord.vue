@@ -26,18 +26,6 @@
       </div>
     </div>
     <div class="field">
-      <label class="label has-text-white">Pool Header (Optional)</label>
-      <div class="control">
-        <input v-model="localGame.poolHeader" class="input" type="text" placeholder="e.g., Question Pool" />
-      </div>
-    </div>
-    <div class="field">
-      <label class="label has-text-white">Word Header (Optional)</label>
-      <div class="control">
-        <input v-model="localGame.worstHeader" class="input" type="text" placeholder="e.g., Key Terms" />
-      </div>
-    </div>
-    <div class="field">
       <label class="label has-text-white">Share Text (Optional)</label>
       <div class="control">
         <input v-model="localGame.shareText" class="input" type="text" placeholder="e.g., Share your score!" />
@@ -77,6 +65,24 @@
         <label class="label has-text-white">Hide Row Labels</label>
         <div class="control">
           <input type="checkbox" v-model="(localGame.custom as PyramidConfig).HideRowLabel" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Pool Header (Optional)</label>
+        <div class="control">
+          <input v-model="(localGame.custom as PyramidConfig).poolHeader" class="input" type="text" placeholder="e.g., Question Pool" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Worst Header (Optional)</label>
+        <div class="control">
+          <input v-model="(localGame.custom as PyramidConfig).worstHeader" class="input" type="text" placeholder="e.g., Key Terms" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Worst Points</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as PyramidConfig).worstPoints" class="input" type="number" />
         </div>
       </div>
     </div>
@@ -133,6 +139,27 @@ if (
   (localGame.value.custom as any).HideRowLabel === undefined
 ) {
   (localGame.value.custom as PyramidConfig).HideRowLabel = false;
+}
+if (
+  'custom' in localGame.value &&
+  (localGame.value.custom as any) &&
+  (localGame.value.custom as any).poolHeader === undefined
+) {
+  (localGame.value.custom as PyramidConfig).poolHeader = '';
+}
+if (
+  'custom' in localGame.value &&
+  (localGame.value.custom as any) &&
+  (localGame.value.custom as any).worstHeader === undefined
+) {
+  (localGame.value.custom as PyramidConfig).worstHeader = '';
+}
+if (
+  'custom' in localGame.value &&
+  (localGame.value.custom as any) &&
+  (localGame.value.custom as any).worstPoints === undefined
+) {
+  (localGame.value.custom as PyramidConfig).worstPoints = 0;
 }
 const isSaving = ref(false);
 const error = ref<string | null>(null);
@@ -204,6 +231,15 @@ const save = async () => {
       HideRowLabel: 'HideRowLabel' in (localGame.value.custom || {})
         ? (localGame.value.custom as PyramidConfig).HideRowLabel
         : false,
+      poolHeader: 'poolHeader' in (localGame.value.custom || {})
+        ? (localGame.value.custom as PyramidConfig).poolHeader
+        : undefined,
+      worstHeader: 'worstHeader' in (localGame.value.custom || {})
+        ? (localGame.value.custom as PyramidConfig).worstHeader
+        : undefined,
+      worstPoints: 'worstPoints' in (localGame.value.custom || {})
+        ? (localGame.value.custom as PyramidConfig).worstPoints
+        : undefined,
     };
     console.log('PyramidConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'TriviaConfig') {
@@ -225,8 +261,6 @@ const save = async () => {
       gameTypeId: props.gameTypeId,
       custom: customData,
       gameHeader: localGame.value.gameHeader || null,
-      poolHeader: localGame.value.poolHeader || null,
-      worstHeader: localGame.value.worstHeader || null,
       shareText: localGame.value.shareText || null,
       active: localGame.value.active || false,
     };
