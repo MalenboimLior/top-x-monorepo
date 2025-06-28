@@ -4,8 +4,8 @@
       <p>Error: No game ID provided. Please return to the game selection.</p>
       <router-link to="/games" class="button is-light mt-2">Back to Games</router-link>
     </div>
-    <div v-else-if="!pyramid.length && !worstItem" class="notification is-warning">
-      <p>Error: No pyramid data available for this game. Please try playing again.</p>
+    <div v-else-if="!isPyramidValid" class="notification is-warning">
+      <p>Error: No valid pyramid data available for this game. Please try playing again.</p>
       <router-link to="/games" class="button is-light mt-2">Back to Games</router-link>
     </div>
     <div v-else>
@@ -53,8 +53,8 @@
           </div>
         </div>
         <!-- Worst Item -->
-        <div v-if="worstItem" class="worst-item-container">
-          <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader }}</h3>
+        <div class="worst-item-container">
+          <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
           <div class="pyramid-slot box worst-slot dark-slot mx-auto">
             <div v-if="worstItem" class="slot-style">
               <img
@@ -72,7 +72,7 @@
         <!-- Top-X Label -->
         <p class="top-x-label has-text-white has-text-centered mt-2">top-x.co</p>
       </div>
-      <!-- Share Button -->
+      <!-- Download Button -->
       <div class="buttons is-centered mt-2">
         <CustomButton
           type="is-primary"
@@ -90,8 +90,7 @@
           <thead>
             <tr>
               <th class="has-text-centered">
-                <a href="#" class="has-text-white" @click.prevent="sortBy('rank')">
-                  Rank
+                <a href="#" class="has-text-white" @click.prevent="sortBy('rank')">Rank
                   <font-awesome-icon
                     v-if="sortColumn === 'rank'"
                     :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -99,8 +98,7 @@
                 </a>
               </th>
               <th class="has-text-centered">
-                <a href="#" class="has-text-white" @click.prevent="sortBy('name')">
-                  Item
+                <a href="#" class="has-text-white" @click.prevent="sortBy('name')">Item
                   <font-awesome-icon
                     v-if="sortColumn === 'name'"
                     :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -117,8 +115,7 @@
                 </a>
               </th>
               <th class="has-text-centered">
-                <a href="#" class="has-text-white" @click.prevent="sortBy('score')">
-                  Score
+                <a href="#" class="has-text-white" @click.prevent="sortBy('score')">Score
                   <font-awesome-icon
                     v-if="sortColumn === 'score'"
                     :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -179,29 +176,26 @@ import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import html2canvas from 'html2canvas';
 
-defineProps<{
+const props = defineProps<{
   hideRowLabel?: boolean;
   gameHeader?: string;
   worstHeader?: string;
+  pyramid?: PyramidSlot[][]; // Made optional to handle undefined
+  worstItem?: PyramidItem | null;
+  items: PyramidItem[];
+  rows: PyramidRow[];
+  gameTitle?: string;
 }>();
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const gameId = ref<string | undefined>(route.query.game as string);
-const score = ref(Number(route.query.score));
-const pyramid = ref<PyramidSlot[][]>([]);
-const worstItem = ref<PyramidItem | null>(null);
-const itemRanks = ref<Record<string, Record<number, number>>>({});
-const items = ref<PyramidItem[]>([]);
-const rows = ref<PyramidRow[]>([]);
-const gameTitle = ref<string>('');
 const pyramidContainer = ref<HTMLElement | null>(null);
 const userImage = ref<HTMLImageElement | null>(null);
 const pyramidImages = ref<HTMLImageElement[]>([]);
@@ -209,6 +203,12 @@ const worstImage = ref<HTMLImageElement | null>(null);
 const isImageLoading = ref(true);
 const sortColumn = ref<string>('score');
 const sortDirection = ref<'asc' | 'desc'>('desc');
+const itemRanks = ref<Record<string, Record<number, number>>>({});
+
+// Check if pyramid is valid (not undefined and has length, or worstItem exists)
+const isPyramidValid = computed(() => {
+  return !!props.pyramid?.length || !!props.worstItem;
+});
 
 function sortBy(column: string) {
   if (sortColumn.value === column) {
@@ -221,8 +221,8 @@ function sortBy(column: string) {
 
 const sortedItemStats = computed(() => {
   const stats = Object.entries(itemRanks.value).map(([itemId, ranks]) => {
-    const item = items.value.find(i => i.id === itemId);
-    const score = rows.value.reduce((total, row) => {
+    const item = props.items.find((i: PyramidItem) => i.id === itemId);
+    const score = props.rows.reduce((total: number, row: PyramidRow) => {
       return total + (ranks[row.id] || 0) * row.points;
     }, 0);
     return {
@@ -234,7 +234,7 @@ const sortedItemStats = computed(() => {
     };
   });
   return stats.sort((a, b) => {
-    if (sortColumn.value === 'rank') {
+    if (sortColumn.value === 'rank' || sortColumn.value === 'score') {
       return sortDirection.value === 'asc' ? a.score - b.score : b.score - a.score;
     } else if (sortColumn.value === 'name') {
       return sortDirection.value === 'asc'
@@ -245,76 +245,27 @@ const sortedItemStats = computed(() => {
       const aRank = a.ranks[tierId] || 0;
       const bRank = b.ranks[tierId] || 0;
       return sortDirection.value === 'asc' ? aRank - bRank : bRank - aRank;
-    } else {
-      return sortDirection.value === 'asc' ? a.score - b.score : b.score - a.score;
     }
+    return 0;
   });
 });
 
 onMounted(async () => {
   console.log('PyramidResultLoggedIn: onMounted called with gameId:', gameId.value);
+  console.log('PyramidResultLoggedIn: Props received:', {
+    pyramid: props.pyramid,
+    worstItem: props.worstItem,
+    items: props.items,
+    rows: props.rows,
+  });
+
   if (!gameId.value) {
-    console.error('PyramidResultLoggedIn: No gameId provided, skipping data fetch');
+    console.error('PyramidResultLoggedIn: No gameId provided, skipping stats fetch');
     return;
   }
 
   try {
-    const gameDocRef = doc(db, 'games', gameId.value);
-    const gameDoc = await getDoc(gameDocRef);
-    if (gameDoc.exists()) {
-      const gameData = gameDoc.data();
-      items.value = gameData.custom?.items || [];
-      rows.value = gameData.custom?.rows || [
-        { id: 1, label: 'Tier 1', points: 10 },
-        { id: 2, label: 'Tier 2', points: 5 },
-        { id: 3, label: 'Tier 3', points: 3 },
-        { id: 4, label: 'Tier 4', points: 1 },
-      ];
-      gameTitle.value = gameData.name || 'Untitled Game';
-      console.log('PyramidResultLoggedIn: Game data fetched:', {
-        items: items.value,
-        rows: rows.value,
-        title: gameTitle.value,
-      });
-    } else {
-      console.error('PyramidResultLoggedIn: Game document not found for ID:', gameId.value);
-    }
-  } catch (err: any) {
-    console.error('PyramidResultLoggedIn: Error fetching game data:', err.message, err);
-  }
-
-  const userGameData = userStore.profile?.games?.PyramidTier?.[gameId.value];
-  if (userGameData && userGameData.custom && items.value.length) {
-    try {
-      const pyramidData = userGameData.custom.pyramid?.pyramid ?? userGameData.custom.pyramid;
-      if (Array.isArray(pyramidData)) {
-        pyramid.value = pyramidData.map((tier: { tier: number; slots: Array<string | null> }) =>
-          tier.slots.map((itemId: string | null) => ({
-            image: itemId ? items.value.find((i) => i.id === itemId) || null : null,
-          })),
-        );
-        worstItem.value = userGameData.custom && userGameData.custom.worstItem
-          ? items.value.find((i) => i.id === userGameData.custom!.worstItem.id) || null
-          : null;
-        console.log('PyramidResultLoggedIn: Pyramid and worst item reconstructed:', {
-          pyramid: pyramid.value,
-          worstItem: worstItem.value,
-        });
-      } else {
-        console.warn('PyramidResultLoggedIn: userGameData.custom.pyramid is not an array:', pyramidData);
-      }
-    } catch (err: any) {
-      console.error('PyramidResultLoggedIn: Error reconstructing pyramid:', err.message, err);
-    }
-  } else {
-    console.warn('PyramidResultLoggedIn: No pyramid data or items available:', {
-      userGameData: userGameData?.custom,
-      items: items.value,
-    });
-  }
-
-  try {
-    const statsDoc = await getDoc(doc(db, 'games', gameId.value, 'stats', 'general'));
+    const statsDoc = await getDoc(doc(db, 'games', gameId.value as string, 'stats', 'general'));
     if (statsDoc.exists()) {
       itemRanks.value = statsDoc.data().itemRanks || {};
       console.log('PyramidResultLoggedIn: Stats fetched:', itemRanks.value);
@@ -377,12 +328,13 @@ async function preloadImages() {
   }
 
   console.log('PyramidResultLoggedIn: Preloading images:', uniqueImageUrls);
+  if (imagePromises.length === 0) {
+    console.log('PyramidResultLoggedIn: No images to preload');
+    isImageLoading.value = false;
+    return;
+  }
+
   try {
-    if (imagePromises.length === 0) {
-      console.log('PyramidResultLoggedIn: No images to preload');
-      isImageLoading.value = false;
-      return;
-    }
     await Promise.all(imagePromises);
     console.log('PyramidResultLoggedIn: All images processed');
     isImageLoading.value = false;
@@ -414,7 +366,7 @@ async function downloadPyramid() {
     });
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
-    link.download = `${(gameTitle.value).toLowerCase().replace(/\s+/g, '-')}-pyramid.png`;
+    link.download = `${(props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-')}.png`;
     link.click();
     console.log('PyramidResultLoggedIn: Image downloaded');
   } catch (err: any) {
@@ -425,7 +377,7 @@ async function downloadPyramid() {
 </script>
 
 <style scoped>
-.box{
+.box {
   padding: 0 !important;
 }
 .result-screen {
@@ -491,7 +443,7 @@ async function downloadPyramid() {
   justify-content: center;
   background-color: #1f1f1f;
   border: 1px dashed #444;
-  cursor: default; /* No interactions in result view */
+  cursor: default;
   transition: all 0.2s ease;
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -584,7 +536,8 @@ async function downloadPyramid() {
   border-radius: 8px;
   overflow: hidden;
 }
-th, td {
+th,
+td {
   padding: 0.5rem;
   text-align: center;
   border-bottom: 1px solid #333;
@@ -671,15 +624,6 @@ tr:hover {
     object-position: top;
     border-radius: 0.5rem 0.5rem 0 0;
   }
-  .color-indicator-pyramid {
-    width: 100%;
-    height: 4px;
-    border-radius: 0 0 0.5rem 0.5rem;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    z-index: 10;
-  }
   .tier-label {
     font-size: 0.8rem;
   }
@@ -700,7 +644,8 @@ tr:hover {
     font-size: 0.75rem;
     min-width: 320px;
   }
-  th, td {
+  th,
+  td {
     padding: 0.3rem;
   }
 }
