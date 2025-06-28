@@ -37,6 +37,7 @@ const gameHeader = ref('Your Pyramid');
 const poolHeader = ref('Item Pool');
 const worstHeader = ref('Worst Item');
 const shareText = ref('');
+const worstPoints = ref(0);
 
 onMounted(async () => {
   console.log('PyramidTier: onMounted called with gameId:', gameId);
@@ -57,13 +58,14 @@ onMounted(async () => {
 
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
-      poolHeader.value = gameData.poolHeader || 'Item Pool';
-      worstHeader.value = gameData.worstHeader || 'Worst Item';
+      poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
+      worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
       shareText.value = gameData.shareText || '';
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
       hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
+      worstPoints.value = gameData.custom?.worstPoints ?? 0;
 
       console.log('PyramidTier: Game data fetched:', {
         gameDescription: gameDescription.value,
@@ -192,7 +194,7 @@ function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null)
     });
   });
   if (worstItem) {
-    score += 0; // Adjust as needed
+    score += worstPoints.value;
   }
   console.log('PyramidTier: Calculated score:', score);
   return score;

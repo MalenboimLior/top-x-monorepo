@@ -95,8 +95,8 @@ const props = defineProps<{
   sortItems: SortOption;
   hideRowLabel: boolean;
   gameHeader: string;
-  poolHeader: string;
-  worstHeader: string;
+  poolHeader?: string;
+  worstHeader?: string;
   shareText?: string;
 }>();
 
