@@ -5,32 +5,40 @@
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div class="row-label has-text-white" v-if="!props.hideRowLabel">
-            {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
-          </div>
-          <div class="pyramid-row">
-            <div
-              v-for="(slot, colIndex) in row"
-              :key="colIndex"
-              class="pyramid-slot box"
-              :class="[
-                { 'selected': isSelected(slot.image) },
-                { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
-                { 'drop-hover': isDroppable(rowIndex, colIndex) },
-                'dark-slot'
-              ]"
-              :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
-              @dragover.prevent
-              @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
-              @dragleave.prevent="onDragLeaveSlot"
-              @drop="() => onDropToSlot(rowIndex, colIndex)"
-              @click="onSlotClick(rowIndex, colIndex)"
-            >
-              <div v-if="slot.image" class="draggable-item slot-style">
-                <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
-                <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+          <div class="row-container">
+            <div class="row-label-points">
+              <div v-if="!props.hideRowLabel" class="row-label-container">
+                <span class="row-label has-text-white">{{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}</span>
+                <span class="row-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</span>
               </div>
-              <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+              <div v-else class="row-points-container">
+                <span class="row-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</span>
+              </div>
+            </div>
+            <div class="pyramid-row">
+              <div
+                v-for="(slot, colIndex) in row"
+                :key="colIndex"
+                class="pyramid-slot box"
+                :class="[
+                  { 'selected': isSelected(slot.image) },
+                  { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
+                  { 'drop-hover': isDroppable(rowIndex, colIndex) },
+                  'dark-slot'
+                ]"
+                :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
+                @dragover.prevent
+                @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
+                @dragleave.prevent="onDragLeaveSlot"
+                @drop="() => onDropToSlot(rowIndex, colIndex)"
+                @click="onSlotClick(rowIndex, colIndex)"
+              >
+                <div v-if="slot.image" class="draggable-item slot-style">
+                  <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
+                  <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+                </div>
+                <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -57,6 +65,7 @@
           </div>
           <div v-else class="tier-label has-text-danger">Worst</div>
         </div>
+        <span class="worst-points has-text-danger">{{ props.worstPoints || 0 }} pts</span>
       </div>
 
       <button class="button is-primary" @click="submitPyramid">Submit</button>
@@ -75,15 +84,15 @@
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
-          <span class="info-icon" @click.stop="showDescription(image)">ℹ️</span>
+          <font-awesome-icon :icon="['fas', 'circle-info']" class="info-icon" @click.stop="showDescription(image)" />
         </div>
       </div>
 
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content">
-          <p>Hi @Gork, what can you say about {{ describedItem?.label }}?</p>
-          <p>{{ displayedDescription }}</p>
+          <p class="question-text">Hi @Gork, what can you say about {{ describedItem?.label }}?</p>
+          <p class="answer-text">{{ displayedDescription }}</p>
           <button @click="closeTab">Close</button>
         </div>
       </div>
@@ -94,6 +103,11 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faCircleInfo);
 
 const props = defineProps<{
   items: PyramidItem[];
@@ -104,6 +118,7 @@ const props = defineProps<{
   poolHeader?: string;
   worstHeader?: string;
   shareText?: string;
+  worstPoints?: number;
 }>();
 
 const emit = defineEmits<{
@@ -394,7 +409,7 @@ function startTypingAnimation(fullDescription: string) {
       clearInterval(typingInterval!);
       typingInterval = null;
     }
-  }, 50); // Adjust typing speed as needed
+  }, 50);
 }
 
 function closeTab() {
@@ -437,16 +452,38 @@ function closeTab() {
   align-items: center;
   gap: 0.2rem;
 }
+.row-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.row-label-points {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.row-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+.row-label {
+  font-weight: bold;
+  font-size: 0.7rem;
+}
+.row-points-container {
+  display: flex;
+  justify-content: flex-end;
+}
+.row-points {
+  font-size: 0.6rem;
+  font-weight: bold;
+}
 .pyramid-row {
   display: flex;
   justify-content: center;
   gap: 0.05rem;
-}
-.row-label {
-  width: 100%;
-  text-align: center;
-  font-weight: bold;
-  font-size: 0.7rem;
 }
 .pyramid-slot {
   width: 25vw;
@@ -488,7 +525,7 @@ function closeTab() {
   text-align: center;
 }
 .worst-slot {
-  border: 2px dashed #ff7777;
+  border: 2px solid #ff3333;
   background-color: #3d1f1f;
   max-width: 100px;
   max-height: 100px;
@@ -498,8 +535,13 @@ function closeTab() {
 }
 .worst-slot.drop-hover {
   background-color: #ff3333;
-  border-color: #ff3333;
+  border: 2px solid #ff3333;
   transform: scale(1.05);
+}
+.worst-points {
+  font-size: 0.6rem;
+  font-weight: bold;
+  margin-top: 0.2rem;
 }
 .tier-label {
   color: #bbb;
@@ -663,8 +705,14 @@ function closeTab() {
   max-height: 200px;
   overflow-y: auto;
 }
-
-/* Mobile-specific adjustments */
+.question-text {
+  color: #3273dc;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.answer-text {
+  color: #eee;
+}
 @media screen and (max-width: 767px) {
   .section {
     padding: 0.1rem 0.05rem;
@@ -689,10 +737,17 @@ function closeTab() {
     text-align: center;
   }
   .worst-slot {
+    border: 2px solid #ff3333;
     max-width: 90px;
     max-height: 90px;
     min-width: 50px;
     min-height: 50px;
+  }
+  .worst-slot.drop-hover {
+    border: 2px solid #ff3333;
+  }
+  .worst-points {
+    font-size: 0.5rem;
   }
   .pyramid-slot .draggable-image,
   .worst-slot .draggable-image {
@@ -726,6 +781,9 @@ function closeTab() {
   }
   .row-label {
     font-size: 0.7rem;
+  }
+  .row-points {
+    font-size: 0.5rem;
   }
   .color-indicator {
     width: 100%;
