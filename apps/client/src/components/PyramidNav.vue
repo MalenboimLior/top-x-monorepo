@@ -30,6 +30,7 @@
         :game-id="gameId"
         :items="items ?? []"
         :rows="rows ?? []"
+        :worstPoints="worstPoints ?? 0"
       />
       <PyramidResults
         v-if="activeTab === 'results'"
@@ -62,6 +63,7 @@ const props = defineProps<{
   worstHeader?: string;
   gameTitle?: string;
   hideRowLabel?: boolean;
+  worstPoints?: number;
 }>();
 
 const activeTab = ref<'my-vote' | 'stats' | 'results'>('my-vote');
