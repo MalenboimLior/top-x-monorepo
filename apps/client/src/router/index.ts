@@ -13,6 +13,8 @@ import PyramidResultLoggedOut from '@/components/PyramidResultLoggedOut.vue';
 import RivalSearch from '@/views/RivalSearch.vue';
 
 import { useUserStore } from '../stores/user';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -66,6 +68,13 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
+});
+
+router.afterEach((to) => {
+  logEvent(analytics, 'page_view', {
+    page_path: to.fullPath,
+    page_title: String(to.name || to.fullPath),
+  });
 });
 
 export default router;
