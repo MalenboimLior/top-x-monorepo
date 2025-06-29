@@ -1,22 +1,33 @@
-<template>
-  <div class="pyramid-tier">
-    <h1>{{ gameDescription }}</h1>
-    <PyramidEdit
-      v-if="!hasSubmitted"
+ <template>
+   <div class="pyramid-tier">
+     <h1>{{ gameDescription }}</h1>
+     <PyramidEdit
+       v-if="!hasSubmitted"
+       :items="items"
+       :rows="rows"
+       :sort-items="sortItems"
+       :hide-row-label="hideRowLabel"
+       :game-header="gameHeader"
+       :pool-header="poolHeader"
+       :worst-header="worstHeader"
+       :share-text="shareText"
+       :worst-points="worstPoints"
+       @submit="handleSubmit"
+     />
+    <PyramidNav
+      v-else
+      :game-id="gameId"
+      :pyramid="pyramid"
+      :worst-item="worstItem"
       :items="items"
       :rows="rows"
-      :sort-items="sortItems"
-      :hide-row-label="hideRowLabel"
       :game-header="gameHeader"
-      :pool-header="poolHeader"
       :worst-header="worstHeader"
-      :share-text="shareText"
-      :worst-points="worstPoints"
-      @submit="handleSubmit"
+      :game-title="gameDescription"
+      :hide-row-label="hideRowLabel"
     />
-    <PyramidNav v-else :game-id="gameId" :pyramid="pyramid" :worst-item="worstItem" />
-  </div>
-</template>
+   </div>
+ </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
@@ -27,6 +38,8 @@ import PyramidEdit from '@/components/PyramidEdit.vue';
 import PyramidNav from '@/components/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
+
+ const gameTitle = ref(''); // Add gameTitle ref for consistency
 
 const route = useRoute();
 const router = useRouter();
@@ -59,34 +72,31 @@ onMounted(async () => {
 
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
-      console.log('PyramidTier: Raw game data from Firestore:', gameData);
-      console.log('PyramidTier: Custom field from Firestore:', gameData.custom);
-      console.log('PyramidTier: HideRowLabel value:', gameData.custom?.HideRowLabel);
-      console.log('PyramidTier: WorstPoints value:', gameData.custom?.worstPoints);
-
-      gameDescription.value = gameData.description || '';
-      gameHeader.value = gameData.custom?.gameHeader || 'Your Pyramid';
-      poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
-      worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
-      shareText.value = gameData.custom?.shareText || '';
-      items.value = gameData.custom?.items || [];
-      rows.value = gameData.custom?.rows || [];
-      sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
-      hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
-      worstPoints.value = gameData.custom?.worstPoints ?? 0;
-
-      console.log('PyramidTier: Game data fetched:', {
-        gameDescription: gameDescription.value,
-        gameHeader: gameHeader.value,
-        poolHeader: poolHeader.value,
-        worstHeader: worstHeader.value,
-        shareText: shareText.value,
-        items: items.value,
-        rows: rows.value,
-        sortItems: sortItems.value,
-        hideRowLabel: hideRowLabel.value,
-        worstPoints: worstPoints.value
-      });
+    gameDescription.value = gameData.description || '';
+    gameTitle.value = gameData.description || ''; // Set gameTitle
+     gameHeader.value = gameData.gameHeader || 'Your Pyramid';
+     poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
+     worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
+     shareText.value = gameData.custom?.shareText || '';
+     items.value = gameData.custom?.items || [];
+     rows.value = gameData.custom?.rows || [];
+     sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
+     hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
+     worstPoints.value = gameData.custom?.worstPoints ?? 0;
+ 
+     console.log('PyramidTier: Game data fetched:', {
+       gameDescription: gameDescription.value,
+      gameTitle: gameTitle.value,
+       gameHeader: gameHeader.value,
+       poolHeader: poolHeader.value,
+       worstHeader: worstHeader.value,
+       shareText: shareText.value,
+       items: items.value,
+       rows: rows.value,
+       sortItems: sortItems.value,
+       hideRowLabel: hideRowLabel.value,
+       worstPoints: worstPoints.value
+     });
     } else {
       console.error('PyramidTier: Game document not found for ID:', gameId.value);
     }

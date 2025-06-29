@@ -1,68 +1,70 @@
 <template>
-  <div class="pyramid-container has-background-dark p-2">
-    <!-- User Image -->
-    <div class="user-image-container">
-      <img
-        v-if="userProfile?.photoURL"
-        :src="userProfile.photoURL"
-        alt="User Profile"
-        class="user-image"
-        ref="userImage"
-        crossorigin="anonymous"
-      />
-      <img
-        v-else
-        src="@/assets/profile.png"
-        alt="Default Profile"
-        class="user-image"
-        ref="userImage"
-        crossorigin="anonymous"
-      />
-    </div>
-    <!-- Game Header -->
-    <h2 class="subtitle has-text-white has-text-centered">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
-    <!-- Pyramid -->
-    <div class="pyramid">
-      <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-        <div class="row-label has-text-white" v-if="!hideRowLabel">
-          {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
-        </div>
-        <div class="pyramid-row">
-          <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot box dark-slot">
-            <div v-if="slot.image" class="slot-style">
-              <img
-                :src="slot.image.src"
-                :alt="slot.image.label"
-                class="draggable-image"
-                ref="pyramidImages"
-                crossorigin="anonymous"
-              />
-              <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+  <div class="pyramid-view">
+    <div ref="canvasContainer" class="pyramid-container has-background-dark p-2">
+      <!-- User Image -->
+      <div class="user-image-container">
+        <img
+          v-if="userProfile?.photoURL"
+          :src="userProfile.photoURL"
+          alt="User Profile"
+          class="user-image"
+          ref="userImage"
+          crossorigin="anonymous"
+        />
+        <img
+          v-else
+          src="@/assets/profile.png"
+          alt="Default Profile"
+          class="user-image"
+          ref="userImage"
+          crossorigin="anonymous"
+        />
+      </div>
+      <!-- Game Header -->
+      <h2 class="subtitle has-text-white has-text-centered">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
+      <!-- Pyramid -->
+      <div class="pyramid">
+        <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
+          <div class="row-label has-text-white" v-if="!hideRowLabel">
+            {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
+          </div>
+          <div class="pyramid-row">
+            <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot box dark-slot">
+              <div v-if="slot.image" class="slot-style">
+                <img
+                  :src="slot.image.src"
+                  :alt="slot.image.label"
+                  class="draggable-image"
+                  ref="pyramidImages"
+                  crossorigin="anonymous"
+                />
+                <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+              </div>
+              <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
             </div>
-            <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
           </div>
         </div>
       </div>
-    </div>
-    <!-- Worst Item -->
-    <div class="worst-item-container">
-      <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
-      <div class="pyramid-slot box worst-slot dark-slot mx-auto">
-        <div v-if="worstItem" class="slot-style">
-          <img
-            :src="worstItem.src"
-            :alt="worstItem.label"
-            class="draggable-image"
-            ref="worstImage"
-            crossorigin="anonymous"
-          />
-          <div class="color-indicator-pyramid" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
+      <!-- Worst Item -->
+      <div class="worst-item-container">
+        <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
+        <div class="pyramid-slot box worst-slot dark-slot mx-auto">
+          <div v-if="worstItem" class="slot-style">
+            <img
+              :src="worstItem.src"
+              :alt="worstItem.label"
+              class="draggable-image"
+              ref="worstImage"
+              crossorigin="anonymous"
+            />
+            <div class="color-indicator-pyramid" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
+          </div>
+          <div v-else class="tier-label has-text-danger">Worst</div>
         </div>
-        <div v-else class="tier-label has-text-danger">Worst</div>
       </div>
+      <!-- Top-X Label -->
+      <p class="top-x-label has-text-white has-text-centered mt-2">top-x.co</p>
     </div>
-    <!-- Top-X Label -->
-    <p class="top-x-label has-text-white has-text-centered mt-2">top-x.co</p>
     <!-- Download Button -->
     <div class="buttons is-centered mt-2">
       <CustomButton
@@ -92,19 +94,27 @@ const props = defineProps<{
   worstHeader?: string;
   gameTitle?: string;
   hideRowLabel?: boolean;
+  userProfile?: { photoURL: string };
 }>();
 
 const userStore = useUserStore();
-const userProfile = userStore.profile; // Add this line to provide userProfile
-const pyramidContainer = ref<HTMLElement | null>(null);
+const canvasContainer = ref<HTMLElement | null>(null);
 const userImage = ref<HTMLImageElement | null>(null);
 const pyramidImages = ref<HTMLImageElement[]>([]);
 const worstImage = ref<HTMLImageElement | null>(null);
 const isImageLoading = ref(true);
+const preprocessedImages = ref<Map<string, string>>(new Map()); // Store preprocessed image data URLs
 
 onMounted(async () => {
-  console.log('PyramidView: onMounted called');
+  console.log('PyramidView: onMounted called with props:', {
+    gameHeader: props.gameHeader,
+    worstHeader: props.worstHeader,
+    hideRowLabel: props.hideRowLabel,
+  });
   await nextTick();
+  if (!canvasContainer.value) {
+    console.error('PyramidView: canvasContainer ref is null after nextTick');
+  }
   await preloadImages();
 });
 
@@ -113,49 +123,93 @@ async function preloadImages() {
   const uniqueImageUrls = new Set<string>();
   const timeoutMs = 5000;
 
-  const loadImageWithTimeout = (img: HTMLImageElement): Promise<void> =>
-    Promise.race([
-      new Promise<void>((resolve) => {
-        img.onload = () => {
-          console.log('PyramidView: Image loaded:', img.src);
-          resolve();
-        };
-        img.onerror = () => {
-          console.warn('PyramidView: Image failed to load:', img.src);
-          resolve();
-        };
-        if (img.complete && img.naturalWidth !== 0) {
-          console.log('PyramidView: Image already loaded:', img.src);
-          resolve();
-        }
-      }),
-      new Promise<void>((resolve) => {
-        setTimeout(() => {
-          console.warn('PyramidView: Image load timed out:', img.src);
-          resolve();
-        }, timeoutMs);
-      }),
-    ]);
+  const preprocessImage = (img: HTMLImageElement): Promise<void> =>
+    new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn('PyramidView: Failed to get canvas context for', img.src);
+        resolve();
+        return;
+      }
 
-  if (userImage.value?.src) {
-    uniqueImageUrls.add(userImage.value.src);
+      img.onload = () => {
+        // Resize to square (90x90 to match max slot size)
+        const size = 90;
+        canvas.width = size;
+        canvas.height = size;
+        const imgAspect = img.naturalWidth / img.naturalHeight;
+        let srcX = 0,
+          srcY = 0,
+          srcWidth = img.naturalWidth,
+          srcHeight = img.naturalHeight;
+
+        // Crop to square if not already
+        if (imgAspect > 1) {
+          srcWidth = srcHeight;
+          srcX = (img.naturalWidth - srcWidth) / 2;
+        } else if (imgAspect < 1) {
+          srcHeight = srcWidth;
+          srcY = (img.naturalHeight - srcHeight) / 2;
+        }
+
+        ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL('image/png');
+        preprocessedImages.value.set(img.src, dataUrl);
+        console.log('PyramidView: Preprocessed image:', img.src, 'Dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+        resolve();
+      };
+
+      img.onerror = () => {
+        console.warn('PyramidView: Image failed to load:', img.src);
+        resolve();
+      };
+
+      img.onabort = () => {
+        console.warn('PyramidView: Image load aborted:', img.src);
+        resolve();
+      };
+
+      if (img.complete && img.naturalWidth !== 0) {
+        img.onload?.(new Event('load')); // Trigger immediately if already loaded
+      }
+    });
+
+  const profileImage = props.userProfile?.photoURL || userStore.profile?.photoURL || '@/assets/profile.png';
+  if (userImage.value?.src && !uniqueImageUrls.has(profileImage)) {
+    uniqueImageUrls.add(profileImage);
     userImage.value.crossOrigin = 'anonymous';
-    imagePromises.push(loadImageWithTimeout(userImage.value));
+    imagePromises.push(
+      Promise.race([
+        preprocessImage(userImage.value),
+        new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
+      ])
+    );
   }
 
   pyramidImages.value.forEach((img) => {
     if (img.src && !uniqueImageUrls.has(img.src)) {
       uniqueImageUrls.add(img.src);
-      imagePromises.push(loadImageWithTimeout(img));
+      imagePromises.push(
+        Promise.race([
+          preprocessImage(img),
+          new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
+        ])
+      );
     }
   });
 
   if (worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
     uniqueImageUrls.add(worstImage.value.src);
-    imagePromises.push(loadImageWithTimeout(worstImage.value));
+    imagePromises.push(
+      Promise.race([
+        preprocessImage(worstImage.value),
+        new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
+      ])
+    );
   }
 
-  console.log('PyramidView: Preloading images:', uniqueImageUrls);
+  console.log('PyramidView: Preloading images:', Array.from(uniqueImageUrls));
   if (imagePromises.length === 0) {
     console.log('PyramidView: No images to preload');
     isImageLoading.value = false;
@@ -164,7 +218,19 @@ async function preloadImages() {
 
   try {
     await Promise.all(imagePromises);
-    console.log('PyramidView: All images processed');
+    console.log('PyramidView: All images preprocessed');
+    // Update image sources to preprocessed versions
+    if (userImage.value && preprocessedImages.value.has(profileImage)) {
+      userImage.value.src = preprocessedImages.value.get(profileImage)!;
+    }
+    pyramidImages.value.forEach((img) => {
+      if (preprocessedImages.value.has(img.src)) {
+        img.src = preprocessedImages.value.get(img.src)!;
+      }
+    });
+    if (worstImage.value && preprocessedImages.value.has(worstImage.value.src)) {
+      worstImage.value.src = preprocessedImages.value.get(worstImage.value.src)!;
+    }
     isImageLoading.value = false;
   } catch (err: any) {
     console.error('PyramidView: Error preloading images:', err.message, err);
@@ -178,25 +244,30 @@ function toRoman(num: number): string {
 }
 
 async function downloadPyramid() {
-  if (!pyramidContainer.value) {
-    console.error('PyramidView: Pyramid container not found');
+  console.log('PyramidView: downloadPyramid called');
+  await nextTick();
+  if (!canvasContainer.value) {
+    console.error('PyramidView: Canvas container not found');
     alert('Failed to download image. Please try again.');
     return;
   }
   try {
-    console.log('PyramidView: Generating download image');
-    const canvas = await html2canvas(pyramidContainer.value, {
+    console.log('PyramidView: Generating canvas with html2canvas');
+    const canvas = await html2canvas(canvasContainer.value, {
       backgroundColor: '#121212',
-      scale: 2,
+      scale: window.devicePixelRatio || 2, // Use device pixel ratio for crisp rendering
       useCORS: true,
       logging: true,
       allowTaint: false,
+      width: canvasContainer.value.offsetWidth,
+      height: canvasContainer.value.offsetHeight,
     });
+    console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
     link.download = `${(props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-')}.png`;
     link.click();
-    console.log('PyramidView: Image downloaded');
+    console.log('PyramidView: Image download triggered');
   } catch (err: any) {
     console.error('PyramidView: Error generating download image:', err.message, err);
     alert('Failed to download image. Some images may not be accessible due to CORS restrictions.');
@@ -207,12 +278,19 @@ async function downloadPyramid() {
 <style scoped>
 .box {
   padding: 0 !important;
+  box-sizing: border-box;
+}
+.pyramid-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  max-width: 100%;
+  max-width: calc(100% - 0.4rem);
   margin: 0 auto;
+  overflow: hidden;
 }
 .user-image-container {
   position: absolute;
@@ -231,7 +309,8 @@ async function downloadPyramid() {
   flex-direction: column;
   align-items: center;
   gap: 0.05rem;
-  width: fit-content;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
 }
 .pyramid-row-container {
@@ -239,6 +318,7 @@ async function downloadPyramid() {
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
+  width: 100%;
 }
 .row-label {
   width: 100%;
@@ -250,14 +330,16 @@ async function downloadPyramid() {
   display: flex;
   justify-content: center;
   gap: 0.05rem;
+  width: 100%;
+  flex-wrap: nowrap;
 }
 .pyramid-slot {
-  width: 25vw;
-  height: 25vw;
-  max-width: 100px;
-  max-height: 100px;
-  min-width: 60px;
-  min-height: 60px;
+  width: 22vw;
+  height: 22vw;
+  max-width: 90px;
+  max-height: 90px;
+  min-width: 50px;
+  min-height: 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -284,14 +366,15 @@ async function downloadPyramid() {
 .worst-item-container .subtitle {
   width: 100%;
   text-align: center;
+  margin-bottom: 5px;
 }
 .worst-slot {
   border: 2px dashed #ff7777;
   background-color: #3d1f1f;
-  max-width: 100px;
-  max-height: 100px;
-  min-width: 60px;
-  min-height: 60px;
+  max-width: 90px;
+  max-height: 90px;
+  min-width: 50px;
+  min-height: 50px;
   box-sizing: border-box;
 }
 .slot-style {
@@ -317,8 +400,8 @@ async function downloadPyramid() {
   touch-action: none;
   width: 100%;
   height: calc(100% - 4px);
-  object-fit: cover;
-  object-position: top;
+  object-fit: cover; /* Reverted to fill slots */
+  object-position: center; /* Center for better cropping */
   border-radius: 0.5rem 0.5rem 0 0;
 }
 .color-indicator-pyramid {
@@ -354,34 +437,36 @@ async function downloadPyramid() {
 }
 @media screen and (max-width: 767px) {
   .pyramid-container {
-    padding: 0.3rem;
+    padding: 0.2rem;
+    max-width: calc(100% - 0.2rem);
   }
   .pyramid-slot {
-    height: 25vw;
-    max-width: 90px;
-    max-height: 90px;
-    min-width: 50px;
-    min-height: 50px;
+    width: 20vw;
+    height: 20vw;
+    max-width: 80px;
+    max-height: 80px;
+    min-width: 45px;
+    min-height: 45px;
   }
   .worst-slot {
-    max-width: 90px;
-    max-height: 90px;
-    min-width: 50px;
-    min-height: 50px;
+    max-width: 80px;
+    max-height: 80px;
+    min-width: 45px;
+    min-height: 45px;
   }
   .pyramid-slot .draggable-image,
   .worst-slot .draggable-image {
     width: 100%;
     height: calc(100% - 4px);
     object-fit: cover;
-    object-position: top;
+    object-position: center;
     border-radius: 0.5rem 0.5rem 0 0;
   }
   .tier-label {
     font-size: 0.8rem;
   }
   .row-label {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
   }
   .top-x-label {
     font-size: 0.6rem;

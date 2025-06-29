@@ -203,8 +203,8 @@ tr:hover {
 }
 .item-column {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: left;
+  justify-content: left;
   gap: 0.3rem;
 }
 .item-image {

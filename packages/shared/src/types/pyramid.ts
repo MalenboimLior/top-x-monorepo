@@ -35,3 +35,8 @@ export interface PyramidData {
   pyramid: PyramidSlot[][];
   worstItem: PyramidItem | null;
 }
+export interface PyramidStats {
+  itemRanks: { [itemId: string]: { [tierId: string]: number } };
+  totalPlayers: number;
+  worstItemCounts: { [itemId: string]: number };
+}
