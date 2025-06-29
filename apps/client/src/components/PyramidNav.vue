@@ -23,6 +23,7 @@
         :worst-header="worstHeader"
         :game-title="gameTitle"
         :hide-row-label="hideRowLabel"
+        :game-id="gameId"
       />
       <PyramidStats
         v-if="activeTab === 'stats'"
