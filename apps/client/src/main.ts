@@ -13,6 +13,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(faXTwitter, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable,faMedal, faSortUp, faSortDown,faCircleInfo);
 
 import 'bulma/css/bulma.min.css';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 
 const pinia = createPinia();
@@ -23,3 +25,12 @@ createApp(App)
   .use(pinia)
   .component('font-awesome-icon', FontAwesomeIcon)
   .mount('#app');
+
+window.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement;
+  const name = target.getAttribute('data-analytics-name') || target.tagName;
+  logEvent(analytics, 'click', {
+    element: name,
+    page_path: window.location.pathname,
+  });
+});

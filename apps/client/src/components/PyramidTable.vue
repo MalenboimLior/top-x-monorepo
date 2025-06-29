@@ -93,6 +93,15 @@
           <font-awesome-icon :icon="['fas', 'circle-info']" class="info-icon" @click.stop="showDescription(image)" />
         </div>
       </div>
+      <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="%VITE_GOOGLE_ADS_CLIENT_ID%"
+        data-ad-slot="%VITE_GOOGLE_ADS_SLOT_ID%"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
 
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
