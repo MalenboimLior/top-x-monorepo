@@ -106,7 +106,6 @@ const closeMenu = () => {
 <style scoped>
 @media screen and (max-width: 1023px) {
   .navbar-menu {
-    background-color: #fff;
   }
 }
 .navbar-icon {
@@ -117,4 +116,5 @@ const closeMenu = () => {
 
  
 }
+
 </style>

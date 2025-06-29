@@ -1,7 +1,8 @@
 <template>
   <div class="pyramid-tier">
     <h1>{{ gameDescription }}</h1>
-    <PyramidTable
+    <PyramidEdit
+      v-if="!hasSubmitted"
       :items="items"
       :rows="rows"
       :sort-items="sortItems"
@@ -13,6 +14,7 @@
       :worst-points="worstPoints"
       @submit="handleSubmit"
     />
+    <PyramidNav v-else :game-id="gameId" :pyramid="pyramid" :worst-item="worstItem" />
   </div>
 </template>
 
@@ -21,14 +23,15 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import PyramidTable from '@/components/PyramidTable.vue';
+import PyramidEdit from '@/components/PyramidEdit.vue';
+import PyramidNav from '@/components/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const gameId = route.query.game as string;
+const gameId = ref(route.query.game as string);
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
 const rows = ref<PyramidRow[]>([]);
@@ -39,16 +42,19 @@ const poolHeader = ref('Item Pool');
 const worstHeader = ref('Worst Item');
 const shareText = ref('');
 const worstPoints = ref(0);
+const hasSubmitted = ref(false);
+const pyramid = ref<PyramidSlot[][]>([]);
+const worstItem = ref<PyramidItem | null>(null);
 
 onMounted(async () => {
-  console.log('PyramidTier: onMounted called with gameId:', gameId);
-  if (!gameId) {
+  console.log('PyramidTier: onMounted called with gameId:', gameId.value);
+  if (!gameId.value) {
     console.error('PyramidTier: No gameId provided');
     return;
   }
 
   try {
-    const gameDocRef = doc(db, 'games', gameId);
+    const gameDocRef = doc(db, 'games', gameId.value);
     const gameDoc = await getDoc(gameDocRef);
 
     if (gameDoc.exists()) {
@@ -59,7 +65,7 @@ onMounted(async () => {
       console.log('PyramidTier: WorstPoints value:', gameData.custom?.worstPoints);
 
       gameDescription.value = gameData.description || '';
-      gameHeader.value = gameData.gameHeader || 'Your Pyramid';
+      gameHeader.value = gameData.custom?.gameHeader || 'Your Pyramid';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
       worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
       shareText.value = gameData.custom?.shareText || '';
@@ -81,108 +87,59 @@ onMounted(async () => {
         hideRowLabel: hideRowLabel.value,
         worstPoints: worstPoints.value
       });
-
-      if (!gameData.custom) {
-        console.warn('PyramidTier: No custom field found in game data for ID:', gameId);
-      }
-      if (!items.value.length) {
-        console.warn('PyramidTier: No items found in gameData.custom.items for ID:', gameId);
-      }
-      if (!rows.value.length) {
-        console.warn('PyramidTier: No rows found in gameData.custom.rows for ID:', gameId);
-      }
     } else {
-      console.error('PyramidTier: Game document not found for ID:', gameId);
+      console.error('PyramidTier: Game document not found for ID:', gameId.value);
     }
   } catch (error: any) {
     console.error('PyramidTier: Error fetching game data:', error.message, error);
   }
 });
 
-async function handleSubmit({ pyramid, worstItem }: PyramidData) {
-  console.log('PyramidTier: handleSubmit called with data:', { pyramid, worstItem });
+async function handleSubmit(data: PyramidData) {
+  console.log('PyramidTier: handleSubmit called with data:', data);
+  pyramid.value = data.pyramid;
+  worstItem.value = data.worstItem;
 
-  if (!gameId) {
+  if (!gameId.value) {
     console.error('PyramidTier: No gameId provided, cannot submit');
     alert('Error: No game ID provided. Please select a game.');
     router.push('/games');
     return;
   }
 
-  if (!userStore.user) {
-    console.log('PyramidTier: User not logged in, redirecting to logged out result');
-    router.push({ name: 'PyramidResultLoggedOut', query: { game: gameId } });
-    return;
-  }
+  const score = calculateScore(data.pyramid, data.worstItem);
 
-  if (!pyramid || !Array.isArray(pyramid)) {
-    console.error('PyramidTier: Invalid pyramid data:', pyramid);
-    alert('Error: Invalid pyramid data. Please try again.');
-    router.push('/games');
+  if (!userStore.user) {
+    console.log('PyramidTier: User not logged in, storing vote in localStorage');
+    const sessionId = crypto.randomUUID();
+    localStorage.setItem(`vote_${gameId.value}_${sessionId}`, JSON.stringify({
+      pyramid: data.pyramid,
+      worstItem: data.worstItem,
+      score,
+      createdAt: new Date().toISOString()
+    }));
+    hasSubmitted.value = true;
     return;
   }
 
   const userId = userStore.user.uid;
   const gameTypeId = 'PyramidTier';
-  const score = calculateScore(pyramid, worstItem);
-
-  // Serialize pyramid and worstItem for route state
-  const serializedPyramid = pyramid.map(row =>
-    row.map(slot => ({
-      image: slot.image
-        ? { id: slot.image.id, label: slot.image.label, src: slot.image.src, color: slot.image.color }
-        : null
-    }))
-  );
-  const serializedWorstItem = worstItem
-    ? { id: worstItem.id, label: worstItem.label, src: worstItem.src, color: worstItem.color }
-    : null;
-
   const custom = {
-    pyramid: Array.isArray(pyramid)
-      ? pyramid.map((row, index) => ({
+    pyramid: Array.isArray(data.pyramid)
+      ? data.pyramid.map((row, index) => ({
           tier: index + 1,
           slots: row.map(slot => slot.image?.id || null)
         }))
       : [],
-    worstItem: worstItem ? { id: worstItem.id, label: worstItem.label, src: worstItem.src } : null,
+    worstItem: data.worstItem ? { id: data.worstItem.id, label: data.worstItem.label, src: data.worstItem.src } : null,
   };
-  console.log('PyramidTier: Prepared custom data for saving:', custom);
 
   try {
-    await userStore.updateGameProgress(gameTypeId, gameId, score, 0, custom);
+    await userStore.updateGameProgress(gameTypeId, gameId.value, score, 0, custom);
     console.log('PyramidTier: User progress updated successfully');
-
-    await updateGameStats(gameId, pyramid, rows.value, worstItem);
+    await updateGameStats(gameId.value, data.pyramid, rows.value, data.worstItem);
     console.log('PyramidTier: Game stats updated successfully');
-
-    console.log('PyramidTier: Pushing to PyramidResultLoggedIn with state:', {
-      items: items.value,
-      rows: rows.value,
-      pyramid: serializedPyramid,
-      worstItem: serializedWorstItem,
-      gameHeader: gameHeader.value,
-      worstHeader: worstHeader.value,
-      hideRowLabel: hideRowLabel.value,
-      gameTitle: gameDescription.value,
-      worstPoints: worstPoints.value
-    });
-
-    router.push({
-      name: 'PyramidResultLoggedIn',
-      query: { game: gameId, score: score.toString() },
-      state: {
-        items: items.value,
-        rows: rows.value,
-        pyramid: serializedPyramid,
-        worstItem: serializedWorstItem,
-        gameHeader: gameHeader.value,
-        worstHeader: worstHeader.value,
-        hideRowLabel: hideRowLabel.value,
-        gameTitle: gameDescription.value,
-        worstPoints: worstPoints.value
-      }
-    });
+    hasSubmitted.value = true;
   } catch (err: any) {
     console.error('PyramidTier: Error in handleSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');
@@ -210,48 +167,10 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
   console.log('PyramidTier: Updating game stats for gameId:', gameId);
   const statsRef = doc(db, 'games', gameId, 'stats', 'general');
 
-  if (typeof runTransaction === 'function') {
-    console.log('PyramidTier: Using runTransaction for stats update');
-    try {
-      await runTransaction(db, async (transaction) => {
-        const statsDoc = await transaction.get(statsRef);
-        let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
-        console.log('PyramidTier: Current stats:', stats);
-
-        stats.totalPlayers = (stats.totalPlayers || 0) + 1;
-
-        pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
-          row.forEach((slot: PyramidSlot) => {
-            if (slot.image) {
-              const itemId = slot.image.id;
-              const rowId = rows[rowIndex]?.id || rowIndex + 1;
-              if (!stats.itemRanks[itemId]) {
-                stats.itemRanks[itemId] = {};
-              }
-              stats.itemRanks[itemId][rowId] = (stats.itemRanks[itemId][rowId] || 0) + 1;
-            }
-          });
-        });
-
-        if (worstItem) {
-          const itemId = worstItem.id;
-          stats.worstItemCounts[itemId] = (stats.worstItemCounts[itemId] || 0) + 1;
-        }
-
-        console.log('PyramidTier: Updated stats:', stats);
-        transaction.set(statsRef, stats);
-      });
-    } catch (err: any) {
-      console.error('PyramidTier: Error in runTransaction:', err.message, err);
-      throw err;
-    }
-  } else {
-    console.warn('PyramidTier: runTransaction not available, using setDoc fallback');
-    try {
-      const statsDoc = await getDoc(statsRef);
+  try {
+    await runTransaction(db, async (transaction) => {
+      const statsDoc = await transaction.get(statsRef);
       let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
-      console.log('PyramidTier: Current stats (fallback):', stats);
-
       stats.totalPlayers = (stats.totalPlayers || 0) + 1;
 
       pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
@@ -259,9 +178,7 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
           if (slot.image) {
             const itemId = slot.image.id;
             const rowId = rows[rowIndex]?.id || rowIndex + 1;
-            if (!stats.itemRanks[itemId]) {
-              stats.itemRanks[itemId] = {};
-            }
+            stats.itemRanks[itemId] = stats.itemRanks[itemId] || {};
             stats.itemRanks[itemId][rowId] = (stats.itemRanks[itemId][rowId] || 0) + 1;
           }
         });
@@ -272,13 +189,12 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
         stats.worstItemCounts[itemId] = (stats.worstItemCounts[itemId] || 0) + 1;
       }
 
-      console.log('PyramidTier: Updated stats (fallback):', stats);
-      await setDoc(statsRef, stats, { merge: true });
-      console.log('PyramidTier: Stats updated successfully with setDoc');
-    } catch (err: any) {
-      console.error('PyramidTier: Error in setDoc fallback:', err.message, err);
-      throw err;
-    }
+      console.log('PyramidTier: Updated stats:', stats);
+      transaction.set(statsRef, stats);
+    });
+  } catch (err: any) {
+    console.error('PyramidTier: Error in runTransaction:', err.message, err);
+    throw err;
   }
 }
 </script>
