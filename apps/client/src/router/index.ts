@@ -10,7 +10,7 @@ import PyramidResultLoggedIn from '@/components/PyramidResultLoggedIn.vue';
 import PyramidResultLoggedOut from '@/components/PyramidResultLoggedOut.vue';
 // import TierTable from '@/views/games/TierTable.vue';
 
-import RivalSearch from '@/views/RivalSearch.vue';
+import FrenemySearch from '@/views/FrenemySearch.vue';
 
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
@@ -26,7 +26,7 @@ const routes = [
   },
   { path: '/about', name: 'About', component: About },
   { path: '/faq', name: 'FAQ', component: FAQ },
-  { path: '/rivals', name: 'RivalSearch', component: RivalSearch },
+  { path: '/frenemies', name: 'FrenemySearch', component: FrenemySearch },
   { path: '/games/trivia', name: 'Trivia', component: Trivia },
   {
     path: '/games/PyramidTier',

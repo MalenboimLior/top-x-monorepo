@@ -288,7 +288,7 @@ export const useTriviaStore = defineStore('trivia', () => {
                 photoURL: user.photoURL || 'https://www.top-x.co/assets/images/profile.png',
                 followersCount: 0,
                 followingCount: 0,
-                rivals: [],
+                frenemies: [],
                 addedBy: [],
                 games: {
                   smartest_on_x: {

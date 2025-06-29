@@ -55,7 +55,7 @@
         :inviter="inviter"
         :leaderboard="leaderboard"
         @reset-game="resetGame"
-        @add-to-rivals="addToRivals"
+        @add-to-frenemies="addToFrenemies"
       />
       <EndScreenLoggedOut
         v-else
@@ -209,9 +209,9 @@ const login = async () => {
   }
 };
 
-const addToRivals = async (uid: string) => {
-  console.log('Add to rivals clicked for UID:', uid);
-  await userStore.addRival(uid);
+const addToFrenemies = async (uid: string) => {
+  console.log('Add to frenemies clicked for UID:', uid);
+  await userStore.addFrenemy(uid);
 };
 </script>
 
