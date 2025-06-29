@@ -44,7 +44,7 @@
 
       <!-- Worst Item Slot -->
       <div class="worst-item-container">
-        <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
+        <h3 class="subtitle has-text-centered has-text-white" style="margin-bottom:5px">{{ props.worstHeader }}</h3>
         <div class="worst-row-wrapper">
           <div
             class="pyramid-slot box worst-slot dark-slot"

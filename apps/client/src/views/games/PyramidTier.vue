@@ -10,6 +10,7 @@
       :pool-header="poolHeader"
       :worst-header="worstHeader"
       :share-text="shareText"
+      :worst-points="worstPoints"
       @submit="handleSubmit"
     />
   </div>
@@ -55,12 +56,13 @@ onMounted(async () => {
       console.log('PyramidTier: Raw game data from Firestore:', gameData);
       console.log('PyramidTier: Custom field from Firestore:', gameData.custom);
       console.log('PyramidTier: HideRowLabel value:', gameData.custom?.HideRowLabel);
+      console.log('PyramidTier: WorstPoints value:', gameData.custom?.worstPoints);
 
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
       worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
-      shareText.value = gameData.shareText || '';
+      shareText.value = gameData.custom?.shareText || '';
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
@@ -76,7 +78,8 @@ onMounted(async () => {
         items: items.value,
         rows: rows.value,
         sortItems: sortItems.value,
-        hideRowLabel: hideRowLabel.value
+        hideRowLabel: hideRowLabel.value,
+        worstPoints: worstPoints.value
       });
 
       if (!gameData.custom) {
@@ -95,6 +98,7 @@ onMounted(async () => {
     console.error('PyramidTier: Error fetching game data:', error.message, error);
   }
 });
+
 async function handleSubmit({ pyramid, worstItem }: PyramidData) {
   console.log('PyramidTier: handleSubmit called with data:', { pyramid, worstItem });
 
@@ -161,6 +165,7 @@ async function handleSubmit({ pyramid, worstItem }: PyramidData) {
       worstHeader: worstHeader.value,
       hideRowLabel: hideRowLabel.value,
       gameTitle: gameDescription.value,
+      worstPoints: worstPoints.value
     });
 
     router.push({
@@ -175,6 +180,7 @@ async function handleSubmit({ pyramid, worstItem }: PyramidData) {
         worstHeader: worstHeader.value,
         hideRowLabel: hideRowLabel.value,
         gameTitle: gameDescription.value,
+        worstPoints: worstPoints.value
       }
     });
   } catch (err: any) {
