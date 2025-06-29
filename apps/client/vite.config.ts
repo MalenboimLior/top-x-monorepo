@@ -22,8 +22,11 @@ export default defineConfig({
     'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.VITE_FIREBASE_STORAGE_BUCKET),
     'import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
     'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify(process.env.VITE_FIREBASE_APP_ID),
+    'import.meta.env.VITE_FIREBASE_MEASUREMENT_ID': JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID),
+    'import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_CLIENT_ID),
+    'import.meta.env.VITE_GOOGLE_ADS_SLOT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_SLOT_ID),
   },
   optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions'],
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics'],
   },
 });
