@@ -126,7 +126,7 @@ export const useUserStore = defineStore('user',() => {
       followingCount: 0,
       xAccessToken: xCredentials?.xAccessToken || '',
       xSecret: xCredentials?.xSecret || '',
-      rivals: [],
+      frenemies: [],
       addedBy: [],
       games: {},
       badges: [],
@@ -146,14 +146,14 @@ export const useUserStore = defineStore('user',() => {
     }
   }
 
-  async function addRival(rivalUid: string) {
-    if (!user.value || rivalUid === user.value.uid) {
-      console.log('Cannot add rival: no user logged in or same user');
-      error.value = 'Cannot add yourself as a rival';
+  async function addFrenemy(frenemyUid: string) {
+    if (!user.value || frenemyUid === user.value.uid) {
+      console.log('Cannot add frenemy: no user logged in or same user');
+      error.value = 'Cannot add yourself as a frenemy';
       return;
     }
     try {
-      console.log(`Adding rival ${rivalUid} for user ${user.value.uid}`);
+      console.log(`Adding frenemy ${frenemyUid} for user ${user.value.uid}`);
       const userDocRef = doc(db, 'users', user.value.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
@@ -162,23 +162,23 @@ export const useUserStore = defineStore('user',() => {
         return;
       }
       console.log('User document state:', userDocSnap.data());
-      const rivalDocRef = doc(db, 'users', rivalUid);
-      const rivalDocSnap = await getDoc(rivalDocRef);
-      if (!rivalDocSnap.exists()) {
-        console.error('Rival document does not exist:', rivalUid);
-        error.value = 'Rival not found';
+      const frenemyDocRef = doc(db, 'users', frenemyUid);
+      const frenemyDocSnap = await getDoc(frenemyDocRef);
+      if (!frenemyDocSnap.exists()) {
+        console.error('Frenemy document does not exist:', frenemyUid);
+        error.value = 'Frenemy not found';
         return;
       }
-      console.log('Rival document state:', rivalDocSnap.data());
+      console.log('Frenemy document state:', frenemyDocSnap.data());
       try {
         await updateDoc(userDocRef, {
-          rivals: arrayUnion(rivalUid),
+          frenemies: arrayUnion(frenemyUid),
         });
-        console.log(`Successfully updated user ${user.value.uid} rivals with ${rivalUid}`);
+        console.log(`Successfully updated user ${user.value.uid} frenemies with ${frenemyUid}`);
       } catch (err: any) {
-        console.error('Error updating user rivals:', {
+        console.error('Error updating user frenemies:', {
           userId: user.value.uid,
-          rivalUid,
+          frenemyUid,
           message: err.message,
           code: err.code,
           details: err.details,
@@ -187,14 +187,14 @@ export const useUserStore = defineStore('user',() => {
         throw err;
       }
       try {
-        await updateDoc(rivalDocRef, {
+        await updateDoc(frenemyDocRef, {
           addedBy: arrayUnion(user.value.uid),
         });
-        console.log(`Successfully updated rival ${rivalUid} addedBy with ${user.value.uid}`);
+        console.log(`Successfully updated frenemy ${frenemyUid} addedBy with ${user.value.uid}`);
       } catch (err: any) {
-        console.error('Error updating rival addedBy:', {
+        console.error('Error updating frenemy addedBy:', {
           userId: user.value.uid,
-          rivalUid,
+          frenemyUid,
           message: err.message,
           code: err.code,
           details: err.details,
@@ -204,9 +204,9 @@ export const useUserStore = defineStore('user',() => {
       }
     } catch (err: any) {
       error.value = err.message;
-      console.error('Failed to add rival:', {
+      console.error('Failed to add frenemy:', {
         userId: user.value.uid,
-        rivalUid,
+        frenemyUid,
         message: err.message,
         code: err.code,
         details: err.details,
@@ -214,24 +214,24 @@ export const useUserStore = defineStore('user',() => {
     }
   }
 
-  async function removeRival(rivalUid: string) {
+  async function removeFrenemy(frenemyUid: string) {
     if (!user.value) {
-      console.log('Cannot remove rival: no user logged in');
+      console.log('Cannot remove frenemy: no user logged in');
       error.value = 'No user logged in';
       return;
     }
     try {
       const userDocRef = doc(db, 'users', user.value.uid);
-      const rivalDocRef = doc(db, 'users', rivalUid);
+      const frenemyDocRef = doc(db, 'users', frenemyUid);
       await updateDoc(userDocRef, {
-        rivals: arrayRemove(rivalUid),
+        frenemies: arrayRemove(frenemyUid),
       });
-      await updateDoc(rivalDocRef, {
+      await updateDoc(frenemyDocRef, {
         addedBy: arrayRemove(user.value.uid),
       });
-      console.log(`Removed rival ${rivalUid} for user ${user.value.uid}`);
+      console.log(`Removed frenemy ${frenemyUid} for user ${user.value.uid}`);
     } catch (err: any) {
-      console.error('Error removing rival:', err);
+      console.error('Error removing frenemy:', err);
       error.value = err.message;
     }
   }
@@ -276,7 +276,7 @@ export const useUserStore = defineStore('user',() => {
     }
   }
 
-  return { user, profile, error, loginWithX, logout, addRival, removeRival, updateGameProgress };
+  return { user, profile, error, loginWithX, logout, addFrenemy, removeFrenemy, updateGameProgress };
   },
   { persist: true }
 );

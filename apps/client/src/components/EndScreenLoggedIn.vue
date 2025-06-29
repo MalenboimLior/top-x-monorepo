@@ -39,9 +39,9 @@
       <Leaderboard
         title="Top Players"
         :entries="leaderboard"
-        :rivals="userStore.profile?.rivals || []"
+        :frenemies="userStore.profile?.frenemies || []"
         :current-user-id="userStore.user?.uid"
-        @add-rival="addToRivals"
+        @add-frenemy="addToFrenemies"
       />
     </div>
 </template>
@@ -82,15 +82,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: 'reset-game'): void;
-    (e: 'add-to-rivals', uid: string): void;
+    (e: 'add-to-frenemies', uid: string): void;
 }>();
 
 const resetGame = () => {
     emit('reset-game');
 };
 
-const addToRivals = (uid: string) => {
-    emit('add-to-rivals', uid);
+const addToFrenemies = (uid: string) => {
+    emit('add-to-frenemies', uid);
 };
 </script>
 

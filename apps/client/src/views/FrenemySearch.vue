@@ -1,7 +1,7 @@
 <!-- Search for other players to compare ranks -->
 <template>
-  <div class="rival-search-container">
-    <h1 class="title has-text-white">Find Rivals</h1>
+  <div class="frenemy-search-container">
+    <h1 class="title has-text-white">Find Frenemies</h1>
     <Card>
       <div class="field has-addons">
         <div class="control is-expanded">
@@ -27,15 +27,15 @@
       v-if="searchResults.length"
       title="Search Results"
       :entries="searchResults"
-      :rivals="userStore.profile?.rivals || []"
+      :frenemies="userStore.profile?.frenemies || []"
       :currentUserId="userStore.user?.uid"
-      @add-rival="addRival"
+      @add-frenemy="addFrenemy"
     />
     <Card v-else-if="hasSearched && searchQuery && !isLoading">
       <p class="has-text-grey-light">No users found for "{{ searchQuery }}".</p>
     </Card>
     <div v-if="!userStore.user" class="notification is-warning">
-      Please log in to search and add rivals.
+      Please log in to search and add frenemies.
       <CustomButton type="is-primary" label="Login with " :icon="['fab', 'x-twitter']" @click="userStore.loginWithX" />
     </div>
   </div>
@@ -76,7 +76,7 @@ watch(searchQuery, (newValue) => {
 
 async function searchUsers() {
   if (!userStore.user) {
-    error.value = 'Please log in to search for rivals.';
+    error.value = 'Please log in to search for frenemies.';
     hasSearched.value = true;
     return;
   }
@@ -109,16 +109,16 @@ async function searchUsers() {
   }
 }
 
-async function addRival(uid: string) {
+async function addFrenemy(uid: string) {
   if (!userStore.user) {
-    error.value = 'Please log in to add rivals.';
+    error.value = 'Please log in to add frenemies.';
     return;
   }
-  await userStore.addRival(uid);
+  await userStore.addFrenemy(uid);
   searchResults.value = searchResults.value.filter(user => user.uid !== uid);
 }
 </script>
 
 <style scoped>
-@import '../styles/RivalSearch.css';
+@import '../styles/FrenemySearch.css';
 </style>

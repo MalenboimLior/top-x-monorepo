@@ -18,7 +18,7 @@ export interface User {
   followingCount: number;
   xAccessToken?: string;
   xSecret?: string;
-  rivals: string[];
+  frenemies: string[];
   addedBy: string[];
   games: Record<string, Record<string, UserGameData>>;
   badges: Array<{ id: string; earnedAt: string }>;
