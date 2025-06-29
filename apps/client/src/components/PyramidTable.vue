@@ -5,33 +5,38 @@
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div class="pyramid-row">
-            <div
-              v-for="(slot, colIndex) in row"
-              :key="colIndex"
-              class="pyramid-slot box"
-              :class="[
-                { 'selected': isSelected(slot.image) },
-                { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
-                { 'drop-hover': isDroppable(rowIndex, colIndex) },
-                { 'points-animating': animatedSlot?.row === rowIndex && animatedSlot?.col === colIndex },
-                'dark-slot'
-              ]"
-              :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
-              @dragover.prevent
-              @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
-              @dragleave.prevent="onDragLeaveSlot"
-              @drop="() => onDropToSlot(rowIndex, colIndex)"
-              @click="onSlotClick(rowIndex, colIndex)"
-            >
-              <div v-if="slot.image" class="draggable-item slot-style">
-                <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
-                <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+          <div class="pyramid-row-wrapper">
+            <div class="pyramid-row">
+              <div
+                v-for="(slot, colIndex) in row"
+                :key="colIndex"
+                class="pyramid-slot box"
+                :class="[
+                  { 'selected': isSelected(slot.image) },
+                  { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
+                  { 'drop-hover': isDroppable(rowIndex, colIndex) },
+                  'dark-slot'
+                ]"
+                :style="{ backgroundColor: rows[rowIndex]?.color || '' }"
+                @dragover.prevent
+                @dragenter.prevent="onDragEnterSlot(rowIndex, colIndex)"
+                @dragleave.prevent="onDragLeaveSlot"
+                @drop="() => onDropToSlot(rowIndex, colIndex)"
+                @click="onSlotClick(rowIndex, colIndex)"
+              >
+                <div v-if="slot.image" class="draggable-item slot-style">
+                  <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
+                  <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+                </div>
+                <div v-else class="slot-label-container">
+                  <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+                  <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</div>
+                </div>
               </div>
-              <div v-else class="slot-label-container">
-                <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
-                <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</div>
-              </div>
+            </div>
+            <!-- Animation container for row 2 -->
+            <div v-if="rowIndex === 1 && animatedPoints" class="animation-container">
+              <div class="animated-points has-text-success">{{ animatedPoints }}</div>
             </div>
           </div>
         </div>
@@ -40,25 +45,33 @@
       <!-- Worst Item Slot -->
       <div class="worst-item-container">
         <h3 class="subtitle has-text-centered has-text-white">{{ props.worstHeader }}</h3>
-        <div
-          class="pyramid-slot box worst-slot dark-slot"
-          :class="[
-            { 'selected': isSelected(worstItem) },
-            { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
-            { 'drop-hover': isDroppable(-1, -1) }
-          ]"
-          @dragover.prevent
-          @dragenter.prevent="onDragEnterSlot(-1, -1)"
-          @dragleave.prevent="onDragLeaveSlot"
-          @drop="onDropToWorst"
-          @click="onWorstSlotClick"
-        >
-          <div v-if="worstItem" class="draggable-item slot-style">
-            <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
+        <div class="worst-row-wrapper">
+          <div
+            class="pyramid-slot box worst-slot dark-slot"
+            :class="[
+              { 'selected': isSelected(worstItem) },
+              { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
+              { 'drop-hover': isDroppable(-1, -1) }
+            ]"
+            @dragover.prevent
+            @dragenter.prevent="onDragEnterSlot(-1, -1)"
+            @dragleave.prevent="onDragLeaveSlot"
+            @drop="onDropToWorst"
+            @click="onWorstSlotClick"
+          >
+            <div v-if="worstItem" class="draggable-item slot-style">
+              <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
+            </div>
+            <div v-else class="worst-slot-label-container">
+              <div class="tier-label has-text-danger">Worst</div>
+              <div class="worst-slot-points has-text-danger">{{ props.worstPoints || 0 }} pts</div>
+            </div>
           </div>
-          <div v-else class="tier-label has-text-danger">Worst</div>
+          <!-- Animation container for worst slot -->
+          <div v-if="worstAnimatedPoints" class="worst-animation-container">
+            <div class="animated-points has-text-danger">{{ worstAnimatedPoints }}</div>
+          </div>
         </div>
-        <span class="worst-points has-text-danger">{{ props.worstPoints || 0 }} pts</span>
       </div>
 
       <button class="button is-primary" @click="submitPyramid">Submit</button>
@@ -129,7 +142,8 @@ const worstItem = ref<PyramidItem | null>(null);
 const draggedItem = ref<PyramidItem | null>(null);
 const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
-const animatedSlot = ref<{ row: number; col: number } | null>(null);
+const animatedPoints = ref<string | null>(null);
+const worstAnimatedPoints = ref<string | null>(null);
 
 // Description Tab State
 const showTab = ref(false);
@@ -145,6 +159,15 @@ const imagePoolDebug = computed(() => {
   });
   return imagePool.value;
 });
+
+// Debug worstPoints prop
+watch(
+  () => props.worstPoints,
+  (newValue) => {
+    console.log('PyramidTable: worstPoints prop updated:', newValue);
+  },
+  { immediate: true }
+);
 
 watch(
   () => props.items,
@@ -281,10 +304,10 @@ function onSlotClick(row: number, col: number) {
   }
 
   targetSlot.image = selectedItem.value;
-  // Trigger animation for the slot
-  animatedSlot.value = { row, col };
+  // Trigger animation for pyramid slot
+  animatedPoints.value = `+${props.rows[row]?.points || 0} pts`;
   setTimeout(() => {
-    animatedSlot.value = null;
+    animatedPoints.value = null;
   }, 1000); // Reset after animation duration (1s)
   selectedItem.value = null;
   draggedItem.value = null;
@@ -332,6 +355,11 @@ function onWorstSlotClick() {
   }
 
   worstItem.value = selectedItem.value;
+  // Trigger animation for worst slot
+  worstAnimatedPoints.value = `${props.worstPoints || 0} pts`;
+  setTimeout(() => {
+    worstAnimatedPoints.value = null;
+  }, 1000); // Reset after animation duration (1s)
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
@@ -452,6 +480,11 @@ function closeTab() {
   align-items: center;
   gap: 0.2rem;
 }
+.pyramid-row-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
 .pyramid-row {
   display: flex;
   justify-content: center;
@@ -478,13 +511,42 @@ function closeTab() {
   overflow: hidden;
   box-sizing: border-box;
   margin-bottom: 0 !important;
+  position: relative;
 }
 .pyramid-slot.drop-hover {
   background-color: #3298dc;
   transform: scale(1.05);
   border-color: #3298dc;
 }
-.points-animating .slot-label-container .slot-points {
+.slot-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+.slot-points {
+  font-size: 0.6rem;
+  font-weight: bold;
+}
+.animation-container {
+  position: absolute;
+  right: -70px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.animated-points {
+  font-size: 1rem;
+  font-weight: bold;
   animation: floatAndFade 1s ease-out forwards;
 }
 @keyframes floatAndFade {
@@ -493,19 +555,9 @@ function closeTab() {
     opacity: 1;
   }
   100% {
-    transform: translateY(-20px);
+    transform: translateY(-30px);
     opacity: 0;
   }
-}
-.slot-label-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-}
-.slot-points {
-  font-size: 0.6rem;
-  font-weight: bold;
 }
 .worst-item-container {
   display: flex;
@@ -520,6 +572,11 @@ function closeTab() {
   width: 100%;
   text-align: center;
 }
+.worst-row-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
 .worst-slot {
   border: 2px solid #ff3333;
   background-color: #3d1f1f;
@@ -528,17 +585,38 @@ function closeTab() {
   min-width: 60px;
   min-height: 60px;
   box-sizing: border-box;
+  position: relative;
 }
 .worst-slot.drop-hover {
   background-color: #ff3333;
   border: 2px solid #ff3333;
   transform: scale(1.05);
 }
-.worst-points {
+.worst-slot-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+.worst-slot-points {
   font-size: 0.6rem;
   font-weight: bold;
-  margin-top: 0.2rem;
-  white-space: nowrap;
+}
+.worst-animation-container {
+  position: absolute;
+  right: -70px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .tier-label {
   color: #bbb;
@@ -720,6 +798,9 @@ function closeTab() {
   .pyramid-row-container {
     width: 100%;
   }
+  .pyramid-row-wrapper {
+    position: relative;
+  }
   .pyramid-slot {
     height: 25vw;
     max-width: 90px;
@@ -733,12 +814,23 @@ function closeTab() {
   .slot-points {
     font-size: 0.45rem;
   }
+  .animation-container {
+    right: -60px;
+    width: 50px;
+    height: 90px;
+  }
+  .animated-points {
+    font-size: 0.8rem;
+  }
   .worst-item-container {
     overflow-x: hidden;
   }
   .worst-item-container .subtitle {
     width: 100%;
     text-align: center;
+  }
+  .worst-row-wrapper {
+    position: relative;
   }
   .worst-slot {
     border: 2px solid #ff3333;
@@ -750,9 +842,16 @@ function closeTab() {
   .worst-slot.drop-hover {
     border: 2px solid #ff3333;
   }
-  .worst-points {
+  .worst-slot-label-container {
+    gap: 0.1rem;
+  }
+  .worst-slot-points {
     font-size: 0.45rem;
-    white-space: nowrap;
+  }
+  .worst-animation-container {
+    right: -60px;
+    width: 50px;
+    height: 90px;
   }
   .pyramid-slot .draggable-image,
   .worst-slot .draggable-image {
