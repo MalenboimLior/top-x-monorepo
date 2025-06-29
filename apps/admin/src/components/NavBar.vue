@@ -92,6 +92,7 @@ const logout = async () => {
 
 .navbar-item {
   color: #ffffff;
+ 
 }
 
 .navbar-item:hover,

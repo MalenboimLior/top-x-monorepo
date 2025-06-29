@@ -24,7 +24,7 @@
         <router-link class="navbar-item" to="/" @click="closeMenu">Home</router-link>
         <router-link class="navbar-item" to="/frenemies" @click="closeMenu">
           <font-awesome-icon :icon="['fas', 'search']" class="navbar-icon" />
-          Frenemy Search
+          Frenemies
         </router-link>       
         
         <router-link class="navbar-item" to="/about" @click="closeMenu">About</router-link>
@@ -110,7 +110,11 @@ const closeMenu = () => {
   }
 }
 .navbar-icon {
-  margin-right: 0.5rem;
+ 
   font-size: 1.2rem;
+}
+.navbar-item {
+
+ 
 }
 </style>
