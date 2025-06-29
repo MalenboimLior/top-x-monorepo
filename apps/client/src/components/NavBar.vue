@@ -26,10 +26,7 @@
           <font-awesome-icon :icon="['fas', 'search']" class="navbar-icon" />
           Rival Search
         </router-link>       
-        <router-link class="navbar-item" to="/tier-table" @click="closeMenu">
-  <font-awesome-icon :icon="['fas', 'table']" class="navbar-icon" />
-  Tier Table
-</router-link> 
+        
         <router-link class="navbar-item" to="/about" @click="closeMenu">About</router-link>
         <router-link class="navbar-item" to="/faq" @click="closeMenu">FAQ</router-link>
         <router-link v-if="user" class="navbar-item" to="/profile" @click="closeMenu">Profile</router-link>

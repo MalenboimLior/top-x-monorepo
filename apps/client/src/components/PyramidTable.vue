@@ -99,16 +99,14 @@
         data-ad-slot="%VITE_GOOGLE_ADS_SLOT_ID%"
         data-ad-format="auto"
         data-full-width-responsive="true"></ins>
-      <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
+     
 
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content">
           <p class="question-text">Hi @Gork, what can you say about {{ describedItem?.label }}?</p>
           <p class="answer-text">{{ displayedDescription }}</p>
-          <button @click="closeTab">Close</button>
+          <button style="color: yellow;" @click="closeTab">Close</button>
         </div>
       </div>
     </div>
@@ -116,11 +114,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
+
+// Declare adsbygoogle on the Window interface for TypeScript
+declare global {
+  interface Window {
+    adsbygoogle: unknown[];
+  }
+}
 
 library.add(faCircleInfo);
 
@@ -159,6 +164,17 @@ const showTab = ref(false);
 const describedItem = ref<PyramidItem | null>(null);
 const displayedDescription = ref('');
 let typingInterval: ReturnType<typeof setInterval> | null = null;
+
+  onMounted(() => {
+  try {
+    // AdSense must be loaded only on client
+    if (typeof window !== 'undefined') {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    }
+  } catch (e) {
+    console.error('Adsense error:', e)
+  }
+});
 
 // Debug imagePool rendering
 const imagePoolDebug = computed(() => {
@@ -445,7 +461,7 @@ function startTypingAnimation(fullDescription: string) {
       clearInterval(typingInterval!);
       typingInterval = null;
     }
-  }, 50);
+  }, 25);
 }
 
 function closeTab() {

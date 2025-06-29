@@ -43,12 +43,6 @@ const routes = [
     name: 'PyramidResultLoggedOut',
     component: PyramidResultLoggedOut,
   },
-  // {path: '/games/tier-table', name: 'TierTable', component: TierTable},
-{
-  path: '/tier-table',
-  name: 'TierTable',
-  component: () => import('@/components/TierTable.vue')
-}
 ];
 
 const router = createRouter({
