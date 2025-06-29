@@ -40,11 +40,11 @@
               <td>{{ entry.score }}</td>
               <td>
                 <CustomButton
-                  v-if="entry.uid !== currentUserId && !rivals.includes(entry.uid)"
+                  v-if="entry.uid !== currentUserId && !frenemies.includes(entry.uid)"
                   type="is-link is-small"
-                  label="Add Rival"
+                  label="Add Frenemy"
                   :icon="['fas', 'user-plus']"
-                  @click="$emit('add-rival', entry.uid)"
+                  @click="$emit('add-frenemy', entry.uid)"
                   class="animate-item"
                   :style="{ '--animation-delay': `${0.4 + index * 0.1}s` }"
                 />
@@ -71,7 +71,7 @@ interface LeaderboardEntry {
 defineProps<{
   title: string;
   entries: LeaderboardEntry[];
-  rivals: string[];
+  frenemies: string[];
   currentUserId?: string;
 }>();
 </script>

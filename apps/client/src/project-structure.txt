@@ -26,7 +26,7 @@
 │   ├── FAQ.vue
 │   ├── Home.vue
 │   ├── Profile.vue
-│   ├── RivalSearch.vue
+│   ├── FrenemySearch.vue
 │   └── games
 │       └── Trivia.vue
 ├── vite-env.d.ts
