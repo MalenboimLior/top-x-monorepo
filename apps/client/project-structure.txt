@@ -68,7 +68,7 @@
 │   │   ├── Home.css
 │   │   ├── Leaderboard.css
 │   │   ├── Profile.css
-│   │   ├── RivalSearch.css
+│   │   ├── FrenemySearch.css
 │   │   └── Trivia.css
 │   ├── types
 │   │   ├── tierData.ts
@@ -83,7 +83,7 @@
 │   │   │   └── Trivia.vue
 │   │   ├── Home.vue
 │   │   ├── Profile.vue
-│   │   └── RivalSearch.vue
+│   │   └── FrenemySearch.vue
 │   ├── vite-env.d.ts
 │   └── vue-shim.d.ts
 ├── tsconfig.app.json

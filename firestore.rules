@@ -17,7 +17,7 @@ service cloud.firestore {
                      isValidUserDocument(request.resource.data);
 
       allow update: if request.auth != null && (
-        (request.auth.uid == userId && isValidRivalsUpdate()) ||
+        (request.auth.uid == userId && isValidFrenemiesUpdate()) ||
         (request.auth.uid == userId && isValidGamesUpdate()) ||
         (request.auth.uid == userId && isValidXProfileUpdate()) ||
         isValidAddedByUpdate()
@@ -32,7 +32,7 @@ service cloud.firestore {
   }
 
   function isValidUserDocument(data) {
-    return data.keys().hasAll(['uid', 'displayName', 'username', 'photoURL', 'followersCount', 'followingCount', 'games', 'rivals', 'addedBy']) &&
+    return data.keys().hasAll(['uid', 'displayName', 'username', 'photoURL', 'followersCount', 'followingCount', 'games', 'frenemies', 'addedBy']) &&
            !data.keys().hasAny(['createdAt', 'updatedAt']) &&
            data.uid is string &&
            data.uid == request.auth.uid &&
@@ -49,21 +49,21 @@ service cloud.firestore {
            data.games.trivia.keys().hasAll(['score', 'streak']) &&
            data.games.trivia.score is number &&
            data.games.trivia.streak is number &&
-           data.rivals is list &&
-           data.rivals.size() <= 1000 &&
-           (data.rivals.size() == 0 || data.rivals.all(rival, rival is string)) &&
+           data.frenemies is list &&
+           data.frenemies.size() <= 1000 &&
+           (data.frenemies.size() == 0 || data.frenemies.all(frenemy, frenemy is string)) &&
            data.addedBy is list &&
            data.addedBy.size() <= 1000 &&
            (data.addedBy.size() == 0 || data.addedBy.all(uid, uid is string));
   }
 
-  function isValidRivalsUpdate() {
+  function isValidFrenemiesUpdate() {
   return request.auth != null &&
-         resource.data.rivals is list &&
-         request.resource.data.rivals is list &&
-         request.resource.data.rivals.size() == resource.data.rivals.size() + 1 &&
-         request.resource.data.rivals.hasAll(resource.data.rivals) &&
-         request.resource.data.rivals.all(rival, rival is string);
+         resource.data.frenemies is list &&
+         request.resource.data.frenemies is list &&
+         request.resource.data.frenemies.size() == resource.data.frenemies.size() + 1 &&
+         request.resource.data.frenemies.hasAll(resource.data.frenemies) &&
+         request.resource.data.frenemies.all(frenemy, frenemy is string);
 }
 
 

@@ -22,31 +22,31 @@
         </div>
       </Card>
       <Leaderboard
-        title="Your Rivals"
-        :entries="rivalEntries"
-        :rivals="userStore.profile?.rivals || []"
+        title="Your Frenemies"
+        :entries="frenemyEntries"
+        :frenemies="userStore.profile?.frenemies || []"
         :current-user-id="userStore.user?.uid"
-        @add-rival="addRival"
+        @add-frenemy="addFrenemy"
       >
-        <template v-if="loadingRivals">
-          <p class="has-text-grey-light">Loading rivals...</p>
+        <template v-if="loadingFrenemies">
+          <p class="has-text-grey-light">Loading frenemies...</p>
         </template>
-        <template v-else-if="!rivalEntries.length">
-          <p class="has-text-grey-light">No rivals added yet.</p>
+        <template v-else-if="!frenemyEntries.length">
+          <p class="has-text-grey-light">No frenemies added yet.</p>
         </template>
       </Leaderboard>
       <Leaderboard
-        title="Rivals Who’ve Added You"
+        title="Frenemies Who’ve Added You"
         :entries="addedByEntries"
-        :rivals="userStore.profile?.rivals || []"
+        :frenemies="userStore.profile?.frenemies || []"
         :current-user-id="userStore.user?.uid"
-        @add-rival="addRival"
+        @add-frenemy="addFrenemy"
       >
         <template v-if="loadingAddedBy">
           <p class="has-text-grey-light">Loading...</p>
         </template>
         <template v-else-if="!addedByEntries.length">
-          <p class="has-text-grey-light">No one has added you as a rival yet.</p>
+          <p class="has-text-grey-light">No one has added you as a frenemy yet.</p>
         </template>
       </Leaderboard>
     </div>
@@ -83,27 +83,27 @@ const username = computed(() => userStore.profile?.username ? `@${userStore.prof
 const photoURL = computed(() => userStore.profile?.photoURL || 'https://www.top-x.co/assets/profile.png');
 const triviaStats = computed(() => userStore.profile?.games?.smartest_on_x?.default || { score: 0, streak: 0 } as UserGameData);
 const isLoggedIn = computed(() => !!userStore.user);
-const rivals = ref<User[]>([]);
+const frenemies = ref<User[]>([]);
 const addedBy = ref<User[]>([]);
-const rivalEntries = ref<LeaderboardEntry[]>([]);
+const frenemyEntries = ref<LeaderboardEntry[]>([]);
 const addedByEntries = ref<LeaderboardEntry[]>([]);
-const loadingRivals = ref(false);
+const loadingFrenemies = ref(false);
 const loadingAddedBy = ref(false);
 
-async function fetchRivals() {
-  if (!userStore.profile?.rivals || userStore.profile.rivals.length === 0) {
-    rivals.value = [];
-    rivalEntries.value = [];
+async function fetchFrenemies() {
+  if (!userStore.profile?.frenemies || userStore.profile.frenemies.length === 0) {
+    frenemies.value = [];
+    frenemyEntries.value = [];
     return;
   }
-  loadingRivals.value = true;
+  loadingFrenemies.value = true;
   try {
-    const rivalPromises = userStore.profile.rivals.map(uid => getDoc(doc(db, 'users', uid)));
-    const rivalDocs = await Promise.all(rivalPromises);
-    rivals.value = rivalDocs
+    const frenemyPromises = userStore.profile.frenemies.map(uid => getDoc(doc(db, 'users', uid)));
+    const frenemyDocs = await Promise.all(frenemyPromises);
+    frenemies.value = frenemyDocs
       .filter(doc => doc.exists())
       .map(doc => doc.data() as User);
-    rivalEntries.value = rivals.value.map(user => ({
+    frenemyEntries.value = frenemies.value.map(user => ({
       uid: user.uid,
       displayName: user.displayName || 'Anonymous',
       username: user.username || '@Anonymous',
@@ -111,11 +111,11 @@ async function fetchRivals() {
       score: user.games?.smartest_on_x?.default?.score || 0,
     }));
   } catch (err) {
-    console.error('Error fetching rivals:', err);
-    rivals.value = [];
-    rivalEntries.value = [];
+    console.error('Error fetching frenemies:', err);
+    frenemies.value = [];
+    frenemyEntries.value = [];
   } finally {
-    loadingRivals.value = false;
+    loadingFrenemies.value = false;
   }
 }
 
@@ -148,19 +148,19 @@ async function fetchAddedBy() {
   }
 }
 
-async function addRival(uid: string) {
+async function addFrenemy(uid: string) {
   try {
-    await userStore.addRival(uid);
-    await fetchRivals();
+    await userStore.addFrenemy(uid);
+    await fetchFrenemies();
     await fetchAddedBy();
   } catch (err) {
-    console.error('Error adding rival:', err);
+    console.error('Error adding frenemy:', err);
   }
 }
 
 onMounted(() => {
   if (isLoggedIn.value) {
-    fetchRivals();
+    fetchFrenemies();
     fetchAddedBy();
   }
 });

@@ -1,4 +1,4 @@
-.rival-search-container {
+.frenemy-search-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -25,7 +25,7 @@
 }
 
 @media (max-width: 768px) {
-  .rival-search-container {
+  .frenemy-search-container {
     padding: 1rem;
   }
 }
