@@ -63,7 +63,7 @@ watch(
       if (savedPyramid) {
         const cachedVote = JSON.parse(savedPyramid);
         await saveCachedVote(cachedVote, newUser.uid);
-        localStorage.removeItem(`pyramid_${props.gameId}`);
+       // localStorage.removeItem(`pyramid_${props.gameId}`);
         console.log('PyramidMyVote: Cached vote saved to user database');
       }
     }
