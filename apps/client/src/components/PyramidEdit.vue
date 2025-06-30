@@ -99,14 +99,13 @@
         data-ad-slot="%VITE_GOOGLE_ADS_SLOT_ID%"
         data-ad-format="auto"
         data-full-width-responsive="true"></ins>
-     
 
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content">
           <p class="question-text">Hi @Gork, what can you say about {{ describedItem?.label }}?</p>
           <p class="answer-text">{{ displayedDescription }}</p>
-          <button style="color: yellow;" @click="closeTab">Close</button>
+          <button style="color: yellow;" @onClick="closeTab">Close</button>
         </div>
       </div>
     </div>
@@ -119,8 +118,8 @@ import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
+import { useRoute } from 'vue-router';
 
-// Declare adsbygoogle on the Window interface for TypeScript
 declare global {
   interface Window {
     adsbygoogle: unknown[];
@@ -128,6 +127,9 @@ declare global {
 }
 
 library.add(faCircleInfo);
+
+const route = useRoute();
+const gameId = ref(route.query.game as string);
 
 const props = defineProps<{
   items: PyramidItem[];
@@ -165,18 +167,31 @@ const describedItem = ref<PyramidItem | null>(null);
 const displayedDescription = ref('');
 let typingInterval: ReturnType<typeof setInterval> | null = null;
 
-  onMounted(() => {
+onMounted(() => {
   try {
-    // AdSense must be loaded only on client
     if (typeof window !== 'undefined') {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     }
   } catch (e) {
-    console.error('Adsense error:', e)
+    console.error('Adsense error:', e);
+  }
+
+  // Load from local storage if available
+  const savedPyramid = localStorage.getItem(`pyramid_${gameId.value}`);
+  if (savedPyramid) {
+    const parsed = JSON.parse(savedPyramid);
+    pyramid.value = parsed.pyramid;
+    worstItem.value = parsed.worstItem;
+    console.log('PyramidEdit: Loaded state from local storage:', parsed);
   }
 });
 
-// Debug imagePool rendering
+// Save to local storage on every change
+watch([pyramid, worstItem], () => {
+  localStorage.setItem(`pyramid_${gameId.value}`, JSON.stringify({ pyramid: pyramid.value, worstItem: worstItem.value }));
+  console.log('PyramidEdit: Saved state to local storage:', { pyramid: pyramid.value, worstItem: worstItem.value });
+}, { deep: true });
+
 const imagePoolDebug = computed(() => {
   console.log('PyramidTable: imagePool computed:', {
     length: imagePool.value.length,
@@ -185,7 +200,6 @@ const imagePoolDebug = computed(() => {
   return imagePool.value;
 });
 
-// Debug worstPoints prop
 watch(
   () => props.worstPoints,
   (newValue) => {
@@ -329,11 +343,10 @@ function onSlotClick(row: number, col: number) {
   }
 
   targetSlot.image = selectedItem.value;
-  // Trigger animation for pyramid slot
   animatedPoints.value = `+${props.rows[row]?.points || 0} pts`;
   setTimeout(() => {
     animatedPoints.value = null;
-  }, 1000); // Reset after animation duration (1s)
+  }, 1000);
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
@@ -380,11 +393,10 @@ function onWorstSlotClick() {
   }
 
   worstItem.value = selectedItem.value;
-  // Trigger animation for worst slot
   worstAnimatedPoints.value = `${props.worstPoints || 0} pts`;
   setTimeout(() => {
     worstAnimatedPoints.value = null;
-  }, 1000); // Reset after animation duration (1s)
+  }, 1000);
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
@@ -440,7 +452,6 @@ function submitPyramid() {
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 
-// Description Tab Methods
 function showDescription(item: PyramidItem) {
   describedItem.value = item;
   showTab.value = true;
