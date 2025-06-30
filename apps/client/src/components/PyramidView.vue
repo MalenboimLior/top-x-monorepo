@@ -1,6 +1,6 @@
 <template>
   <div class="pyramid-view">
-    <div ref="canvasContainer" class="pyramid-container has-background-dark p-2">
+    <div ref="canvasContainer" class="pyramid-container  p-2">
       <!-- User Image -->
       <div class="user-image-container">
         <img
@@ -21,7 +21,7 @@
         />
       </div>
       <!-- Game Header -->
-      <h2 class="subtitle has-text-white has-text-centered">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
+      <h2 class="subtitle has-text-white has-text-centered" >{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
       <!-- Pyramid -->
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -288,6 +288,7 @@ async function downloadPyramid() {
 .pyramid-container {
   position: relative;
   border-radius: 8px;
+  border: 1px solid #444;
   max-width: calc(100% - 0.4rem);
   margin: 0 auto;
   overflow: hidden;

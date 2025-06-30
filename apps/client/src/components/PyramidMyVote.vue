@@ -9,6 +9,8 @@
       :worst-header="worstHeader"
       :game-title="gameTitle"
       :hide-row-label="hideRowLabel"
+      :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
+
     />
     <div v-if="!userStore.user" class="buttons is-centered mt-4">
       <CustomButton

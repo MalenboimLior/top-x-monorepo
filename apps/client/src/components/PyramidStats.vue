@@ -1,6 +1,6 @@
 <template>
   <div class="pyramid-stats">
-    <h2 class="subtitle has-text-white">Game Statistics</h2>
+    <h2 class="subtitle has-text-white">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
     <div class="table-container">
       <table class="table is-fullwidth is-hoverable has-background-dark">
         <thead>
@@ -30,7 +30,7 @@
                 />
               </a>
             </th>
-             <th class="has-text-centered">
+            <th class="has-text-centered">
               <a href="#" class="has-text-white" @click.prevent="sortBy('worst')">💩
                 <font-awesome-icon
                   v-if="sortColumn === 'worst'"
@@ -46,12 +46,11 @@
                 />
               </a>
             </th>
-           
           </tr>
         </thead>
         <tbody>
           <tr v-for="(item, index) in sortedItemStats" :key="item.id" @click="showPresidentModal(item)">
-            <td class="has-text-centered">
+            <td class="has-text-centered number-cell">
               <div class="rank-column">
                 <span>{{ formatNumber(index + 1) }}</span>
                 <font-awesome-icon
@@ -86,12 +85,11 @@
                 <span class="has-text-white">{{ item.name }}</span>
               </div>
             </td>
-            <td v-for="row in props.rows" :key="row.id" class="has-text-centered">
+            <td v-for="row in props.rows" :key="row.id" class="has-text-centered number-cell">
               {{ formatNumber(item.ranks[row.id] || 0) }}
             </td>
-                        <td class="has-text-centered">{{ formatNumber(item.worstCounts || 0) }}</td>
-
-            <td class="has-text-centered">{{ formatNumber(item.score) }}</td>
+            <td class="has-text-centered number-cell">{{ formatNumber(item.worstCounts || 0) }}</td>
+            <td class="has-text-centered number-cell">{{ formatNumber(item.score) }}</td>
           </tr>
         </tbody>
       </table>
@@ -109,7 +107,7 @@
             class="modal-president-image"
             crossorigin="anonymous"
           />
-          <h3 class="title has-text-white has-text-centered">{{ selectedPresident?.name }}</h3>
+          <h3 class="title has-text-white has-text-centered" style="margin:0px">{{ selectedPresident?.name }}</h3>
           <div class="stats-container">
             <p class="has-text-white">Score: {{ formatNumber(selectedPresident?.score || 0) }}</p>
             <p class="has-text-white">Tier Distribution:</p>
@@ -142,18 +140,20 @@
 import { ref, computed, onMounted } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import { PyramidItem, PyramidConfig, PyramidStats, PyramidRow } from '@top-x/shared/types/pyramid';
+import { PyramidItem, PyramidRow, PyramidStats } from '@top-x/shared/types/pyramid';
 import { formatNumber } from '@top-x/shared/utils/format';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faSortUp, faSortDown, faMedal } from '@fortawesome/free-solid-svg-icons';
+import { faSortUp, faSortDown, faMedal, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import html2canvas from 'html2canvas';
 
-library.add(faSortUp, faSortDown, faMedal);
+library.add(faSortUp, faSortDown, faMedal,faDownload);
 
 const props = defineProps<{
   gameId: string;
+  gameTitle?: string;
+  gameHeader?: string;
   items: PyramidItem[];
   rows: PyramidRow[];
   worstPoints: number;
@@ -311,6 +311,7 @@ td {
   padding: 0.5rem;
   text-align: center;
   border-bottom: 1px solid #333;
+  min-height: 2.5rem; /* Ensure enough space for larger numbers */
 }
 th {
   background-color: #2a2a2a;
@@ -322,6 +323,14 @@ td {
   font-size: 0.8rem;
   color: #ddd;
 }
+.number-cell {
+
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem !important; /* Bigger font for numbers */
+  line-height: 4; /* Prevent vertical offset */
+  padding: 0rem !important;
+}
 tr:hover {
   background-color: #222;
 }
@@ -330,7 +339,7 @@ tr:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
+  gap: 0.1rem;
 }
 .item-image {
   width: 60px;
@@ -410,6 +419,11 @@ tr:hover {
   th,
   td {
     padding: 0.3rem;
+    min-height: 2rem; /* Adjusted for mobile */
+  }
+  .number-cell {
+    font-size: 0.9rem; /* Bigger font for numbers on mobile */
+    line-height: 4.5;
   }
   .item-image {
     width: 15vw;
