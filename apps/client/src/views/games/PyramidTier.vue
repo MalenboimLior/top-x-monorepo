@@ -1,19 +1,19 @@
- <template>
-   <div class="pyramid-tier">
-     <h1>{{ gameDescription }}</h1>
-     <PyramidEdit
-       v-if="!hasSubmitted"
-       :items="items"
-       :rows="rows"
-       :sort-items="sortItems"
-       :hide-row-label="hideRowLabel"
-       :game-header="gameHeader"
-       :pool-header="poolHeader"
-       :worst-header="worstHeader"
-       :share-text="shareText"
-       :worst-points="worstPoints"
-       @submit="handleSubmit"
-     />
+<template>
+  <div class="pyramid-tier">
+    <h1>{{ gameDescription }}</h1>
+    <PyramidEdit
+      v-if="showEdit"
+      :items="items"
+      :rows="rows"
+      :sort-items="sortItems"
+      :hide-row-label="hideRowLabel"
+      :game-header="gameHeader"
+      :pool-header="poolHeader"
+      :worst-header="worstHeader"
+      :share-text="shareText"
+      :worst-points="worstPoints"
+      @submit="handleSubmit"
+    />
     <PyramidNav
       v-else
       :game-id="gameId"
@@ -25,12 +25,13 @@
       :worst-header="worstHeader"
       :game-title="gameDescription"
       :hide-row-label="hideRowLabel"
+      :worst-points="worstPoints"
     />
-   </div>
- </template>
+  </div>
+</template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
@@ -38,8 +39,6 @@ import PyramidEdit from '@/components/PyramidEdit.vue';
 import PyramidNav from '@/components/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
-
- const gameTitle = ref(''); // Add gameTitle ref for consistency
 
 const route = useRoute();
 const router = useRouter();
@@ -56,8 +55,16 @@ const worstHeader = ref('Worst Item');
 const shareText = ref('');
 const worstPoints = ref(0);
 const hasSubmitted = ref(false);
-const pyramid = ref<PyramidSlot[][]>([]);
+const pyramid = ref<PyramidSlot[][]>([
+  [{ image: null }],
+  [{ image: null }, { image: null }],
+  [{ image: null }, { image: null }, { image: null }],
+  [{ image: null }, { image: null }, { image: null }, { image: null }],
+]);
 const worstItem = ref<PyramidItem | null>(null);
+
+// Computed property to determine if PyramidEdit should be shown
+const showEdit = computed(() => route.query.edit === 'true' || !hasSubmitted.value);
 
 onMounted(async () => {
   console.log('PyramidTier: onMounted called with gameId:', gameId.value);
@@ -72,33 +79,62 @@ onMounted(async () => {
 
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
-    gameDescription.value = gameData.description || '';
-    gameTitle.value = gameData.description || ''; // Set gameTitle
-     gameHeader.value = gameData.gameHeader || 'Your Pyramid';
-     poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
-     worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
-     shareText.value = gameData.custom?.shareText || '';
-     items.value = gameData.custom?.items || [];
-     rows.value = gameData.custom?.rows || [];
-     sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
-     hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
-     worstPoints.value = gameData.custom?.worstPoints ?? 0;
- 
-     console.log('PyramidTier: Game data fetched:', {
-       gameDescription: gameDescription.value,
-      gameTitle: gameTitle.value,
-       gameHeader: gameHeader.value,
-       poolHeader: poolHeader.value,
-       worstHeader: worstHeader.value,
-       shareText: shareText.value,
-       items: items.value,
-       rows: rows.value,
-       sortItems: sortItems.value,
-       hideRowLabel: hideRowLabel.value,
-       worstPoints: worstPoints.value
-     });
+      gameDescription.value = gameData.description || '';
+      gameHeader.value = gameData.gameHeader || 'Your Pyramid';
+      poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
+      worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
+      shareText.value = gameData.custom?.shareText || '';
+      items.value = gameData.custom?.items || [];
+      rows.value = gameData.custom?.rows || [];
+      sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
+      hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
+      worstPoints.value = gameData.custom?.worstPoints ?? 0;
+
+      console.log('PyramidTier: Game data fetched:', {
+        gameDescription: gameDescription.value,
+        gameHeader: gameHeader.value,
+        poolHeader: poolHeader.value,
+        worstHeader: worstHeader.value,
+        shareText: shareText.value,
+        items: items.value,
+        rows: rows.value,
+        sortItems: sortItems.value,
+        hideRowLabel: hideRowLabel.value,
+        worstPoints: worstPoints.value
+      });
     } else {
       console.error('PyramidTier: Game document not found for ID:', gameId.value);
+    }
+
+    // Load pyramid state based on user login status
+    if (userStore.user) {
+      const userDocRef = doc(db, 'users', userStore.user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const gameData = userData.games?.PyramidTier?.[gameId.value];
+        if (gameData?.custom) {
+          pyramid.value = gameData.custom.pyramid.map((tier: any) =>
+            tier.slots.map((itemId: string | null) => ({
+              image: itemId ? items.value.find(item => item.id === itemId) || null : null,
+            }))
+          );
+          worstItem.value = gameData.custom.worstItem
+            ? items.value.find(item => item.id === gameData.custom.worstItem.id) || null
+            : null;
+          hasSubmitted.value = true;
+          console.log('PyramidTier: Loaded user pyramid data:', { pyramid: pyramid.value, worstItem: worstItem.value });
+        }
+      }
+    } else {
+      const savedPyramid = localStorage.getItem(`pyramid_${gameId.value}`);
+      if (savedPyramid) {
+        const parsed = JSON.parse(savedPyramid);
+        pyramid.value = parsed.pyramid;
+        worstItem.value = parsed.worstItem;
+        hasSubmitted.value = true;
+        console.log('PyramidTier: Loaded pyramid from local storage:', parsed);
+      }
     }
   } catch (error: any) {
     console.error('PyramidTier: Error fetching game data:', error.message, error);
@@ -121,14 +157,12 @@ async function handleSubmit(data: PyramidData) {
 
   if (!userStore.user) {
     console.log('PyramidTier: User not logged in, storing vote in localStorage');
-    const sessionId = crypto.randomUUID();
-    localStorage.setItem(`vote_${gameId.value}_${sessionId}`, JSON.stringify({
+    localStorage.setItem(`pyramid_${gameId.value}`, JSON.stringify({
       pyramid: data.pyramid,
       worstItem: data.worstItem,
-      score,
-      createdAt: new Date().toISOString()
     }));
     hasSubmitted.value = true;
+    router.push({ name: 'PyramidTier', query: { game: gameId.value } });
     return;
   }
 
@@ -150,6 +184,7 @@ async function handleSubmit(data: PyramidData) {
     await updateGameStats(gameId.value, data.pyramid, rows.value, data.worstItem);
     console.log('PyramidTier: Game stats updated successfully');
     hasSubmitted.value = true;
+    router.push({ name: 'PyramidTier', query: { game: gameId.value } });
   } catch (err: any) {
     console.error('PyramidTier: Error in handleSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');

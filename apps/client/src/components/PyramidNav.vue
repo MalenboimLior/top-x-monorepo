@@ -3,13 +3,13 @@
     <div class="tabs is-centered is-boxed">
       <ul>
         <li :class="{ 'is-active': activeTab === 'my-vote' }">
-          <a @click="activeTab = 'my-vote'">My Vote</a>
+          <a @click="setActiveTab('my-vote')">My Vote</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'stats' }">
-          <a @click="activeTab = 'stats'">Statistics</a>
+          <a @click="setActiveTab('stats')">Statistics</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'results' }">
-          <a @click="activeTab = 'results'">Other Votes</a>
+          <a @click="setActiveTab('results')">Other Votes</a>
         </li>
       </ul>
     </div>
@@ -32,7 +32,6 @@
         :rows="rows ?? []"
         :worstPoints="worstPoints ?? 0"
         :game-header="gameHeader"
-
       />
       <PyramidResults
         v-if="activeTab === 'results'"
@@ -50,10 +49,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import PyramidMyVote from '@/components/PyramidMyVote.vue';
 import PyramidStats from '@/components/PyramidStats.vue';
 import PyramidResults from '@/components/PyramidResults.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
+
+const route = useRoute();
+const router = useRouter();
 
 const props = defineProps<{
   gameId: string;
@@ -71,8 +74,18 @@ const props = defineProps<{
 const activeTab = ref<'my-vote' | 'stats' | 'results'>('my-vote');
 
 onMounted(() => {
-  console.log('PyramidNav: onMounted, default tab:', activeTab.value);
+  const hash = route.hash.replace('#', '');
+  if (hash === 'stats' || hash === 'results') {
+    activeTab.value = hash as 'stats' | 'results';
+  }
+  console.log('PyramidNav: onMounted, active tab:', activeTab.value);
 });
+
+function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
+  activeTab.value = tab;
+  router.replace({ hash: `#${tab}` });
+  console.log('PyramidNav: Set active tab to:', tab);
+}
 </script>
 
 <style scoped>

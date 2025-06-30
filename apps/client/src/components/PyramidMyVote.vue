@@ -10,10 +10,16 @@
       :game-title="gameTitle"
       :hide-row-label="hideRowLabel"
       :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
-
     />
-    <div v-if="!userStore.user" class="buttons is-centered mt-4">
+    <div class="buttons is-centered mt-4">
       <CustomButton
+        type="is-primary"
+        label="Edit"
+        :icon="['fas', 'edit']"
+        @click="editPyramid"
+      />
+      <CustomButton
+        v-if="!userStore.user"
         type="is-primary"
         label="Login to Save Vote"
         :icon="['fas', 'sign-in-alt']"
@@ -25,12 +31,16 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { doc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidView from '@/components/PyramidView.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
+
+const router = useRouter();
+const userStore = useUserStore();
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -41,23 +51,19 @@ const props = defineProps<{
   worstHeader?: string;
   gameTitle?: string;
   hideRowLabel?: boolean;
+  worstPoints?: number;
 }>();
-
-const userStore = useUserStore();
 
 watch(
   () => userStore.user,
   async (newUser) => {
     if (newUser && props.gameId) {
       console.log('PyramidMyVote: User logged in, checking for cached vote');
-      const cacheKey = Object.keys(localStorage).find(key => key.startsWith(`vote_${props.gameId}_`));
-      if (cacheKey) {
-        const cachedVote = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-        if (cachedVote.pyramid && cachedVote.worstItem !== undefined) {
-          await saveCachedVote(cachedVote, newUser.uid);
-          localStorage.removeItem(cacheKey);
-          console.log('PyramidMyVote: Cached vote saved and removed');
-        }
+      const savedPyramid = localStorage.getItem(`pyramid_${props.gameId}`);
+      if (savedPyramid) {
+        const cachedVote = JSON.parse(savedPyramid);
+        await saveCachedVote(cachedVote, newUser.uid);
+        console.log('PyramidMyVote: Cached vote saved to user database');
       }
     }
   }
@@ -75,7 +81,7 @@ async function loginWithX() {
   }
 }
 
-async function saveCachedVote(data: { pyramid: PyramidSlot[][]; worstItem: PyramidItem | null; score: number }, userId: string) {
+async function saveCachedVote(data: { pyramid: PyramidSlot[][]; worstItem: PyramidItem | null }, userId: string) {
   if (!props.gameId) {
     console.error('PyramidMyVote: No gameId provided');
     return;
@@ -91,8 +97,10 @@ async function saveCachedVote(data: { pyramid: PyramidSlot[][]; worstItem: Pyram
     worstItem: data.worstItem ? { id: data.worstItem.id, label: data.worstItem.label, src: data.worstItem.src } : null,
   };
 
+  const score = calculateScore(data.pyramid, data.worstItem);
+
   try {
-    await userStore.updateGameProgress(gameTypeId, props.gameId, data.score, 0, custom);
+    await userStore.updateGameProgress(gameTypeId, props.gameId, score, 0, custom);
     console.log('PyramidMyVote: Cached vote saved to user progress');
     await updateGameStats(props.gameId, data.pyramid, props.rows, data.worstItem);
     console.log('PyramidMyVote: Game stats updated for cached vote');
@@ -100,6 +108,22 @@ async function saveCachedVote(data: { pyramid: PyramidSlot[][]; worstItem: Pyram
     console.error('PyramidMyVote: Error saving cached vote:', err.message, err);
     alert('Failed to save vote. Please try again.');
   }
+}
+
+function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null): number {
+  let score = 0;
+  pyramid.forEach((row, rowIndex) => {
+    const rowPoints = props.rows[rowIndex]?.points || 0;
+    row.forEach(slot => {
+      if (slot.image) {
+        score += rowPoints;
+      }
+    });
+  });
+  if (worstItem) {
+    score += props.worstPoints || 0;
+  }
+  return score;
 }
 
 async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: PyramidRow[], worstItem: PyramidItem | null) {
@@ -128,6 +152,13 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
   } catch (err: any) {
     console.error('PyramidMyVote: Error updating game stats:', err.message, err);
     throw err;
+  }
+}
+
+function editPyramid() {
+  if (props.gameId) {
+    router.push({ name: 'PyramidTier', query: { game: props.gameId, edit: 'true' } });
+    console.log('PyramidMyVote: Navigating to PyramidEdit with edit=true');
   }
 }
 </script>
