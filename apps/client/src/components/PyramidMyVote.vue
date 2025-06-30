@@ -63,6 +63,7 @@ watch(
       if (savedPyramid) {
         const cachedVote = JSON.parse(savedPyramid);
         await saveCachedVote(cachedVote, newUser.uid);
+        localStorage.removeItem(`pyramid_${props.gameId}`);
         console.log('PyramidMyVote: Cached vote saved to user database');
       }
     }
@@ -74,6 +75,15 @@ async function loginWithX() {
     const success = await userStore.loginWithX();
     if (success) {
       console.log('PyramidMyVote: Login successful');
+      if (props.gameId) {
+        const savedPyramid = localStorage.getItem(`pyramid_${props.gameId}`);
+        if (savedPyramid && userStore.user) {
+          const cachedVote = JSON.parse(savedPyramid);
+          await saveCachedVote(cachedVote, userStore.user.uid);
+          localStorage.removeItem(`pyramid_${props.gameId}`);
+          console.log('PyramidMyVote: Cached vote saved after login');
+        }
+      }
     }
   } catch (err: any) {
     console.error('PyramidMyVote: Login error:', err.message);
