@@ -31,6 +31,8 @@
         :items="items ?? []"
         :rows="rows ?? []"
         :worstPoints="worstPoints ?? 0"
+        :game-header="gameHeader"
+
       />
       <PyramidResults
         v-if="activeTab === 'results'"
