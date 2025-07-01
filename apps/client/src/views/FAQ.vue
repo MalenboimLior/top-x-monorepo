@@ -31,12 +31,21 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 export default defineComponent({
   name: 'FAQPage',
   components: {
     CustomButton,
+  },
+  setup() {
+    useHead({
+      title: 'TOP-X FAQ',
+      meta: [
+        { name: 'description', content: 'Frequently asked questions about TOP-X login, privacy, and gameplay.' },
+      ],
+    });
   },
   data() {
     return {
