@@ -183,6 +183,7 @@ onMounted(() => {
     pyramid.value = parsed.pyramid;
     worstItem.value = parsed.worstItem;
     console.log('PyramidEdit: Loaded state from local storage:', parsed);
+    removeUsedFromPool();
   }
 });
 
@@ -190,6 +191,7 @@ onMounted(() => {
 watch([pyramid, worstItem], () => {
   localStorage.setItem(`pyramid_${gameId.value}`, JSON.stringify({ pyramid: pyramid.value, worstItem: worstItem.value }));
   console.log('PyramidEdit: Saved state to local storage:', { pyramid: pyramid.value, worstItem: worstItem.value });
+  removeUsedFromPool();
 }, { deep: true });
 
 const imagePoolDebug = computed(() => {
@@ -229,6 +231,7 @@ watch(
     });
     imagePool.value = sorted;
     console.log('PyramidTable: imagePool initialized:', imagePool.value);
+    removeUsedFromPool();
   },
   { immediate: true }
 );
@@ -252,6 +255,7 @@ watch(
       return String(valA).localeCompare(String(valB)) * dir;
     });
     console.log('PyramidTable: imagePool sorted:', imagePool.value);
+    removeUsedFromPool();
   }
 );
 
@@ -440,6 +444,21 @@ function findSlotContaining(itemId: string): PyramidSlot | null {
     }
   }
   return null;
+}
+
+function removeUsedFromPool() {
+  const usedIds = new Set<string>();
+  pyramid.value.forEach(row => {
+    row.forEach(slot => {
+      if (slot.image) {
+        usedIds.add(slot.image.id);
+      }
+    });
+  });
+  if (worstItem.value) {
+    usedIds.add(worstItem.value.id);
+  }
+  imagePool.value = imagePool.value.filter(item => !usedIds.has(item.id));
 }
 
 function toRoman(num: number): string {
