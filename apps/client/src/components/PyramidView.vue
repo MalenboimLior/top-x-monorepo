@@ -21,7 +21,7 @@
         />
       </div>
       <!-- Game Header -->
-      <h2 class="subtitle has-text-white has-text-centered" >{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
+      <h2 class="subtitle has-text-white game-header">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
       <!-- Pyramid -->
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -299,8 +299,8 @@ async function downloadPyramid() {
   left: 0.3rem;
 }
 .user-image {
-  width: 2rem;
-  height: 2rem;
+  width: 4rem;
+  height: 4rem;
   border-radius: 50%;
   border: 2px solid #fff;
   object-fit: cover;
@@ -401,8 +401,8 @@ async function downloadPyramid() {
   touch-action: none;
   width: 100%;
   height: calc(100% - 4px);
-  object-fit: cover; /* Reverted to fill slots */
-  object-position: center; /* Center for better cropping */
+  object-fit: cover; /* fill slots */
+  object-position: top; /* crop from bottom */
   border-radius: 0.5rem 0.5rem 0 0;
 }
 .color-indicator-pyramid {
@@ -432,6 +432,10 @@ async function downloadPyramid() {
   font-size: 1rem;
   margin: 0.3rem 0;
 }
+.game-header {
+  margin-left: 4.5rem;
+  text-align: left;
+}
 .button.is-primary {
   background-color: #3273dc;
   margin: 0.3rem 0;
@@ -460,7 +464,7 @@ async function downloadPyramid() {
     width: 100%;
     height: calc(100% - 4px);
     object-fit: cover;
-    object-position: center;
+    object-position: top;
     border-radius: 0.5rem 0.5rem 0 0;
   }
   .tier-label {
