@@ -173,6 +173,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue';
+import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
@@ -191,6 +192,13 @@ const props = defineProps<{
   rows: PyramidRow[];
   gameTitle?: string;
 }>();
+
+useHead({
+  title: 'Your Pyramid Results - TOP-X',
+  meta: [
+    { name: 'description', content: 'View your ranked pyramid results and stats on TOP-X.' },
+  ],
+});
 
 const route = useRoute();
 const router = useRouter();

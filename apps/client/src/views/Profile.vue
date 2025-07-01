@@ -60,6 +60,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
 import { computed, ref, onMounted } from 'vue';
+import { useHead } from '@vueuse/head';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 
@@ -77,6 +78,13 @@ interface LeaderboardEntry {
 }
 
 const userStore = useUserStore();
+
+useHead({
+  title: 'Your Profile - TOP-X',
+  meta: [
+    { name: 'description', content: 'View your TOP-X profile, stats and frenemies.' },
+  ],
+});
 
 const displayName = computed(() => userStore.profile?.displayName || 'Anonymous');
 const username = computed(() => userStore.profile?.username ? `@${userStore.profile.username}` : '@Anonymous');

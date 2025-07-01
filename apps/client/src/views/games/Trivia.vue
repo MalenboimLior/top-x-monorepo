@@ -76,6 +76,7 @@
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
 import { computed, watch, ref, onMounted } from 'vue';
+import { useHead } from '@vueuse/head';
 import { useRoute } from 'vue-router';
 import StartTrivia from '@/components/StartTrivia.vue';
 import TriviaGame from '@/components/TriviaGame.vue';
@@ -86,6 +87,13 @@ import { getPercentileRank } from '@/services/trivia';
 const triviaStore = useTriviaStore();
 const userStore = useUserStore();
 const route = useRoute();
+
+useHead({
+  title: 'Trivia Game - TOP-X',
+  meta: [
+    { name: 'description', content: 'Challenge yourself and your friends in the TOP-X Trivia game.' },
+  ],
+});
 
 const gameId = 'smartest_on_x';
 
