@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
@@ -43,6 +44,13 @@ import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+
+useHead({
+  title: 'Pyramid Tier Game - TOP-X',
+  meta: [
+    { name: 'description', content: 'Rank items and build your pyramid in the TOP-X Pyramid Tier game.' },
+  ],
+});
 const gameId = ref(route.query.game as string);
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);

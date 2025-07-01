@@ -44,6 +44,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
 import { ref, watch } from 'vue';
+import { useHead } from '@vueuse/head';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { debounce } from 'lodash';
@@ -53,6 +54,13 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { UserProfile } from '@top-x/shared';
 
 const userStore = useUserStore();
+
+useHead({
+  title: 'Find Frenemies - TOP-X',
+  meta: [
+    { name: 'description', content: 'Search for friends or rivals and add frenemies on TOP-X.' },
+  ],
+});
 const searchQuery = ref('');
 const searchResults = ref<UserProfile[]>([]);
 const isLoading = ref(false);

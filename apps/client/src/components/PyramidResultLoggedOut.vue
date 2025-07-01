@@ -13,8 +13,16 @@
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useUserStore } from '@/stores/user';
+import { useHead } from '@vueuse/head';
 
 const userStore = useUserStore();
+
+useHead({
+  title: 'Pyramid Result - TOP-X',
+  meta: [
+    { name: 'description', content: 'Log in to save your pyramid results on TOP-X.' },
+  ],
+});
 
 function login() {
   userStore.loginWithX();

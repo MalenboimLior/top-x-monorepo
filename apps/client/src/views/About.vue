@@ -36,12 +36,21 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 export default defineComponent({
   name: 'AboutPage',
   components: {
     CustomButton,
+  },
+  setup() {
+    useHead({
+      title: 'About TOP-X',
+      meta: [
+        { name: 'description', content: 'Learn about TOP-X and how Grok powers our gaming platform.' },
+      ],
+    });
   },
 });
 </script>
