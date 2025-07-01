@@ -1,5 +1,6 @@
 // Entry point for the client application
 import { createApp } from 'vue';
+import { createHead } from '@vueuse/head';
 import App from './App.vue';
 import router from './router';
 import { createPinia } from 'pinia';
@@ -20,9 +21,12 @@ import { analytics } from '@top-x/shared';
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 
+const head = createHead();
+
 createApp(App)
   .use(router)
   .use(pinia)
+  .use(head)
   .component('font-awesome-icon', FontAwesomeIcon)
   .mount('#app');
 

@@ -30,7 +30,8 @@
     "vue-draggable-plus": "^0.6.0",
     "vue-router": "^4.5.0",
     "vuedraggable": "^4.1.0",
-    "vuefire": "^3.2.1"
+    "vuefire": "^3.2.1",
+    "@vueuse/head": "^1.2.1"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.16",

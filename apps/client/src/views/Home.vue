@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useHead } from '@vueuse/head';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
@@ -58,6 +59,16 @@ interface Game {
 }
 
 const games = ref<Game[]>([]);
+
+useHead({
+  title: 'TOP-X Games',
+  meta: [
+    {
+      name: 'description',
+      content: 'Play fun social games and compete with friends on TOP-X.',
+    },
+  ],
+});
 
 onMounted(() => {
   console.log('Home: Fetching games from Firestore...');
