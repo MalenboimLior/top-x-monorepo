@@ -3,7 +3,7 @@
   <div class="home-container">
     <img
       src="../assets/topx-logo.png"
-      alt="TOP-X Games"
+      alt="TOP-X"
       class="title has-text-white"
       style="max-width: 200px; height: auto;"
     >
@@ -61,7 +61,7 @@ interface Game {
 const games = ref<Game[]>([]);
 
 useHead({
-  title: 'TOP-X Games',
+  title: 'TOP-X',
   meta: [
     {
       name: 'description',

@@ -280,7 +280,8 @@ function toRoman(num: number): string {
   text-align: right;
 }
 .dark {
-  background-color: #121212;
+  background-color: #000000;
+
   color: #eee;
 }
 .dark-slot {
@@ -381,8 +382,8 @@ function toRoman(num: number): string {
   box-shadow: 0 0 0 2px #3273dc33;
 }
 .highlight-empty {
-  background-color: #fffae6;
-  border-color: #ffd35c;
+  background-color: #e7ff99;
+  border-color: #e7ff99;
   animation: pulse 1s infinite alternate;
 }
 @keyframes pulse {

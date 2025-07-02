@@ -34,6 +34,13 @@ const routes = [
     component: PyramidTier,
   },
   {
+  path: '/PrezPyramid',
+  redirect: {
+    path: '/games/PyramidTier',
+    query: { game: 'us_presidents_game' },
+  },
+  },
+  {
     path: '/games/PyramidTier/result/logged-in',
     name: 'PyramidResultLoggedIn',
     component: PyramidResultLoggedIn,

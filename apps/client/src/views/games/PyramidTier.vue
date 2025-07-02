@@ -1,6 +1,6 @@
 <template>
   <div class="pyramid-tier">
-    <h1>{{ gameDescription }}</h1>
+    <!-- <h1>{{ gameDescription }}</h1> -->
     <PyramidEdit
       v-if="showEdit"
       :items="items"

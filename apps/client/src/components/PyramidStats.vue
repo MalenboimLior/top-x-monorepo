@@ -290,7 +290,8 @@ async function downloadPresidentStats() {
 <style scoped>
 .pyramid-stats {
   padding: 0.2rem 0.1rem;
-  background-color: #121212;
+  background-color: #000000;
+
   color: white;
   display: flex;
   flex-direction: column;

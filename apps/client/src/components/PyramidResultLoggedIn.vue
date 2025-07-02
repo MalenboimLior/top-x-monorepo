@@ -390,7 +390,8 @@ async function downloadPyramid() {
 }
 .result-screen {
   padding: 0.2rem 0.1rem;
-  background-color: #121212;
+  background-color: #000000;
+
   color: white;
   display: flex;
   justify-content: center;
@@ -599,7 +600,6 @@ tr:hover {
   margin: 0.3rem 0;
 }
 .button.is-primary {
-  background-color: #3273dc;
   margin: 0.3rem 0;
 }
 

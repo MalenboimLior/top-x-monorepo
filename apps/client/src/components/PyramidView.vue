@@ -21,7 +21,9 @@
         />
       </div>
       <!-- Game Header -->
-      <h2 class="subtitle has-text-white game-header">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
+      <h2 class="subtitle has-text-success game-header" v-html="props.gameHeader"></h2>
+      <h2 class="has-text-white" style="margin-bottom: 1rem;text-align:center">Favorite U.S. presidents <br/> from top to bottom</h2>
+
       <!-- Pyramid -->
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -63,7 +65,7 @@
         </div>
       </div>
       <!-- Top-X Label -->
-      <p class="top-x-label has-text-white has-text-centered mt-2">top-x.co</p>
+      <p class="top-x-label has-text-white has-text-centered mt-2">And what’s your vote? <br /> top-x.co/PrezPyramid</p>
     </div>
     <!-- Download Button -->
     <div class="buttons is-centered mt-2">
@@ -156,7 +158,7 @@ async function preloadImages() {
         ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
         const dataUrl = canvas.toDataURL('image/png');
         preprocessedImages.value.set(img.src, dataUrl);
-        console.log('PyramidView: Preprocessed image:', img.src, 'Dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+        // console.log('PyramidView: Preprocessed image:', img.src, 'Dimensions:', img.naturalWidth, 'x', img.naturalHeight);
         resolve();
       };
 
@@ -288,21 +290,21 @@ async function downloadPyramid() {
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  border: 1px solid #444;
+ /* border: 1px solid #444;*/
   max-width: calc(100% - 0.4rem);
   margin: 0 auto;
   overflow: hidden;
 }
 .user-image-container {
   position: absolute;
-  top: 0.3rem;
-  left: 0.3rem;
+  top: 0.6rem;
+  left: 0.6rem;
 }
 .user-image {
-  width: 4rem;
-  height: 4rem;
+  width: 3rem;
+  height: 3rem;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid #00e8e0;
   object-fit: cover;
 }
 .pyramid {
@@ -367,6 +369,7 @@ async function downloadPyramid() {
 .worst-item-container .subtitle {
   width: 100%;
   text-align: center;
+
   margin-bottom: 5px;
 }
 .worst-slot {
@@ -424,20 +427,24 @@ async function downloadPyramid() {
   color: #ff5555;
 }
 .top-x-label {
-  font-size: 0.7rem;
+  font-size: 0.9rem !important;
   font-weight: bold;
 }
 .subtitle {
   color: #eee;
   font-size: 1rem;
+  font-weight: bold;
   margin: 0.3rem 0;
 }
 .game-header {
-  margin-left: 4.5rem;
-  text-align: left;
+margin-bottom: 0.3rem !important;
+  margin-left: 2rem;
+  margin-right: 2rem;
+  font-size: 17px;
+  text-align: center    ;
+
 }
 .button.is-primary {
-  background-color: #3273dc;
   margin: 0.3rem 0;
 }
 @media screen and (max-width: 767px) {

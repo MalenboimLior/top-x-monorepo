@@ -36,12 +36,13 @@
         <div class="navbar-item">
           <div class="buttons">
             <CustomButton
-              v-if="!user"
-              type="is-primary"
-              label="Login with "
-              :icon="['fab', 'x-twitter']"
-              @click="loginWithX"
-            />
+  v-if="!user"
+  type="is-primary"
+  label="Login with"
+  :icon="['fab', 'x-twitter']"
+  @click="loginWithX"
+/>
+
             <CustomButton
               v-else
               type="is-light"
