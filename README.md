@@ -1,5 +1,12 @@
 # top-x-monorepo
 
+npm run dev
+pnpm build
+cd ../apps/admin
+cd ../apps/client
+firebase deploy --only hosting 
+
+
 cd packages/shared
 sudo npm install
 npm run build

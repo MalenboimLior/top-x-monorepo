@@ -19,7 +19,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-     "@top-x/shared": "workspace:*" ,
+    "@top-x/shared": "workspace:*",
     "firebase": "^11.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10"
   }
 }

@@ -90,7 +90,7 @@ function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
 
 <style scoped>
 .pyramid-nav {
-  background-color: #121212;
+  background-color: #000000;
   color: white;
   padding: 0.2rem 0.1rem;
 }

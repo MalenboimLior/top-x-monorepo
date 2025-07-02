@@ -1,7 +1,8 @@
 <template>
   <section class="section">
     <div class="container has-text-centered">
-      <h2 class="subtitle has-text-white">{{ props.gameHeader }}</h2>
+      <h2 class="subtitle has-text-success" v-html="props.gameHeader"></h2>
+      <h2 class="has-text-white" style="margin-bottom: 1rem;">Rank your favorite U.S. presidents <br/> from top to bottom</h2>
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -44,7 +45,7 @@
 
       <!-- Worst Item Slot -->
       <div class="worst-item-container">
-        <h3 class="subtitle has-text-centered has-text-white" style="margin-bottom:5px">{{ props.worstHeader }}</h3>
+        <h3 class="subtitle has-text-centered has-text-white" style="margin-bottom:5px;font-size: 18px">{{ props.worstHeader }}</h3>
         <div class="worst-row-wrapper">
           <div
             class="pyramid-slot box worst-slot dark-slot"
@@ -94,18 +95,18 @@
         </div>
       </div>
       <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client="%VITE_GOOGLE_ADS_CLIENT_ID%"
-        data-ad-slot="%VITE_GOOGLE_ADS_SLOT_ID%"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
+       style="display:block"
+       :data-ad-client="adClient"
+       :data-ad-slot="adSlot"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
 
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content">
-          <p class="question-text">Hi @Gork, what can you say about {{ describedItem?.label }}?</p>
+          <p class="question-text">Hi @Grok, what can you say about {{ describedItem?.label }}?</p>
           <p class="answer-text">{{ displayedDescription }}</p>
-          <button style="color: yellow;" @onClick="closeTab">Close</button>
+          <button style="color:#c4ff00;" @onClick="closeTab">Close</button>
         </div>
       </div>
     </div>
@@ -120,11 +121,15 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
 
+
 declare global {
   interface Window {
     adsbygoogle: unknown[];
   }
 }
+
+const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
+const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 
 library.add(faCircleInfo);
 
@@ -511,7 +516,8 @@ function closeTab() {
 }
 .section {
   padding: 0.2rem 0.1rem;
-  background-color: #121212;
+  background-color: #000000;
+
   color: white;
   display: flex;
   justify-content: center;
@@ -587,6 +593,7 @@ function closeTab() {
 .slot-points {
   font-size: 0.6rem;
   font-weight: bold;
+  color:#22b573 !important;
 }
 .animation-container {
   position: absolute;
@@ -602,6 +609,7 @@ function closeTab() {
 .animated-points {
   font-size: 1rem;
   font-weight: bold;
+  color: #22b573 !important;
   animation: floatAndFade 1s ease-out forwards;
 }
 @keyframes floatAndFade {
@@ -625,6 +633,7 @@ function closeTab() {
 }
 .worst-item-container .subtitle {
   width: 100%;
+  
   text-align: center;
 }
 .worst-row-wrapper {
@@ -783,8 +792,8 @@ function closeTab() {
   box-shadow: 0 0 0 2px #3273dc33;
 }
 .highlight-empty {
-  background-color: #ffd35c;
-  border-color: #ffd35c;
+  background-color: #f7ffdc;
+  border-color: #f7ffdc;
   animation: pulse 1s infinite alternate;
 }
 @keyframes pulse {
@@ -793,12 +802,14 @@ function closeTab() {
 }
 .subtitle {
   color: #eee;
-  font-size: 1rem;
-  margin: 0.3rem 0;
+  font-size: 22px;
+  font-weight: bold;
+  margin: 0.3rem 0 0 0.1rem;
+  text-align: center;
 }
 .button.is-primary {
-  background-color: #3273dc;
-  margin: 0.3rem 0;
+  margin: 1rem ;
+  width: 140px;
 }
 .info-icon {
   position: absolute;
@@ -836,7 +847,7 @@ function closeTab() {
   overflow-y: auto;
 }
 .question-text {
-  color: #3273dc;
+  color: #00e8e0;
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
@@ -956,5 +967,8 @@ function closeTab() {
     left: 0;
     z-index: 10;
   }
+  .info-icon:hover {
+  color: #00aaff; /* or any highlight color you like */
+}
 }
 </style>

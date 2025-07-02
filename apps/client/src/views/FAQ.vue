@@ -93,7 +93,8 @@ export default defineComponent({
 
 <style scoped>
 .faq-page {
-  background-color: #121212;
+  background-color: #000000;
+
   min-height: 100vh;
   color: #ffffff;
 }

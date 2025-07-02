@@ -1,6 +1,6 @@
 <template>
   <div class="pyramid-my-vote">
-    <h2 class="subtitle has-text-white">My Vote</h2>
+    <!-- <h2 class="subtitle has-text-white">My Vote</h2> -->
     <PyramidView
       :pyramid="pyramid"
       :worst-item="worstItem"
@@ -22,7 +22,7 @@
         v-if="!userStore.user"
         type="is-primary"
         label="Login to Save Vote"
-        :icon="['fas', 'sign-in-alt']"
+        :icon="['fab', 'x-twitter']"
         @click="loginWithX"
       />
     </div>
@@ -176,7 +176,8 @@ function editPyramid() {
 <style scoped>
 .pyramid-my-vote {
   padding: 0.2rem 0.1rem;
-  background-color: #121212;
+  background-color: #000000;
+
   color: white;
   display: flex;
   flex-direction: column;
@@ -187,9 +188,7 @@ function editPyramid() {
   font-size: 1rem;
   margin: 0.3rem 0;
 }
-.button.is-primary {
-  background-color: #3273dc;
-}
+
 @media screen and (max-width: 767px) {
   .pyramid-my-vote {
     padding: 0.1rem 0.05rem;

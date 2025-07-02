@@ -72,7 +72,7 @@
     <QuestionRecord
       v-if="editingQuestion && gameTypeCustom === 'TriviaConfig'"
       :question="editingQuestion"
-      :gameId="selectedGameId"
+      gameId="selectedGameId"
       @save="saveQuestion"
       @cancel="cancelEdit"
     />

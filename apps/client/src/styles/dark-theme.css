@@ -1,0 +1,86 @@
+/* src/styles/dark-theme.css */
+
+/* Override Bulma's global color scheme for dark mode */
+:root {
+  --bulma-scheme-main: #000000; /* Dark background */
+  --bulma-text: #ffffff; /* White text */
+  --bulma-primary: #00e8e0; /* X.com-inspired blue */
+  --bulma-link: #1da1f2; /* Links match primary color */
+  --bulma-background: #000000; /* Slightly lighter dark for cards/sections */
+  --bulma-border: #333; /* Subtle borders */
+  --bulma-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Darker shadow */
+  
+  --bulma-body-family: 'assistant', sans-serif; /* Use Assistant font */
+
+   /* Override Bulma success color for dark mode */
+  --bulma-success: #00e8e0; /* Use X.com blue for success */
+  --bulma-success-h: 178; /* Hue for #c4ff00 */
+  --bulma-success-s: 100%; /* Saturation */
+  --bulma-success-l: 45%; /* Lightness (adjusted for dark mode visibility) */
+
+     /* Override Bulma success color for dark mode */
+  --bulma-dark: #1f1f1f; /* Use X.com blue for success */
+  --bulma-dark-h: 0; /* Hue for #c4ff00 */
+  --bulma-dark-s: 0%; /* Saturation */
+  --bulma-dark-l: 12%; /* Lightness (adjusted for dark mode visibility) */
+}
+
+/* Override specific Bulma components */
+.hero.is-dark {
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('@/assets/background-pattern.png');
+  background-size: cover;
+}
+
+.button.is-primary {
+  background-color: var(--bulma-primary);
+  border-color: var(--bulma-primary);
+  color: #000000;
+  transition: background-color 0.3s ease;
+}
+
+.button.is-primary:hover {
+  background-color: #ffffff; /* Lighter shade for hover */
+}
+
+.card {
+  background-color: var(--bulma-background);
+  color: var(--bulma-text);
+  border: 1px solid var(--bulma-border);
+  box-shadow: var(--bulma-shadow);
+}
+
+.navbar {
+  background-color: #000;
+  color: var(--bulma-text);
+}
+
+.navbar-item {
+  color: var(--bulma-text);
+}
+
+.navbar-item:hover {
+  background-color: #2a363b;
+  color: var(--bulma-primary);
+}
+
+/* Ensure inputs and other form elements are dark-themed */
+.input, .textarea, .select select {
+  background-color: #2a363b;
+  color: var(--bulma-text);
+  border-color: var(--bulma-border);
+}
+
+.input:focus, .textarea:focus, .select select:focus {
+  border-color: var(--bulma-primary);
+  box-shadow: 0 0 0 0.125em rgba(29, 161, 242, 0.25);
+}
+
+/* Mobile-first adjustments */
+@media (max-width: 768px) {
+  .hero-body {
+    padding: 2rem 1rem;
+  }
+  .button.is-large {
+    font-size: 1rem;
+  }
+}

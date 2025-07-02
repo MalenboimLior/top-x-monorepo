@@ -5,7 +5,7 @@
         <div class="container has-text-centered">
           <h1 class="title is-1 has-text-white">About TOP-X</h1>
           <p class="subtitle is-4 has-text-light">
-            Powered by Grok, Built for Fun!
+            Powered by Grok with 💖
           </p>
         </div>
       </div>
@@ -57,7 +57,8 @@ export default defineComponent({
 
 <style scoped>
 .about-page {
-  background-color: #121212;
+  background-color: #000000;
+
   min-height: 100vh;
   color: #ffffff;
 }
