@@ -72,7 +72,7 @@
       <!-- Top-X Label -->
       <p class="top-x-label has-text-white has-text-centered mt-2">And what’s your vote? <br /> top-x.co/PrezPyramid</p>
     </div>
-    <!-- Download Button -->
+    <!-- Download & Share Buttons -->
     <div class="buttons is-centered mt-2">
       <CustomButton
         type="is-primary"
@@ -81,6 +81,18 @@
         :disabled="isImageLoading"
         @click="downloadPyramid"
       />
+      <div class="share-button-container">
+        <CustomButton
+          type="is-primary"
+          label="Share"
+          :icon="['fab', 'x-twitter']"
+          :disabled="isImageLoading"
+          @click.stop="handleShareClick"
+        />
+        <div v-if="showShareTooltip" class="share-tooltip">
+          Don't forget to download the image or take a screenshot
+        </div>
+      </div>
       <span v-if="isImageLoading" class="has-text-white ml-2">Loading images...</span>
     </div>
   </div>
@@ -104,6 +116,7 @@ const props = defineProps<{
   hideRowLabel?: boolean;
   userProfile?: { photoURL: string };
   shareImageTitle?: string;
+  shareText?: string;
 }>();
 
 const userStore = useUserStore();
@@ -113,6 +126,8 @@ const pyramidImages = ref<HTMLImageElement[]>([]);
 const worstImage = ref<HTMLImageElement | null>(null);
 const isImageLoading = ref(true);
 const preprocessedImages = ref<Map<string, string>>(new Map()); // Store preprocessed image data URLs
+const showShareTooltip = ref(false);
+const shareTooltipShown = ref(false);
 
 onMounted(async () => {
   console.log('PyramidView: onMounted called with props:', {
@@ -289,6 +304,29 @@ async function downloadPyramid() {
     alert('Failed to download image. Some images may not be accessible due to CORS restrictions.');
   }
 }
+
+function shareOnX() {
+  const text = props.shareText || '';
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(tweetUrl, '_blank');
+}
+
+function handleShareClick(e: MouseEvent) {
+  if (!shareTooltipShown.value) {
+    e.stopPropagation();
+    showShareTooltip.value = true;
+    shareTooltipShown.value = true;
+    nextTick(() => {
+      const hide = () => {
+        showShareTooltip.value = false;
+        document.removeEventListener('click', hide);
+      };
+      document.addEventListener('click', hide);
+    });
+  } else {
+    shareOnX();
+  }
+}
 </script>
 
 <style scoped>
@@ -460,6 +498,24 @@ margin-bottom: 0.3rem !important;
 }
 .button.is-primary {
   margin: 0.3rem 0;
+}
+.share-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.share-tooltip {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #3273dc;
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 20;
 }
 @media screen and (max-width: 767px) {
   .pyramid-container {
