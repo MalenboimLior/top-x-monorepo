@@ -16,6 +16,7 @@ export interface PyramidConfig {
   rows: PyramidRow[];
   sortItems: SortOption;
   HideRowLabel: boolean;
+  shareImageTitle?: string;
   poolHeader?: string;
   worstHeader?: string;
   worstPoints?: number;

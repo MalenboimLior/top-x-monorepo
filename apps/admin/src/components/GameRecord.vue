@@ -32,6 +32,12 @@
       </div>
     </div>
     <div class="field">
+      <label class="label has-text-white">Image URL</label>
+      <div class="control">
+        <input v-model="localGame.image" class="input" type="text" placeholder="https://example.com/image.png" />
+      </div>
+    </div>
+    <div class="field">
       <label class="label has-text-white">Active</label>
       <div class="control">
         <input type="checkbox" v-model="localGame.active" />
@@ -61,17 +67,23 @@
           </select>
         </div>
       </div>
-      <div class="field">
-        <label class="label has-text-white">Hide Row Labels</label>
-        <div class="control">
-          <input type="checkbox" v-model="(localGame.custom as PyramidConfig).HideRowLabel" />
+        <div class="field">
+          <label class="label has-text-white">Hide Row Labels</label>
+          <div class="control">
+            <input type="checkbox" v-model="(localGame.custom as PyramidConfig).HideRowLabel" />
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Pool Header (Optional)</label>
-        <div class="control">
-          <input v-model="(localGame.custom as PyramidConfig).poolHeader" class="input" type="text" placeholder="e.g., Question Pool" />
+        <div class="field">
+          <label class="label has-text-white">Share Image Title (Optional)</label>
+          <div class="control">
+            <input v-model="(localGame.custom as PyramidConfig).shareImageTitle" class="input" type="text" placeholder="Title shown on shared image" />
+          </div>
         </div>
+        <div class="field">
+          <label class="label has-text-white">Pool Header (Optional)</label>
+          <div class="control">
+            <input v-model="(localGame.custom as PyramidConfig).poolHeader" class="input" type="text" placeholder="e.g., Question Pool" />
+          </div>
       </div>
       <div class="field">
         <label class="label has-text-white">Worst Header (Optional)</label>
@@ -125,7 +137,7 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGame = ref<Game>({ active: false, ...props.game });
+const localGame = ref<Game>({ image: '', active: false, ...props.game });
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -133,18 +145,25 @@ if (
 ) {
   (localGame.value.custom as PyramidConfig).sortItems = { orderBy: 'id', order: 'asc' };
 }
-if (
-  'custom' in localGame.value &&
-  (localGame.value.custom as any) &&
-  (localGame.value.custom as any).HideRowLabel === undefined
-) {
-  (localGame.value.custom as PyramidConfig).HideRowLabel = false;
-}
-if (
-  'custom' in localGame.value &&
-  (localGame.value.custom as any) &&
-  (localGame.value.custom as any).poolHeader === undefined
-) {
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).HideRowLabel === undefined
+  ) {
+    (localGame.value.custom as PyramidConfig).HideRowLabel = false;
+  }
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).shareImageTitle === undefined
+  ) {
+    (localGame.value.custom as PyramidConfig).shareImageTitle = '';
+  }
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).poolHeader === undefined
+  ) {
   (localGame.value.custom as PyramidConfig).poolHeader = '';
 }
 if (
@@ -231,6 +250,9 @@ const save = async () => {
       HideRowLabel: 'HideRowLabel' in (localGame.value.custom || {})
         ? (localGame.value.custom as PyramidConfig).HideRowLabel
         : false,
+      shareImageTitle: 'shareImageTitle' in (localGame.value.custom || {})
+        ? (localGame.value.custom as PyramidConfig).shareImageTitle
+        : undefined,
       poolHeader: 'poolHeader' in (localGame.value.custom || {})
         ? (localGame.value.custom as PyramidConfig).poolHeader
         : undefined,
@@ -262,6 +284,7 @@ const save = async () => {
       custom: customData,
       gameHeader: localGame.value.gameHeader || null,
       shareText: localGame.value.shareText || null,
+      image: localGame.value.image || '',
       active: localGame.value.active || false,
     };
     console.log('Saving game to Firestore:', { id: localGame.value.id, data: gameData });

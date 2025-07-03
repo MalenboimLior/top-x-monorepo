@@ -82,7 +82,7 @@ onMounted(() => {
         name: data.name || 'Unnamed Game',
         description: data.description || 'No description available',
         gameTypeId: data.gameTypeId || '',
-        image: data.custom?.image || fallbackImg,
+        image: data.image || fallbackImg,
         isComingSoon: data.custom?.isComingSoon || false,
         active: data.active ?? false,
         route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
