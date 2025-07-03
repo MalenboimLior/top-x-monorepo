@@ -23,6 +23,7 @@
         :worst-header="worstHeader"
         :game-title="gameTitle"
         :share-image-title="shareImageTitle"
+        :share-text="shareText"
         :hide-row-label="hideRowLabel"
         :game-id="gameId"
       />
@@ -71,6 +72,7 @@ const props = defineProps<{
   hideRowLabel?: boolean;
   worstPoints?: number;
   shareImageTitle?: string;
+  shareText?: string;
 }>();
 
 const activeTab = ref<'my-vote' | 'stats' | 'results'>('my-vote');
