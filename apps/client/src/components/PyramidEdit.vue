@@ -74,9 +74,14 @@
           </div>
         </div>
       </div>
+    
 
-      <button class="button is-primary" @click="submitPyramid">Submit</button>
-
+       <CustomButton
+        type="is-primary"
+        label="Place your Vote"
+        :icon="['fas', 'square-poll-vertical']"
+        @click="submitPyramid"
+      />
       <h2 class="subtitle has-text-white">{{ props.poolHeader }}</h2>
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToPool">
         <div
@@ -95,18 +100,18 @@
         </div>
       </div>
       <ins class="adsbygoogle"
-       style="display:block"
-       :data-ad-client="adClient"
-       :data-ad-slot="adSlot"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
+           style="display:block"
+           :data-ad-client="adClient"
+           :data-ad-slot="adSlot"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
 
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
-        <div class="tab-content">
+        <div class="tab-content" @click.stop>
           <p class="question-text">Hi @Grok, what can you say about {{ describedItem?.label }}?</p>
           <p class="answer-text">{{ displayedDescription }}</p>
-          <button style="color:#c4ff00;" @onClick="closeTab">Close</button>
+          <button style="color:#c4ff00;" @click="closeTab">Close</button>
         </div>
       </div>
     </div>
@@ -114,12 +119,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 
 declare global {
@@ -190,6 +196,22 @@ onMounted(() => {
     console.log('PyramidEdit: Loaded state from local storage:', parsed);
     removeUsedFromPool();
   }
+
+  // Add global click event listener to close tab when clicking outside
+  const handleOutsideClick = (event: MouseEvent) => {
+    if (showTab.value) {
+      const tabElement = document.querySelector('.description-tab');
+      if (tabElement && !tabElement.contains(event.target as Node)) {
+        closeTab();
+      }
+    }
+  };
+  document.addEventListener('click', handleOutsideClick);
+  
+  // Clean up the event listener on unmount
+  onUnmounted(() => {
+    document.removeEventListener('click', handleOutsideClick);
+  });
 });
 
 // Save to local storage on every change
@@ -255,7 +277,7 @@ watch(
       const valA = a[field as keyof PyramidItem] || '';
       const valB = b[field as keyof PyramidItem] || '';
       if (field === 'id') {
-        return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+        return(parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
       }
       return String(valA).localeCompare(String(valB)) * dir;
     });
@@ -517,7 +539,6 @@ function closeTab() {
 .section {
   padding: 0.2rem 0.1rem;
   background-color: #000000;
-
   color: white;
   display: flex;
   justify-content: center;
@@ -593,7 +614,7 @@ function closeTab() {
 .slot-points {
   font-size: 0.6rem;
   font-weight: bold;
-  color:#22b573 !important;
+  color: #22b573 !important;
 }
 .animation-container {
   position: absolute;
@@ -633,7 +654,6 @@ function closeTab() {
 }
 .worst-item-container .subtitle {
   width: 100%;
-  
   text-align: center;
 }
 .worst-row-wrapper {
@@ -808,8 +828,8 @@ function closeTab() {
   text-align: center;
 }
 .button.is-primary {
-  margin: 1rem ;
-  width: 140px;
+  margin: 1rem;
+  
 }
 .info-icon {
   position: absolute;
@@ -968,7 +988,7 @@ function closeTab() {
     z-index: 10;
   }
   .info-icon:hover {
-  color: #00aaff; /* or any highlight color you like */
-}
+    color: #00aaff;
+  }
 }
 </style>

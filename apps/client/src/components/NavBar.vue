@@ -106,16 +106,12 @@ const closeMenu = () => {
 
 <style scoped>
 @media screen and (max-width: 1023px) {
-  .navbar-menu {
-  }
+ 
 }
 .navbar-icon {
  
   font-size: 1.2rem;
 }
-.navbar-item {
 
- 
-}
 
 </style>
