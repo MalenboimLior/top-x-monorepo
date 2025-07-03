@@ -90,7 +90,7 @@ onMounted(async () => {
 
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
-      gameTitle.value = gameData.gameTitle || gameData.description || gameData.name || '';
+      gameTitle.value = gameData.name || '';
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
