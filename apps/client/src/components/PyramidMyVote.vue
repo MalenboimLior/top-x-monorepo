@@ -9,6 +9,7 @@
       :worst-header="worstHeader"
       :game-title="gameTitle"
       :share-image-title="shareImageTitle"
+      :share-text="shareText"
       :hide-row-label="hideRowLabel"
       :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
     />
@@ -54,6 +55,7 @@ const props = defineProps<{
   hideRowLabel?: boolean;
   worstPoints?: number;
   shareImageTitle?: string;
+  shareText?: string;
 }>();
 
 watch(
