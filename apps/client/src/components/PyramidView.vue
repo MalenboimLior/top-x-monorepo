@@ -22,7 +22,12 @@
       </div>
       <!-- Game Header -->
       <h2 class="subtitle has-text-success game-header" v-html="props.gameHeader"></h2>
-      <h2 class="has-text-white" style="margin-bottom: 1rem;text-align:center">Favorite U.S. presidents <br/> from top to bottom</h2>
+      <h2
+        v-if="props.shareImageTitle"
+        class="has-text-white"
+        style="margin-bottom: 1rem;text-align:center"
+        v-html="props.shareImageTitle"
+      ></h2>
 
       <!-- Pyramid -->
       <div class="pyramid">
@@ -97,6 +102,7 @@ const props = defineProps<{
   gameTitle?: string;
   hideRowLabel?: boolean;
   userProfile?: { photoURL: string };
+  shareImageTitle?: string;
 }>();
 
 const userStore = useUserStore();
@@ -267,7 +273,14 @@ async function downloadPyramid() {
     console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
-    link.download = `${(props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-')}.png`;
+    link.download = `${(
+      props.shareImageTitle ||
+      props.gameHeader ||
+      props.gameTitle ||
+      'your-pyramid'
+    )
+      .toLowerCase()
+      .replace(/\s+/g, '-')}.png`;
     link.click();
     console.log('PyramidView: Image download triggered');
   } catch (err: any) {

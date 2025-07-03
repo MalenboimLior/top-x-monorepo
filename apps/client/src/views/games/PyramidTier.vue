@@ -24,6 +24,7 @@
       :game-header="gameHeader"
       :worst-header="worstHeader"
       :game-title="gameDescription"
+      :share-image-title="shareImageTitle"
       :hide-row-label="hideRowLabel"
       :worst-points="worstPoints"
     />
@@ -62,6 +63,7 @@ const poolHeader = ref('Item Pool');
 const worstHeader = ref('Worst Item');
 const shareText = ref('');
 const worstPoints = ref(0);
+const shareImageTitle = ref('');
 const hasSubmitted = ref(false);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
@@ -92,6 +94,7 @@ onMounted(async () => {
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
       worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
       shareText.value = gameData.custom?.shareText || '';
+      shareImageTitle.value = gameData.custom?.shareImageTitle || '';
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
@@ -104,6 +107,7 @@ onMounted(async () => {
         poolHeader: poolHeader.value,
         worstHeader: worstHeader.value,
         shareText: shareText.value,
+        shareImageTitle: shareImageTitle.value,
         items: items.value,
         rows: rows.value,
         sortItems: sortItems.value,
