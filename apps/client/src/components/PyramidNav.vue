@@ -40,6 +40,8 @@
         :items="items ?? []"
         :rows="rows ?? []"
         :game-header="gameHeader"
+                :share-image-title="shareImageTitle"
+
         :worst-header="worstHeader"
         :game-title="gameTitle"
         :hide-row-label="hideRowLabel"
