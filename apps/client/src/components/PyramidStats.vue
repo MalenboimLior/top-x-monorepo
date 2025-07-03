@@ -1,6 +1,6 @@
 <template>
   <div class="pyramid-stats">
-    <h2 class="subtitle has-text-white">{{ gameHeader || gameTitle || 'Your Pyramid' }}</h2>
+    <h2 class="subtitle has-text-white">{{ gameTitle || 'Your Pyramid' }}</h2>
     <div class="table-container">
       <table class="table is-fullwidth is-hoverable has-background-dark">
         <thead>
