@@ -1,6 +1,7 @@
 # top-x-monorepo
 
 npm run dev
+pnpm dev --host  
 pnpm build
 cd ../apps/admin
 cd ../apps/client

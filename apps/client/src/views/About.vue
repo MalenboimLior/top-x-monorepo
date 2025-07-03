@@ -24,7 +24,8 @@
             With Grok writing the code, designing the experience, and inspiring our vision, TOP-X is more than a platform—it’s a global playground where everyone’s invited. Join us, play, compete, and be part of the future of social gaming!
           </p>
           <CustomButton
-            text="Explore Games"
+            type="button"
+            label="Explore Games"
             @click="$router.push('/')"
             class="is-primary is-large mt-5"
           />
