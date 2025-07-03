@@ -11,14 +11,14 @@
           ref="userImage"
           crossorigin="anonymous"
         />
-        <img
-          v-else
-          src="@/assets/profile.png"
-          alt="Default Profile"
-          class="user-image"
-          ref="userImage"
-          crossorigin="anonymous"
-        />
+       <img
+    v-else
+    :src="defaultProfile"
+    alt="Default Profile"
+    class="user-image"
+    ref="userImage"
+    crossorigin="anonymous"
+  />
       </div>
       <!-- Game Header -->
       <h2 class="subtitle has-text-success game-header" v-html="props.gameHeader"></h2>
@@ -92,6 +92,7 @@ import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import html2canvas from 'html2canvas';
+import defaultProfile from '@/assets/profile.png'
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -303,7 +304,7 @@ async function downloadPyramid() {
 .pyramid-container {
   position: relative;
   border-radius: 8px;
- /* border: 1px solid #444;*/
+ border: 1px solid #00e8e0;
   max-width: calc(100% - 0.4rem);
   margin: 0 auto;
   overflow: hidden;
