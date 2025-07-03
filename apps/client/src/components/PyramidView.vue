@@ -21,10 +21,9 @@
   />
       </div>
       <!-- Game Header -->
-      <h2 class="subtitle has-text-success game-header" v-html="props.gameHeader"></h2>
-      <h2
+      <!-- <h2 class="subtitle has-text-success game-header" v-html="props.gameHeader"></h2> -->
+      <h2 class="subtitle has-text-success game-header"
         v-if="props.shareImageTitle"
-        class="has-text-white"
         style="margin-bottom: 1rem;text-align:center"
         v-html="props.shareImageTitle"
       ></h2>

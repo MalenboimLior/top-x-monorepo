@@ -14,6 +14,8 @@
           :game-header="props.gameHeader"
           :worst-header="props.worstHeader"
           :game-title="props.gameTitle"
+          :share-image-title="shareImageTitle"
+
           :hide-row-label="props.hideRowLabel"
           :user-profile="{ photoURL: vote.photoURL }"
         />
@@ -37,6 +39,8 @@ const props = defineProps<{
   worstHeader?: string;
   gameTitle?: string;
   hideRowLabel?: boolean;
+  shareImageTitle?: string;
+
 }>();
 
 const userVotes = ref<
