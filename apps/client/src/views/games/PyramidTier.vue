@@ -23,7 +23,7 @@
       :rows="rows"
       :game-header="gameHeader"
       :worst-header="worstHeader"
-      :game-title="gameDescription"
+      :game-title="gameTitle"
       :share-image-title="shareImageTitle"
       :hide-row-label="hideRowLabel"
       :worst-points="worstPoints"
@@ -53,6 +53,7 @@ useHead({
   ],
 });
 const gameId = ref(route.query.game as string);
+const gameTitle = ref('');
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
 const rows = ref<PyramidRow[]>([]);
@@ -89,6 +90,7 @@ onMounted(async () => {
 
     if (gameDoc.exists()) {
       const gameData = gameDoc.data();
+      gameTitle.value = gameData.gameTitle || gameData.description || gameData.name || '';
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
@@ -102,6 +104,7 @@ onMounted(async () => {
       worstPoints.value = gameData.custom?.worstPoints ?? 0;
 
       console.log('PyramidTier: Game data fetched:', {
+        gameTitle: gameTitle.value,
         gameDescription: gameDescription.value,
         gameHeader: gameHeader.value,
         poolHeader: poolHeader.value,
