@@ -15,13 +15,22 @@
        </div>
 
       <div class="buttons is-centered mt-2">
-        <CustomButton
+        <a
+          :href="generatedImage || '#'"
+          :download="(props.shareImageTitle || props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-') + '.png'"
+          :class="{ 'is-disabled': isImageLoading || !generatedImage }"
+          @click="downloadPyramid"
+        >
+          <font-awesome-icon :icon="['fas', 'download']" class="mr-2" />
+          Download
+        </a>
+        <!-- <CustomButton
           type="is-primary"
           label="Download"
           :icon="['fas', 'download']"
           :disabled="isImageLoading || !generatedImage"
           @click="downloadPyramid"
-        />
+        /> -->
         <div class="share-button-container">
           <CustomButton
             type="is-primary"
@@ -203,7 +212,7 @@ async function renderPyramidImage() {
     .pyramid-container {
       position: relative;
       
-      max-width: 500px;
+     
       margin: 0 auto;
       overflow: hidden;
       background-color: #121212;
