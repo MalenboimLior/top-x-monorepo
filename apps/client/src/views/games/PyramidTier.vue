@@ -25,6 +25,7 @@
       :worst-header="worstHeader"
       :game-title="gameTitle"
       :share-image-title="shareImageTitle"
+      :share-text="shareText"
       :hide-row-label="hideRowLabel"
       :worst-points="worstPoints"
     />
