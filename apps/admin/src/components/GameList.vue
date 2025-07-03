@@ -102,24 +102,26 @@ const deleteGame = async (id: string) => {
 
 const createNew = () => {
   if (props.selectedGameTypeId) {
-    const newGame: Game = {
-      id: '',
-      name: '',
-      description: '',
-      gameTypeId: props.selectedGameTypeId,
-      custom: {
-        items: [],
-        rows: [],
-        sortItems: { orderBy: 'id', order: 'asc' },
-        HideRowLabel: false,
-        poolHeader: '',
-        worstHeader: '',
-        worstPoints: 0
-      }, // Default for PyramidConfig
-      gameHeader: '',
-      shareText: '',
-      active: false,
-    };
+      const newGame: Game = {
+        id: '',
+        name: '',
+        description: '',
+        gameTypeId: props.selectedGameTypeId,
+        custom: {
+          items: [],
+          rows: [],
+          sortItems: { orderBy: 'id', order: 'asc' },
+          HideRowLabel: false,
+          shareImageTitle: '',
+          poolHeader: '',
+          worstHeader: '',
+          worstPoints: 0
+        }, // Default for PyramidConfig
+        gameHeader: '',
+        shareText: '',
+        image: '',
+        active: false,
+      };
     console.log('createNew called, emitting edit with new game:', newGame);
     emit('edit', newGame);
   } else {

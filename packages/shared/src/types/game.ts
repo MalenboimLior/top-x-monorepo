@@ -17,6 +17,7 @@ export interface Game {
   active: boolean;
   gameHeader?: string;
   shareText?: string;
+  image: string;
   custom: PyramidConfig | TriviaConfig; // Union of possible config types
 }
 
