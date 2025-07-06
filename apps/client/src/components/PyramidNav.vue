@@ -105,6 +105,7 @@ function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
   background-color: #000000;
   color: white;
   padding: 0.2rem 0.1rem;
+ 
 }
 .tabs {
   margin-bottom: 1rem;
@@ -132,7 +133,7 @@ function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
     padding: 0.1rem 0.05rem;
   }
   .tabs a {
-    font-size: 0.9rem;
+    font-size: 1.4rem;
     padding: 0.5rem;
   }
 }

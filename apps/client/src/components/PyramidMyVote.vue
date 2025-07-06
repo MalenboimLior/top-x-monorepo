@@ -2,7 +2,7 @@
   <div class="pyramid-my-vote">
     <!-- <h2 class="subtitle has-text-white">My Vote</h2> -->
     <div ref="canvasElement">
-      <PyramidView
+      <PyramidImage
         :pyramid="pyramid"
         :worst-item="worstItem"
         :rows="rows"
@@ -44,6 +44,8 @@ import { doc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidView from '@/components/PyramidView.vue';
+import PyramidImage from '@/components/PyramidImage.vue';
+
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
