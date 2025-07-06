@@ -7,10 +7,10 @@ import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
-import { faSave, faUserPlus, faRedo, faPlay, faSearch, faTable,faMedal, faSortUp, faSortDown, faCircleInfo, faDownload,faEdit,faSquarePollVertical} from '@fortawesome/free-solid-svg-icons';
+import { faShare,faSave, faUserPlus, faRedo, faPlay, faSearch, faTable,faMedal, faSortUp, faSortDown, faCircleInfo, faDownload,faEdit,faSquarePollVertical} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 // Add icons to library
-library.add(faXTwitter, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable,faMedal, faSortUp, faSortDown,faCircleInfo,faDownload,faEdit,faSquarePollVertical);
+library.add(faXTwitter,faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable,faMedal, faSortUp, faSortDown,faCircleInfo,faDownload,faEdit,faSquarePollVertical);
 
 import 'bulma/css/bulma.min.css';
 import './styles/dark-theme.css'; // Import custom dark theme overrides

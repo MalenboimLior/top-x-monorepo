@@ -2,16 +2,19 @@
   <CustomButton
     class="share-button"
     type="is-primary"
-    label="Share to X"
-    :icon="['fab', 'x-twitter']"
+    label="Share"
+    :icon="['fas', 'share']"
     :disabled="!isShareSupported && !isAndroid"
     @click="handleShare"
-  />
+  /> <div v-if="showShareTooltip" class="share-tooltip">
+            Long-press the image to save, then share on X
+          </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed,ref} from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+const showShareTooltip = ref(false);
 
 const props = defineProps<{
   shareText: string;
@@ -29,7 +32,7 @@ const isMobile = computed(() => isAndroid.value || isIOS.value);
 const handleShare = async () => {
   if (!props.imageUrl) {
     console.error('ShareButton: No image URL provided');
-    alert('Cannot share: No image available.');
+    //alert('Cannot share: No image available.');
     return;
   }
 
@@ -38,7 +41,8 @@ const handleShare = async () => {
     const file = new File([blob], 'top-x-pyramid.png', { type: blob.type || 'image/png' });
 
     if (isMobile.value && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], text: props.shareText });
+      await navigator.clipboard.writeText(props.shareText);
+      await navigator.share({ files: [file], text: props.shareText, title: 'TOP-X Pyramid Share' });
       console.log('Shared successfully');
       return;
     }
@@ -55,14 +59,17 @@ const handleShare = async () => {
 
     try {
       await navigator.clipboard.writeText(props.shareText);
-      alert('Image downloaded and text copied to clipboard.');
+      console.log('Clipboard copy successful');
+      showShareTooltip.value = true;
+
+      //alert('Image downloaded and text copied to clipboard.');
     } catch (err) {
       console.error('Clipboard copy failed:', err);
-      alert('Image downloaded. Copy this text for your post: ' + props.shareText);
+     // alert('Image downloaded. Copy this text for your post: ' + props.shareText);
     }
   } catch (error) {
     console.error('Share failed:', error);
-    alert('Failed to share. Please try again.');
+    //alert('Failed to share. Please try again.');
   }
 };
 </script>
@@ -70,5 +77,18 @@ const handleShare = async () => {
 <style scoped>
 .share-button {
   margin: 0.5rem;
+}
+.share-tooltip {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #3273dc;
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 20;
 }
 </style>
