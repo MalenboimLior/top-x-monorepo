@@ -440,6 +440,12 @@ function toRoman(num: number): string {
   return numerals[num - 1] || `${num}`;
 }
 
+function getImageDataUrl(): string | null {
+  return generatedImage.value;
+}
+
+defineExpose({ getImageDataUrl });
+
 
 </script>
 
