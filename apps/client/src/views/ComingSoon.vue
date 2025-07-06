@@ -21,9 +21,9 @@
         <div class="timer-label">Seconds</div>
       </div>
     </div>
-    <a href="https://x.com/topx" target="_blank" class="follow-button is-primary">
+    <a href="https://x.com/top_x_co" target="_blank" class="follow-button is-primary">
       <font-awesome-icon :icon="['fab', 'x-twitter']" class="mr-2" />
-      Follow @topx on X
+      Follow @top_x_co on X
     </a>
     <div class="background-particles"></div>
   </div>
@@ -57,7 +57,7 @@ useHead({
 
 // Countdown timer logic
 const updateTimer = () => {
-  const launchDate = new Date('2025-08-05T00:00:00'); // Set to August 5, 2025
+  const launchDate = new Date('2025-07-14T00:00:00'); // Set to August 5, 2025
   const now = new Date();
   const diff = launchDate.getTime() - now.getTime();
 
