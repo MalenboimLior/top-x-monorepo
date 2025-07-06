@@ -1,14 +1,17 @@
 <template>
-  <CustomButton
-    class="share-button"
-    type="is-primary"
-    label="Share"
-    :icon="['fas', 'share']"
-    :disabled="!isShareSupported && !isAndroid"
-    @click="handleShare"
-  /> <div v-if="showShareTooltip" class="share-tooltip">
-            Long-press the image to save, then share on X
-          </div>
+  <div class="share-button-container">
+    <CustomButton
+      class="share-button"
+      type="is-primary"
+      label="Share"
+      :icon="['fas', 'share']"
+      :disabled="!isShareSupported && !isAndroid"
+      @click="handleShare"
+    />
+    <div v-if="showShareTooltip" class="share-tooltip">
+      Long-press the image to save, then share on X
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -61,6 +64,9 @@ const handleShare = async () => {
       await navigator.clipboard.writeText(props.shareText);
       console.log('Clipboard copy successful');
       showShareTooltip.value = true;
+      setTimeout(() => {
+        showShareTooltip.value = false;
+      }, 3000);
 
       //alert('Image downloaded and text copied to clipboard.');
     } catch (err) {
@@ -75,6 +81,10 @@ const handleShare = async () => {
 </script>
 
 <style scoped>
+.share-button-container {
+  position: relative;
+  display: inline-block;
+}
 .share-button {
   margin: 0.5rem;
 }
