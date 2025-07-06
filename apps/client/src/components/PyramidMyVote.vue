@@ -1,8 +1,9 @@
 <template>
   <div class="pyramid-my-vote">
     <!-- <h2 class="subtitle has-text-white">My Vote</h2> -->
-    <div ref="canvasElement">
+    <div>
       <PyramidImage
+        ref="pyramidImageRef"
         :pyramid="pyramid"
         :worst-item="worstItem"
         :rows="rows"
@@ -31,14 +32,14 @@
       />
       <ShareButton
         :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
-        :canvas-element="canvasElement"
+        :image-url="imageUrl"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { doc, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
@@ -52,7 +53,8 @@ import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared
 
 const router = useRouter();
 const userStore = useUserStore();
-const canvasElement = ref<HTMLElement | null>(null);
+const pyramidImageRef = ref<any>(null);
+const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
