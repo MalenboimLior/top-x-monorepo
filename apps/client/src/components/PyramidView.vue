@@ -13,13 +13,13 @@
       <div v-else class="has-text-white has-text-centered">Failed to generate image. Please try again.</div>
       <div class="buttons is-centered mt-2">
         <button
-          v-if="isWebShareSupported"
+          v-if="isWebShareSupported || isAndroid"
           class="button is-primary"
           :disabled="isImageLoading || !generatedImage"
           @click="shareImage"
         >
           <font-awesome-icon :icon="['fas', 'share']" class="mr-2" />
-          Share to Photos
+          Share to X
         </button>
         <a
           :href="generatedImage || '#'"
@@ -493,19 +493,14 @@ async function shareImage() {
     const blob = await response.blob();
     const fileName = `${(props.shareImageTitle || props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-')}.jpeg`;
     const shareTitle = props.shareImageTitle || props.gameHeader || 'Your Pyramid';
-    const shareText = props.shareText || 'Check out my pyramid ranking on TOP-X!';
+    const shareText = props.shareText || 'Check out my pyramid ranking on TOP-X! #TOPX';
+
+    const file = new File([blob], fileName, { type: 'image/jpeg' });
 
     if (isAndroid.value) {
-      // Android: Use a temporary file and FileProvider-like approach
-      const file = new File([blob], fileName, { type: 'image/jpeg' });
-      const dataUrl = URL.createObjectURL(file);
-      const intentUrl = `intent://share#Intent;action=android.intent.action.SEND;type=image/*;S.android.intent.extra.TEXT=${encodeURIComponent(shareText)};S.android.intent.extra.SUBJECT=${encodeURIComponent(shareTitle)};S.android.intent.extra.STREAM=${encodeURIComponent(dataUrl)};end`;
-      
+      // Android: Prefer fallback due to inconsistent Web Share API support
       try {
-        window.location.href = intentUrl;
-        console.log('PyramidView: Attempted Android intent share');
-      } catch (intentErr: any) {
-        console.warn('PyramidView: Android intent failed, falling back to Web Share API', intentErr);
+        // Try Web Share API first if supported
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -513,23 +508,44 @@ async function shareImage() {
             text: shareText,
           });
           console.log('PyramidView: Android Web Share API success');
-        } else {
-          throw new Error('Web Share API not supported');
+          return;
         }
+      } catch (webShareErr: any) {
+        console.warn('PyramidView: Web Share API failed on Android:', webShareErr);
       }
+
+      // Fallback: Download image and open X intent
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Open X with pre-filled text
+      const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+      window.open(xUrl, '_blank');
+
+      console.log('PyramidView: Android fallback - image downloaded, X intent opened');
+      alert(
+        'Image downloaded! Please open the X app, create a post with the downloaded image, and use this text: ' +
+          shareText
+      );
     } else {
       // iOS and others: Use Web Share API
-      const file = new File([blob], fileName, { type: 'image/jpeg' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: shareTitle,
           text: shareText,
         });
-        console.log('PyramidView: Image shared successfully');
+        console.log('PyramidView: Image shared successfully via Web Share API');
       } else {
         console.warn('PyramidView: Web Share API not supported or cannot share files');
         downloadPyramid(new Event('click'));
+        alert('Sharing not supported. Image downloaded instead.');
       }
     }
   } catch (err: any) {
@@ -551,8 +567,8 @@ async function downloadPyramid(e: Event) {
 }
 
 function shareOnX() {
-  const text = props.shareText || '';
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  const text = props.shareText || 'Check out my pyramid ranking on TOP-X! #TOPX';
+  const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(tweetUrl, '_blank');
 }
 

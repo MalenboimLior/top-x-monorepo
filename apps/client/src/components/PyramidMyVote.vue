@@ -1,18 +1,20 @@
 <template>
   <div class="pyramid-my-vote">
     <!-- <h2 class="subtitle has-text-white">My Vote</h2> -->
-    <PyramidView
-      :pyramid="pyramid"
-      :worst-item="worstItem"
-      :rows="rows"
-      :game-header="gameHeader"
-      :worst-header="worstHeader"
-      :game-title="gameTitle"
-      :share-image-title="shareImageTitle"
-      :share-text="shareText"
-      :hide-row-label="hideRowLabel"
-      :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
-    />
+    <div ref="canvasElement">
+      <PyramidView
+        :pyramid="pyramid"
+        :worst-item="worstItem"
+        :rows="rows"
+        :game-header="gameHeader"
+        :worst-header="worstHeader"
+        :game-title="gameTitle"
+        :share-image-title="shareImageTitle"
+        :share-text="shareText"
+        :hide-row-label="hideRowLabel"
+        :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
+      />
+    </div>
     <div class="buttons is-centered mt-4">
       <CustomButton
         type="is-primary"
@@ -27,6 +29,10 @@
         :icon="['fab', 'x-twitter']"
         @click="loginWithX"
       />
+      <ShareButton
+        :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
+        :canvas-element="canvasElement"
+      />
     </div>
   </div>
 </template>
@@ -39,10 +45,12 @@ import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidView from '@/components/PyramidView.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import ShareButton from '@/components/ShareButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 
 const router = useRouter();
 const userStore = useUserStore();
+const canvasElement = ref<HTMLElement | null>(null);
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -67,7 +75,7 @@ watch(
       if (savedPyramid) {
         const cachedVote = JSON.parse(savedPyramid);
         await saveCachedVote(cachedVote, newUser.uid);
-       // localStorage.removeItem(`pyramid_${props.gameId}`);
+        // localStorage.removeItem(`pyramid_${props.gameId}`);
         console.log('PyramidMyVote: Cached vote saved to user database');
       }
     }
@@ -181,7 +189,6 @@ function editPyramid() {
 .pyramid-my-vote {
   padding: 0.2rem 0.1rem;
   background-color: #000000;
-
   color: white;
   display: flex;
   flex-direction: column;
