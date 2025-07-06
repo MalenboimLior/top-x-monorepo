@@ -11,26 +11,26 @@
         crossorigin="anonymous"
       />
       <div v-else class="has-text-white has-text-centered">Failed to generate image. Please try again.</div>
-      <!-- Download & Share Buttons -->
-       </div>
-
       <div class="buttons is-centered mt-2">
+        <button
+          v-if="isWebShareSupported"
+          class="button is-primary"
+          :disabled="isImageLoading || !generatedImage"
+          @click="shareImage"
+        >
+          <font-awesome-icon :icon="['fas', 'share']" class="mr-2" />
+          Share to Photos
+        </button>
         <a
           :href="generatedImage || '#'"
-          :download="(props.shareImageTitle || props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-') + '.png'"
+          :download="(props.shareImageTitle || props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-') + '.jpeg'"
+          class="button is-primary"
           :class="{ 'is-disabled': isImageLoading || !generatedImage }"
           @click="downloadPyramid"
         >
           <font-awesome-icon :icon="['fas', 'download']" class="mr-2" />
           Download
         </a>
-        <!-- <CustomButton
-          type="is-primary"
-          label="Download"
-          :icon="['fas', 'download']"
-          :disabled="isImageLoading || !generatedImage"
-          @click="downloadPyramid"
-        /> -->
         <div class="share-button-container">
           <CustomButton
             type="is-primary"
@@ -44,7 +44,7 @@
           </div>
         </div>
       </div>
-    
+    </div>
   </div>
 </template>
 
@@ -53,8 +53,13 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faDownload, faShare } from '@fortawesome/free-solid-svg-icons';
 import html2canvas from 'html2canvas';
 import defaultProfile from '@/assets/profile.png';
+
+library.add(faDownload, faShare);
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -77,6 +82,8 @@ const preprocessedImages = ref<Map<string, string>>(new Map());
 const showShareTooltip = ref(false);
 const shareTooltipShown = ref(false);
 const tempContainer = ref<HTMLElement | null>(null);
+const isWebShareSupported = ref(!!navigator.share && !!navigator.canShare);
+const isAndroid = ref(/Android/i.test(navigator.userAgent));
 
 onMounted(async () => {
   console.log('PyramidView: onMounted called with props:', {
@@ -126,7 +133,7 @@ async function preloadImages() {
         }
 
         ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = canvas.toDataURL('image/jpeg');
         preprocessedImages.value.set(src, dataUrl);
         console.log('PyramidView: Preprocessed image:', src);
         resolve();
@@ -198,25 +205,29 @@ async function renderPyramidImage() {
   tempDiv.style.position = 'absolute';
   tempDiv.style.top = '-9999px';
   tempDiv.style.left = '-9999px';
-  tempDiv.style.width = '100%';
-  tempDiv.style.maxWidth = '500px';
+  tempDiv.style.width = '500px';
+  tempDiv.style.display = 'flex';
+  tempDiv.style.flexDirection = 'column';
+  tempDiv.style.alignItems = 'center';
   tempDiv.style.backgroundColor = '#121212';
-  tempDiv.className = 'pyramid-container p-2';
+  tempDiv.className = 'pyramid-container';
   document.body.appendChild(tempDiv);
   tempContainer.value = tempDiv;
 
-  // Inject styles into the temporary container
   const styleElement = document.createElement('style');
   styleElement.textContent = `
     .box { padding: 0 !important; box-sizing: border-box; }
     .pyramid-container {
-      position: relative;
-      
-     
-      margin: 0 auto;
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 500px;
+      border-radius: 8px;
+      border: 1px solid #00e8e0;
       background-color: #121212;
       padding: 0.5rem;
+      box-sizing: border-box;
     }
     .user-image-container { position: absolute; top: 0.6rem; left: 0.6rem; }
     .user-image {
@@ -233,7 +244,6 @@ async function renderPyramidImage() {
       gap: 0.05rem;
       width: 100%;
       max-width: 100%;
-      margin: 0 auto;
     }
     .pyramid-row-container {
       display: flex;
@@ -257,33 +267,26 @@ async function renderPyramidImage() {
       flex-wrap: nowrap;
     }
     .pyramid-slot {
-      width: 22vw;
-      height: 22vw;
-      max-width: 90px;
-      max-height: 90px;
-      min-width: 50px;
-      min-height: 50px;
+      width: 90px;
+      height: 90px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       background-color: #1f1f1f;
       border: 1px dashed #444;
-      cursor: default;
       border-radius: 4px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
       text-align: center;
       overflow: hidden;
       box-sizing: border-box;
-      margin-bottom: 0 !important;
     }
     .worst-item-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       width: 100%;
-      max-width: max-content;
-      margin: 0.3rem auto;
+      margin: 0.3rem 0;
     }
     .worst-item-container .subtitle {
       width: 100%;
@@ -296,10 +299,8 @@ async function renderPyramidImage() {
     .worst-slot {
       border: 2px dashed #ff7777;
       background-color: #3d1f1f;
-      max-width: 90px;
-      max-height: 90px;
-      min-width: 50px;
-      min-height: 50px;
+      width: 90px;
+      height: 90px;
       box-sizing: border-box;
     }
     .slot-style {
@@ -344,7 +345,7 @@ async function renderPyramidImage() {
     }
     .tier-label.has-text-danger { color: #ff5555; }
     .top-x-label {
-      font-size: 0.9rem !important;
+      font-size: 0.9rem;
       font-weight: bold;
       color: #fff;
       text-align: center;
@@ -357,127 +358,112 @@ async function renderPyramidImage() {
       margin: 0.3rem 0;
     }
     .game-header {
-      margin-bottom: 0.3rem !important;
-      margin-left: 2rem;
-      margin-right: 2rem;
+      margin: 0.3rem 2rem 1rem;
       font-size: 17px;
       text-align: center;
       color: #00e8e0;
     }
     @media screen and (max-width: 767px) {
-      .pyramid-container { padding: 0.2rem; max-width: calc(100% - 0.2rem); }
-      .pyramid-slot {
-        width: 20vw;
-        height: 20vw;
-        max-width: 80px;
-        max-height: 80px;
-        min-width: 45px;
-        min-height: 45px;
+      .pyramid-container { padding: 0.2rem; width: 100%; max-width: 400px; }
+      .pyramid-slot, .worst-slot {
+        width: 80px;
+        height: 80px;
       }
-      .worst-slot {
-        max-width: 80px;
-        max-height: 80px;
-        min-width: 45px;
-        min-height: 45px;
-      }
-      .pyramid-slot .draggable-image,
-      .worst-slot .draggable-image {
+      .draggable-image {
         width: 100%;
         height: calc(100% - 4px);
-        object-fit: cover;
-        object-position: top;
-        border-radius: 0.5rem 0.5rem 0 0;
       }
       .tier-label { font-size: 0.8rem; }
       .row-label { font-size: 0.6rem; }
       .top-x-label { font-size: 0.6rem; }
+      .game-header { font-size: 15px; }
     }
   `;
   tempDiv.appendChild(styleElement);
 
-  // Render the pyramid content
   tempDiv.innerHTML += `
-    <div class="user-image-container">
-      <img
-        src="${preprocessedImages.value.get(props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile) || defaultProfile}"
-        alt="User Profile"
-        class="user-image"
-        crossorigin="anonymous"
-      />
-    </div>
-    <h2 class="subtitle has-text-success game-header" style="margin-bottom: 1rem; text-align: center"
-      >${props.shareImageTitle || props.gameHeader || 'Your Pyramid'}</h2>
-    <div class="pyramid">
-      ${props.pyramid
-        .map(
-          (row, rowIndex) => `
-        <div class="pyramid-row-container">
-          <div class="row-label has-text-white" style="${props.hideRowLabel ? 'display: none;' : ''}">
-            ${props.rows[rowIndex]?.label || toRoman(rowIndex + 1)}
-          </div>
-          <div class="pyramid-row">
-            ${row
-              .map(
-                (slot, colIndex) => `
-              <div class="pyramid-slot box dark-slot">
-                ${
-                  slot.image
-                    ? `
-                  <div class="slot-style">
-                    <img
-                      src="${preprocessedImages.value.get(slot.image.src) || slot.image.src}"
-                      alt="${slot.image.label}"
-                      class="draggable-image"
-                      crossorigin="anonymous"
-                    />
-                    <div class="color-indicator-pyramid" style="background-color: ${slot.image.color || '#fff'}"></div>
-                  </div>`
-                    : `<div class="tier-label">${toRoman(rowIndex + 1)}</div>`
-                }
-              </div>`
-              )
-              .join('')}
-          </div>
-        </div>`
-        )
-        .join('')}
-    </div>
-    <div class="worst-item-container">
-      <h3 class="subtitle has-text-centered has-text-white">${props.worstHeader || 'Worst Item'}</h3>
-      <div class="pyramid-slot box worst-slot dark-slot mx-auto">
-        ${
-          props.worstItem
-            ? `
-          <div class="slot-style">
-            <img
-              src="${preprocessedImages.value.get(props.worstItem.src) || props.worstItem.src}"
-              alt="${props.worstItem.label}"
-              class="draggable-image"
-              crossorigin="anonymous"
-            />
-            <div class="color-indicator-pyramid" style="background-color: ${props.worstItem.color || '#fff'}"></div>
-          </div>`
-            : `<div class="tier-label has-text-danger">Worst</div>`
-        }
+    <div class="content-wrapper">
+      <div class="user-image-container">
+        <img
+          src="${preprocessedImages.value.get(props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile) || defaultProfile}"
+          alt="User Profile"
+          class="user-image"
+          crossorigin="anonymous"
+        />
       </div>
+      <h2 class="subtitle has-text-success game-header">${props.shareImageTitle || props.gameHeader || 'Your Pyramid'}</h2>
+      <div class="pyramid">
+        ${props.pyramid
+          .map(
+            (row, rowIndex) => `
+          <div class="pyramid-row-container">
+            <div class="row-label has-text-white" style="${props.hideRowLabel ? 'display: none;' : ''}">
+              ${props.rows[rowIndex]?.label || toRoman(rowIndex + 1)}
+            </div>
+            <div class="pyramid-row">
+              ${row
+                .map(
+                  (slot) => `
+                <div class="pyramid-slot box dark-slot">
+                  ${
+                    slot.image
+                      ? `
+                    <div class="slot-style">
+                      <img
+                        src="${preprocessedImages.value.get(slot.image.src) || slot.image.src}"
+                        alt="${slot.image.label}"
+                        class="draggable-image"
+                        crossorigin="anonymous"
+                      />
+                      <div class="color-indicator-pyramid" style="background-color: ${slot.image.color || '#fff'}"></div>
+                    </div>`
+                      : `<div class="tier-label">${toRoman(rowIndex + 1)}</div>`
+                  }
+                </div>`
+                )
+                .join('')}
+            </div>
+          </div>`
+          )
+          .join('')}
+      </div>
+      <div class="worst-item-container">
+        <h3 class="subtitle has-text-centered has-text-white">${props.worstHeader || 'Worst Item'}</h3>
+        <div class="pyramid-slot box worst-slot dark-slot">
+          ${
+            props.worstItem
+              ? `
+            <div class="slot-style">
+              <img
+                src="${preprocessedImages.value.get(props.worstItem.src) || props.worstItem.src}"
+                alt="${props.worstItem.label}"
+                class="draggable-image"
+                crossorigin="anonymous"
+              />
+              <div class="color-indicator-pyramid" style="background-color: ${props.worstItem.color || '#fff'}"></div>
+            </div>`
+              : `<div class="tier-label has-text-danger">Worst</div>`
+          }
+        </div>
+      </div>
+      <p class="top-x-label has-text-white has-text-centered">
+        And what’s your vote? <br /> top-x.co/PrezPyramid
+      </p>
     </div>
-    <p class="top-x-label has-text-white has-text-centered mt-2">
-      And what’s your vote? <br /> top-x.co/PrezPyramid
-    </p>
   `;
 
   try {
     const canvas = await html2canvas(tempContainer.value!, {
       backgroundColor: '#121212',
-      scale: 2, // Fixed scale for consistent rendering
+      scale: 2,
       useCORS: true,
       logging: true,
       allowTaint: false,
-      width: 500, // Fixed width to match max-width
+      width: 500,
       height: tempContainer.value!.offsetHeight,
     });
     console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
-    generatedImage.value = canvas.toDataURL('image/png');
+    generatedImage.value = canvas.toDataURL('image/jpeg', 0.9);
     isImageLoading.value = false;
   } catch (err: any) {
     console.error('PyramidView: Error generating image:', err.message, err);
@@ -495,30 +481,73 @@ function toRoman(num: number): string {
   return numerals[num - 1] || `${num}`;
 }
 
-async function downloadPyramid() {
+async function shareImage() {
+  if (!generatedImage.value) {
+    console.error('PyramidView: No generated image available for sharing');
+    alert('Failed to share image. Please try again.');
+    return;
+  }
+
+  try {
+    const response = await fetch(generatedImage.value);
+    const blob = await response.blob();
+    const fileName = `${(props.shareImageTitle || props.gameHeader || props.gameTitle || 'your-pyramid').toLowerCase().replace(/\s+/g, '-')}.jpeg`;
+    const shareTitle = props.shareImageTitle || props.gameHeader || 'Your Pyramid';
+    const shareText = props.shareText || 'Check out my pyramid ranking on TOP-X!';
+
+    if (isAndroid.value) {
+      // Android: Use a temporary file and FileProvider-like approach
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
+      const dataUrl = URL.createObjectURL(file);
+      const intentUrl = `intent://share#Intent;action=android.intent.action.SEND;type=image/*;S.android.intent.extra.TEXT=${encodeURIComponent(shareText)};S.android.intent.extra.SUBJECT=${encodeURIComponent(shareTitle)};S.android.intent.extra.STREAM=${encodeURIComponent(dataUrl)};end`;
+      
+      try {
+        window.location.href = intentUrl;
+        console.log('PyramidView: Attempted Android intent share');
+      } catch (intentErr: any) {
+        console.warn('PyramidView: Android intent failed, falling back to Web Share API', intentErr);
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: shareTitle,
+            text: shareText,
+          });
+          console.log('PyramidView: Android Web Share API success');
+        } else {
+          throw new Error('Web Share API not supported');
+        }
+      }
+    } else {
+      // iOS and others: Use Web Share API
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: shareTitle,
+          text: shareText,
+        });
+        console.log('PyramidView: Image shared successfully');
+      } else {
+        console.warn('PyramidView: Web Share API not supported or cannot share files');
+        downloadPyramid(new Event('click'));
+      }
+    }
+  } catch (err: any) {
+    console.error('PyramidView: Error sharing image:', err.message, err);
+    alert('Failed to share image. Downloading instead.');
+    downloadPyramid(new Event('click'));
+  }
+}
+
+async function downloadPyramid(e: Event) {
   console.log('PyramidView: downloadPyramid called');
   if (!generatedImage.value) {
     console.error('PyramidView: No generated image available');
     alert('Failed to download image. Please try again.');
+    e.preventDefault();
     return;
   }
-  try {
-    const link = document.createElement('a');
-    link.href = generatedImage.value;
-    link.download = `${(
-      props.shareImageTitle ||
-      props.gameHeader ||
-      props.gameTitle ||
-      'your-pyramid'
-    )
-      .toLowerCase()
-      .replace(/\s+/g, '-')}.png`;
-    link.click();
-    console.log('PyramidView: Image download triggered');
-  } catch (err: any) {
-    console.error('PyramidView: Error downloading image:', err.message, err);
-    alert('Failed to download image.');
-  }
+  console.log('PyramidView: Image download triggered');
 }
 
 function shareOnX() {
@@ -554,11 +583,12 @@ function handleShareClick(e: MouseEvent) {
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  
+  border: 1px solid #00e8e0;
   max-width: calc(100% - 0.4rem);
   margin: 0 auto;
   overflow: hidden;
   background-color: #121212;
+  padding: 0.5rem;
 }
 .pyramid-image {
   width: 100%;
@@ -570,6 +600,28 @@ function handleShareClick(e: MouseEvent) {
 }
 .button.is-primary {
   margin: 0.3rem 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #3273dc;
+  color: #fff;
+  border: 1px solid #3273dc;
+  text-decoration: none;
+}
+.button.is-primary:hover {
+  background-color: #276cda;
+  border-color: #276cda;
+}
+.button.is-primary.is-disabled {
+  background-color: #7a7a7a;
+  border-color: #7a7a7a;
+  color: #dbdbdb;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 .share-button-container {
   position: relative;
@@ -588,13 +640,20 @@ function handleShareClick(e: MouseEvent) {
   white-space: nowrap;
   z-index: 20;
 }
+.mr-2 {
+  margin-right: 0.5rem;
+}
 @media screen and (max-width: 767px) {
   .pyramid-container {
     padding: 0.2rem;
-    max-width: calc(100% - 0.2rem);
+    max-width: calc(100% - 0.4rem);
   }
   .pyramid-image {
     max-width: 100%;
+  }
+  .button.is-primary {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
   }
 }
 </style>
