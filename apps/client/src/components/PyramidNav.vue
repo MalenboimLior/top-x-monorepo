@@ -90,7 +90,12 @@ onMounted(() => {
 
 function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
   activeTab.value = tab;
-  router.replace({ hash: `#${tab}` });
+  // preserve existing query params when updating the hash so the game id
+  // remains in the url, e.g. /games/PyramidTier?game=foo#stats
+  router.replace({
+    hash: `#${tab}`,
+    query: { ...route.query },
+  });
   console.log('PyramidNav: Set active tab to:', tab);
 }
 </script>
