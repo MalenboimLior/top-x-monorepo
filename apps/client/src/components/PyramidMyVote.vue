@@ -41,15 +41,14 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { doc, setDoc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
-import PyramidView from '@/components/PyramidView.vue';
 import PyramidImage from '@/components/PyramidImage.vue';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ShareButton from '@/components/ShareButton.vue';
-import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
+import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 
 const router = useRouter();
 const userStore = useUserStore();
