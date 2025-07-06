@@ -32,6 +32,7 @@ export default defineComponent({
 .footer {
   background-color: var(--bulma-scheme-main); /* #121212 from dark-theme.css */
   padding: 2rem 1.5rem;
+  
 }
 
 .grok-badge {
@@ -51,4 +52,5 @@ export default defineComponent({
     font-size: 1rem;
   }
 }
+
 </style>
