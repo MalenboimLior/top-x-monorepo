@@ -21,10 +21,10 @@
         <div class="timer-label">Seconds</div>
       </div>
     </div>
-    <a href="https://x.com/top_x_co" target="_blank" class="follow-button is-primary">
+    <a href="https://x.com/Topxapp" target="_blank" class="follow-button is-primary">
       <font-awesome-icon :icon="['fab', 'x-twitter']" class="mr-2" />
-      Follow @top_x_co on X
-    </a>
+      Follow @Topxapp on X
+    </a>    
     <div class="background-particles"></div>
   </div>
 </template>
