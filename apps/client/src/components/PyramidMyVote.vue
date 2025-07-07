@@ -23,28 +23,30 @@
         :icon="['fas', 'edit']"
         @click="editPyramid"
       />
-      <CustomButton
-        v-if="!userStore.user"
-        type="is-primary"
-        label="Login to Save Vote"
-        :icon="['fab', 'x-twitter']"
-        @click="loginWithX"
-      />
       <ShareButton
         :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
         :image-url="imageUrl"
       />
     </div>
+    <PyramidLoginPopup
+      :is-active="showLoginPopup"
+      :game-id="props.gameId"
+      :rows="rows"
+      @login="closeLoginPopup"
+      @skip="closeLoginPopup"
+      @close="closeLoginPopup"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/PyramidImage.vue';
+import PyramidLoginPopup from '@/components/PyramidLoginPopup.vue';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ShareButton from '@/components/ShareButton.vue';
@@ -54,6 +56,17 @@ const router = useRouter();
 const userStore = useUserStore();
 const pyramidImageRef = ref<any>(null);
 const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
+const showLoginPopup = ref(false);
+
+onMounted(() => {
+  if (!userStore.user && props.gameId) {
+    const flag = localStorage.getItem(`showLoginPopup_${props.gameId}`);
+    if (flag) {
+      showLoginPopup.value = true;
+      localStorage.removeItem(`showLoginPopup_${props.gameId}`);
+    }
+  }
+});
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -85,26 +98,6 @@ watch(
   }
 );
 
-async function loginWithX() {
-  try {
-    const success = await userStore.loginWithX();
-    if (success) {
-      console.log('PyramidMyVote: Login successful');
-      if (props.gameId) {
-        const savedPyramid = localStorage.getItem(`pyramid_${props.gameId}`);
-        if (savedPyramid && userStore.user) {
-          const cachedVote = JSON.parse(savedPyramid);
-          await saveCachedVote(cachedVote, userStore.user.uid);
-          localStorage.removeItem(`pyramid_${props.gameId}`);
-          console.log('PyramidMyVote: Cached vote saved after login');
-        }
-      }
-    }
-  } catch (err: any) {
-    console.error('PyramidMyVote: Login error:', err.message);
-    alert('Failed to login. Please try again.');
-  }
-}
 
 async function saveCachedVote(data: { pyramid: PyramidSlot[][]; worstItem: PyramidItem | null }, userId: string) {
   if (!props.gameId) {
@@ -178,6 +171,10 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
     console.error('PyramidMyVote: Error updating game stats:', err.message, err);
     throw err;
   }
+}
+
+function closeLoginPopup() {
+  showLoginPopup.value = false;
 }
 
 function editPyramid() {
