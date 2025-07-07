@@ -1,4 +1,3 @@
-// Pinia store handling user state and auth
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { auth, db, functions } from '@top-x/shared';
@@ -7,17 +6,27 @@ import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } f
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
 import { User } from '@top-x/shared/types/user';
 
-export const useUserStore = defineStore('user',() => {
-  const user = ref<FirebaseUser | null>(null);
+// Define a sanitized user type to avoid reactivity issues
+interface SanitizedUser {
+  uid: string;
+  displayName: string | null;
+  photoURL: string | null;
+}
+
+export const useUserStore = defineStore('user', () => {
+  const user = ref<SanitizedUser | null>(null);
   const profile = ref<User | null>(null);
   const error = ref<string | null>(null);
 
   onAuthStateChanged(auth, (currentUser) => {
     console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
-    user.value = currentUser;
-    error.value = null;
-
     if (currentUser) {
+      // Sanitize Firebase User object to avoid unsafe properties
+      user.value = {
+        uid: currentUser.uid,
+        displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL
+      };
       const userDoc = doc(db, 'users', currentUser.uid);
       onSnapshot(userDoc, (snapshot) => {
         if (snapshot.exists()) {
@@ -32,6 +41,7 @@ export const useUserStore = defineStore('user',() => {
         error.value = err.message;
       });
     } else {
+      user.value = null;
       profile.value = null;
       console.log('No user logged in');
     }
@@ -44,7 +54,11 @@ export const useUserStore = defineStore('user',() => {
     try {
       const result = await signInWithPopup(auth, provider);
       console.log('Login successful:', result.user.uid);
-      user.value = result.user;
+      user.value = {
+        uid: result.user.uid,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL
+      };
 
       const credential = TwitterAuthProvider.credentialFromResult(result);
       if (!credential || !credential.accessToken || !credential.secret) {
@@ -277,6 +291,4 @@ export const useUserStore = defineStore('user',() => {
   }
 
   return { user, profile, error, loginWithX, logout, addFrenemy, removeFrenemy, updateGameProgress };
-  },
-  { persist: true }
-);
+}, { persist: true });

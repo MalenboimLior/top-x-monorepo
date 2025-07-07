@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, setDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/PyramidImage.vue';
@@ -151,26 +151,50 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
   try {
     await runTransaction(db, async (transaction) => {
       const statsDoc = await transaction.get(statsRef);
-      let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
-      stats.totalPlayers = (stats.totalPlayers || 0) + 1;
+      const stats = statsDoc.exists()
+        ? statsDoc.data()
+        : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
+
+      // Prepare updates to merge
+      const updates: Record<string, any> = {
+        totalPlayers: (stats.totalPlayers || 0) + 1,
+      };
+
+      // Update itemRanks
+      const updatedItemRanks = { ...stats.itemRanks };
       pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
         row.forEach((slot: PyramidSlot) => {
           if (slot.image) {
             const itemId = slot.image.id;
             const rowId = rows[rowIndex]?.id || rowIndex + 1;
-            stats.itemRanks[itemId] = stats.itemRanks[itemId] || {};
-            stats.itemRanks[itemId][rowId] = (stats.itemRanks[itemId][rowId] || 0) + 1;
+            updatedItemRanks[itemId] = updatedItemRanks[itemId] || {};
+            updatedItemRanks[itemId][rowId] = (updatedItemRanks[itemId][rowId] || 0) + 1;
           }
         });
       });
+
+      // Update worstItemCounts
+      const updatedWorstItemCounts = { ...stats.worstItemCounts };
       if (worstItem) {
         const itemId = worstItem.id;
-        stats.worstItemCounts[itemId] = (stats.worstItemCounts[itemId] || 0) + 1;
+        updatedWorstItemCounts[itemId] = (updatedWorstItemCounts[itemId] || 0) + 1;
       }
-      transaction.set(statsRef, stats);
+
+      // Merge updates
+      updates.itemRanks = updatedItemRanks;
+      updates.worstItemCounts = updatedWorstItemCounts;
+
+      // Use set with merge to handle both existing and non-existing documents
+      transaction.set(statsRef, updates, { merge: true });
     });
+    console.log('PyramidMyVote: Successfully updated game stats for gameId:', gameId);
   } catch (err: any) {
-    console.error('PyramidMyVote: Error updating game stats:', err.message, err);
+    console.error('PyramidMyVote: Error updating game stats:', {
+      message: err.message,
+      code: err.code,
+      details: err.details,
+      stack: err.stack
+    });
     throw err;
   }
 }
