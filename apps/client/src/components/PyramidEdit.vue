@@ -246,7 +246,8 @@ watch(
       imagePool.value = [];
       return;
     }
-    const sorted = [...newItems].sort((a, b) => {
+    const filtered = newItems.filter(item => item.active !== false);
+    const sorted = [...filtered].sort((a, b) => {
       const field = props.sortItems.orderBy;
       const dir = props.sortItems.order === 'asc' ? 1 : -1;
       const valA = a[field as keyof PyramidItem] || '';

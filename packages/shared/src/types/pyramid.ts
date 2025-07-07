@@ -5,6 +5,8 @@ export interface PyramidItem {
   src: string;
   description?: string;
   color?: string;
+  active: boolean;
+  source: string;
 }
 
 export interface SortOption {
