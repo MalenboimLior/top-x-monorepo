@@ -16,6 +16,8 @@
             <p class="subtitle is-7 has-text-grey-light">Name: {{ item.name }}</p>
             <p class="subtitle is-7 has-text-grey-light">ID: {{ item.id }}</p>
             <p v-if="item.color" class="has-text-grey-light">Color: {{ item.color }}</p>
+            <p class="subtitle is-7 has-text-grey-light">Active: {{ item.active ? 'Yes' : 'No' }}</p>
+            <p class="subtitle is-7 has-text-grey-light">Source: {{ item.source }}</p>
           </div>
         </div>
         <div class="buttons mt-2">
@@ -144,7 +146,14 @@ const createNew = () => {
     return;
   }
   console.log('createNew called, emitting edit with new item');
-  emit('edit', { id: '', src: '', label: '', name: '' });
+  emit('edit', {
+    id: '',
+    src: '',
+    label: '',
+    name: '',
+    active: true,
+    source: 'topx',
+  });
 };
 
 const refresh = () => {
