@@ -50,8 +50,7 @@ async function loginWithX() {
       const voteData = props.pendingVote || JSON.parse(localStorage.getItem(`pyramid_${props.gameId}`) || '{}');
       if (voteData && voteData.pyramid && 'worstItem' in voteData) {
         await saveCachedVote(voteData, userStore.user.uid);
-        localStorage.removeItem(`pyramid_${props.gameId}`);
-        console.log('PyramidLoginPopup: Vote saved and localStorage cleared');
+        console.log('PyramidLoginPopup: Vote saved');
       }
       emit('login');
     }
