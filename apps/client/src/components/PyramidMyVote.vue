@@ -1,7 +1,6 @@
 <template>
   <div class="pyramid-my-vote">
-    <!-- <h2 class="subtitle has-text-white">My Vote</h2> -->
-    <div>
+    <div :key="renderKey">
       <PyramidImage
         ref="pyramidImageRef"
         :pyramid="pyramid"
@@ -47,7 +46,6 @@ import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/PyramidImage.vue';
 import PyramidLoginPopup from '@/components/PyramidLoginPopup.vue';
-
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
@@ -57,16 +55,7 @@ const userStore = useUserStore();
 const pyramidImageRef = ref<any>(null);
 const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
 const showLoginPopup = ref(false);
-
-onMounted(() => {
-  if (!userStore.user && props.gameId) {
-    const flag = localStorage.getItem(`showLoginPopup_${props.gameId}`);
-    if (flag) {
-      showLoginPopup.value = true;
-      localStorage.removeItem(`showLoginPopup_${props.gameId}`);
-    }
-  }
-});
+const renderKey = ref(0);
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -82,6 +71,18 @@ const props = defineProps<{
   shareText?: string;
 }>();
 
+onMounted(() => {
+  console.log('PyramidMyVote: onMounted called with gameId:', props.gameId);
+  if (!userStore.user && props.gameId) {
+    const flag = localStorage.getItem(`showLoginPopup_${props.gameId}`);
+    if (flag) {
+      showLoginPopup.value = true;
+      localStorage.removeItem(`showLoginPopup_${props.gameId}`);
+      console.log('PyramidMyVote: Showing login popup due to flag');
+    }
+  }
+});
+
 watch(
   () => userStore.user,
   async (newUser) => {
@@ -93,11 +94,12 @@ watch(
         await saveCachedVote(cachedVote, newUser.uid);
         // localStorage.removeItem(`pyramid_${props.gameId}`);
         console.log('PyramidMyVote: Cached vote saved to user database');
+        renderKey.value++; // Force re-render of PyramidImage
+        console.log('PyramidMyVote: Forcing re-render with new renderKey:', renderKey.value);
       }
     }
   }
 );
-
 
 async function saveCachedVote(data: { pyramid: PyramidSlot[][]; worstItem: PyramidItem | null }, userId: string) {
   if (!props.gameId) {
@@ -174,7 +176,9 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
 }
 
 function closeLoginPopup() {
+  console.log('PyramidMyVote: Closing login popup');
   showLoginPopup.value = false;
+  renderKey.value++; // Force re-render to update PyramidImage
 }
 
 function editPyramid() {

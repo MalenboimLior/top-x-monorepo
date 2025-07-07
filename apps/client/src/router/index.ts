@@ -6,8 +6,6 @@ import About from '@/views/About.vue';
 import FAQ from '@/views/FAQ.vue';
 import Trivia from '@/views/games/Trivia.vue';
 import PyramidTier from '@/views/games/PyramidTier.vue';
-import PyramidResultLoggedIn from '@/components/PyramidResultLoggedIn.vue';
-import PyramidResultLoggedOut from '@/components/PyramidResultLoggedOut.vue';
 import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
@@ -58,16 +56,7 @@ const routes = [
       query: { game: 'us_presidents_game' },
     },
   },
-  {
-    path: '/games/PyramidTier/result/logged-in',
-    name: 'PyramidResultLoggedIn',
-    component: PyramidResultLoggedIn,
-  },
-  {
-    path: '/games/PyramidTier/result/logged-out',
-    name: 'PyramidResultLoggedOut',
-    component: PyramidResultLoggedOut,
-  },
+
 ];
 
 const router = createRouter({

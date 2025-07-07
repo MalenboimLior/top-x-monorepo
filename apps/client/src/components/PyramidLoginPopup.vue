@@ -148,7 +148,7 @@ const close = () => {
 <style scoped>
 .modal-content {
   max-width: 400px;
-  padding: 2rem;
+  padding: 2rem !important;
   border-radius: 8px;
 }
 

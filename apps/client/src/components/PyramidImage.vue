@@ -39,25 +39,28 @@ const userStore = useUserStore();
 const isImageLoading = ref(true);
 const generatedImage = ref<string | null>(null);
 const pyramidImage = ref<HTMLImageElement | null>(null);
-const preprocessedImages = ref<Map<string, string>>(new Map());const tempContainer = ref<HTMLElement | null>(null);
+const preprocessedImages = ref<Map<string, string>>(new Map());
+const tempContainer = ref<HTMLElement | null>(null);
+const isRendering = ref(false); // Prevent concurrent renders
 
 onMounted(async () => {
   console.log('PyramidView: onMounted called with props:', {
     gameHeader: props.gameHeader,
     worstHeader: props.worstHeader,
     hideRowLabel: props.hideRowLabel,
+    userProfile: props.userProfile?.photoURL,
   });
   await nextTick();
   await renderPyramidImage();
 });
 
 watch(
-  [() => props.pyramid, () => props.worstItem, () => userStore.user],
+  [() => props.pyramid, () => props.worstItem, () => props.userProfile?.photoURL],
   async () => {
+    console.log('PyramidView: Detected change in pyramid, worstItem, or userProfile, re-rendering');
     await nextTick();
     await renderPyramidImage();
-  },
-  { deep: true }
+  }
 );
 
 async function preloadImages() {
@@ -133,7 +136,6 @@ async function preloadImages() {
   props.pyramid.flat().forEach((slot) => {
     if (slot.image?.src && !uniqueImageUrls.has(slot.image.src)) {
       uniqueImageUrls.add(slot.image.src);
-
       imagePromises.push(
         Promise.race([
           preprocessImage(slot.image.src),
@@ -164,271 +166,274 @@ async function preloadImages() {
 }
 
 async function renderPyramidImage() {
+  if (isRendering.value) {
+    console.log('PyramidView: Skipping render, already in progress');
+    return;
+  }
+  isRendering.value = true;
   isImageLoading.value = true;
-  await preloadImages();
-
-  const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'absolute';
-  tempDiv.style.top = '-9999px';
-  tempDiv.style.left = '-9999px';
-  tempDiv.style.width = '500px';
-  tempDiv.style.display = 'flex';
-  tempDiv.style.flexDirection = 'column';
-  tempDiv.style.alignItems = 'center';
-  tempDiv.style.backgroundColor = '#121212';
-  tempDiv.className = 'pyramid-container';
-  document.body.appendChild(tempDiv);
-  tempContainer.value = tempDiv;
-
-  const styleElement = document.createElement('style');
-  styleElement.textContent = `
-    .box { padding: 0 !important; box-sizing: border-box; }
-    .pyramid-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      
-      background-color: #121212;
-      padding: 0.5rem;
-      box-sizing: border-box;
-    }
-    .user-image-container { position: absolute; top: 0.6rem; left: 0.6rem; }
-    .user-image {
-      width: 3rem;
-      height: 3rem;
-      border-radius: 50%;
-      border: 2px solid #00e8e0;
-      object-fit: cover;
-    }
-    .pyramid {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.05rem;
-      width: 100%;
-      max-width: 100%;
-    }
-    .pyramid-row-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.2rem;
-      width: 100%;
-    }
-    .row-label {
-      width: 100%;
-      text-align: center;
-      font-weight: bold;
-      font-size: 0.7rem;
-      color: #fff;
-    }
-    .pyramid-row {
-      display: flex;
-      justify-content: center;
-      gap: 0.05rem;
-      width: 100%;
-      flex-wrap: nowrap;
-    }
-    .pyramid-slot {
-      width: 90px;
-      height: 90px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background-color: #1f1f1f;
-      border: 1px dashed #444;
-      border-radius: 4px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      overflow: hidden;
-      box-sizing: border-box;
-       padding: 0 !important;
-      margin: 0 !important;
-    }
-    .worst-item-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      margin: 0.3rem 0;
-    }
-    .worst-item-container .subtitle {
-      width: 100%;
-      text-align: center;
-      margin-bottom: 5px;
-      color: #eee;
-      font-size: 1rem;
-      font-weight: bold;
-    }
-    .worst-slot {
-      border: 2px dashed #ff7777;
-      background-color: #3d1f1f;
-      width: 90px;
-      height: 90px;
-      box-sizing: border-box;
-    }
-    .slot-style {
-      width: 100%;
-      height: 100%;
-      border-radius: 0.5rem;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      background: linear-gradient(to bottom, #2a2a2a, #1f1f1f);
-      border: 1px solid #444;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      box-sizing: border-box;
-      position: relative;
-
-    }
-    .pyramid-slot .slot-style,
-    .worst-slot .slot-style { padding: 0 !important; }
-    .draggable-image {
-      user-select: none;
-      touch-action: none;
-      width: 100%;
-      height: calc(100% - 4px);
-      object-fit: cover;
-      object-position: top;
-      
-      border-radius: 0.5rem 0.5rem 0 0;
-    }
-    .color-indicator-pyramid {
-      width: 100%;
-      height: 4px;
-      border-radius: 0 0 0.5rem 0.5rem;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      z-index: 10;
-    }
-    .tier-label {
-      color: #bbb;
-      font-size: 0.9rem;
-      font-weight: bold;
-      pointer-events: none;
-    }
-    .tier-label.has-text-danger { color: #ff5555; }
-    .top-x-label {
-      font-size: 0.9rem;
-      font-weight: bold;
-      color: #fff;
-      text-align: center;
-      margin-top: 0.5rem;
-    }
-    .subtitle {
-      color: #eee;
-      font-size: 1rem;
-      font-weight: bold;
-      margin: 0.3rem 0;
-    }
-    .game-header {
-      margin: 0.3rem 2rem 1rem;
-      font-size: 17px;
-      text-align: center;
-      color: #00e8e0;
-    }
-    @media screen and (max-width: 767px) {
-      .pyramid-container { padding: 0.2rem; width: 100%; max-width: 400px; }
-      .pyramid-slot, .worst-slot {
-        width: 80px;
-        height: 80px;
-      }
-      .draggable-image {
-        width: 100%;
-        height: calc(100% - 4px);
-      }
-      .tier-label { font-size: 0.8rem; }
-      .row-label { font-size: 0.6rem; }
-      .top-x-label { font-size: 0.6rem; }
-      .game-header { font-size: 15px; }
-    }
-  `;
-  tempDiv.appendChild(styleElement);
-
-  tempDiv.innerHTML += `
-    <div class="content-wrapper">
-      <div class="user-image-container">
-        <img
-          src="${preprocessedImages.value.get(props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile) || defaultProfile}"
-          alt="User Profile"
-          class="user-image"
-          crossorigin="anonymous"
-        />
-      </div>
-      <h2 class="subtitle has-text-success game-header">${props.shareImageTitle || props.gameHeader || 'Your Pyramid'}</h2>
-      <div class="pyramid">
-        ${props.pyramid
-          .map(
-            (row, rowIndex) => `
-          <div class="pyramid-row-container">
-            <div class="row-label has-text-white" style="${props.hideRowLabel ? 'display: none;' : ''}">
-              ${props.rows[rowIndex]?.label || toRoman(rowIndex + 1)}
-            </div>
-            <div class="pyramid-row">
-              ${row
-                .map(
-                  (slot) => `
-                <div class="pyramid-slot box dark-slot">
-                  ${
-                    slot.image
-                      ? `
-                    <div class="slot-style">
-                      <img
-                        src="${preprocessedImages.value.get(slot.image.src) || slot.image.src}"
-                        alt="${slot.image.label}"
-                        class="draggable-image"
-                        crossorigin="anonymous"
-                      />
-                      <div class="color-indicator-pyramid" style="background-color: ${slot.image.color || '#fff'}"></div>
-                    </div>`
-                      : `<div class="tier-label">${toRoman(rowIndex + 1)}</div>`
-                  }
-                </div>`
-                )
-                .join('')}
-            </div>
-          </div>`
-          )
-          .join('')}
-      </div>
-      <div class="worst-item-container">
-        <h3 class="subtitle has-text-centered has-text-white">${props.worstHeader || 'Worst Item'}</h3>
-        <div class="pyramid-slot box worst-slot dark-slot">
-          ${
-            props.worstItem
-              ? `
-            <div class="slot-style">
-              <img
-                src="${preprocessedImages.value.get(props.worstItem.src) || props.worstItem.src}"
-                alt="${props.worstItem.label}"
-                class="draggable-image"
-                crossorigin="anonymous"
-              />
-              <div class="color-indicator-pyramid" style="background-color: ${props.worstItem.color || '#fff'}"></div>
-            </div>`
-              : `<div class="tier-label has-text-danger">Worst</div>`
-          }
-        </div>
-      </div>
-      <p class="top-x-label has-text-white has-text-centered">
-        And what’s your vote? <br /> top-x.co/PrezPyramid
-      </p>
-    </div>
-  `;
 
   try {
-    const canvas = await html2canvas(tempContainer.value!, {
+    await preloadImages();
+
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.top = '-9999px';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = '500px';
+    tempDiv.style.display = 'flex';
+    tempDiv.style.flexDirection = 'column';
+    tempDiv.style.alignItems = 'center';
+    tempDiv.style.backgroundColor = '#121212';
+    tempDiv.className = 'pyramid-container';
+    document.body.appendChild(tempDiv);
+    tempContainer.value = tempDiv;
+
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      .box { padding: 0 !important; box-sizing: border-box; }
+      .pyramid-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background-color: #121212;
+        padding: 0.5rem;
+        box-sizing: border-box;
+      }
+      .user-image-container { position: absolute; top: 0.6rem; left: 0.6rem; }
+      .user-image {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        border: 2px solid #00e8e0;
+        object-fit: cover;
+      }
+      .pyramid {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.05rem;
+        width: 100%;
+        max-width: 100%;
+      }
+      .pyramid-row-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        width: 100%;
+      }
+      .row-label {
+        width: 100%;
+        text-align: center;
+        font-weight: bold;
+        font-size: 0.7rem;
+        color: #fff;
+      }
+      .pyramid-row {
+        display: flex;
+        justify-content: center;
+        gap: 0.05rem;
+        width: 100%;
+        flex-wrap: nowrap;
+      }
+      .pyramid-slot {
+        width: 90px;
+        height: 90px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #1f1f1f;
+        border: 1px dashed #444;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        overflow: hidden;
+        box-sizing: border-box;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .worst-item-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        margin: 0.3rem 0;
+      }
+      .worst-item-container .subtitle {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+        color: #eee;
+        font-size: 1rem;
+        font-weight: bold;
+      }
+      .worst-slot {
+        border: 2px dashed #ff7777;
+        background-color: #3d1f1f;
+        width: 90px;
+        height: 90px;
+        box-sizing: border-box;
+      }
+      .slot-style {
+        width: 100%;
+        height: 100%;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        background: linear-gradient(to bottom, #2a2a2a, #1f1f1f);
+        border: 1px solid #444;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        position: relative;
+      }
+      .pyramid-slot .slot-style,
+      .worst-slot .slot-style { padding: 0 !important; }
+      .draggable-image {
+        user-select: none;
+        touch-action: none;
+        width: 100%;
+        height: calc(100% - 4px);
+        object-fit: cover;
+        object-position: top;
+        border-radius: 0.5rem 0.5rem 0 0;
+      }
+      .color-indicator-pyramid {
+        width: 100%;
+        height: 4px;
+        border-radius: 0 0 0.5rem 0.5rem;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        z-index: 10;
+      }
+      .tier-label {
+        color: #bbb;
+        font-size: 0.9rem;
+        font-weight: bold;
+        pointer-events: none;
+      }
+      .tier-label.has-text-danger { color: #ff5555; }
+      .top-x-label {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #fff;
+        text-align: center;
+        margin-top: 0.5rem;
+      }
+      .subtitle {
+        color: #eee;
+        font-size: 1rem;
+        font-weight: bold;
+        margin: 0.3rem 0;
+      }
+      .game-header {
+        margin: 0.3rem 2rem 1rem;
+        font-size: 17px;
+        text-align: center;
+        color: #00e8e0;
+      }
+      @media screen and (max-width: 767px) {
+        .pyramid-container { padding: 0.2rem; width: 100%; max-width: 400px; }
+        .pyramid-slot, .worst-slot {
+          width: 80px;
+          height: 80px;
+        }
+        .draggable-image {
+          width: 100%;
+          height: calc(100% - 4px);
+        }
+        .tier-label { font-size: 0.8rem; }
+        .row-label { font-size: 0.6rem; }
+        .top-x-label { font-size: 0.6rem; }
+        .game-header { font-size: 15px; }
+      }
+    `;
+    tempDiv.appendChild(styleElement);
+
+    tempDiv.innerHTML += `
+      <div class="content-wrapper">
+        <div class="user-image-container">
+          <img
+            src="${preprocessedImages.value.get(props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile) || defaultProfile}"
+            alt="User Profile"
+            class="user-image"
+            crossorigin="anonymous"
+          />
+        </div>
+        <h2 class="subtitle has-text-success game-header">${props.shareImageTitle || props.gameHeader || 'Your Pyramid'}</h2>
+        <div class="pyramid">
+          ${props.pyramid
+            .map(
+              (row, rowIndex) => `
+            <div class="pyramid-row-container">
+              <div class="row-label has-text-white" style="${props.hideRowLabel ? 'display: none;' : ''}">
+                ${props.rows[rowIndex]?.label || toRoman(rowIndex + 1)}
+              </div>
+              <div class="pyramid-row">
+                ${row
+                  .map(
+                    (slot) => `
+                  <div class="pyramid-slot box dark-slot">
+                    ${
+                      slot.image
+                        ? `
+                      <div class="slot-style">
+                        <img
+                          src="${preprocessedImages.value.get(slot.image.src) || slot.image.src}"
+                          alt="${slot.image.label}"
+                          class="draggable-image"
+                          crossorigin="anonymous"
+                        />
+                        <div class="color-indicator-pyramid" style="background-color: ${slot.image.color || '#fff'}"></div>
+                      </div>`
+                        : `<div class="tier-label">${toRoman(rowIndex + 1)}</div>`
+                    }
+                  </div>`
+                  )
+                  .join('')}
+              </div>
+            </div>`
+            )
+            .join('')}
+        </div>
+        <div class="worst-item-container">
+          <h3 class="subtitle has-text-centered has-text-white">${props.worstHeader || 'Worst Item'}</h3>
+          <div class="pyramid-slot box worst-slot dark-slot">
+            ${
+              props.worstItem
+                ? `
+              <div class="slot-style">
+                <img
+                  src="${preprocessedImages.value.get(props.worstItem.src) || props.worstItem.src}"
+                  alt="${props.worstItem.label}"
+                  class="draggable-image"
+                  crossorigin="anonymous"
+                />
+                <div class="color-indicator-pyramid" style="background-color: ${props.worstItem.color || '#fff'}"></div>
+              </div>`
+                : `<div class="tier-label has-text-danger">Worst</div>`
+            }
+          </div>
+        </div>
+        <p class="top-x-label has-text-white has-text-centered">
+          And what’s your vote? <br /> top-x.co/PrezPyramid
+        </p>
+      </div>
+    `;
+
+    const canvas = await html2canvas(tempDiv, {
       backgroundColor: '#121212',
       scale: 2,
       useCORS: true,
       logging: true,
       allowTaint: false,
-      height: tempContainer.value!.offsetHeight,
+      height: tempDiv.offsetHeight,
     });
     console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
     generatedImage.value = canvas.toDataURL('image/jpeg', 0.9);
@@ -439,8 +444,12 @@ async function renderPyramidImage() {
     generatedImage.value = null;
     alert('Failed to generate image. Some images may not be accessible due to CORS restrictions.');
   } finally {
-    document.body.removeChild(tempContainer.value!);
+    if (tempContainer.value && document.body.contains(tempContainer.value)) {
+      document.body.removeChild(tempContainer.value);
+      console.log('PyramidView: Removed tempContainer from DOM');
+    }
     tempContainer.value = null;
+    isRendering.value = false;
   }
 }
 
@@ -454,8 +463,6 @@ function getImageDataUrl(): string | null {
 }
 
 defineExpose({ getImageDataUrl });
-
-
 </script>
 
 <style scoped>
