@@ -422,7 +422,7 @@ async function renderPyramidImage() {
           </div>
         </div>
         <p class="top-x-label has-text-white has-text-centered">
-          And what’s your vote? <br /> top-x.co/PrezPyramid
+          And what’s your vote? -> https://top-x.co/PrezPyramid
         </p>
       </div>
     `;
