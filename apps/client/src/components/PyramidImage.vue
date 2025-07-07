@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import html2canvas from 'html2canvas';
@@ -50,6 +50,15 @@ onMounted(async () => {
   await nextTick();
   await renderPyramidImage();
 });
+
+watch(
+  [() => props.pyramid, () => props.worstItem, () => userStore.user],
+  async () => {
+    await nextTick();
+    await renderPyramidImage();
+  },
+  { deep: true }
+);
 
 async function preloadImages() {
   const imagePromises: Promise<void>[] = [];

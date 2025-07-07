@@ -71,8 +71,8 @@ const router = useRouter();
 const isMenuActive = ref(false);
 
 const user = computed(() => {
-  console.log('NavBar user state:', userStore.user);
-  return userStore.user;
+  console.log('NavBar user state:', userStore.user.value);
+  return userStore.user.value;
 });
 const error = computed(() => userStore.error);
 
