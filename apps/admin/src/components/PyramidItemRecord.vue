@@ -31,6 +31,18 @@
         <input v-model="localItem.color" class="input" type="text" placeholder="e.g., #FF0000" />
       </div>
     </div>
+    <div class="field">
+      <label class="label has-text-white">Active</label>
+      <div class="control">
+        <input type="checkbox" v-model="localItem.active" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Source</label>
+      <div class="control">
+        <input v-model="localItem.source" class="input" type="text" placeholder="e.g., topx" />
+      </div>
+    </div>
     <div class="field is-grouped">
       <div class="control">
         <CustomButton type="is-primary" label="Save" @click="save" :disabled="isSaving" />
@@ -65,7 +77,11 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localItem = ref<PyramidItem>({ ...props.item });
+const localItem = ref<PyramidItem>({
+  active: true,
+  source: 'topx',
+  ...props.item,
+});
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
