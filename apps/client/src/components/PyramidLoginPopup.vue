@@ -13,7 +13,7 @@
         We only use your username and image, and we’ll never post on your behalf.
       </p>
       <div class="buttons">
-        <button class="button is-success" @click="loginWithX">Log in with X</button>
+        <button class="button is-success" @click="handleLogin">Log in with X</button>
         <button class="button is-text has-text-white" @click="skip">Skip for now</button>
       </div>
     </div>
@@ -42,7 +42,7 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 
-async function loginWithX() {
+async function handleLogin() {
   try {
     const success = await userStore.loginWithX();
     if (success && userStore.user && props.gameId) {
