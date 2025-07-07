@@ -9,7 +9,7 @@
       @click="handleShare"
     />
     <div v-if="showShareTooltip" class="share-tooltip">
-      Long-press the image to save, then share on X
+        Share text copied to clipboard!
     </div>
   </div>
 </template>
