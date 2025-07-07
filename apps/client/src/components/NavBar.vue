@@ -40,7 +40,7 @@
   type="is-primary"
   label="Login with"
   :icon="['fab', 'x-twitter']"
-  @click="loginWithX"
+  @click="handleLogin"
 />
 
             <CustomButton
@@ -76,7 +76,7 @@ const user = computed(() => {
 });
 const error = computed(() => userStore.error);
 
-const loginWithX = async () => {
+const handleLogin = async () => {
   console.log('Initiating login with X');
   await userStore.loginWithX();
   if (userStore.user && userStore.profile) {
