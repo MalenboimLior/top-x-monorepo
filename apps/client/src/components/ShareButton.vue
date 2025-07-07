@@ -42,10 +42,19 @@ const handleShare = async () => {
   try {
     const blob = await (await fetch(props.imageUrl)).blob();
     const file = new File([blob], 'top-x-pyramid.png', { type: blob.type || 'image/png' });
-
+    
     if (isMobile.value && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
       await navigator.clipboard.writeText(props.shareText);
-      await navigator.share({ files: [file], text: props.shareText, title: 'TOP-X Pyramid Share' });
+    } catch (clipErr) {
+      console.warn('Clipboard write failed (ignored):', clipErr);
+    }
+
+    await navigator.share({
+      files: [file],
+      text: props.shareText,
+      title: 'TOP-X Pyramid Share'
+    });
       console.log('Shared successfully');
       return;
     }
