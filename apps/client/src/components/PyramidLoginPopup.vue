@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useUserStore } from '../stores/user';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, setDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 
@@ -50,7 +50,8 @@ async function handleLogin() {
       const voteData = props.pendingVote || JSON.parse(localStorage.getItem(`pyramid_${props.gameId}`) || '{}');
       if (voteData && voteData.pyramid && 'worstItem' in voteData) {
         await saveCachedVote(voteData, userStore.user.uid);
-        console.log('PyramidLoginPopup: Vote saved');
+        localStorage.removeItem(`pyramid_${props.gameId}`);
+        console.log('PyramidLoginPopup: Vote saved and localStorage cleared');
       }
       emit('login');
     }
@@ -84,7 +85,12 @@ async function saveCachedVote(data: PyramidData, userId: string) {
     await updateGameStats(props.gameId, data.pyramid, props.rows || [], data.worstItem);
     console.log('PyramidLoginPopup: Game stats updated for cached vote');
   } catch (err: any) {
-    console.error('PyramidLoginPopup: Error saving cached vote:', err.message);
+    console.error('PyramidLoginPopup: Error saving cached vote:', {
+      message: err.message,
+      code: err.code,
+      details: err.details,
+      stack: err.stack
+    });
     alert('Failed to save vote. Please try again.');
   }
 }
@@ -109,27 +115,50 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
   try {
     await runTransaction(db, async (transaction) => {
       const statsDoc = await transaction.get(statsRef);
-      let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
-      stats.totalPlayers = (stats.totalPlayers || 0) + 1;
+      const stats = statsDoc.exists()
+        ? statsDoc.data()
+        : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
+
+      // Prepare updates to merge
+      const updates: Record<string, any> = {
+        totalPlayers: (stats.totalPlayers || 0) + 1,
+      };
+
+      // Update itemRanks
+      const updatedItemRanks = { ...stats.itemRanks };
       pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
         row.forEach((slot: PyramidSlot) => {
           if (slot.image) {
             const itemId = slot.image.id;
             const rowId = rows[rowIndex]?.id || rowIndex + 1;
-            stats.itemRanks[itemId] = stats.itemRanks[itemId] || {};
-            stats.itemRanks[itemId][rowId] = (stats.itemRanks[itemId][rowId] || 0) + 1;
+            updatedItemRanks[itemId] = updatedItemRanks[itemId] || {};
+            updatedItemRanks[itemId][rowId] = (updatedItemRanks[itemId][rowId] || 0) + 1;
           }
         });
       });
+
+      // Update worstItemCounts
+      const updatedWorstItemCounts = { ...stats.worstItemCounts };
       if (worstItem) {
         const itemId = worstItem.id;
-        stats.worstItemCounts[itemId] = (stats.worstItemCounts[itemId] || 0) + 1;
+        updatedWorstItemCounts[itemId] = (updatedWorstItemCounts[itemId] || 0) + 1;
       }
-      console.log('PyramidLoginPopup: Updated stats:', stats);
-      transaction.set(statsRef, stats);
+
+      // Merge updates
+      updates.itemRanks = updatedItemRanks;
+      updates.worstItemCounts = updatedWorstItemCounts;
+
+      console.log('PyramidLoginPopup: Stats updates:', JSON.stringify(updates, null, 2));
+      transaction.set(statsRef, updates, { merge: true });
     });
+    console.log('PyramidLoginPopup: Successfully updated game stats for gameId:', gameId);
   } catch (err: any) {
-    console.error('PyramidLoginPopup: Error updating game stats:', err.message);
+    console.error('PyramidLoginPopup: Error updating game stats:', {
+      message: err.message,
+      code: err.code,
+      details: err.details,
+      stack: err.stack
+    });
     throw err;
   }
 }
