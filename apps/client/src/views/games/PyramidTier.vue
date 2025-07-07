@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
@@ -64,6 +64,7 @@ const gameHeader = ref('Your Pyramid');
 const poolHeader = ref('Item Pool');
 const worstHeader = ref('Worst Item');
 const shareText = ref('');
+const baseShareText = ref('');
 const worstPoints = ref(0);
 const shareImageTitle = ref('');
 const hasSubmitted = ref(false);
@@ -74,6 +75,21 @@ const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }, { image: null }, { image: null }, { image: null }],
 ]);
 const worstItem = ref<PyramidItem | null>(null);
+
+function updateShareText() {
+  let text = baseShareText.value || '';
+  const firstLabel = pyramid.value[0]?.find(s => s.image)?.image?.label || '';
+  const worstLabel = worstItem.value?.label || '';
+  if (firstLabel) {
+    text = text.replace('*first*', firstLabel);
+  }
+  if (worstLabel) {
+    text = text.replace('*last*', worstLabel);
+  }
+  shareText.value = text;
+}
+
+watch([pyramid, worstItem, baseShareText], updateShareText);
 
 // Computed property to determine if PyramidEdit should be shown
 const showEdit = computed(() => route.query.edit === 'true' || !hasSubmitted.value);
@@ -96,7 +112,8 @@ onMounted(async () => {
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
       worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
-      shareText.value = gameData.shareText || '';
+      baseShareText.value = gameData.shareText || '';
+      updateShareText();
       shareImageTitle.value = gameData.custom?.shareImageTitle || '';
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [];
