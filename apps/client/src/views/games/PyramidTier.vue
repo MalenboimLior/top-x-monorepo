@@ -177,6 +177,7 @@ async function handleSubmit(data: PyramidData) {
       pyramid: data.pyramid,
       worstItem: data.worstItem,
     }));
+    localStorage.setItem(`showLoginPopup_${gameId.value}`, 'true');
     hasSubmitted.value = true;
     router.push({ name: 'PyramidTier', query: { game: gameId.value } });
     return;
