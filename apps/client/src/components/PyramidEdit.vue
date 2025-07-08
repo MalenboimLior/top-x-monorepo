@@ -74,18 +74,44 @@
           </div>
         </div>
       </div>
-    
 
-       <CustomButton
+      <CustomButton
         type="is-primary"
         label="Place your Vote"
         :icon="['fas', 'square-poll-vertical']"
         @click="submitPyramid"
       />
       <h2 class="subtitle has-text-white">{{ props.poolHeader }}</h2>
+      <div class="pool-controls mb-4">
+        <CustomButton
+          type="is-info"
+          label="Clear Pyramid"
+          :icon="['fas', 'eraser']"
+          @click="clearPyramid"
+        />
+        <div class="field">
+          <div class="control has-icons-left">
+            <input
+              class="input is-dark"
+              type="text"
+              placeholder="Search items..."
+              v-model="searchQuery"
+            />
+            <span class="icon is-left">
+              <font-awesome-icon :icon="['fas', 'search']" />
+            </span>
+          </div>
+        </div>
+        <CustomButton
+          type="is-success"
+          label="Add New Item"
+          :icon="['fas', 'plus']"
+          @click="showAddItemPopup"
+        />
+      </div>
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToPool">
         <div
-          v-for="image in imagePool"
+          v-for="image in filteredImagePool"
           :key="image.id"
           class="pyramid-slot image-box slot-style dark-slot"
           :class="{ 'selected': isSelected(image) }"
@@ -114,6 +140,14 @@
           <button style="color:#c4ff00;" @click="closeTab">Close</button>
         </div>
       </div>
+
+      <!-- Add Item Popup -->
+      <PyramidAddItemPopup
+        :is-active="showAddPopup"
+        :game-id="gameId"
+        @add-item="addNewItem"
+        @close="showAddPopup = false"
+      />
     </div>
   </section>
 </template>
@@ -123,10 +157,10 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faSearch, faEraser, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-
+import PyramidAddItemPopup from '@/components/PyramidAddItemPopup.vue';
 
 declare global {
   interface Window {
@@ -137,7 +171,7 @@ declare global {
 const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
 const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 
-library.add(faCircleInfo);
+library.add(faCircleInfo, faSearch, faEraser, faPlus);
 
 const route = useRoute();
 const gameId = ref(route.query.game as string);
@@ -171,6 +205,8 @@ const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
 const animatedPoints = ref<string | null>(null);
 const worstAnimatedPoints = ref<string | null>(null);
+const searchQuery = ref('');
+const showAddPopup = ref(false);
 
 // Description Tab State
 const showTab = ref(false);
@@ -221,8 +257,18 @@ watch([pyramid, worstItem], () => {
   removeUsedFromPool();
 }, { deep: true });
 
+const filteredImagePool = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return imagePool.value;
+  }
+  const query = searchQuery.value.toLowerCase().trim();
+  return imagePool.value.filter(item =>
+    item.label.toLowerCase().includes(query) || item.name.toLowerCase().includes(query)
+  );
+});
+
 const imagePoolDebug = computed(() => {
-  console.log('PyramidTable: imagePool computed:', {
+  console.log('PyramidEdit: imagePool computed:', {
     length: imagePool.value.length,
     items: imagePool.value
   });
@@ -232,7 +278,7 @@ const imagePoolDebug = computed(() => {
 watch(
   () => props.worstPoints,
   (newValue) => {
-    console.log('PyramidTable: worstPoints prop updated:', newValue);
+    console.log('PyramidEdit: worstPoints prop updated:', newValue);
   },
   { immediate: true }
 );
@@ -240,9 +286,9 @@ watch(
 watch(
   () => props.items,
   (newItems) => {
-    console.log('PyramidTable: Items prop updated:', newItems);
+    console.log('PyramidEdit: Items prop updated:', newItems);
     if (!newItems || !Array.isArray(newItems)) {
-      console.warn('PyramidTable: Invalid or empty items prop:', newItems);
+      console.warn('PyramidEdit: Invalid or empty items prop:', newItems);
       imagePool.value = [];
       return;
     }
@@ -258,7 +304,7 @@ watch(
       return String(valA).localeCompare(String(valB)) * dir;
     });
     imagePool.value = sorted;
-    console.log('PyramidTable: imagePool initialized:', imagePool.value);
+    console.log('PyramidEdit: imagePool initialized:', imagePool.value);
     removeUsedFromPool();
   },
   { immediate: true }
@@ -267,9 +313,9 @@ watch(
 watch(
   () => props.sortItems,
   () => {
-    console.log('PyramidTable: sortItems prop updated:', props.sortItems);
+    console.log('PyramidEdit: sortItems prop updated:', props.sortItems);
     if (!imagePool.value.length) {
-      console.warn('PyramidTable: imagePool is empty, skipping sort');
+      console.warn('PyramidEdit: imagePool is empty, skipping sort');
       return;
     }
     imagePool.value = [...imagePool.value].sort((a, b) => {
@@ -278,11 +324,11 @@ watch(
       const valA = a[field as keyof PyramidItem] || '';
       const valB = b[field as keyof PyramidItem] || '';
       if (field === 'id') {
-        return(parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+        return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
       }
       return String(valA).localeCompare(String(valB)) * dir;
     });
-    console.log('PyramidTable: imagePool sorted:', imagePool.value);
+    console.log('PyramidEdit: imagePool sorted:', imagePool.value);
     removeUsedFromPool();
   }
 );
@@ -290,10 +336,40 @@ watch(
 watch(
   () => props.hideRowLabel,
   (newValue) => {
-    console.log('PyramidTable: hideRowLabel prop updated:', newValue);
+    console.log('PyramidEdit: hideRowLabel prop updated:', newValue);
   },
   { immediate: true }
 );
+
+function clearPyramid() {
+  console.log('PyramidEdit: Clearing pyramid');
+  // Collect all items from pyramid and worst slot
+  const itemsToReturn: PyramidItem[] = [];
+  pyramid.value.forEach(row => {
+    row.forEach(slot => {
+      if (slot.image) {
+        itemsToReturn.push(slot.image);
+        slot.image = null;
+      }
+    });
+  });
+  if (worstItem.value) {
+    itemsToReturn.push(worstItem.value);
+    worstItem.value = null;
+  }
+  // Add items back to pool and sort
+  imagePool.value = [...imagePool.value, ...itemsToReturn].sort((a, b) => {
+    const field = props.sortItems.orderBy;
+    const dir = props.sortItems.order === 'asc' ? 1 : -1;
+    const valA = a[field as keyof PyramidItem] || '';
+    const valB = b[field as keyof PyramidItem] || '';
+    if (field === 'id') {
+      return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+    }
+    return String(valA).localeCompare(String(valB)) * dir;
+  });
+  console.log('PyramidEdit: Pyramid cleared, items returned to pool:', imagePool.value);
+}
 
 function isSelected(item: PyramidItem | null): boolean {
   return item !== null && selectedItem.value?.id === item.id;
@@ -309,41 +385,41 @@ function isDroppable(row: number, col: number): boolean {
 function onDragStart(item: PyramidItem) {
   draggedItem.value = item;
   selectedItem.value = item;
-  console.log('PyramidTable: Drag started for item:', item);
+  console.log('PyramidEdit: Drag started for item:', item);
 }
 
 function onTapSelect(item: PyramidItem) {
   selectedItem.value = selectedItem.value?.id === item.id ? null : item;
   draggedItem.value = selectedItem.value;
-  console.log('PyramidTable: Item selected via tap:', selectedItem.value);
+  console.log('PyramidEdit: Item selected via tap:', selectedItem.value);
 }
 
 function onDragEnterSlot(row: number, col: number) {
   if (draggedItem.value || selectedItem.value) {
     droppableSlot.value = { row, col };
-    console.log('PyramidTable: Drag entered slot:', { row, col });
+    console.log('PyramidEdit: Drag entered slot:', { row, col });
   }
 }
 
 function onDragLeaveSlot() {
   droppableSlot.value = null;
-  console.log('PyramidTable: Drag left slot');
+  console.log('PyramidEdit: Drag left slot');
 }
 
 function onSlotClick(row: number, col: number) {
-  console.log('PyramidTable: Slot clicked:', { row, col });
+  console.log('PyramidEdit: Slot clicked:', { row, col });
   const targetSlot = pyramid.value[row][col];
   const targetItem = targetSlot.image;
 
   if (!selectedItem.value && targetItem) {
     selectedItem.value = targetItem;
     draggedItem.value = targetItem;
-    console.log('PyramidTable: Selected item from slot:', targetItem);
+    console.log('PyramidEdit: Selected item from slot:', targetItem);
     return;
   }
 
   if (!selectedItem.value) {
-    console.log('PyramidTable: No selected item, ignoring click');
+    console.log('PyramidEdit: No selected item, ignoring click');
     return;
   }
 
@@ -355,23 +431,23 @@ function onSlotClick(row: number, col: number) {
     if (fromInPool) {
       imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
       imagePool.value.push(targetItem);
-      console.log('PyramidTable: Swapped pool item with slot item:', { pool: imagePool.value });
+      console.log('PyramidEdit: Swapped pool item with slot item:', { pool: imagePool.value });
     } else if (fromSlot) {
       fromSlot.image = targetItem;
-      console.log('PyramidTable: Swapped slot items:', { fromSlot, targetItem });
+      console.log('PyramidEdit: Swapped slot items:', { fromSlot, targetItem });
     } else if (fromWorst) {
       worstItem.value = targetItem;
-      console.log('PyramidTable: Swapped worst item with slot item:', { worstItem: worstItem.value });
+      console.log('PyramidEdit: Swapped worst item with slot item:', { worstItem: worstItem.value });
     }
   } else if (!fromInPool && fromSlot) {
     fromSlot.image = null;
-    console.log('PyramidTable: Removed item from slot:', fromSlot);
+    console.log('PyramidEdit: Removed item from slot:', fromSlot);
   } else if (fromInPool) {
     imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidTable: Removed item from pool:', imagePool.value);
+    console.log('PyramidEdit: Removed item from pool:', imagePool.value);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidTable: Removed worst item:', worstItem.value);
+    console.log('PyramidEdit: Removed worst item:', worstItem.value);
   }
 
   targetSlot.image = selectedItem.value;
@@ -382,25 +458,25 @@ function onSlotClick(row: number, col: number) {
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
-  console.log('PyramidTable: Placed item in slot:', { row, col, item: targetSlot.image });
+  console.log('PyramidEdit: Placed item in slot:', { row, col, item: targetSlot.image });
 }
 
 function onDropToSlot(row: number, col: number) {
-  console.log('PyramidTable: Drop to slot:', { row, col });
+  console.log('PyramidEdit: Drop to slot:', { row, col });
   onSlotClick(row, col);
 }
 
 function onWorstSlotClick() {
-  console.log('PyramidTable: Worst slot clicked');
+  console.log('PyramidEdit: Worst slot clicked');
   if (!selectedItem.value && worstItem.value) {
     selectedItem.value = worstItem.value;
     draggedItem.value = worstItem.value;
-    console.log('PyramidTable: Selected worst item:', worstItem.value);
+    console.log('PyramidEdit: Selected worst item:', worstItem.value);
     return;
   }
 
   if (!selectedItem.value) {
-    console.log('PyramidTable: No selected item, ignoring worst slot click');
+    console.log('PyramidEdit: No selected item, ignoring worst slot click');
     return;
   }
 
@@ -411,17 +487,17 @@ function onWorstSlotClick() {
     if (fromInPool) {
       imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
       imagePool.value.push(worstItem.value);
-      console.log('PyramidTable: Swapped pool item with worst item:', { pool: imagePool.value });
+      console.log('PyramidEdit: Swapped pool item with worst item:', { pool: imagePool.value });
     } else if (fromSlot) {
       fromSlot.image = worstItem.value;
-      console.log('PyramidTable: Swapped slot item with worst item:', { fromSlot, worstItem: worstItem.value });
+      console.log('PyramidEdit: Swapped slot item with worst item:', { fromSlot, worstItem: worstItem.value });
     }
   } else if (!fromInPool && fromSlot) {
     fromSlot.image = null;
-    console.log('PyramidTable: Removed item from slot for worst:', fromSlot);
+    console.log('PyramidEdit: Removed item from slot for worst:', fromSlot);
   } else if (fromInPool) {
     imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidTable: Removed item from pool for worst:', imagePool.value);
+    console.log('PyramidEdit: Removed item from pool for worst:', imagePool.value);
   }
 
   worstItem.value = selectedItem.value;
@@ -432,35 +508,46 @@ function onWorstSlotClick() {
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
-  console.log('PyramidTable: Placed item in worst slot:', worstItem.value);
+  console.log('PyramidEdit: Placed item in worst slot:', worstItem.value);
 }
 
 function onDropToWorst() {
-  console.log('PyramidTable: Drop to worst slot');
+  console.log('PyramidEdit: Drop to worst slot');
   onWorstSlotClick();
 }
 
 function onDropToPool() {
   if (!selectedItem.value) {
-    console.log('PyramidTable: No selected item for pool drop');
+    console.log('PyramidEdit: No selected item for pool drop');
     return;
   }
   const slot = findSlotContaining(selectedItem.value.id);
   const fromWorst = worstItem.value?.id === selectedItem.value.id;
   if (slot) {
     slot.image = null;
-    console.log('PyramidTable: Removed item from slot for pool drop:', slot);
+    console.log('PyramidEdit: Removed item from slot for pool drop:', slot);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidTable: Removed item from worst for pool drop:', worstItem.value);
+    console.log('PyramidEdit: Removed item from worst for pool drop:', worstItem.value);
   }
   if (!imagePool.value.some(i => i.id === selectedItem.value!.id)) {
     imagePool.value.push(selectedItem.value);
-    console.log('PyramidTable: Added item back to pool:', imagePool.value);
+    console.log('PyramidEdit: Added item back to pool:', imagePool.value);
   }
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
+}
+
+function showAddItemPopup() {
+  showAddPopup.value = true;
+  console.log('PyramidEdit: Showing add item popup');
+}
+
+function addNewItem(newItem: PyramidItem) {
+  imagePool.value = [newItem, ...imagePool.value];
+  console.log('PyramidEdit: Added new item to pool:', newItem);
+  showAddPopup.value = false;
 }
 
 function findSlotContaining(itemId: string): PyramidSlot | null {
@@ -495,7 +582,7 @@ function toRoman(num: number): string {
 }
 
 function submitPyramid() {
-  console.log('PyramidTable: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
+  console.log('PyramidEdit: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 
@@ -712,6 +799,24 @@ function closeTab() {
 .tier-label.has-text-danger {
   color: #ff5555;
 }
+.pool-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.pool-controls .field {
+  width: 200px;
+}
+.pool-controls .input {
+  background-color: #2a2a2a;
+  color: white;
+  border-color: #444;
+}
+.pool-controls .icon {
+  color: #bbb;
+}
 .image-pool {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
@@ -830,7 +935,6 @@ function closeTab() {
 }
 .button.is-primary {
   margin: 1rem;
-  
 }
 .info-icon {
   position: absolute;
