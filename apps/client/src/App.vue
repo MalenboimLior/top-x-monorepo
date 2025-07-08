@@ -24,7 +24,7 @@ const route = useRoute();
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #121212; /* Matches TOP-X dark theme */
+  /* background: #121212; Matches TOP-X dark theme */
 }
 .main-content {
   flex: 1;

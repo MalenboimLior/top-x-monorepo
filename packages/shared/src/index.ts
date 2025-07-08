@@ -4,6 +4,7 @@ import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getAnalytics } from 'firebase/analytics';
+import { getStorage } from 'firebase/storage';
 
 const detectedHost = window.location.hostname;
 
@@ -23,6 +24,7 @@ const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 const analytics = getAnalytics(app);
+const storage = getStorage(app);
 
 setPersistence(auth, browserLocalPersistence)
   .then(() => console.log('Auth persistence set to local'))
@@ -31,4 +33,4 @@ setPersistence(auth, browserLocalPersistence)
 const db = getFirestore(app);
 const functions = getFunctions(app);
 
-export { app, auth, db, functions, analytics };
+export { app, auth, db, functions, analytics, storage };
