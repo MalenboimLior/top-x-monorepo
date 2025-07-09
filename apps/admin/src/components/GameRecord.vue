@@ -32,6 +32,12 @@
       </div>
     </div>
     <div class="field">
+      <label class="label has-text-white">Game Instruction (Optional)</label>
+      <div class="control">
+        <input v-model="localGame.gameInstruction" class="input" type="text" placeholder="How to play" />
+      </div>
+    </div>
+    <div class="field">
       <label class="label has-text-white">Image URL</label>
       <div class="control">
         <input v-model="localGame.image" class="input" type="text" placeholder="https://example.com/image.png" />
@@ -95,6 +101,12 @@
         <label class="label has-text-white">Worst Points</label>
         <div class="control">
           <input v-model.number="(localGame.custom as PyramidConfig).worstPoints" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Show Worst Item</label>
+        <div class="control">
+          <input type="checkbox" v-model="(localGame.custom as PyramidConfig).worstShow" />
         </div>
       </div>
     </div>
@@ -173,13 +185,30 @@ if (
 ) {
   (localGame.value.custom as PyramidConfig).worstHeader = '';
 }
-if (
-  'custom' in localGame.value &&
-  (localGame.value.custom as any) &&
-  (localGame.value.custom as any).worstPoints === undefined
-) {
-  (localGame.value.custom as PyramidConfig).worstPoints = 0;
-}
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).worstPoints === undefined
+  ) {
+    (localGame.value.custom as PyramidConfig).worstPoints = 0;
+  }
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).worstShow === undefined
+  ) {
+    (localGame.value.custom as PyramidConfig).worstShow = true;
+  }
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).communityItems === undefined
+  ) {
+    (localGame.value.custom as PyramidConfig).communityItems = [];
+  }
+  if (localGame.value.gameInstruction === undefined) {
+    (localGame.value as any).gameInstruction = '';
+  }
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
@@ -241,28 +270,34 @@ const save = async () => {
   let customData: PyramidConfig | TriviaConfig;
   if (gameTypeCustom.value === 'PyramidConfig') {
     console.log('Processing PyramidConfig');
-    customData = {
-      items: 'items' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).items : [],
-      rows: 'rows' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).rows : [],
-      sortItems: 'sortItems' in (localGame.value.custom || {})
-        ? (localGame.value.custom as PyramidConfig).sortItems
-        : { orderBy: 'id', order: 'asc' },
-      HideRowLabel: 'HideRowLabel' in (localGame.value.custom || {})
-        ? (localGame.value.custom as PyramidConfig).HideRowLabel
-        : false,
-      shareImageTitle: 'shareImageTitle' in (localGame.value.custom || {})
-        ? (localGame.value.custom as PyramidConfig).shareImageTitle
-        : undefined,
-      poolHeader: 'poolHeader' in (localGame.value.custom || {})
-        ? (localGame.value.custom as PyramidConfig).poolHeader
-        : undefined,
-      worstHeader: 'worstHeader' in (localGame.value.custom || {})
-        ? (localGame.value.custom as PyramidConfig).worstHeader
-        : undefined,
-      worstPoints: 'worstPoints' in (localGame.value.custom || {})
-        ? (localGame.value.custom as PyramidConfig).worstPoints
-        : undefined,
-    };
+      customData = {
+        items: 'items' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).items : [],
+        rows: 'rows' in (localGame.value.custom || {}) ? (localGame.value.custom as PyramidConfig).rows : [],
+        sortItems: 'sortItems' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).sortItems
+          : { orderBy: 'id', order: 'asc' },
+        HideRowLabel: 'HideRowLabel' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).HideRowLabel
+          : false,
+        shareImageTitle: 'shareImageTitle' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).shareImageTitle
+          : undefined,
+        poolHeader: 'poolHeader' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).poolHeader
+          : undefined,
+        worstHeader: 'worstHeader' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).worstHeader
+          : undefined,
+        worstPoints: 'worstPoints' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).worstPoints
+          : undefined,
+        worstShow: 'worstShow' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).worstShow
+          : true,
+        communityItems: 'communityItems' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).communityItems
+          : [],
+      };
     console.log('PyramidConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'TriviaConfig') {
     customData = {
@@ -284,6 +319,7 @@ const save = async () => {
       custom: customData,
       gameHeader: localGame.value.gameHeader || null,
       shareText: localGame.value.shareText || null,
+      gameInstruction: localGame.value.gameInstruction || null,
       image: localGame.value.image || '',
       active: localGame.value.active || false,
     };
@@ -306,5 +342,4 @@ fetchGameTypeCustom();
 <style scoped>
 .mt-3 {
   margin-top: 1rem;
-}
-</style>
+}</style>

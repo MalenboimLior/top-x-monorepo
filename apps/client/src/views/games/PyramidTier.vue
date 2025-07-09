@@ -12,6 +12,7 @@
       :worst-header="worstHeader"
       :share-text="shareText"
       :worst-points="worstPoints"
+      :worst-show="worstShow"
       @submit="handleSubmit"
     />
     <PyramidNav
@@ -28,6 +29,7 @@
       :share-text="shareText"
       :hide-row-label="hideRowLabel"
       :worst-points="worstPoints"
+      :worst-show="worstShow"
     />
   </div>
 </template>
@@ -66,6 +68,7 @@ const worstHeader = ref('Worst Item');
 const shareText = ref('');
 const baseShareText = ref('');
 const worstPoints = ref(0);
+const worstShow = ref(true);
 const shareImageTitle = ref('');
 const hasSubmitted = ref(false);
 const pyramid = ref<PyramidSlot[][]>([
@@ -120,6 +123,7 @@ onMounted(async () => {
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
       hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
       worstPoints.value = gameData.custom?.worstPoints ?? 0;
+      worstShow.value = gameData.custom?.worstShow !== false;
 
       console.log('PyramidTier: Game data fetched:', {
         gameTitle: gameTitle.value,
@@ -133,7 +137,8 @@ onMounted(async () => {
         rows: rows.value,
         sortItems: sortItems.value,
         hideRowLabel: hideRowLabel.value,
-        worstPoints: worstPoints.value
+        worstPoints: worstPoints.value,
+        worstShow: worstShow.value
       });
     } else {
       console.error('PyramidTier: Game document not found for ID:', gameId.value);

@@ -33,6 +33,7 @@ const props = defineProps<{
   userProfile?: { photoURL: string };
   shareImageTitle?: string;
   shareText?: string;
+  worstShow?: boolean;
 }>();
 
 const userStore = useUserStore();
@@ -55,7 +56,7 @@ onMounted(async () => {
 });
 
 watch(
-  [() => props.pyramid, () => props.worstItem, () => props.userProfile?.photoURL],
+  [() => props.pyramid, () => props.worstItem, () => props.userProfile?.photoURL, () => props.worstShow],
   async () => {
     console.log('PyramidView: Detected change in pyramid, worstItem, or userProfile, re-rendering');
     await nextTick();
@@ -402,13 +403,15 @@ async function renderPyramidImage() {
             )
             .join('')}
         </div>
-        <div class="worst-item-container">
+        ${
+          props.worstShow === false
+            ? ''
+            : `<div class="worst-item-container">
           <h3 class="subtitle has-text-centered has-text-white">${props.worstHeader || 'Worst Item'}</h3>
           <div class="pyramid-slot box worst-slot dark-slot">
             ${
               props.worstItem
-                ? `
-              <div class="slot-style">
+                ? `<div class="slot-style">
                 <img
                   src="${preprocessedImages.value.get(props.worstItem.src) || props.worstItem.src}"
                   alt="${props.worstItem.label}"
@@ -420,7 +423,8 @@ async function renderPyramidImage() {
                 : `<div class="tier-label has-text-danger">Worst</div>`
             }
           </div>
-        </div>
+        </div>`
+        }
         <p class="top-x-label has-text-white has-text-centered">
           And what’s your vote? -> https://top-x.co/PrezPyramid
         </p>

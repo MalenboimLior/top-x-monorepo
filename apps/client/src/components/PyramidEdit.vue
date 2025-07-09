@@ -44,7 +44,7 @@
       </div>
 
       <!-- Worst Item Slot -->
-      <div class="worst-item-container">
+      <div v-if="worstShow" class="worst-item-container">
         <h3 class="subtitle has-text-centered has-text-white" style="margin-bottom:5px;font-size: 18px">{{ props.worstHeader }}</h3>
         <div class="worst-row-wrapper">
           <div
@@ -186,6 +186,7 @@ const props = defineProps<{
   worstHeader?: string;
   shareText?: string;
   worstPoints?: number;
+  worstShow?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -205,6 +206,7 @@ const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
 const animatedPoints = ref<string | null>(null);
 const worstAnimatedPoints = ref<string | null>(null);
+const worstShow = computed(() => props.worstShow ?? true);
 
 // Description Tab State
 const showTab = ref(false);

@@ -25,6 +25,7 @@
         :share-image-title="shareImageTitle"
         :share-text="shareText"
         :hide-row-label="hideRowLabel"
+        :worst-show="worstShow"
         :game-id="gameId"
       />
       <PyramidStats
@@ -35,6 +36,7 @@
         :worstPoints="worstPoints ?? 0"
         :game-header="gameHeader"
         :game-title="gameTitle"
+        :worst-show="worstShow"
       />
       <PyramidResults
         v-if="activeTab === 'results'"
@@ -76,6 +78,7 @@ const props = defineProps<{
   worstPoints?: number;
   shareImageTitle?: string;
   shareText?: string;
+  worstShow?: boolean;
 }>();
 
 const activeTab = ref<'my-vote' | 'stats' | 'results'>('my-vote');
