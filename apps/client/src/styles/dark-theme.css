@@ -1,5 +1,4 @@
-/* src/styles/dark-theme.css */
-
+/* src/styles/dark-theme.css #c4ff00  */
 /* Override Bulma's global color scheme for dark mode */
 :root {
   --bulma-scheme-main: #000000; /* Dark background */
