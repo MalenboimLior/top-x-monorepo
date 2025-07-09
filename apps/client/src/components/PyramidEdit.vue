@@ -929,7 +929,7 @@ function closeTab() {
   z-index: 10;
 }
 .selected {
-  border: 2px solid #3273dc;
+  border: 3px solid #00e8e0;
   box-shadow: 0 0 0 2px #3273dc33;
 }
 .highlight-empty {
@@ -986,16 +986,27 @@ function closeTab() {
 .tab-content {
   max-height: 200px;
   
-  text-align: left;
   overflow-y: auto;
+}
+@media screen and (min-width: 768px) {
+  .description-tab {
+    width: 400px; /* Matches image-pool: 4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 2px */
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+  }
+  .description-tab.show {
+    transform: translateX(-50%) translateY(0);
+  }
 }
 .question-text {
   color: #00e8e0;
   font-weight: bold;
   margin-bottom: 0.5rem;
+  text-align: center;
 }
 .answer-text {
   color: #eee;
+
 }
 @media screen and (max-width: 767px) {
   .section {
