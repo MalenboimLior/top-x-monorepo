@@ -205,8 +205,6 @@ const selectedItem = ref<PyramidItem | null>(null);
 const droppableSlot = ref<{ row: number; col: number } | null>(null);
 const animatedPoints = ref<string | null>(null);
 const worstAnimatedPoints = ref<string | null>(null);
-const searchQuery = ref('');
-const showAddPopup = ref(false);
 
 // Description Tab State
 const showTab = ref(false);
@@ -938,8 +936,8 @@ function closeTab() {
 }
 .info-icon {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 2px;
+  right: 2px;
   cursor: pointer;
   font-size: 0.8rem;
   color: #fff;
