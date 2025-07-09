@@ -17,10 +17,11 @@ export interface Game {
   active: boolean;
   gameHeader?: string;
   shareText?: string;
+  /** Instructions displayed to the user before playing */
+  gameInstruction?: string;
   image: string;
   custom: PyramidConfig | TriviaConfig; // Union of possible config types
 }
 
 export type ConfigType = 'PyramidConfig' | 'TriviaConfig';
-
 export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig'];

@@ -12,6 +12,7 @@
         :share-image-title="shareImageTitle"
         :share-text="shareText"
         :hide-row-label="hideRowLabel"
+        :worst-show="worstShow"
         :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
       />
     </div>
@@ -68,6 +69,7 @@ const props = defineProps<{
   worstPoints?: number;
   shareImageTitle?: string;
   shareText?: string;
+  worstShow?: boolean;
 }>();
 
 onMounted(() => {
