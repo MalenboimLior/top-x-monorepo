@@ -10,7 +10,7 @@ export interface PyramidItem {
 }
 
 export interface SortOption {
-  orderBy: 'id' | 'label' | 'color';
+  orderBy: 'id' | 'label' | 'color' | 'name';
   order: 'asc' | 'desc';
 }
 export interface PyramidConfig {
