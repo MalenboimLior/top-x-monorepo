@@ -74,14 +74,15 @@
           </div>
         </div>
       </div>
-
+<div style="padding: 10px;">
       <CustomButton
         type="is-primary"
         label="Place your Vote"
         :icon="['fas', 'square-poll-vertical']"
         @click="submitPyramid"
       />
-      <h2 class="subtitle has-text-white">{{ props.poolHeader }}</h2>
+      </div>
+      <h2 class="subtitle has-text-white" style="font-size: 20px;">{{ props.poolHeader }}</h2>
       <div class="pool-controls mb-4">
        
         <div class="field">
@@ -937,10 +938,11 @@ function closeTab() {
 }
 .subtitle {
   color: #eee;
-  font-size: 22px;
+  font-size: 30px;
   font-weight: bold;
   margin: 0.3rem 0 0 0.1rem;
   text-align: center;
+  margin-bottom: 8px !important;
 }
 .button.is-primary {
   margin: 1rem;
@@ -1012,7 +1014,7 @@ function closeTab() {
     gap: 0.1rem;
   }
   .slot-points {
-    font-size: 0.45rem;
+    font-size: 0.6rem;
   }
   .animation-container {
     right: -60px;
@@ -1046,7 +1048,7 @@ function closeTab() {
     gap: 0.1rem;
   }
   .worst-slot-points {
-    font-size: 0.45rem;
+    font-size: 0.6rem;
   }
   .worst-animation-container {
     right: -60px;

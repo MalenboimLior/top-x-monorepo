@@ -22,10 +22,10 @@
     <div class="navbar-menu" :class="{ 'is-active': isMenuActive }">
       <div class="navbar-start">
         <router-link class="navbar-item" to="/" @click="closeMenu">Home</router-link>
-        <router-link class="navbar-item" to="/frenemies" @click="closeMenu">
+        <!-- <router-link class="navbar-item" to="/frenemies" @click="closeMenu">
           <font-awesome-icon :icon="['fas', 'search']" class="navbar-icon" />
           Frenemies
-        </router-link>       
+        </router-link>        -->
         
         <router-link class="navbar-item" to="/about" @click="closeMenu">About</router-link>
         <router-link class="navbar-item" to="/faq" @click="closeMenu">FAQ</router-link>
