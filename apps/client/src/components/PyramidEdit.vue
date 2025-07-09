@@ -606,16 +606,21 @@ function startTypingAnimation(fullDescription: string) {
   if (typingInterval) {
     clearInterval(typingInterval);
   }
+    const words = fullDescription.split(/\s+/); // Split on whitespace to get words
+
   let index = 0;
+    displayedDescription.value = '';
+
   typingInterval = setInterval(() => {
-    if (index < fullDescription.length) {
-      displayedDescription.value += fullDescription[index];
+   if (index < words.length) {
+      // Append the next word and a space (unless it's the last word)
+      displayedDescription.value += words[index] + (index < words.length - 1 ? ' ' : '');
       index++;
     } else {
       clearInterval(typingInterval!);
       typingInterval = null;
     }
-  }, 25);
+  }, 40);
 }
 
 function closeTab() {
@@ -980,6 +985,8 @@ function closeTab() {
 }
 .tab-content {
   max-height: 200px;
+  
+  text-align: left;
   overflow-y: auto;
 }
 .question-text {
