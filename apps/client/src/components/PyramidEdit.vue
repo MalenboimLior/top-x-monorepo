@@ -2,7 +2,7 @@
   <section class="section">
     <div class="container has-text-centered">
       <h2 class="subtitle has-text-success" v-html="props.gameHeader"></h2>
-      <h2 class="has-text-white" style="margin-bottom: 1rem;">Rank your favorite U.S. presidents <br/> from top to bottom</h2>
+      <h2 class="has-text-white" style="margin-bottom: 1rem;" v-html="props.gameInstruction"></h2>
 
       <div class="pyramid">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -182,6 +182,7 @@ const props = defineProps<{
   sortItems: SortOption;
   hideRowLabel: boolean;
   gameHeader: string;
+  gameInstruction?: string;
   poolHeader?: string;
   worstHeader?: string;
   shareText?: string;

@@ -8,6 +8,7 @@
       :sort-items="sortItems"
       :hide-row-label="hideRowLabel"
       :game-header="gameHeader"
+      :game-instruction="gameInstruction"
       :pool-header="poolHeader"
       :worst-header="worstHeader"
       :share-text="shareText"
@@ -63,6 +64,7 @@ const rows = ref<PyramidRow[]>([]);
 const sortItems = ref<SortOption>({ orderBy: 'id', order: 'asc' });
 const hideRowLabel = ref(false);
 const gameHeader = ref('Your Pyramid');
+const gameInstruction = ref('');
 const poolHeader = ref('Item Pool');
 const worstHeader = ref('Worst Item');
 const shareText = ref('');
@@ -113,6 +115,7 @@ onMounted(async () => {
       gameTitle.value = gameData.name || '';
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
+      gameInstruction.value = gameData.gameInstruction || '';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
       worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
       baseShareText.value = gameData.shareText || '';
@@ -129,6 +132,7 @@ onMounted(async () => {
         gameTitle: gameTitle.value,
         gameDescription: gameDescription.value,
         gameHeader: gameHeader.value,
+        gameInstruction: gameInstruction.value,
         poolHeader: poolHeader.value,
         worstHeader: worstHeader.value,
         shareText: shareText.value,
