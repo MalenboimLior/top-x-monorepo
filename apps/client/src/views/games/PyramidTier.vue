@@ -288,7 +288,7 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
 </script>
 
 <style scoped>
-.pyramid-tier {
+/*.pyramid-tier {
   padding: 20px;
-}
+}*/
 </style>
