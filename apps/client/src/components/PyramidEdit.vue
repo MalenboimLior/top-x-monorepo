@@ -83,18 +83,13 @@
       />
       <h2 class="subtitle has-text-white">{{ props.poolHeader }}</h2>
       <div class="pool-controls mb-4">
-        <CustomButton
-          type="is-info"
-          label="Clear Pyramid"
-          :icon="['fas', 'eraser']"
-          @click="clearPyramid"
-        />
+       
         <div class="field">
           <div class="control has-icons-left">
             <input
               class="input is-dark"
               type="text"
-              placeholder="Search items..."
+              placeholder="Search..."
               v-model="searchQuery"
             />
             <span class="icon is-left">
@@ -102,12 +97,7 @@
             </span>
           </div>
         </div>
-        <CustomButton
-          type="is-success"
-          label="Add New Item"
-          :icon="['fas', 'plus']"
-          @click="showAddItemPopup"
-        />
+       
       </div>
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToPool">
         <div
@@ -124,6 +114,21 @@
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
           <font-awesome-icon :icon="['fas', 'circle-info']" class="info-icon" @click.stop="showDescription(image)" />
         </div>
+      </div>
+       <div class="pool-controls mb-4">
+        <CustomButton
+          type="is-info"
+          label="Clear Pyramid"
+          :icon="['fas', 'eraser']"
+          @click="clearPyramid"
+        />
+    
+        <CustomButton
+          type="is-success"
+          label="Add New Item"
+          :icon="['fas', 'plus']"
+          @click="showAddItemPopup"
+        />
       </div>
       <ins class="adsbygoogle"
            style="display:block"
@@ -209,6 +214,8 @@ const animatedPoints = ref<string | null>(null);
 const worstAnimatedPoints = ref<string | null>(null);
 const worstShow = computed(() => props.worstShow ?? true);
 
+const searchQuery = ref('');
+const showAddPopup = ref(false);
 // Description Tab State
 const showTab = ref(false);
 const describedItem = ref<PyramidItem | null>(null);
@@ -820,7 +827,8 @@ function closeTab() {
 }
 .image-pool {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  /*grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));*/
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.2rem;
   justify-content: center;
   border: 2px dashed #666;
@@ -831,7 +839,7 @@ function closeTab() {
 .image-box {
   width: 100%;
   height: 27vw;
-  max-width: 80px;
+  max-width: 90px;
   max-height: 100px;
   min-height: 45px;
   padding: 0;
@@ -884,7 +892,7 @@ function closeTab() {
   bottom: 4px;
   left: 0;
   width: 100%;
-  font-size: 0.5rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #fff;
   background-color: #000;
@@ -1054,7 +1062,7 @@ function closeTab() {
     border-radius: 0.5rem 0.5rem 0 0;
   }
   .image-pool {
-    grid-template-columns: repeat(4, 1fr);
+    /*grid-template-columns: repeat(4, 1fr);*/
   }
   .image-box {
     min-width: 40px;
@@ -1069,7 +1077,7 @@ function closeTab() {
     border-radius: 0.5rem 0.5rem 0 0;
   }
   .image-label {
-    font-size: 0.45rem;
+    /*font-size: 0.6rem;*/
     padding: 0.05rem;
   }
   .tier-label {
