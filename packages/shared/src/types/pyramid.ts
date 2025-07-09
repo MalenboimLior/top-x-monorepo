@@ -22,6 +22,14 @@ export interface PyramidConfig {
   poolHeader?: string;
   worstHeader?: string;
   worstPoints?: number;
+  /**
+   * Flag to show or hide the worst item column. Defaults to true.
+   */
+  worstShow?: boolean;
+  /**
+   * Additional items contributed by the community.
+   */
+  communityItems: PyramidItem[];
 }
 export interface PyramidRow {
   id: number;
@@ -41,5 +49,4 @@ export interface PyramidData {
 export interface PyramidStats {
   itemRanks: { [itemId: string]: { [tierId: string]: number } };
   totalPlayers: number;
-  worstItemCounts: { [itemId: string]: number };
-}
+  worstItemCounts: { [itemId: string]: number };}

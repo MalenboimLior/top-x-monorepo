@@ -30,7 +30,7 @@
                 />
               </a>
             </th>
-            <th class="has-text-centered">
+            <th v-if="worstShow" class="has-text-centered">
               <a href="#" class="has-text-white" @click.prevent="sortBy('worst')">💩
                 <font-awesome-icon
                   v-if="sortColumn === 'worst'"
@@ -88,7 +88,7 @@
             <td v-for="row in props.rows" :key="row.id" class="has-text-centered number-cell">
               {{ formatNumber(item.ranks[row.id] || 0) }}
             </td>
-            <td class="has-text-centered number-cell">{{ formatNumber(item.worstCounts || 0) }}</td>
+            <td v-if="worstShow" class="has-text-centered number-cell">{{ formatNumber(item.worstCounts || 0) }}</td>
             <td class="has-text-centered number-cell">{{ formatNumber(item.score) }}</td>
           </tr>
         </tbody>
@@ -116,7 +116,7 @@
                 {{ row.label || toRoman(row.id) }}: {{ formatNumber(selectedPresident?.ranks[row.id] || 0) }}
               </li>
             </ul>
-                        <p class="has-text-white">💩 {{ formatNumber(selectedPresident?.worstCounts || 0) }}</p>
+                        <p v-if="worstShow" class="has-text-white">💩 {{ formatNumber(selectedPresident?.worstCounts || 0) }}</p>
 
             <p class="has-text-white">Total Players: {{ formatNumber(totalPlayers) }}</p>
           </div>
@@ -157,7 +157,10 @@ const props = defineProps<{
   items: PyramidItem[];
   rows: PyramidRow[];
   worstPoints: number;
+  worstShow?: boolean;
 }>();
+
+const worstShow = computed(() => props.worstShow !== false);
 
 const sortColumn = ref<string>('score');
 const sortDirection = ref<'asc' | 'desc'>('desc');
