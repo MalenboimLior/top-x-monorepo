@@ -60,6 +60,7 @@
             <option value="id">ID</option>
             <option value="label">Label</option>
             <option value="color">Color</option>
+            <option value="name">Name</option>
           </select>
         </div>
       </div>
