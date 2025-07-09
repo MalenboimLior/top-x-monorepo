@@ -115,10 +115,13 @@ const createNew = () => {
           shareImageTitle: '',
           poolHeader: '',
           worstHeader: '',
-          worstPoints: 0
+          worstPoints: 0,
+          worstShow: true,
+          communityItems: []
         }, // Default for PyramidConfig
         gameHeader: '',
         shareText: '',
+        gameInstruction: '',
         image: '',
         active: false,
       };
