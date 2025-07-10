@@ -56,7 +56,13 @@ const routes = [
       query: { game: 'us_presidents_game' },
     },
   },
-
+  {
+    path: '/IsraelSoccerPyramid',
+    redirect: {
+      path: '/games/PyramidTier',
+      query: { game: 'Pyramid_soccer_israel' },
+    },
+  },
 ];
 
 const router = createRouter({
