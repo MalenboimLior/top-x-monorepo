@@ -17,16 +17,14 @@
       />
     </div>
     <div class="buttons is-centered mt-4">
-      <CustomButton
-        type="is-primary"
-        label="Edit"
-        :icon="['fas', 'edit']"
-        @click="editPyramid"
-      />
-      <ShareButton
+      
+      <ShareButton 
         :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
         :image-url="imageUrl"
-      />
+      /><a
+                 style="font-size: 14px;"
+
+        @click="editPyramid">Edit</a>
     </div>
     <PyramidLoginPopup
       :is-active="showLoginPopup"
