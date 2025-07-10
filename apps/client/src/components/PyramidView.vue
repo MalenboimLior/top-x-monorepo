@@ -69,7 +69,7 @@
         </div>
       </div>
       <!-- Top-X Label -->
-      <p class="top-x-label has-text-white has-text-centered mt-2">And what’s your vote? <br /> top-x.co/PrezPyramid</p>
+      <p class="top-x-label has-text-white has-text-centered mt-2">And what’s your vote? <br /> {{ props.shareLink || 'top-x.co/PrezPyramid' }}</p>
     </div>
     <!-- Download & Share Buttons -->
     <div class="buttons is-centered mt-2">
@@ -116,6 +116,7 @@ const props = defineProps<{
   userProfile?: { photoURL: string };
   shareImageTitle?: string;
   shareText?: string;
+  shareLink?: string;
 }>();
 
 const userStore = useUserStore();

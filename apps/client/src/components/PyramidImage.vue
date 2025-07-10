@@ -33,6 +33,7 @@ const props = defineProps<{
   userProfile?: { photoURL: string };
   shareImageTitle?: string;
   shareText?: string;
+  shareLink?: string;
   worstShow?: boolean;
 }>();
 
@@ -426,7 +427,7 @@ async function renderPyramidImage() {
         </div>`
         }
         <p class="top-x-label has-text-white has-text-centered">
-          And what’s your vote? -> https://top-x.co/PrezPyramid
+          And what’s your vote? -> ${props.shareLink || 'https://top-x.co/PrezPyramid'}
         </p>
       </div>
     `;

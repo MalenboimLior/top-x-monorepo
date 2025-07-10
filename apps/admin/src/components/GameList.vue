@@ -114,6 +114,7 @@ const createNew = () => {
           HideRowLabel: false,
           shareImageTitle: '',
           poolHeader: '',
+          communityHeader: '',
           worstHeader: '',
           worstPoints: 0,
           worstShow: true,
@@ -122,6 +123,8 @@ const createNew = () => {
         gameHeader: '',
         shareText: '',
         gameInstruction: '',
+        language: 'en',
+        shareLink: '',
         image: '',
         active: false,
       };

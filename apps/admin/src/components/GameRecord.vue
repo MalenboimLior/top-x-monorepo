@@ -38,6 +38,21 @@
       </div>
     </div>
     <div class="field">
+      <label class="label has-text-white">Language</label>
+      <div class="control select">
+        <select v-model="localGame.language">
+          <option value="en">English</option>
+          <option value="il">Hebrew</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Share Link (Optional)</label>
+      <div class="control">
+        <input v-model="localGame.shareLink" class="input" type="text" placeholder="https://example.com" />
+      </div>
+    </div>
+    <div class="field">
       <label class="label has-text-white">Image URL</label>
       <div class="control">
         <input v-model="localGame.image" class="input" type="text" placeholder="https://example.com/image.png" />
@@ -91,6 +106,12 @@
           <div class="control">
             <input v-model="(localGame.custom as PyramidConfig).poolHeader" class="input" type="text" placeholder="e.g., Question Pool" />
           </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Community Header (Optional)</label>
+        <div class="control">
+          <input v-model="(localGame.custom as PyramidConfig).communityHeader" class="input" type="text" placeholder="e.g., Community Picks" />
+        </div>
       </div>
       <div class="field">
         <label class="label has-text-white">Worst Header (Optional)</label>
@@ -150,7 +171,7 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGame = ref<Game>({ image: '', active: false, ...props.game });
+const localGame = ref<Game>({ language: 'en', image: '', active: false, ...props.game });
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -207,8 +228,21 @@ if (
   ) {
     (localGame.value.custom as PyramidConfig).communityItems = [];
   }
+  if (
+    'custom' in localGame.value &&
+    (localGame.value.custom as any) &&
+    (localGame.value.custom as any).communityHeader === undefined
+  ) {
+    (localGame.value.custom as PyramidConfig).communityHeader = '';
+  }
   if (localGame.value.gameInstruction === undefined) {
     (localGame.value as any).gameInstruction = '';
+  }
+  if (localGame.value.language === undefined) {
+    localGame.value.language = 'en';
+  }
+  if ((localGame.value as any).shareLink === undefined) {
+    (localGame.value as any).shareLink = '';
   }
 const isSaving = ref(false);
 const error = ref<string | null>(null);
@@ -298,6 +332,9 @@ const save = async () => {
         communityItems: 'communityItems' in (localGame.value.custom || {})
           ? (localGame.value.custom as PyramidConfig).communityItems
           : [],
+        communityHeader: 'communityHeader' in (localGame.value.custom || {})
+          ? (localGame.value.custom as PyramidConfig).communityHeader
+          : undefined,
       };
     console.log('PyramidConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'TriviaConfig') {
@@ -321,6 +358,8 @@ const save = async () => {
       gameHeader: localGame.value.gameHeader || null,
       shareText: localGame.value.shareText || null,
       gameInstruction: localGame.value.gameInstruction || null,
+      language: localGame.value.language || 'en',
+      shareLink: localGame.value.shareLink || null,
       image: localGame.value.image || '',
       active: localGame.value.active || false,
     };

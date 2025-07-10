@@ -30,6 +30,10 @@ export interface PyramidConfig {
    * Additional items contributed by the community.
    */
   communityItems: PyramidItem[];
+  /**
+   * Optional header for the community items section
+   */
+  communityHeader?: string;
 }
 export interface PyramidRow {
   id: number;
