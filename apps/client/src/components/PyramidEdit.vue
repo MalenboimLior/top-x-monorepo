@@ -134,6 +134,7 @@
           @click="showAddItemPopup"
         />
       </div>
+      <h2 v-if="props.communityHeader" class="subtitle has-text-white" style="font-size: 20px;">{{ props.communityHeader }}</h2>
       <ins class="adsbygoogle"
            style="display:block"
            :data-ad-client="adClient"
@@ -193,6 +194,7 @@ const props = defineProps<{
   gameHeader: string;
   gameInstruction?: string;
   poolHeader?: string;
+  communityHeader?: string;
   worstHeader?: string;
   shareText?: string;
   worstPoints?: number;

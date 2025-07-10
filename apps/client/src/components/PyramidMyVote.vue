@@ -11,6 +11,7 @@
         :game-title="gameTitle"
         :share-image-title="shareImageTitle"
         :share-text="shareText"
+        :share-link="shareLink"
         :hide-row-label="hideRowLabel"
         :worst-show="worstShow"
         :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
@@ -67,6 +68,7 @@ const props = defineProps<{
   worstPoints?: number;
   shareImageTitle?: string;
   shareText?: string;
+  shareLink?: string;
   worstShow?: boolean;
 }>();
 
