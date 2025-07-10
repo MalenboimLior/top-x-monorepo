@@ -4,7 +4,8 @@
   --bulma-scheme-main: #000000; /* Dark background */
   --bulma-text: #ffffff; /* White text */
   --bulma-primary: #00e8e0; /* X.com-inspired blue */
-  --bulma-link: #1da1f2; /* Links match primary color */
+  --bulma-link: #00e8e0; /* Links match primary color */
+  --bulma-link-text: #c4ff00; /* Links match primary color */
   --bulma-background: #000000; /* Slightly lighter dark for cards/sections */
   --bulma-border: #333; /* Subtle borders */
   --bulma-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Darker shadow */
