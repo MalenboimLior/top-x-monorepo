@@ -9,24 +9,24 @@
         <button class="button is-success" @click="handleLogin">Log in with X</button>
       </div>
       <div v-else>
-        <div class="field">
+        <!-- <div class="field">
           <label class="label has-text-white">Label</label>
           <div class="control">
             <input class="input is-dark" type="text" v-model="form.label" placeholder="Item label" />
           </div>
-        </div>
+        </div> -->
         <div class="field">
           <label class="label has-text-white">Name</label>
           <div class="control">
             <input class="input is-dark" type="text" v-model="form.name" placeholder="Item name" />
           </div>
         </div>
-        <div class="field">
+        <!-- <div class="field">
           <label class="label has-text-white">Description</label>
           <div class="control">
             <textarea class="textarea is-dark" v-model="form.description" placeholder="Item description"></textarea>
           </div>
-        </div>
+        </div> -->
         <div class="field">
           <label class="label has-text-white">Image</label>
           <div class="control">
@@ -198,6 +198,9 @@ function close() {
   position: absolute;
   top: 1rem;
   right: 1rem;
+}
+.buttons{
+    justify-content:center;
 }
 .button.is-success {
   background-color: var(--bulma-success, #c4ff00);

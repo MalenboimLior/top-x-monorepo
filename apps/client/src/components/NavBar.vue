@@ -105,6 +105,9 @@ const closeMenu = () => {
 </script>
 
 <style scoped>
+.navbar-burger{
+  color: #00e8e0;
+}
 @media screen and (max-width: 1023px) {
  
 }

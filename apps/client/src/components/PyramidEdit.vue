@@ -98,7 +98,10 @@
             </span>
           </div>
         </div>
-       
+        <a
+          style="font-size: 14px;"
+          @click="clearPyramid"
+        >clear pyramid</a>
       </div>
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToPool">
         <div
@@ -117,12 +120,7 @@
         </div>
       </div>
        <div class="pool-controls mb-4">
-        <CustomButton
-          type="is-info"
-          label="Clear Pyramid"
-          :icon="['fas', 'eraser']"
-          @click="clearPyramid"
-        />
+       
     
         <CustomButton
           type="is-success"
@@ -818,10 +816,12 @@ function closeTab() {
   justify-content: center;
   align-items: center;
   gap: 1rem;
+  margin-top: 1rem;
   margin-bottom: 1rem;
 }
 .pool-controls .field {
   width: 200px;
+  margin-bottom: 0 !important;
 }
 .pool-controls .input {
   background-color: #2a2a2a;
@@ -1008,6 +1008,9 @@ function closeTab() {
   color: #eee;
 
 }
+ .info-icon:hover {
+    color: #c4ff00;
+  }
 @media screen and (max-width: 767px) {
   .section {
     padding: 0.1rem 0.05rem;
@@ -1121,8 +1124,6 @@ function closeTab() {
     left: 0;
     z-index: 10;
   }
-  .info-icon:hover {
-    color: #00aaff;
-  }
+ 
 }
 </style>
