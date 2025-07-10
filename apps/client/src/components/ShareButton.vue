@@ -1,6 +1,6 @@
 <template>
   <div class="share-button-container">
-    <CustomButton
+    <CustomButton 
       class="share-button"
       type="is-primary"
       label="Share"
@@ -96,6 +96,7 @@ const handleShare = async () => {
 }
 .share-button {
   margin: 0.5rem;
+  width: 140px;
 }
 .share-tooltip {
   position: absolute;

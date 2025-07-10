@@ -116,7 +116,12 @@
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
-          <font-awesome-icon :icon="['fas', 'circle-info']" class="info-icon" @click.stop="showDescription(image)" />
+          <font-awesome-icon
+  :icon="['fas', 'circle-info']"
+  class="info-icon"
+  :class="{ 'selected': selectedInfoIcon === image.id }"
+  @click.stop="showDescription(image)"
+/>
         </div>
       </div>
        <div class="pool-controls mb-4">
@@ -212,6 +217,7 @@ const droppableSlot = ref<{ row: number; col: number } | null>(null);
 const animatedPoints = ref<string | null>(null);
 const worstAnimatedPoints = ref<string | null>(null);
 const worstShow = computed(() => props.worstShow ?? true);
+const selectedInfoIcon = ref<string | null>(null); // Track the selected info icon by item ID
 
 const searchQuery = ref('');
 const showAddPopup = ref(false);
@@ -240,18 +246,18 @@ onMounted(() => {
     removeUsedFromPool();
   }
 
-  // Add global click event listener to close tab when clicking outside
+  // Add global click listener to close tab and reset selected info icon
   const handleOutsideClick = (event: MouseEvent) => {
     if (showTab.value) {
       const tabElement = document.querySelector('.description-tab');
       if (tabElement && !tabElement.contains(event.target as Node)) {
         closeTab();
+        selectedInfoIcon.value = null; // Reset selected info icon
       }
     }
   };
   document.addEventListener('click', handleOutsideClick);
   
-  // Clean up the event listener on unmount
   onUnmounted(() => {
     document.removeEventListener('click', handleOutsideClick);
   });
@@ -597,9 +603,9 @@ function showDescription(item: PyramidItem) {
   describedItem.value = item;
   showTab.value = true;
   displayedDescription.value = '';
+  selectedInfoIcon.value = item.id; // Set the selected info icon
   startTypingAnimation(item.description || 'No description available.');
 }
-
 function startTypingAnimation(fullDescription: string) {
   if (typingInterval) {
     clearInterval(typingInterval);
@@ -629,6 +635,7 @@ function closeTab() {
   }
   describedItem.value = null;
   displayedDescription.value = '';
+  selectedInfoIcon.value = null; // Reset the selected info icon
 }
 </script>
 
@@ -1008,9 +1015,9 @@ function closeTab() {
   color: #eee;
 
 }
- .info-icon:hover {
-    color: #c4ff00;
-  }
+ .info-icon.selected {
+  color: #c4ff00;
+}
 @media screen and (max-width: 767px) {
   .section {
     padding: 0.1rem 0.05rem;
@@ -1084,9 +1091,7 @@ function closeTab() {
     object-position: top;
     border-radius: 0.5rem 0.5rem 0 0;
   }
-  .image-pool {
-    /*grid-template-columns: repeat(4, 1fr);*/
-  }
+ 
   .image-box {
     min-width: 40px;
     min-height: 45px;

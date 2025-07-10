@@ -478,7 +478,7 @@ defineExpose({ getImageDataUrl });
 .pyramid-container {
   position: relative;
   border-radius: 8px;
-  border: 1px solid #00e8e0;
+  box-shadow: 0 0 10px rgba(0, 232, 224, 0.7), 0 0 20px rgba(0, 232, 224, 0.3);
   max-width: calc(100% - 0.4rem);
   margin: 0 auto;
   overflow: hidden;
