@@ -10,6 +10,7 @@
       :game-header="gameHeader"
       :game-instruction="gameInstruction"
       :pool-header="poolHeader"
+      :community-header="communityHeader"
       :worst-header="worstHeader"
       :share-text="shareText"
       :worst-points="worstPoints"
@@ -28,6 +29,7 @@
       :game-title="gameTitle"
       :share-image-title="shareImageTitle"
       :share-text="shareText"
+      :share-link="shareLink"
       :hide-row-label="hideRowLabel"
       :worst-points="worstPoints"
       :worst-show="worstShow"
@@ -72,6 +74,8 @@ const baseShareText = ref('');
 const worstPoints = ref(0);
 const worstShow = ref(true);
 const shareImageTitle = ref('');
+const shareLink = ref('');
+const communityHeader = ref('');
 const hasSubmitted = ref(false);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
@@ -117,10 +121,12 @@ onMounted(async () => {
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
       gameInstruction.value = gameData.gameInstruction || '';
       poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
+      communityHeader.value = gameData.custom?.communityHeader || '';
       worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
       baseShareText.value = gameData.shareText || '';
       updateShareText();
       shareImageTitle.value = gameData.custom?.shareImageTitle || '';
+      shareLink.value = gameData.shareLink || '';
       items.value = gameData.custom?.items || [];
       rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
@@ -134,9 +140,11 @@ onMounted(async () => {
         gameHeader: gameHeader.value,
         gameInstruction: gameInstruction.value,
         poolHeader: poolHeader.value,
+        communityHeader: communityHeader.value,
         worstHeader: worstHeader.value,
         shareText: shareText.value,
         shareImageTitle: shareImageTitle.value,
+        shareLink: shareLink.value,
         items: items.value,
         rows: rows.value,
         sortItems: sortItems.value,

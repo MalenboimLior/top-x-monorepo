@@ -55,6 +55,8 @@ interface Game {
   image: string;
   isComingSoon: boolean;
   active: boolean;
+  language: 'en' | 'il';
+  shareLink?: string;
   route: string;
 }
 
@@ -85,6 +87,8 @@ onMounted(() => {
         image: data.image || fallbackImg,
         isComingSoon: data.custom?.isComingSoon || false,
         active: data.active ?? false,
+        language: data.language || 'en',
+        shareLink: data.shareLink || '',
         route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
       } as Game;
     }).filter(g => g.active);

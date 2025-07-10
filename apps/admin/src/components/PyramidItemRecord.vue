@@ -26,6 +26,12 @@
       </div>
     </div>
     <div class="field">
+      <label class="label has-text-white">Description (Optional)</label>
+      <div class="control">
+        <textarea v-model="localItem.description" class="textarea" placeholder="Item description"></textarea>
+      </div>
+    </div>
+    <div class="field">
       <label class="label has-text-white">Color (Optional)</label>
       <div class="control">
         <input v-model="localItem.color" class="input" type="text" placeholder="e.g., #FF0000" />
@@ -82,6 +88,9 @@ const localItem = ref<PyramidItem>({
   source: 'topx',
   ...props.item,
 });
+if (localItem.value.description === undefined) {
+  (localItem.value as any).description = '';
+}
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
