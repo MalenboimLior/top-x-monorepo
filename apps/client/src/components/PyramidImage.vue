@@ -428,6 +428,7 @@ async function renderPyramidImage() {
         }
         <p class="top-x-label has-text-white has-text-centered">
           And what’s your vote? -> ${props.shareLink || 'https://top-x.co/PrezPyramid'}
+
         </p>
       </div>
     `;

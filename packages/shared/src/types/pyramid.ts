@@ -22,17 +22,8 @@ export interface PyramidConfig {
   poolHeader?: string;
   worstHeader?: string;
   worstPoints?: number;
-  /**
-   * Flag to show or hide the worst item column. Defaults to true.
-   */
   worstShow?: boolean;
-  /**
-   * Additional items contributed by the community.
-   */
   communityItems: PyramidItem[];
-  /**
-   * Optional header for the community items section
-   */
   communityHeader?: string;
 }
 export interface PyramidRow {
