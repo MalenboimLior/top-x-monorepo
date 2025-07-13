@@ -227,9 +227,9 @@ async function renderPyramidImage() {
       .logo-container {
   position: absolute;
   top: 0.6rem;
-  right: 0.6rem;
-  width: 200px;
-  height: 40px;
+  right: 0.2rem;
+  width: 70px;
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,6 +487,7 @@ async function renderPyramidImage() {
       height: tempDiv.offsetHeight,
     });
     console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
+    console.log('tempDiv:', tempDiv);
     generatedImage.value = canvas.toDataURL('image/jpeg', 0.9);
     isImageLoading.value = false;
   } catch (err: any) {
