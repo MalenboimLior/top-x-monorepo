@@ -336,7 +336,7 @@ async function renderPyramidImage() {
       }
       .game-header {
         margin: 0.3rem 2rem 1rem;
-        font-size: 17px;
+        font-size: 22px;
         text-align: center;
         color: #00e8e0;
       }
@@ -427,9 +427,12 @@ async function renderPyramidImage() {
         </div>`
         }
         <p class="top-x-label has-text-white has-text-centered">
-          And what’s your vote? -> ${props.shareLink || 'https://top-x.co'}
-
+          And what’s your vote?
         </p>
+        <p class="top-x-label has-text-centered" style="font-size: 16px;">
+          ${props.shareLink || 'https://top-x.co'}
+        </p>
+        
       </div>
     `;
 
