@@ -259,7 +259,7 @@ onMounted(() => {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     }
   } catch (e) {
-    console.error('Adsense error:', e);
+    // console.error('Adsense error:', e);
   }
 
   // Load from local storage if available
@@ -268,7 +268,7 @@ onMounted(() => {
     const parsed = JSON.parse(savedPyramid);
     pyramid.value = parsed.pyramid;
     worstItem.value = parsed.worstItem;
-    console.log('PyramidEdit: Loaded state from local storage:', parsed);
+    // console.log('PyramidEdit: Loaded state from local storage:', parsed);
     removeUsedFromPools();
   }
 
@@ -292,7 +292,7 @@ onMounted(() => {
 // Save to local storage on every change
 watch([pyramid, worstItem], () => {
   localStorage.setItem(`pyramid_${gameId.value}`, JSON.stringify({ pyramid: pyramid.value, worstItem: worstItem.value }));
-  console.log('PyramidEdit: Saved state to local storage:', { pyramid: pyramid.value, worstItem: worstItem.value });
+  // console.log('PyramidEdit: Saved state to local storage:', { pyramid: pyramid.value, worstItem: worstItem.value });
   removeUsedFromPools();
 }, { deep: true });
 
@@ -319,7 +319,7 @@ const filteredCommunityPool = computed(() => {
 watch(
   () => props.worstPoints,
   (newValue) => {
-    console.log('PyramidEdit: worstPoints prop updated:', newValue);
+    // console.log('PyramidEdit: worstPoints prop updated:', newValue);
   },
   { immediate: true }
 );
@@ -338,16 +338,16 @@ const sortFunction = (a: PyramidItem, b: PyramidItem) => {
 watch(
   () => props.items,
   (newItems) => {
-    console.log('PyramidEdit: Items prop updated:', newItems);
+    // console.log('PyramidEdit: Items prop updated:', newItems);
     if (!newItems || !Array.isArray(newItems)) {
-      console.warn('PyramidEdit: Invalid or empty items prop:', newItems);
+      // console.warn('PyramidEdit: Invalid or empty items prop:', newItems);
       officialPool.value = [];
       return;
     }
     const filtered = newItems.filter(item => item.active !== false);
     const sorted = [...filtered].sort(sortFunction);
     officialPool.value = sorted;
-    console.log('PyramidEdit: officialPool initialized:', officialPool.value);
+    // console.log('PyramidEdit: officialPool initialized:', officialPool.value);
     removeUsedFromPools();
   },
   { immediate: true }
@@ -356,16 +356,16 @@ watch(
 watch(
   () => props.communityItems,
   (newItems) => {
-    console.log('PyramidEdit: communityItems prop updated:', newItems);
+    // console.log('PyramidEdit: communityItems prop updated:', newItems);
     if (!newItems || !Array.isArray(newItems)) {
-      console.warn('PyramidEdit: Invalid or empty communityItems prop:', newItems);
+      // console.warn('PyramidEdit: Invalid or empty communityItems prop:', newItems);
       communityPool.value = [];
       return;
     }
     const filtered = newItems.filter(item => item.active !== false);
     const sorted = [...filtered].sort(sortFunction);
     communityPool.value = sorted;
-    console.log('PyramidEdit: communityPool initialized:', communityPool.value);
+    // console.log('PyramidEdit: communityPool initialized:', communityPool.value);
     removeUsedFromPools();
   },
   { immediate: true }
@@ -374,14 +374,14 @@ watch(
 watch(
   () => props.sortItems,
   () => {
-    console.log('PyramidEdit: sortItems prop updated:', props.sortItems);
+    // console.log('PyramidEdit: sortItems prop updated:', props.sortItems);
     if (!officialPool.value.length && !communityPool.value.length) {
-      console.warn('PyramidEdit: Pools are empty, skipping sort');
+      // console.warn('PyramidEdit: Pools are empty, skipping sort');
       return;
     }
     officialPool.value = [...officialPool.value].sort(sortFunction);
     communityPool.value = [...communityPool.value].sort(sortFunction);
-    console.log('PyramidEdit: Pools sorted:', { official: officialPool.value, community: communityPool.value });
+    // console.log('PyramidEdit: Pools sorted:', { official: officialPool.value, community: communityPool.value });
     removeUsedFromPools();
   }
 );
@@ -389,13 +389,13 @@ watch(
 watch(
   () => props.hideRowLabel,
   (newValue) => {
-    console.log('PyramidEdit: hideRowLabel prop updated:', newValue);
+    // console.log('PyramidEdit: hideRowLabel prop updated:', newValue);
   },
   { immediate: true }
 );
 
 function clearPyramid() {
-  console.log('PyramidEdit: Clearing pyramid');
+  // console.log('PyramidEdit: Clearing pyramid');
   // Collect all items from pyramid and worst slot
   const itemsToReturn: PyramidItem[] = [];
   pyramid.value.forEach(row => {
@@ -423,7 +423,7 @@ function clearPyramid() {
   // Add back to respective pools and sort
   officialPool.value = [...officialPool.value, ...officialItems].sort(sortFunction);
   communityPool.value = [...communityPool.value, ...communityItems].sort(sortFunction);
-  console.log('PyramidEdit: Pyramid cleared, items returned to pools:', { official: officialPool.value, community: communityPool.value });
+  // console.log('PyramidEdit: Pyramid cleared, items returned to pools:', { official: officialPool.value, community: communityPool.value });
 }
 
 function isSelected(item: PyramidItem | null): boolean {
@@ -440,41 +440,41 @@ function isDroppable(row: number, col: number): boolean {
 function onDragStart(item: PyramidItem) {
   draggedItem.value = item;
   selectedItem.value = item;
-  console.log('PyramidEdit: Drag started for item:', item);
+  // console.log('PyramidEdit: Drag started for item:', item);
 }
 
 function onTapSelect(item: PyramidItem) {
   selectedItem.value = selectedItem.value?.id === item.id ? null : item;
   draggedItem.value = selectedItem.value;
-  console.log('PyramidEdit: Item selected via tap:', selectedItem.value);
+  // console.log('PyramidEdit: Item selected via tap:', selectedItem.value);
 }
 
 function onDragEnterSlot(row: number, col: number) {
   if (draggedItem.value || selectedItem.value) {
     droppableSlot.value = { row, col };
-    console.log('PyramidEdit: Drag entered slot:', { row, col });
+    // console.log('PyramidEdit: Drag entered slot:', { row, col });
   }
 }
 
 function onDragLeaveSlot() {
   droppableSlot.value = null;
-  console.log('PyramidEdit: Drag left slot');
+  // console.log('PyramidEdit: Drag left slot');
 }
 
 function onSlotClick(row: number, col: number) {
-  console.log('PyramidEdit: Slot clicked:', { row, col });
+  // console.log('PyramidEdit: Slot clicked:', { row, col });
   const targetSlot = pyramid.value[row][col];
   const targetItem = targetSlot.image;
 
   if (!selectedItem.value && targetItem) {
     selectedItem.value = targetItem;
     draggedItem.value = targetItem;
-    console.log('PyramidEdit: Selected item from slot:', targetItem);
+    // console.log('PyramidEdit: Selected item from slot:', targetItem);
     return;
   }
 
   if (!selectedItem.value) {
-    console.log('PyramidEdit: No selected item, ignoring click');
+    // console.log('PyramidEdit: No selected item, ignoring click');
     return;
   }
 
@@ -487,30 +487,30 @@ function onSlotClick(row: number, col: number) {
     if (fromOfficial) {
       officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
       officialPool.value.push(targetItem);
-      console.log('PyramidEdit: Swapped official pool item with slot item:', { officialPool: officialPool.value });
+      // console.log('PyramidEdit: Swapped official pool item with slot item:', { officialPool: officialPool.value });
     } else if (fromCommunity) {
       communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
       communityPool.value.push(targetItem);
-      console.log('PyramidEdit: Swapped community pool item with slot item:', { communityPool: communityPool.value });
+      // console.log('PyramidEdit: Swapped community pool item with slot item:', { communityPool: communityPool.value });
     } else if (fromSlot) {
       fromSlot.image = targetItem;
-      console.log('PyramidEdit: Swapped slot items:', { fromSlot, targetItem });
+      // console.log('PyramidEdit: Swapped slot items:', { fromSlot, targetItem });
     } else if (fromWorst) {
       worstItem.value = targetItem;
-      console.log('PyramidEdit: Swapped worst item with slot item:', { worstItem: worstItem.value });
+      // console.log('PyramidEdit: Swapped worst item with slot item:', { worstItem: worstItem.value });
     }
   } else if (fromOfficial) {
     officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidEdit: Removed item from official pool:', officialPool.value);
+    // console.log('PyramidEdit: Removed item from official pool:', officialPool.value);
   } else if (fromCommunity) {
     communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidEdit: Removed item from community pool:', communityPool.value);
+    // console.log('PyramidEdit: Removed item from community pool:', communityPool.value);
   } else if (fromSlot) {
     fromSlot.image = null;
-    console.log('PyramidEdit: Removed item from slot:', fromSlot);
+    // console.log('PyramidEdit: Removed item from slot:', fromSlot);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidEdit: Removed worst item:', worstItem.value);
+    // console.log('PyramidEdit: Removed worst item:', worstItem.value);
   }
 
   targetSlot.image = selectedItem.value;
@@ -521,25 +521,25 @@ function onSlotClick(row: number, col: number) {
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
-  console.log('PyramidEdit: Placed item in slot:', { row, col, item: targetSlot.image });
+  // console.log('PyramidEdit: Placed item in slot:', { row, col, item: targetSlot.image });
 }
 
 function onDropToSlot(row: number, col: number) {
-  console.log('PyramidEdit: Drop to slot:', { row, col });
+  // console.log('PyramidEdit: Drop to slot:', { row, col });
   onSlotClick(row, col);
 }
 
 function onWorstSlotClick() {
-  console.log('PyramidEdit: Worst slot clicked');
+  // console.log('PyramidEdit: Worst slot clicked');
   if (!selectedItem.value && worstItem.value) {
     selectedItem.value = worstItem.value;
     draggedItem.value = worstItem.value;
-    console.log('PyramidEdit: Selected worst item:', worstItem.value);
+    // console.log('PyramidEdit: Selected worst item:', worstItem.value);
     return;
   }
 
   if (!selectedItem.value) {
-    console.log('PyramidEdit: No selected item, ignoring worst slot click');
+    // console.log('PyramidEdit: No selected item, ignoring worst slot click');
     return;
   }
 
@@ -551,24 +551,24 @@ function onWorstSlotClick() {
     if (fromOfficial) {
       officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
       officialPool.value.push(worstItem.value);
-      console.log('PyramidEdit: Swapped official pool item with worst item:', { officialPool: officialPool.value });
+      // console.log('PyramidEdit: Swapped official pool item with worst item:', { officialPool: officialPool.value });
     } else if (fromCommunity) {
       communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
       communityPool.value.push(worstItem.value);
-      console.log('PyramidEdit: Swapped community pool item with worst item:', { communityPool: communityPool.value });
+      // console.log('PyramidEdit: Swapped community pool item with worst item:', { communityPool: communityPool.value });
     } else if (fromSlot) {
       fromSlot.image = worstItem.value;
-      console.log('PyramidEdit: Swapped slot item with worst item:', { fromSlot, worstItem: worstItem.value });
+      // console.log('PyramidEdit: Swapped slot item with worst item:', { fromSlot, worstItem: worstItem.value });
     }
   } else if (fromOfficial) {
     officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidEdit: Removed item from official pool for worst:', officialPool.value);
+    // console.log('PyramidEdit: Removed item from official pool for worst:', officialPool.value);
   } else if (fromCommunity) {
     communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidEdit: Removed item from community pool for worst:', communityPool.value);
+    // console.log('PyramidEdit: Removed item from community pool for worst:', communityPool.value);
   } else if (fromSlot) {
     fromSlot.image = null;
-    console.log('PyramidEdit: Removed item from slot for worst:', fromSlot);
+    // console.log('PyramidEdit: Removed item from slot for worst:', fromSlot);
   }
 
   worstItem.value = selectedItem.value;
@@ -579,38 +579,38 @@ function onWorstSlotClick() {
   selectedItem.value = null;
   draggedItem.value = null;
   droppableSlot.value = null;
-  console.log('PyramidEdit: Placed item in worst slot:', worstItem.value);
+  // console.log('PyramidEdit: Placed item in worst slot:', worstItem.value);
 }
 
 function onDropToWorst() {
-  console.log('PyramidEdit: Drop to worst slot');
+  // console.log('PyramidEdit: Drop to worst slot');
   onWorstSlotClick();
 }
 
 function onDropToOfficialPool() {
   if (!selectedItem.value) {
-    console.log('PyramidEdit: No selected item for official pool drop');
+    // console.log('PyramidEdit: No selected item for official pool drop');
     return;
   }
   // Check if item belongs to official
   const isOfficial = !props.communityItems.some(i => i.id === selectedItem.value!.id);
   if (!isOfficial) {
-    console.log('PyramidEdit: Item is from community, cannot drop to official pool');
+    // console.log('PyramidEdit: Item is from community, cannot drop to official pool');
     return;
   }
   const slot = findSlotContaining(selectedItem.value.id);
   const fromWorst = worstItem.value?.id === selectedItem.value.id;
   if (slot) {
     slot.image = null;
-    console.log('PyramidEdit: Removed item from slot for official pool drop:', slot);
+    // console.log('PyramidEdit: Removed item from slot for official pool drop:', slot);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidEdit: Removed item from worst for official pool drop:', worstItem.value);
+    // console.log('PyramidEdit: Removed item from worst for official pool drop:', worstItem.value);
   }
   if (!officialPool.value.some(i => i.id === selectedItem.value!.id)) {
     officialPool.value.push(selectedItem.value);
     officialPool.value = officialPool.value.sort(sortFunction);
-    console.log('PyramidEdit: Added item back to official pool:', officialPool.value);
+    // console.log('PyramidEdit: Added item back to official pool:', officialPool.value);
   }
   selectedItem.value = null;
   draggedItem.value = null;
@@ -619,28 +619,28 @@ function onDropToOfficialPool() {
 
 function onDropToCommunityPool() {
   if (!selectedItem.value) {
-    console.log('PyramidEdit: No selected item for community pool drop');
+    // console.log('PyramidEdit: No selected item for community pool drop');
     return;
   }
   // Check if item belongs to community
   const isCommunity = props.communityItems.some(i => i.id === selectedItem.value!.id);
   if (!isCommunity) {
-    console.log('PyramidEdit: Item is from official, cannot drop to community pool');
+    // console.log('PyramidEdit: Item is from official, cannot drop to community pool');
     return;
   }
   const slot = findSlotContaining(selectedItem.value.id);
   const fromWorst = worstItem.value?.id === selectedItem.value.id;
   if (slot) {
     slot.image = null;
-    console.log('PyramidEdit: Removed item from slot for community pool drop:', slot);
+    // console.log('PyramidEdit: Removed item from slot for community pool drop:', slot);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidEdit: Removed item from worst for community pool drop:', worstItem.value);
+    // console.log('PyramidEdit: Removed item from worst for community pool drop:', worstItem.value);
   }
   if (!communityPool.value.some(i => i.id === selectedItem.value!.id)) {
     communityPool.value.push(selectedItem.value);
     communityPool.value = communityPool.value.sort(sortFunction);
-    console.log('PyramidEdit: Added item back to community pool:', communityPool.value);
+    // console.log('PyramidEdit: Added item back to community pool:', communityPool.value);
   }
   selectedItem.value = null;
   draggedItem.value = null;
@@ -649,12 +649,12 @@ function onDropToCommunityPool() {
 
 function showAddItemPopup() {
   showAddPopup.value = true;
-  console.log('PyramidEdit: Showing add item popup');
+  // console.log('PyramidEdit: Showing add item popup');
 }
 
 function addNewItem(newItem: PyramidItem) {
   communityPool.value = [newItem, ...communityPool.value];
-  console.log('PyramidEdit: Added new item to community pool:', newItem);
+  // console.log('PyramidEdit: Added new item to community pool:', newItem);
   showAddPopup.value = false;
 }
 
@@ -691,7 +691,7 @@ function toRoman(num: number): string {
 }
 
 function submitPyramid() {
-  console.log('PyramidEdit: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
+  // console.log('PyramidEdit: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 

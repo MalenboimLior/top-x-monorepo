@@ -10,7 +10,7 @@ interface LeaderboardEntry {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  console.log('Fetching:', url);
+  // console.log('Fetching:', url);
   try {
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) {
@@ -30,7 +30,7 @@ export async function getTopLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const url = `https://gettopleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}&limit=${limit}`;
   const data = await fetchJson<LeaderboardEntry[]>(url);
-  console.log('getTopLeaderboard response:', data);
+  // console.log('getTopLeaderboard response:', data);
   return data;
 }
 
@@ -40,7 +40,7 @@ export async function getAroundLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const url = `https://getaroundleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}&uid=${uid}`;
   const data = await fetchJson<LeaderboardEntry[]>(url);
-  console.log('getAroundLeaderboard response:', data);
+  // console.log('getAroundLeaderboard response:', data);
   return data;
 }
 
@@ -50,7 +50,7 @@ export async function getFriendsLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const url = `https://getfriendsleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}&uid=${uid}`;
   const data = await fetchJson<LeaderboardEntry[]>(url);
-  console.log('getFriendsLeaderboard response:', data);
+  // console.log('getFriendsLeaderboard response:', data);
   return data;
 }
 
@@ -60,7 +60,7 @@ export async function getPercentileRank(
 ): Promise<{ percentile: number, usersTopped: number }> {
   const url = `https://getpercentilerank-${FUNCTION_BASE_URL}?gameId=${gameId}&uid=${uid}`;
   const data = await fetchJson<{ percentile: number, usersTopped: number }>(url);
-  console.log('getPercentileRank response:', data);
+  // console.log('getPercentileRank response:', data);
   return data;
 }
 
@@ -69,6 +69,6 @@ export async function getVipLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const url = `https://getvipleaderboard-${FUNCTION_BASE_URL}?gameId=${gameId}`;
   const data = await fetchJson<LeaderboardEntry[]>(url);
-  console.log('getVipLeaderboard response:', data);
+  // console.log('getVipLeaderboard response:', data);
   return data;
 }
