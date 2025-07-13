@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@top-x/shared';
 import { PyramidItem } from '@top-x/shared/types/pyramid';
@@ -122,9 +122,8 @@ async function saveItem() {
   const id = `${userStore.user.displayName || 'anonymous'}_${randomNum}`;
   const filename = `${id}.jpg`;
   const storagePath = `presidents/${filename}`;
-  const itemRef = doc(db, 'games', props.gameId, 'items', id);
-      console.log('props.gameId:', props.gameId);
- console.log('id:', id);
+  console.log('props.gameId:', props.gameId);
+  console.log('id:', id);
   try {
     // Upload image to Firebase Storage
     const storageReference = storageRef(storage, storagePath);
@@ -144,10 +143,14 @@ async function saveItem() {
         active: true,
         source: userStore.user.displayName || 'anonymous',
       };
-   console.log('newItem:', newItem);
-      // Save to Firestore
-      await setDoc(itemRef, newItem);
-      console.log('PyramidAddItemPopup: Item saved to Firestore:', newItem);
+      console.log('newItem:', newItem);
+
+      // Save to Firestore communityItems array
+      const gameRef = doc(db, 'games', props.gameId);
+      await updateDoc(gameRef, {
+        communityItems: arrayUnion(newItem)
+      });
+      console.log('PyramidAddItemPopup: Item added to communityItems in Firestore:', newItem);
 
       // Emit new item to parent
       emit('add-item', newItem);
