@@ -58,7 +58,7 @@
           </div>
         </div>
         <!-- Worst Item -->
-        <div class="worst-item-container">
+        <div class="worst-item-container" v-if="worstShow !== false">
           <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
           <div class="pyramid-slot box worst-slot dark-slot mx-auto">
             <div v-if="worstItem" class="slot-style">
@@ -128,6 +128,7 @@ const props = defineProps<{
   shareImageTitle?: string;
   shareText?: string;
   shareLink?: string;
+  worstShow?: boolean;
 }>();
 
 const userStore = useUserStore();
@@ -234,7 +235,7 @@ async function preloadImages() {
     }
   });
 
-  if (worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
+  if (worstShow !== false && worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
     uniqueImageUrls.add(worstImage.value.src);
     imagePromises.push(
       Promise.race([
@@ -263,7 +264,11 @@ async function preloadImages() {
         img.src = preprocessedImages.value.get(img.src)!;
       }
     });
-    if (worstImage.value && preprocessedImages.value.has(worstImage.value.src)) {
+    if (
+      worstShow !== false &&
+      worstImage.value &&
+      preprocessedImages.value.has(worstImage.value.src)
+    ) {
       worstImage.value.src = preprocessedImages.value.get(worstImage.value.src)!;
     }
     isImageLoading.value = false;
