@@ -58,7 +58,7 @@
           </div>
         </div>
         <!-- Worst Item -->
-        <div class="worst-item-container" v-if="worstShow !== false">
+        <div class="worst-item-container" v-if="props.worstShow !== false">
           <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
           <div class="pyramid-slot box worst-slot dark-slot mx-auto">
             <div v-if="worstItem" class="slot-style">
@@ -81,29 +81,7 @@
         </p>
       </div>
     </div>
-    <!-- Download & Share Buttons -->
-    <div class="buttons is-centered mt-2">
-      <CustomButton
-        type="is-primary"
-        label="Download Pyramid"
-        :icon="['fas', 'download']"
-        :disabled="isImageLoading"
-        @click="downloadPyramid"
-      />
-      <div class="share-button-container">
-        <CustomButton
-          type="is-primary"
-          label="Share"
-          :icon="['fab', 'x-twitter']"
-          :disabled="isImageLoading"
-          @click.stop="handleShareClick"
-        />
-        <div v-if="showShareTooltip" class="share-tooltip">
-          Don't forget to download the image or take a screenshot
-        </div>
-      </div>
-      <span v-if="isImageLoading" class="has-text-white ml-2">Loading images...</span>
-    </div>
+  
   </div>
 </template>
 
@@ -132,7 +110,6 @@ const props = defineProps<{
 }>();
 
 const userStore = useUserStore();
-const canvasContainer = ref<HTMLElement | null>(null);
 const userImage = ref<HTMLImageElement | null>(null);
 const pyramidImages = ref<HTMLImageElement[]>([]);
 const worstImage = ref<HTMLImageElement | null>(null);
@@ -148,9 +125,6 @@ onMounted(async () => {
     hideRowLabel: props.hideRowLabel,
   });
   await nextTick();
-  if (!canvasContainer.value) {
-    console.error('PyramidView: canvasContainer ref is null after nextTick');
-  }
   await preloadImages();
 });
 
@@ -235,7 +209,7 @@ async function preloadImages() {
     }
   });
 
-  if (worstShow !== false && worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
+  if (props.worstShow !== false && worstImage.value?.src && !uniqueImageUrls.has(worstImage.value.src)) {
     uniqueImageUrls.add(worstImage.value.src);
     imagePromises.push(
       Promise.race([
@@ -265,7 +239,7 @@ async function preloadImages() {
       }
     });
     if (
-      worstShow !== false &&
+      props.worstShow !== false &&
       worstImage.value &&
       preprocessedImages.value.has(worstImage.value.src)
     ) {
@@ -283,43 +257,6 @@ function toRoman(num: number): string {
   return numerals[num - 1] || `${num}`;
 }
 
-async function downloadPyramid() {
-  console.log('PyramidView: downloadPyramid called');
-  await nextTick();
-  if (!canvasContainer.value) {
-    console.error('PyramidView: Canvas container not found');
-    alert('Failed to download image. Please try again.');
-    return;
-  }
-  try {
-    console.log('PyramidView: Generating canvas with html2canvas');
-    const canvas = await html2canvas(canvasContainer.value, {
-      backgroundColor: '#121212',
-      scale: window.devicePixelRatio || 2, // Use device pixel ratio for crisp rendering
-      useCORS: true,
-      logging: true,
-      allowTaint: false,
-      width: canvasContainer.value.offsetWidth,
-      height: canvasContainer.value.offsetHeight,
-    });
-    console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    link.download = `${(
-      props.shareImageTitle ||
-      props.gameHeader ||
-      props.gameTitle ||
-      'your-pyramid'
-    )
-      .toLowerCase()
-      .replace(/\s+/g, '-')}.png`;
-    link.click();
-    console.log('PyramidView: Image download triggered');
-  } catch (err: any) {
-    console.error('PyramidView: Error generating download image:', err.message, err);
-    alert('Failed to download image. Some images may not be accessible due to CORS restrictions.');
-  }
-}
 
 function shareOnX() {
   const text = props.shareText || '';
