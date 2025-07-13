@@ -21,10 +21,10 @@ const routes = [
       const game = params.get('game');
       const allowedGames = ['us_presidents_game', 'secret']; // Add other game IDs as needed
       if (game && allowedGames.includes(game)) {
-        console.log('Router: Bypassing ComingSoon for game:', game);
+        // console.log('Router: Bypassing ComingSoon for game:', game);
         next(`/games/PyramidTier?game=${game}`);
       } else {
-        console.log('Router: Showing ComingSoon page');
+        // console.log('Router: Showing ComingSoon page');
         next();
       }
     },
@@ -75,10 +75,10 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserStore();
   const isAuthenticated = !!userStore.user;
 
-  console.log('Router guard - isAuthenticated:', isAuthenticated, 'Route:', to.path);
+  // console.log('Router guard - isAuthenticated:', isAuthenticated, 'Route:', to.path);
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    console.log('Redirecting to / due to unauthenticated access to', to.path);
+    // console.log('Redirecting to / due to unauthenticated access to', to.path);
     next('/');
   } else {
     next();

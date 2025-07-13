@@ -87,13 +87,13 @@ async function handleLogin() {
   try {
     const success = await userStore.loginWithX();
     if (success) {
-      console.log('PyramidAddItemPopup: Login successful');
+      // console.log('PyramidAddItemPopup: Login successful');
     } else {
-      console.error('PyramidAddItemPopup: Login failed');
+      // console.error('PyramidAddItemPopup: Login failed');
       alert('Failed to log in. Please try again.');
     }
   } catch (err: any) {
-    console.error('PyramidAddItemPopup: Login error:', err.message);
+    // console.error('PyramidAddItemPopup: Login error:', err.message);
     alert('Failed to log in. Please try again.');
   }
 }
@@ -107,13 +107,13 @@ function handleImageUpload(event: Event) {
       imagePreview.value = e.target?.result as string;
     };
     reader.readAsDataURL(form.value.image);
-    console.log('PyramidAddItemPopup: Image selected:', form.value.image.name);
+    // console.log('PyramidAddItemPopup: Image selected:', form.value.image.name);
   }
 }
 
 async function saveItem() {
   if (!userStore.user || !props.gameId) {
-    console.error('PyramidAddItemPopup: No user or gameId');
+    // console.error('PyramidAddItemPopup: No user or gameId');
     alert('Please log in and ensure a game is selected.');
     return;
   }
@@ -122,15 +122,15 @@ async function saveItem() {
   const id = `${userStore.user.displayName || 'anonymous'}_${randomNum}`;
   const filename = `${id}.jpg`;
   const storagePath = `presidents/${filename}`;
-  console.log('props.gameId:', props.gameId);
-  console.log('id:', id);
+  // console.log('props.gameId:', props.gameId);
+  // console.log('id:', id);
   try {
     // Upload image to Firebase Storage
     const storageReference = storageRef(storage, storagePath);
     if (form.value.image) {
       await uploadBytes(storageReference, form.value.image);
       const src = await getDownloadURL(storageReference);
-      console.log('PyramidAddItemPopup: Image uploaded:', src);
+      // console.log('PyramidAddItemPopup: Image uploaded:', src);
 
       // Create new PyramidItem
       const newItem: PyramidItem = {
@@ -143,14 +143,14 @@ async function saveItem() {
         active: true,
         source: userStore.user.displayName || 'anonymous',
       };
-      console.log('newItem:', newItem);
+      // console.log('newItem:', newItem);
 
       // Save to Firestore communityItems array under custom configuration
       const gameRef = doc(db, 'games', props.gameId);
       await updateDoc(gameRef, {
         'custom.communityItems': arrayUnion(newItem)
       });
-      console.log('PyramidAddItemPopup: Item added to custom.communityItems in Firestore:', newItem);
+      // console.log('PyramidAddItemPopup: Item added to custom.communityItems in Firestore:', newItem);
 
       // Emit new item to parent
       emit('add-item', newItem);
@@ -179,7 +179,7 @@ async function saveItem() {
 }
 
 function close() {
-  console.log('PyramidAddItemPopup: Closing popup');
+  // console.log('PyramidAddItemPopup: Closing popup');
   form.value = {
     label: '',
     name: '',

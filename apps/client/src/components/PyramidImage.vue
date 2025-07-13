@@ -47,7 +47,7 @@ const tempContainer = ref<HTMLElement | null>(null);
 const isRendering = ref(false); // Prevent concurrent renders
 
 onMounted(async () => {
-  console.log('PyramidView: onMounted called with props:', {
+  // console.log('PyramidView: onMounted called with props:', {
     gameHeader: props.gameHeader,
     worstHeader: props.worstHeader,
     hideRowLabel: props.hideRowLabel,
@@ -60,7 +60,7 @@ onMounted(async () => {
 watch(
   [() => props.pyramid, () => props.worstItem, () => props.userProfile?.photoURL, () => props.worstShow],
   async () => {
-    console.log('PyramidView: Detected change in pyramid, worstItem, or userProfile, re-rendering');
+    // console.log('PyramidView: Detected change in pyramid, worstItem, or userProfile, re-rendering');
     await nextTick();
     await renderPyramidImage();
   }
@@ -80,7 +80,7 @@ async function preloadImages() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        console.warn('PyramidView: Failed to get canvas context for', src);
+        // console.warn('PyramidView: Failed to get canvas context for', src);
         resolve();
         return;
       }
@@ -122,17 +122,17 @@ async function preloadImages() {
         }
         const dataUrl = canvas.toDataURL('image/jpeg');
         preprocessedImages.value.set(src, dataUrl);
-        console.log('PyramidView: Preprocessed image:', src);
+        // console.log('PyramidView: Preprocessed image:', src);
         resolve();
       };
 
       img.onerror = () => {
-        console.warn('PyramidView: Image failed to load:', src);
+        // console.warn('PyramidView: Image failed to load:', src);
         resolve();
       };
 
       img.onabort = () => {
-        console.warn('PyramidView: Image load aborted:', src);
+        // console.warn('PyramidView: Image load aborted:', src);
         resolve();
       };
 
@@ -185,19 +185,19 @@ async function preloadImages() {
     );
   }
 
-  console.log('PyramidView: Preloading images:', Array.from(uniqueImageUrls));
+  // console.log('PyramidView: Preloading images:', Array.from(uniqueImageUrls));
   if (imagePromises.length === 0) {
-    console.log('PyramidView: No images to preload');
+    // console.log('PyramidView: No images to preload');
     return;
   }
 
   await Promise.all(imagePromises);
-  console.log('PyramidView: All images preprocessed');
+  // console.log('PyramidView: All images preprocessed');
 }
 
 async function renderPyramidImage() {
   if (isRendering.value) {
-    console.log('PyramidView: Skipping render, already in progress');
+    // console.log('PyramidView: Skipping render, already in progress');
     return;
   }
   isRendering.value = true;
@@ -500,8 +500,8 @@ async function renderPyramidImage() {
       allowTaint: false,
       height: tempDiv.offsetHeight,
     });
-    console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
-    console.log('tempDiv:', tempDiv);
+    // console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
+    // console.log('tempDiv:', tempDiv);
     generatedImage.value = canvas.toDataURL('image/jpeg', 0.9);
     isImageLoading.value = false;
   } catch (err: any) {
@@ -512,7 +512,7 @@ async function renderPyramidImage() {
   } finally {
     if (tempContainer.value && document.body.contains(tempContainer.value)) {
       document.body.removeChild(tempContainer.value);
-      console.log('PyramidView: Removed tempContainer from DOM');
+      // console.log('PyramidView: Removed tempContainer from DOM');
     }
     tempContainer.value = null;
     isRendering.value = false;
