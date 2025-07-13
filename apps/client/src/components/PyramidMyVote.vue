@@ -73,13 +73,13 @@ const props = defineProps<{
 }>();
 
 onMounted(() => {
-  // console.log('PyramidMyVote: onMounted called with gameId:', props.gameId);
+  console.log('PyramidMyVote: onMounted called with gameId:', props.gameId);
   if (!userStore.user && props.gameId) {
     const flag = localStorage.getItem(`showLoginPopup_${props.gameId}`);
     if (flag) {
       showLoginPopup.value = true;
       localStorage.removeItem(`showLoginPopup_${props.gameId}`);
-      // console.log('PyramidMyVote: Showing login popup due to flag');
+      console.log('PyramidMyVote: Showing login popup due to flag');
     }
   }
 });
@@ -89,15 +89,15 @@ watch(
   () => userStore.user,
   (newUser) => {
     if (newUser && props.gameId) {
-      // console.log('PyramidMyVote: User logged in, triggering re-render');
+      console.log('PyramidMyVote: User logged in, triggering re-render');
       renderKey.value++; // Force re-render of PyramidImage
-      // console.log('PyramidMyVote: Forcing re-render with new renderKey:', renderKey.value);
+      console.log('PyramidMyVote: Forcing re-render with new renderKey:', renderKey.value);
     }
   }
 );
 
 function closeLoginPopup() {
-  // console.log('PyramidMyVote: Closing login popup');
+  console.log('PyramidMyVote: Closing login popup');
   showLoginPopup.value = false;
   renderKey.value++; // Force re-render to update PyramidImage
 }
@@ -105,7 +105,7 @@ function closeLoginPopup() {
 function editPyramid() {
   if (props.gameId) {
     router.push({ name: 'PyramidTier', query: { game: props.gameId, edit: 'true' } });
-    // console.log('PyramidMyVote: Navigating to PyramidEdit with edit=true');
+    console.log('PyramidMyVote: Navigating to PyramidEdit with edit=true');
   }
 }
 </script>

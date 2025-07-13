@@ -90,7 +90,7 @@ onMounted(() => {
   if (hash === 'stats' || hash === 'results') {
     activeTab.value = hash as 'stats' | 'results';
   }
-  // console.log('PyramidNav: onMounted, active tab:', activeTab.value);
+  console.log('PyramidNav: onMounted, active tab:', activeTab.value);
 });
 
 function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
@@ -101,7 +101,7 @@ function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
     hash: `#${tab}`,
     query: { ...route.query },
   });
-  // console.log('PyramidNav: Set active tab to:', tab);
+  console.log('PyramidNav: Set active tab to:', tab);
 }
 </script>
 

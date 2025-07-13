@@ -73,7 +73,7 @@ watch(
     setTimeout(() => {
       isAnimated.value = true;
     }, 10);
-    // console.log('Current question ID in TriviaQuestion:', props.currentQuestion?.id);
+    console.log('Current question ID in TriviaQuestion:', props.currentQuestion?.id);
   }
 );
 </script>

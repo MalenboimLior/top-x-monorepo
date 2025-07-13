@@ -171,7 +171,7 @@ const isImageLoading = ref(true);
 const totalPlayers = ref(0);
 
 onMounted(async () => {
-  // console.log('PyramidStats: onMounted called with gameId:', props.gameId);
+  console.log('PyramidStats: onMounted called with gameId:', props.gameId);
   try {
     const statsDoc = await getDoc(doc(db, 'games', props.gameId, 'stats', 'general'));
     if (statsDoc.exists()) {
@@ -182,10 +182,10 @@ onMounted(async () => {
         worstItemCounts: data.worstItemCounts || {},
       };
       totalPlayers.value = stats.value.totalPlayers;
-      // console.log('PyramidStats: Stats fetched:', stats.value);
+      console.log('PyramidStats: Stats fetched:', stats.value);
       isImageLoading.value = false; // Assume images are preloaded
     } else {
-      // console.warn('PyramidStats: No stats found for gameId:', props.gameId);
+      console.warn('PyramidStats: No stats found for gameId:', props.gameId);
       isImageLoading.value = false;
     }
   } catch (err: any) {
@@ -247,25 +247,25 @@ function toRoman(num: number): string {
 
 function showPresidentModal(item: any) {
   selectedPresident.value = item;
-  // console.log('PyramidStats: Opening modal for president:', item.name);
+  console.log('PyramidStats: Opening modal for president:', item.name);
 }
 
 function closeModal() {
   selectedPresident.value = null;
-  // console.log('PyramidStats: Modal closed');
+  console.log('PyramidStats: Modal closed');
 }
 
 async function downloadPresidentStats() {
-  // console.log('PyramidStats: downloadPresidentStats called');
+  console.log('PyramidStats: downloadPresidentStats called');
   if (!modalContainer.value) {
-    // console.error('PyramidStats: Modal container not found');
+    console.error('PyramidStats: Modal container not found');
     alert('Failed to download image. Please try again.');
     return;
   }
   try {
     const content = modalContainer.value.querySelector('.president-modal-content');
     if (!content) {
-      // console.error('PyramidStats: Modal content not found');
+      console.error('PyramidStats: Modal content not found');
       return;
     }
     const canvas = await html2canvas(content as HTMLElement, {
@@ -277,14 +277,14 @@ async function downloadPresidentStats() {
       width: content.scrollWidth,
       height: content.scrollHeight,
     });
-    // console.log('PyramidStats: Canvas generated, size:', canvas.width, 'x', canvas.height);
+    console.log('PyramidStats: Canvas generated, size:', canvas.width, 'x', canvas.height);
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
     link.download = `${selectedPresident.value?.name.toLowerCase().replace(/\s+/g, '-')}-stats.png`;
     link.click();
-    // console.log('PyramidStats: Image download triggered');
+    console.log('PyramidStats: Image download triggered');
   } catch (err: any) {
-    // console.error('PyramidStats: Error generating download image:', err.message, err);
+    console.error('PyramidStats: Error generating download image:', err.message, err);
     alert('Failed to download image. Some images may not be accessible due to CORS restrictions.');
   }
 }
