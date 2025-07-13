@@ -1,9 +1,11 @@
+<!-- PyramidTier.vue -->
 <template>
   <div class="pyramid-tier">
     <!-- <h1>{{ gameDescription }}</h1> -->
     <PyramidEdit
       v-if="showEdit"
       :items="items"
+      :community-items="communityItems"
       :rows="rows"
       :sort-items="sortItems"
       :hide-row-label="hideRowLabel"
@@ -62,6 +64,7 @@ const gameId = ref(route.query.game as string);
 const gameTitle = ref('');
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
+const communityItems = ref<PyramidItem[]>([]);
 const rows = ref<PyramidRow[]>([]);
 const sortItems = ref<SortOption>({ orderBy: 'id', order: 'asc' });
 const hideRowLabel = ref(false);
@@ -128,6 +131,7 @@ onMounted(async () => {
       shareImageTitle.value = gameData.custom?.shareImageTitle || '';
       shareLink.value = gameData.shareLink || '';
       items.value = gameData.custom?.items || [];
+      communityItems.value = gameData.custom?.communityItems || [];
       rows.value = gameData.custom?.rows || [];
       sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
       hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
@@ -146,6 +150,7 @@ onMounted(async () => {
         shareImageTitle: shareImageTitle.value,
         shareLink: shareLink.value,
         items: items.value,
+        communityItems: communityItems.value,
         rows: rows.value,
         sortItems: sortItems.value,
         hideRowLabel: hideRowLabel.value,
@@ -166,11 +171,11 @@ onMounted(async () => {
         if (gameData?.custom) {
           pyramid.value = gameData.custom.pyramid.map((tier: any) =>
             tier.slots.map((itemId: string | null) => ({
-              image: itemId ? items.value.find(item => item.id === itemId) || null : null,
+              image: itemId ? [...items.value, ...communityItems.value].find(item => item.id === itemId) || null : null,
             }))
           );
           worstItem.value = gameData.custom.worstItem
-            ? items.value.find(item => item.id === gameData.custom.worstItem.id) || null
+            ? [...items.value, ...communityItems.value].find(item => item.id === gameData.custom.worstItem.id) || null
             : null;
           hasSubmitted.value = true;
           console.log('PyramidTier: Loaded user pyramid data:', { pyramid: pyramid.value, worstItem: worstItem.value });

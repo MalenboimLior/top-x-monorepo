@@ -1,3 +1,4 @@
+<!-- PyramidEdit.vue -->
 <template>
   <section class="section">
     <div class="container has-text-centered">
@@ -103,9 +104,9 @@
           @click="clearPyramid"
         >clear pyramid</a>
       </div>
-      <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToPool">
+      <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToOfficialPool">
         <div
-          v-for="image in filteredImagePool"
+          v-for="image in filteredOfficialPool"
           :key="image.id"
           class="pyramid-slot image-box slot-style dark-slot"
           :class="{ 'selected': isSelected(image) }"
@@ -135,13 +136,34 @@
         />
       </div>
       <h2 v-if="props.communityHeader" class="subtitle has-text-white" style="font-size: 20px;">{{ props.communityHeader }}</h2>
-      <ins class="adsbygoogle"
+      
+      <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToCommunityPool">
+        <div
+          v-for="image in filteredCommunityPool"
+          :key="image.id"
+          class="pyramid-slot image-box slot-style dark-slot"
+          :class="{ 'selected': isSelected(image) }"
+          draggable="true"
+          @dragstart="() => onDragStart(image)"
+          @click.stop="() => onTapSelect(image)"
+        >
+          <img :src="image.src" class="draggable-image" />
+          <div class="image-label">{{ image.label }}</div>
+          <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
+          <font-awesome-icon
+            :icon="['fas', 'circle-info']"
+            class="info-icon"
+            :class="{ 'selected': selectedInfoIcon === image.id }"
+            @click.stop="showDescription(image)"
+          />
+        </div>
+      </div>
+<ins class="adsbygoogle"
            style="display:block"
            :data-ad-client="adClient"
            :data-ad-slot="adSlot"
            data-ad-format="auto"
            data-full-width-responsive="true"></ins>
-
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content" @click.stop>
@@ -188,6 +210,7 @@ const gameId = ref(route.query.game as string);
 
 const props = defineProps<{
   items: PyramidItem[];
+  communityItems: PyramidItem[];
   rows: PyramidRow[];
   sortItems: SortOption;
   hideRowLabel: boolean;
@@ -205,7 +228,8 @@ const emit = defineEmits<{
   (e: 'submit', data: PyramidData): void;
 }>();
 
-const imagePool = ref<PyramidItem[]>([]);
+const officialPool = ref<PyramidItem[]>([]);
+const communityPool = ref<PyramidItem[]>([]);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
   [{ image: null }, { image: null }],
@@ -245,7 +269,7 @@ onMounted(() => {
     pyramid.value = parsed.pyramid;
     worstItem.value = parsed.worstItem;
     console.log('PyramidEdit: Loaded state from local storage:', parsed);
-    removeUsedFromPool();
+    removeUsedFromPools();
   }
 
   // Add global click listener to close tab and reset selected info icon
@@ -269,25 +293,27 @@ onMounted(() => {
 watch([pyramid, worstItem], () => {
   localStorage.setItem(`pyramid_${gameId.value}`, JSON.stringify({ pyramid: pyramid.value, worstItem: worstItem.value }));
   console.log('PyramidEdit: Saved state to local storage:', { pyramid: pyramid.value, worstItem: worstItem.value });
-  removeUsedFromPool();
+  removeUsedFromPools();
 }, { deep: true });
 
-const filteredImagePool = computed(() => {
+const filteredOfficialPool = computed(() => {
   if (!searchQuery.value.trim()) {
-    return imagePool.value;
+    return officialPool.value;
   }
   const query = searchQuery.value.toLowerCase().trim();
-  return imagePool.value.filter(item =>
+  return officialPool.value.filter(item =>
     item.label.toLowerCase().includes(query) || item.name.toLowerCase().includes(query)
   );
 });
 
-const imagePoolDebug = computed(() => {
-  console.log('PyramidEdit: imagePool computed:', {
-    length: imagePool.value.length,
-    items: imagePool.value
-  });
-  return imagePool.value;
+const filteredCommunityPool = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return communityPool.value;
+  }
+  const query = searchQuery.value.toLowerCase().trim();
+  return communityPool.value.filter(item =>
+    item.label.toLowerCase().includes(query) || item.name.toLowerCase().includes(query)
+  );
 });
 
 watch(
@@ -298,29 +324,49 @@ watch(
   { immediate: true }
 );
 
+const sortFunction = (a: PyramidItem, b: PyramidItem) => {
+  const field = props.sortItems.orderBy;
+  const dir = props.sortItems.order === 'asc' ? 1 : -1;
+  const valA = a[field as keyof PyramidItem] || '';
+  const valB = b[field as keyof PyramidItem] || '';
+  if (field === 'id') {
+    return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+  }
+  return String(valA).localeCompare(String(valB)) * dir;
+};
+
 watch(
   () => props.items,
   (newItems) => {
     console.log('PyramidEdit: Items prop updated:', newItems);
     if (!newItems || !Array.isArray(newItems)) {
       console.warn('PyramidEdit: Invalid or empty items prop:', newItems);
-      imagePool.value = [];
+      officialPool.value = [];
       return;
     }
     const filtered = newItems.filter(item => item.active !== false);
-    const sorted = [...filtered].sort((a, b) => {
-      const field = props.sortItems.orderBy;
-      const dir = props.sortItems.order === 'asc' ? 1 : -1;
-      const valA = a[field as keyof PyramidItem] || '';
-      const valB = b[field as keyof PyramidItem] || '';
-      if (field === 'id') {
-        return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
-      }
-      return String(valA).localeCompare(String(valB)) * dir;
-    });
-    imagePool.value = sorted;
-    console.log('PyramidEdit: imagePool initialized:', imagePool.value);
-    removeUsedFromPool();
+    const sorted = [...filtered].sort(sortFunction);
+    officialPool.value = sorted;
+    console.log('PyramidEdit: officialPool initialized:', officialPool.value);
+    removeUsedFromPools();
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.communityItems,
+  (newItems) => {
+    console.log('PyramidEdit: communityItems prop updated:', newItems);
+    if (!newItems || !Array.isArray(newItems)) {
+      console.warn('PyramidEdit: Invalid or empty communityItems prop:', newItems);
+      communityPool.value = [];
+      return;
+    }
+    const filtered = newItems.filter(item => item.active !== false);
+    const sorted = [...filtered].sort(sortFunction);
+    communityPool.value = sorted;
+    console.log('PyramidEdit: communityPool initialized:', communityPool.value);
+    removeUsedFromPools();
   },
   { immediate: true }
 );
@@ -329,22 +375,14 @@ watch(
   () => props.sortItems,
   () => {
     console.log('PyramidEdit: sortItems prop updated:', props.sortItems);
-    if (!imagePool.value.length) {
-      console.warn('PyramidEdit: imagePool is empty, skipping sort');
+    if (!officialPool.value.length && !communityPool.value.length) {
+      console.warn('PyramidEdit: Pools are empty, skipping sort');
       return;
     }
-    imagePool.value = [...imagePool.value].sort((a, b) => {
-      const field = props.sortItems.orderBy;
-      const dir = props.sortItems.order === 'asc' ? 1 : -1;
-      const valA = a[field as keyof PyramidItem] || '';
-      const valB = b[field as keyof PyramidItem] || '';
-      if (field === 'id') {
-        return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
-      }
-      return String(valA).localeCompare(String(valB)) * dir;
-    });
-    console.log('PyramidEdit: imagePool sorted:', imagePool.value);
-    removeUsedFromPool();
+    officialPool.value = [...officialPool.value].sort(sortFunction);
+    communityPool.value = [...communityPool.value].sort(sortFunction);
+    console.log('PyramidEdit: Pools sorted:', { official: officialPool.value, community: communityPool.value });
+    removeUsedFromPools();
   }
 );
 
@@ -372,18 +410,20 @@ function clearPyramid() {
     itemsToReturn.push(worstItem.value);
     worstItem.value = null;
   }
-  // Add items back to pool and sort
-  imagePool.value = [...imagePool.value, ...itemsToReturn].sort((a, b) => {
-    const field = props.sortItems.orderBy;
-    const dir = props.sortItems.order === 'asc' ? 1 : -1;
-    const valA = a[field as keyof PyramidItem] || '';
-    const valB = b[field as keyof PyramidItem] || '';
-    if (field === 'id') {
-      return (parseInt(valA as string, 10) - parseInt(valB as string, 10)) * dir;
+  // Separate into official and community
+  const officialItems: PyramidItem[] = [];
+  const communityItems: PyramidItem[] = [];
+  itemsToReturn.forEach(item => {
+    if (props.communityItems.some(i => i.id === item.id)) {
+      communityItems.push(item);
+    } else {
+      officialItems.push(item);
     }
-    return String(valA).localeCompare(String(valB)) * dir;
   });
-  console.log('PyramidEdit: Pyramid cleared, items returned to pool:', imagePool.value);
+  // Add back to respective pools and sort
+  officialPool.value = [...officialPool.value, ...officialItems].sort(sortFunction);
+  communityPool.value = [...communityPool.value, ...communityItems].sort(sortFunction);
+  console.log('PyramidEdit: Pyramid cleared, items returned to pools:', { official: officialPool.value, community: communityPool.value });
 }
 
 function isSelected(item: PyramidItem | null): boolean {
@@ -439,14 +479,19 @@ function onSlotClick(row: number, col: number) {
   }
 
   const fromSlot = findSlotContaining(selectedItem.value.id);
-  const fromInPool = imagePool.value.some(i => i.id === selectedItem.value!.id);
+  const fromOfficial = officialPool.value.some(i => i.id === selectedItem.value!.id);
+  const fromCommunity = communityPool.value.some(i => i.id === selectedItem.value!.id);
   const fromWorst = worstItem.value?.id === selectedItem.value.id;
 
   if (targetItem) {
-    if (fromInPool) {
-      imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-      imagePool.value.push(targetItem);
-      console.log('PyramidEdit: Swapped pool item with slot item:', { pool: imagePool.value });
+    if (fromOfficial) {
+      officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
+      officialPool.value.push(targetItem);
+      console.log('PyramidEdit: Swapped official pool item with slot item:', { officialPool: officialPool.value });
+    } else if (fromCommunity) {
+      communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
+      communityPool.value.push(targetItem);
+      console.log('PyramidEdit: Swapped community pool item with slot item:', { communityPool: communityPool.value });
     } else if (fromSlot) {
       fromSlot.image = targetItem;
       console.log('PyramidEdit: Swapped slot items:', { fromSlot, targetItem });
@@ -454,12 +499,15 @@ function onSlotClick(row: number, col: number) {
       worstItem.value = targetItem;
       console.log('PyramidEdit: Swapped worst item with slot item:', { worstItem: worstItem.value });
     }
-  } else if (!fromInPool && fromSlot) {
+  } else if (fromOfficial) {
+    officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
+    console.log('PyramidEdit: Removed item from official pool:', officialPool.value);
+  } else if (fromCommunity) {
+    communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
+    console.log('PyramidEdit: Removed item from community pool:', communityPool.value);
+  } else if (fromSlot) {
     fromSlot.image = null;
     console.log('PyramidEdit: Removed item from slot:', fromSlot);
-  } else if (fromInPool) {
-    imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidEdit: Removed item from pool:', imagePool.value);
   } else if (fromWorst) {
     worstItem.value = null;
     console.log('PyramidEdit: Removed worst item:', worstItem.value);
@@ -496,23 +544,31 @@ function onWorstSlotClick() {
   }
 
   const fromSlot = findSlotContaining(selectedItem.value.id);
-  const fromInPool = imagePool.value.some(i => i.id === selectedItem.value!.id);
+  const fromOfficial = officialPool.value.some(i => i.id === selectedItem.value!.id);
+  const fromCommunity = communityPool.value.some(i => i.id === selectedItem.value!.id);
 
   if (worstItem.value) {
-    if (fromInPool) {
-      imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-      imagePool.value.push(worstItem.value);
-      console.log('PyramidEdit: Swapped pool item with worst item:', { pool: imagePool.value });
+    if (fromOfficial) {
+      officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
+      officialPool.value.push(worstItem.value);
+      console.log('PyramidEdit: Swapped official pool item with worst item:', { officialPool: officialPool.value });
+    } else if (fromCommunity) {
+      communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
+      communityPool.value.push(worstItem.value);
+      console.log('PyramidEdit: Swapped community pool item with worst item:', { communityPool: communityPool.value });
     } else if (fromSlot) {
       fromSlot.image = worstItem.value;
       console.log('PyramidEdit: Swapped slot item with worst item:', { fromSlot, worstItem: worstItem.value });
     }
-  } else if (!fromInPool && fromSlot) {
+  } else if (fromOfficial) {
+    officialPool.value = officialPool.value.filter(i => i.id !== selectedItem.value!.id);
+    console.log('PyramidEdit: Removed item from official pool for worst:', officialPool.value);
+  } else if (fromCommunity) {
+    communityPool.value = communityPool.value.filter(i => i.id !== selectedItem.value!.id);
+    console.log('PyramidEdit: Removed item from community pool for worst:', communityPool.value);
+  } else if (fromSlot) {
     fromSlot.image = null;
     console.log('PyramidEdit: Removed item from slot for worst:', fromSlot);
-  } else if (fromInPool) {
-    imagePool.value = imagePool.value.filter(i => i.id !== selectedItem.value!.id);
-    console.log('PyramidEdit: Removed item from pool for worst:', imagePool.value);
   }
 
   worstItem.value = selectedItem.value;
@@ -531,23 +587,60 @@ function onDropToWorst() {
   onWorstSlotClick();
 }
 
-function onDropToPool() {
+function onDropToOfficialPool() {
   if (!selectedItem.value) {
-    console.log('PyramidEdit: No selected item for pool drop');
+    console.log('PyramidEdit: No selected item for official pool drop');
+    return;
+  }
+  // Check if item belongs to official
+  const isOfficial = !props.communityItems.some(i => i.id === selectedItem.value!.id);
+  if (!isOfficial) {
+    console.log('PyramidEdit: Item is from community, cannot drop to official pool');
     return;
   }
   const slot = findSlotContaining(selectedItem.value.id);
   const fromWorst = worstItem.value?.id === selectedItem.value.id;
   if (slot) {
     slot.image = null;
-    console.log('PyramidEdit: Removed item from slot for pool drop:', slot);
+    console.log('PyramidEdit: Removed item from slot for official pool drop:', slot);
   } else if (fromWorst) {
     worstItem.value = null;
-    console.log('PyramidEdit: Removed item from worst for pool drop:', worstItem.value);
+    console.log('PyramidEdit: Removed item from worst for official pool drop:', worstItem.value);
   }
-  if (!imagePool.value.some(i => i.id === selectedItem.value!.id)) {
-    imagePool.value.push(selectedItem.value);
-    console.log('PyramidEdit: Added item back to pool:', imagePool.value);
+  if (!officialPool.value.some(i => i.id === selectedItem.value!.id)) {
+    officialPool.value.push(selectedItem.value);
+    officialPool.value = officialPool.value.sort(sortFunction);
+    console.log('PyramidEdit: Added item back to official pool:', officialPool.value);
+  }
+  selectedItem.value = null;
+  draggedItem.value = null;
+  droppableSlot.value = null;
+}
+
+function onDropToCommunityPool() {
+  if (!selectedItem.value) {
+    console.log('PyramidEdit: No selected item for community pool drop');
+    return;
+  }
+  // Check if item belongs to community
+  const isCommunity = props.communityItems.some(i => i.id === selectedItem.value!.id);
+  if (!isCommunity) {
+    console.log('PyramidEdit: Item is from official, cannot drop to community pool');
+    return;
+  }
+  const slot = findSlotContaining(selectedItem.value.id);
+  const fromWorst = worstItem.value?.id === selectedItem.value.id;
+  if (slot) {
+    slot.image = null;
+    console.log('PyramidEdit: Removed item from slot for community pool drop:', slot);
+  } else if (fromWorst) {
+    worstItem.value = null;
+    console.log('PyramidEdit: Removed item from worst for community pool drop:', worstItem.value);
+  }
+  if (!communityPool.value.some(i => i.id === selectedItem.value!.id)) {
+    communityPool.value.push(selectedItem.value);
+    communityPool.value = communityPool.value.sort(sortFunction);
+    console.log('PyramidEdit: Added item back to community pool:', communityPool.value);
   }
   selectedItem.value = null;
   draggedItem.value = null;
@@ -560,8 +653,8 @@ function showAddItemPopup() {
 }
 
 function addNewItem(newItem: PyramidItem) {
-  imagePool.value = [newItem, ...imagePool.value];
-  console.log('PyramidEdit: Added new item to pool:', newItem);
+  communityPool.value = [newItem, ...communityPool.value];
+  console.log('PyramidEdit: Added new item to community pool:', newItem);
   showAddPopup.value = false;
 }
 
@@ -576,7 +669,7 @@ function findSlotContaining(itemId: string): PyramidSlot | null {
   return null;
 }
 
-function removeUsedFromPool() {
+function removeUsedFromPools() {
   const usedIds = new Set<string>();
   pyramid.value.forEach(row => {
     row.forEach(slot => {
@@ -588,7 +681,8 @@ function removeUsedFromPool() {
   if (worstItem.value) {
     usedIds.add(worstItem.value.id);
   }
-  imagePool.value = imagePool.value.filter(item => !usedIds.has(item.id));
+  officialPool.value = officialPool.value.filter(item => !usedIds.has(item.id));
+  communityPool.value = communityPool.value.filter(item => !usedIds.has(item.id));
 }
 
 function toRoman(num: number): string {
@@ -612,13 +706,13 @@ function startTypingAnimation(fullDescription: string) {
   if (typingInterval) {
     clearInterval(typingInterval);
   }
-    const words = fullDescription.split(/\s+/); // Split on whitespace to get words
+  const words = fullDescription.split(/\s+/); // Split on whitespace to get words
 
   let index = 0;
-    displayedDescription.value = '';
+  displayedDescription.value = '';
 
   typingInterval = setInterval(() => {
-   if (index < words.length) {
+    if (index < words.length) {
       // Append the next word and a space (unless it's the last word)
       displayedDescription.value += words[index] + (index < words.length - 1 ? ' ' : '');
       index++;
