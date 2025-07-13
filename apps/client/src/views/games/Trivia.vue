@@ -139,7 +139,7 @@ watch(
       const hash = await triviaStore.hashAnswer(i);
       if (hash === newQuestion.correctHash) {
         correctAnswerIndex.value = i;
-        console.log('Correct answer index set:', i);
+        // console.log('Correct answer index set:', i);
         break;
       }
     }
@@ -167,9 +167,9 @@ watch(
         const rankData = await getPercentileRank(gameId, userStore.user.uid);
         percentileRank.value = rankData.percentile;
         usersTopped.value = rankData.usersTopped || 0;
-        console.log('Percentile rank fetched:', percentileRank.value, 'Users topped:', usersTopped.value);
+        // console.log('Percentile rank fetched:', percentileRank.value, 'Users topped:', usersTopped.value);
       } catch (err) {
-        console.error('Error fetching percentile rank:', err);
+        // console.error('Error fetching percentile rank:', err);
         percentileRank.value = 0;
         usersTopped.value = 0;
       }
@@ -178,23 +178,23 @@ watch(
 );
 
 const startGame = () => {
-  console.log('Start game clicked for gameId:', gameId);
+  // console.log('Start game clicked for gameId:', gameId);
   triviaStore.startGame();
 };
 
 const answerQuestion = (index: number) => triviaStore.answerQuestion(index);
 
 const resetGame = () => {
-  console.log('Reset game clicked');
+  // console.log('Reset game clicked');
   triviaStore.resetGame();
   percentileRank.value = 0;
   usersTopped.value = 0;
 };
 
 const shareScore = () => {
-  console.log('Share score clicked, isLoggedIn:', isLoggedIn.value);
+  // console.log('Share score clicked, isLoggedIn:', isLoggedIn.value);
   if (!userStore.user) {
-    console.log('User not logged in, prompting login');
+    // console.log('User not logged in, prompting login');
     userStore.loginWithX();
     return;
   }
@@ -203,22 +203,22 @@ const shareScore = () => {
   const shareText = `${text} ${url}`;
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
   window.open(tweetUrl, '_blank');
-  console.log('Sharing score on X:', score.value, 'streak:', sessionBestStreak.value, 'url:', url);
+  // console.log('Sharing score on X:', score.value, 'streak:', sessionBestStreak.value, 'url:', url);
 };
 
 const login = async () => {
-  console.log('Login with X clicked');
+  // console.log('Login with X clicked');
   const success = await userStore.loginWithX();
   if (success) {
-    console.log('Login successful, saving score');
+    // console.log('Login successful, saving score');
     await triviaStore.saveScoreAfterLogin();
   } else {
-    console.log('Login failed');
+    // console.log('Login failed');
   }
 };
 
 const addToFrenemies = async (uid: string) => {
-  console.log('Add to frenemies clicked for UID:', uid);
+  // console.log('Add to frenemies clicked for UID:', uid);
   await userStore.addFrenemy(uid);
 };
 </script>

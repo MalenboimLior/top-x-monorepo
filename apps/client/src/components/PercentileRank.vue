@@ -85,7 +85,7 @@ const progressBarString = computed(() => {
 
 const shareScore = () => {
   if (!userStore.user) {
-    console.log('User not logged in, prompting login');
+    // console.log('User not logged in, prompting login');
     userStore.loginWithX();
     return;
   }
@@ -93,7 +93,7 @@ const shareScore = () => {
   const url = `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=trivia&score=${props.bestScore}`;
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareText}${url}`)}`;
   window.open(tweetUrl, '_blank');
-  console.log('Sharing score on X:', {
+  // console.log('Sharing score on X:', {
     score: props.score,
     percentile: props.percentile,
     usersTopped: props.usersTopped,

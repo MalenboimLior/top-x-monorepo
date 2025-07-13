@@ -42,7 +42,7 @@ const emit = defineEmits<{
 }>();
 
 const startGame = () => {
-  console.log('Start game clicked');
+  // console.log('Start game clicked');
   emit('start-game');
 };
 </script>

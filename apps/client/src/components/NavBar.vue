@@ -71,25 +71,25 @@ const router = useRouter();
 const isMenuActive = ref(false);
 
 const user = computed(() => {
-  console.log('NavBar user state:', userStore.user);
+  // console.log('NavBar user state:', userStore.user);
   return userStore.user;
 });
 const error = computed(() => userStore.error);
 
 const handleLogin = async () => {
-  console.log('Initiating login with X');
+  // console.log('Initiating login with X');
   await userStore.loginWithX();
   if (userStore.user && userStore.profile) {
-    console.log('Login successful, redirecting to /profile');
+    // console.log('Login successful, redirecting to /profile');
     router.push('/profile');
     isMenuActive.value = false;
   } else {
-    console.warn('Login failed or no profile loaded');
+    // console.warn('Login failed or no profile loaded');
   }
 };
 
 const logout = async () => {
-  console.log('Initiating logout');
+  // console.log('Initiating logout');
   await userStore.logout();
   router.push('/');
   isMenuActive.value = false;

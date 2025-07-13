@@ -25,7 +25,7 @@ async function deleteExistingQuestions() {
   const batch = db.batch();
   snapshot.docs.forEach((doc) => batch.delete(doc.ref));
   await batch.commit();
-  console.log(`Deleted ${snapshot.size} existing questions.`);
+  // console.log(`Deleted ${snapshot.size} existing questions.`);
 }
 
 async function uploadCsvQuestions(filePath) {
@@ -51,7 +51,7 @@ async function uploadCsvQuestions(filePath) {
         }
       })
       .on('end', () => {
-        console.log(`Parsed ${questions.length} questions from CSV.`);
+        // console.log(`Parsed ${questions.length} questions from CSV.`);
         resolve();
       })
       .on('error', reject);
@@ -64,7 +64,7 @@ async function uploadCsvQuestions(filePath) {
   }
 
   await batch.commit();
-  console.log('Questions uploaded.');
+  // console.log('Questions uploaded.');
 }
 
 async function main() {
