@@ -71,7 +71,7 @@ async function preloadImages() {
   const uniqueImageUrls = new Set<string>();
   const timeoutMs = 5000;
 
-  const preprocessImage = (src: string): Promise<void> =>
+  const preprocessImage = (src: string, cropToSquare: boolean = true, cropPosition: 'center' | 'top' = 'center'): Promise<void> =>
     new Promise((resolve) => {
       const img = new Image();
       img.src = src;
@@ -86,24 +86,40 @@ async function preloadImages() {
       }
 
       img.onload = () => {
-        const size = 90;
-        canvas.width = size;
-        canvas.height = size;
-        const imgAspect = img.naturalWidth / img.naturalHeight;
-        let srcX = 0,
-          srcY = 0,
-          srcWidth = img.naturalWidth,
-          srcHeight = img.naturalHeight;
+        if (!cropToSquare) {
+          // No crop, full image
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0);
+        } else {
+          // Crop to square
+          const size = 90;
+          canvas.width = size;
+          canvas.height = size;
+          const imgAspect = img.naturalWidth / img.naturalHeight;
+          let srcX = 0,
+            srcY = 0,
+            srcWidth = img.naturalWidth,
+            srcHeight = img.naturalHeight;
 
-        if (imgAspect > 1) {
-          srcWidth = srcHeight;
-          srcX = (img.naturalWidth - srcWidth) / 2;
-        } else if (imgAspect < 1) {
-          srcHeight = srcWidth;
-          srcY = (img.naturalHeight - srcHeight) / 2;
+          if (imgAspect > 1) { // landscape
+            srcHeight = img.naturalHeight;
+            srcWidth = srcHeight;
+            srcX = (img.naturalWidth - srcWidth) / 2; // center horizontally
+            srcY = 0;
+          } else if (imgAspect < 1) { // portrait
+            srcWidth = img.naturalWidth;
+            srcHeight = srcWidth;
+            srcX = 0;
+            if (cropPosition === 'center') {
+              srcY = (img.naturalHeight - srcHeight) / 2;
+            } else if (cropPosition === 'top') {
+              srcY = 0;
+            }
+          } // square: full
+
+          ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
         }
-
-        ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
         const dataUrl = canvas.toDataURL('image/jpeg');
         preprocessedImages.value.set(src, dataUrl);
         console.log('PyramidView: Preprocessed image:', src);
@@ -130,7 +146,7 @@ async function preloadImages() {
     uniqueImageUrls.add(profileImage);
     imagePromises.push(
       Promise.race([
-        preprocessImage(profileImage),
+        preprocessImage(profileImage, true, 'center'), // center crop for profile
         new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
       ])
     );
@@ -141,7 +157,7 @@ async function preloadImages() {
     uniqueImageUrls.add(logoSrc);
     imagePromises.push(
       Promise.race([
-        preprocessImage(logoSrc),
+        preprocessImage(logoSrc, false), // no crop for logo
         new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
       ])
     );
@@ -152,7 +168,7 @@ async function preloadImages() {
       uniqueImageUrls.add(slot.image.src);
       imagePromises.push(
         Promise.race([
-          preprocessImage(slot.image.src),
+          preprocessImage(slot.image.src, true, 'top'), // top crop for items
           new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
         ])
       );
@@ -163,7 +179,7 @@ async function preloadImages() {
     uniqueImageUrls.add(props.worstItem.src);
     imagePromises.push(
       Promise.race([
-        preprocessImage(props.worstItem.src),
+        preprocessImage(props.worstItem.src, true, 'top'), // top crop for worst item
         new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
       ])
     );
@@ -225,24 +241,22 @@ async function renderPyramidImage() {
         object-fit: cover;
       }
       .logo-container {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.2rem;
-  width: 70px;
-  
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.logo {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
+        position: absolute;
+        top: 0.6rem;
+        right: 0.2rem;
+        width: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .logo {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
       .pyramid {
         display: flex;
         flex-direction: column;
