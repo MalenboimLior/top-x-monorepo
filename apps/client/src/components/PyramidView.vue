@@ -388,9 +388,9 @@ function handleShareClick(e: MouseEvent) {
 .logo-container {
   position: absolute;
   top: 0.6rem;
-  right: 0.6rem;
-  width: 200px;
-  height: 40px;
+  right: 0.2rem;
+  width: 80px;
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -599,9 +599,7 @@ function handleShareClick(e: MouseEvent) {
   .top-x-label {
     font-size: 0.6rem;
   }
-  .game-header {
-    font-size: 15px;
-  }
+  
   .logo {
     width: 60px;
   }
