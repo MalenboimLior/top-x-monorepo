@@ -80,7 +80,7 @@ const form = ref({
 const imagePreview = ref<string | null>(null);
 
 const isFormValid = computed(() => {
-  return form.value.label.trim() && form.value.name.trim() && form.value.image;
+  return  form.value.name.trim() && form.value.image;
 });
 
 async function handleLogin() {
@@ -123,7 +123,8 @@ async function saveItem() {
   const filename = `${id}.jpg`;
   const storagePath = `presidents/${filename}`;
   const itemRef = doc(db, 'games', props.gameId, 'items', id);
-
+      console.log('props.gameId:', props.gameId);
+ console.log('id:', id);
   try {
     // Upload image to Firebase Storage
     const storageReference = storageRef(storage, storagePath);
@@ -135,15 +136,15 @@ async function saveItem() {
       // Create new PyramidItem
       const newItem: PyramidItem = {
         id,
-        label: form.value.label,
+        label: form.value.name,
         name: form.value.name,
         src,
-        description: form.value.description || undefined,
+        description: '',
         color: form.value.color,
         active: true,
         source: userStore.user.displayName || 'anonymous',
       };
-
+   console.log('newItem:', newItem);
       // Save to Firestore
       await setDoc(itemRef, newItem);
       console.log('PyramidAddItemPopup: Item saved to Firestore:', newItem);
