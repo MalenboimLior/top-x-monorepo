@@ -73,12 +73,12 @@ useHead({
 });
 
 onMounted(() => {
-  // console.log('Home: Fetching games from Firestore...');
+  console.log('Home: Fetching games from Firestore...');
     const q = query(collection(db, 'games'));
     onSnapshot(q, (snapshot) => {
     games.value = snapshot.docs.map((doc) => {
       const data = doc.data();
-      // console.log('Home: Game fetched:', { id: doc.id, data });
+      console.log('Home: Game fetched:', { id: doc.id, data });
       return {
         id: doc.id,
         name: data.name || 'Unnamed Game',
@@ -92,9 +92,9 @@ onMounted(() => {
         route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
       } as Game;
     }).filter(g => g.active);
-    // console.log('Home: Games updated:', games.value);
+    console.log('Home: Games updated:', games.value);
   }, (err) => {
-    // console.error('Home: Error fetching games:', err.message, err);
+    console.error('Home: Error fetching games:', err.message, err);
   });
 });
 </script>

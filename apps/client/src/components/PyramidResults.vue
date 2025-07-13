@@ -56,7 +56,7 @@ const userVotes = ref<
 >([]);
 
 onMounted(async () => {
-  // console.log('PyramidResults: onMounted called with gameId:', props.gameId);
+  console.log('PyramidResults: onMounted called with gameId:', props.gameId);
   try {
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const votes = [];
@@ -82,9 +82,9 @@ onMounted(async () => {
       }
     }
     userVotes.value = votes;
-    // console.log('PyramidResults: Fetched votes:', userVotes.value);
+    console.log('PyramidResults: Fetched votes:', userVotes.value);
   } catch (err: any) {
-    // console.error('PyramidResults: Error fetching votes:', err.message, err);
+    console.error('PyramidResults: Error fetching votes:', err.message, err);
   }
 });
 </script>

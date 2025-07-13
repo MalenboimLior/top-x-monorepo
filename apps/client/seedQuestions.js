@@ -68,7 +68,7 @@ async function seedQuestions() {
     });
   }
   await batch.commit();
-  // console.log('Questions seeded');
+  console.log('Questions seeded');
 }
 
-// seedQuestions().catch(console.error);
+seedQuestions().catch(console.error);

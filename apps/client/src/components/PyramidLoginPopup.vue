@@ -46,12 +46,12 @@ async function handleLogin() {
   try {
     const success = await userStore.loginWithX();
     if (success && userStore.user && props.gameId) {
-      // console.log('PyramidLoginPopup: Login successful');
+      console.log('PyramidLoginPopup: Login successful');
       const voteData = props.pendingVote || JSON.parse(localStorage.getItem(`pyramid_${props.gameId}`) || '{}');
       if (voteData && voteData.pyramid && 'worstItem' in voteData) {
         await saveCachedVote(voteData, userStore.user.uid);
         localStorage.removeItem(`pyramid_${props.gameId}`);
-        // console.log('PyramidLoginPopup: Vote saved and localStorage cleared');
+        console.log('PyramidLoginPopup: Vote saved and localStorage cleared');
       }
       emit('login');
     }
@@ -81,11 +81,11 @@ async function saveCachedVote(data: PyramidData, userId: string) {
 
   try {
     await userStore.updateGameProgress(gameTypeId, props.gameId, score, 0, custom);
-    // console.log('PyramidLoginPopup: Cached vote saved to user progress');
+    console.log('PyramidLoginPopup: Cached vote saved to user progress');
     await updateGameStats(props.gameId, data.pyramid, props.rows || [], data.worstItem);
-    // console.log('PyramidLoginPopup: Game stats updated for cached vote');
+    console.log('PyramidLoginPopup: Game stats updated for cached vote');
   } catch (err: any) {
-    // console.error('PyramidLoginPopup: Error saving cached vote:', {
+    console.error('PyramidLoginPopup: Error saving cached vote:', {
       message: err.message,
       code: err.code,
       details: err.details,
@@ -106,7 +106,7 @@ function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null)
     });
   });
 
-  // console.log('PyramidLoginPopup: Calculated score:', score);
+  console.log('PyramidLoginPopup: Calculated score:', score);
   return score;
 }
 
@@ -148,12 +148,12 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
       updates.itemRanks = updatedItemRanks;
       updates.worstItemCounts = updatedWorstItemCounts;
 
-      // console.log('PyramidLoginPopup: Stats updates:', JSON.stringify(updates, null, 2));
+      console.log('PyramidLoginPopup: Stats updates:', JSON.stringify(updates, null, 2));
       transaction.set(statsRef, updates, { merge: true });
     });
-    // console.log('PyramidLoginPopup: Successfully updated game stats for gameId:', gameId);
+    console.log('PyramidLoginPopup: Successfully updated game stats for gameId:', gameId);
   } catch (err: any) {
-    // console.error('PyramidLoginPopup: Error updating game stats:', {
+    console.error('PyramidLoginPopup: Error updating game stats:', {
       message: err.message,
       code: err.code,
       details: err.details,
@@ -164,12 +164,12 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
 }
 
 const skip = () => {
-  // console.log('PyramidLoginPopup: Skip clicked');
+  console.log('PyramidLoginPopup: Skip clicked');
   emit('skip');
 };
 
 const close = () => {
-  // console.log('PyramidLoginPopup: Close clicked');
+  console.log('PyramidLoginPopup: Close clicked');
   emit('close');
 };
 </script>

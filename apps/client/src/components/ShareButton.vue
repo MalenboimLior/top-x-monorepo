@@ -47,7 +47,7 @@ const handleShare = async () => {
       try {
       await navigator.clipboard.writeText(props.shareText);
     } catch (clipErr) {
-      // console.warn('Clipboard write failed (ignored):', clipErr);
+      console.warn('Clipboard write failed (ignored):', clipErr);
     }
 
     await navigator.share({
@@ -55,7 +55,7 @@ const handleShare = async () => {
       text: props.shareText,
       title: 'TOP-X Pyramid Share'
     });
-      // console.log('Shared successfully');
+      console.log('Shared successfully');
       return;
     }
 
@@ -71,7 +71,7 @@ const handleShare = async () => {
 
     try {
       await navigator.clipboard.writeText(props.shareText);
-      // console.log('Clipboard copy successful');
+      console.log('Clipboard copy successful');
       showShareTooltip.value = true;
       setTimeout(() => {
         showShareTooltip.value = false;

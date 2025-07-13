@@ -119,7 +119,7 @@ async function fetchFrenemies() {
       score: user.games?.smartest_on_x?.default?.score || 0,
     }));
   } catch (err) {
-    // console.error('Error fetching frenemies:', err);
+    console.error('Error fetching frenemies:', err);
     frenemies.value = [];
     frenemyEntries.value = [];
   } finally {
@@ -148,7 +148,7 @@ async function fetchAddedBy() {
       score: user.games?.smartest_on_x?.default?.score || 0,
     }));
   } catch (err) {
-    // console.error('Error fetching addedBy:', err);
+    console.error('Error fetching addedBy:', err);
     addedBy.value = [];
     addedByEntries.value = [];
   } finally {
@@ -162,7 +162,7 @@ async function addFrenemy(uid: string) {
     await fetchFrenemies();
     await fetchAddedBy();
   } catch (err) {
-    // console.error('Error adding frenemy:', err);
+    console.error('Error adding frenemy:', err);
   }
 }
 

@@ -19,7 +19,7 @@ export const useUserStore = defineStore('user', () => {
   const error = ref<string | null>(null);
 
   onAuthStateChanged(auth, (currentUser) => {
-    // console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
+    console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
     if (currentUser) {
       // Sanitize Firebase User object to avoid unsafe properties
       user.value = {
@@ -31,29 +31,29 @@ export const useUserStore = defineStore('user', () => {
       onSnapshot(userDoc, (snapshot) => {
         if (snapshot.exists()) {
           profile.value = snapshot.data() as User;
-          // console.log('Profile loaded:', profile.value);
+          console.log('Profile loaded:', profile.value);
         } else {
-          // console.log('No profile found, creating new one');
+          console.log('No profile found, creating new one');
           createUserProfile(currentUser);
         }
       }, (err) => {
-        // console.error('Firestore error:', err);
+        console.error('Firestore error:', err);
         error.value = err.message;
       });
     } else {
       user.value = null;
       profile.value = null;
-      // console.log('No user logged in');
+      console.log('No user logged in');
     }
   });
 
   const loginWithX = async () => {
     const provider = new TwitterAuthProvider();
-    // console.log("Using provider ID:", provider.providerId); // should be 'twitter.com'
+    console.log("Using provider ID:", provider.providerId); // should be 'twitter.com'
 
     try {
       const result = await signInWithPopup(auth, provider);
-      // console.log('Login successful:', result.user.uid);
+      console.log('Login successful:', result.user.uid);
       user.value = {
         uid: result.user.uid,
         displayName: result.user.displayName,
@@ -78,27 +78,27 @@ export const useUserStore = defineStore('user', () => {
             ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
             : 'https://www.top-x.co/assets/profile.png',
         });
-        // console.log('Updated user profile with X credentials');
+        console.log('Updated user profile with X credentials');
       } else {
         await createUserProfile(result.user, { xAccessToken, xSecret });
       }
-      // console.log('before syncXUserData:');
+      console.log('before syncXUserData:');
 
       const syncXUserData: HttpsCallable<unknown, unknown> = httpsCallable(functions, 'syncXUserData');
       await syncXUserData().catch((err) => {
-        // console.error('Error calling syncXUserData:', err);
+        console.error('Error calling syncXUserData:', err);
         throw new Error(`Failed to sync X data: ${err.message}`);
       });
-      // console.log('Triggered syncXUserData');
+      console.log('Triggered syncXUserData');
 
       if (!profile.value) {
-        // console.log('Waiting for profile to load...');
+        console.log('Waiting for profile to load...');
         await new Promise<void>((resolve) => {
           const unsubscribe = watch(
             () => profile.value,
             (newProfile) => {
               if (newProfile) {
-                // console.log('Profile loaded after login:', newProfile);
+                console.log('Profile loaded after login:', newProfile);
                 unsubscribe();
                 resolve();
               }
@@ -119,9 +119,9 @@ export const useUserStore = defineStore('user', () => {
   const logout = async () => {
     try {
       await auth.signOut();
-      // console.log('Logout successful');
+      console.log('Logout successful');
     } catch (err: any) {
-      // console.error('Logout error:', err);
+      console.error('Logout error:', err);
       error.value = err.message;
     }
   };
@@ -146,11 +146,11 @@ export const useUserStore = defineStore('user', () => {
       badges: [],
     };
     try {
-      // console.log('Attempting to create profile:', userProfile);
+      console.log('Attempting to create profile:', userProfile);
       await setDoc(doc(db, 'users', user.uid), userProfile);
-      // console.log('Profile created:', userProfile);
+      console.log('Profile created:', userProfile);
     } catch (err: any) {
-      // console.error('Profile creation error:', {
+      console.error('Profile creation error:', {
         message: err.message,
         code: err.code,
         details: err.details,
@@ -162,35 +162,35 @@ export const useUserStore = defineStore('user', () => {
 
   async function addFrenemy(frenemyUid: string) {
     if (!user.value || frenemyUid === user.value.uid) {
-      // console.log('Cannot add frenemy: no user logged in or same user');
+      console.log('Cannot add frenemy: no user logged in or same user');
       error.value = 'Cannot add yourself as a frenemy';
       return;
     }
     try {
-      // console.log(`Adding frenemy ${frenemyUid} for user ${user.value.uid}`);
+      console.log(`Adding frenemy ${frenemyUid} for user ${user.value.uid}`);
       const userDocRef = doc(db, 'users', user.value.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
-        // console.error('User document does not exist:', user.value.uid);
+        console.error('User document does not exist:', user.value.uid);
         error.value = 'User profile not found';
         return;
       }
-      // console.log('User document state:', userDocSnap.data());
+      console.log('User document state:', userDocSnap.data());
       const frenemyDocRef = doc(db, 'users', frenemyUid);
       const frenemyDocSnap = await getDoc(frenemyDocRef);
       if (!frenemyDocSnap.exists()) {
-        // console.error('Frenemy document does not exist:', frenemyUid);
+        console.error('Frenemy document does not exist:', frenemyUid);
         error.value = 'Frenemy not found';
         return;
       }
-      // console.log('Frenemy document state:', frenemyDocSnap.data());
+      console.log('Frenemy document state:', frenemyDocSnap.data());
       try {
         await updateDoc(userDocRef, {
           frenemies: arrayUnion(frenemyUid),
         });
-        // console.log(`Successfully updated user ${user.value.uid} frenemies with ${frenemyUid}`);
+        console.log(`Successfully updated user ${user.value.uid} frenemies with ${frenemyUid}`);
       } catch (err: any) {
-        // console.error('Error updating user frenemies:', {
+        console.error('Error updating user frenemies:', {
           userId: user.value.uid,
           frenemyUid,
           message: err.message,
@@ -204,9 +204,9 @@ export const useUserStore = defineStore('user', () => {
         await updateDoc(frenemyDocRef, {
           addedBy: arrayUnion(user.value.uid),
         });
-        // console.log(`Successfully updated frenemy ${frenemyUid} addedBy with ${user.value.uid}`);
+        console.log(`Successfully updated frenemy ${frenemyUid} addedBy with ${user.value.uid}`);
       } catch (err: any) {
-        // console.error('Error updating frenemy addedBy:', {
+        console.error('Error updating frenemy addedBy:', {
           userId: user.value.uid,
           frenemyUid,
           message: err.message,
@@ -218,7 +218,7 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (err: any) {
       error.value = err.message;
-      // console.error('Failed to add frenemy:', {
+      console.error('Failed to add frenemy:', {
         userId: user.value.uid,
         frenemyUid,
         message: err.message,
@@ -230,7 +230,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function removeFrenemy(frenemyUid: string) {
     if (!user.value) {
-      // console.log('Cannot remove frenemy: no user logged in');
+      console.log('Cannot remove frenemy: no user logged in');
       error.value = 'No user logged in';
       return;
     }
@@ -243,9 +243,9 @@ export const useUserStore = defineStore('user', () => {
       await updateDoc(frenemyDocRef, {
         addedBy: arrayRemove(user.value.uid),
       });
-      // console.log(`Removed frenemy ${frenemyUid} for user ${user.value.uid}`);
+      console.log(`Removed frenemy ${frenemyUid} for user ${user.value.uid}`);
     } catch (err: any) {
-      // console.error('Error removing frenemy:', err);
+      console.error('Error removing frenemy:', err);
       error.value = err.message;
     }
   }
@@ -258,7 +258,7 @@ export const useUserStore = defineStore('user', () => {
     custom?: Record<string, any>
   ) {
     if (!user.value) {
-      // console.log('Cannot update game progress: no user logged in');
+      console.log('Cannot update game progress: no user logged in');
       error.value = 'No user logged in';
       return;
     }
@@ -283,9 +283,9 @@ export const useUserStore = defineStore('user', () => {
         },
         { merge: true }
       );
-      // console.log(`Updated game progress for ${gameTypeId}/${gameId}`);
+      console.log(`Updated game progress for ${gameTypeId}/${gameId}`);
     } catch (err: any) {
-      // console.error('Error updating game progress:', err);
+      console.error('Error updating game progress:', err);
       error.value = err.message;
     }
   }

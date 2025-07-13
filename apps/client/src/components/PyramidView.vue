@@ -119,7 +119,7 @@ const showShareTooltip = ref(false);
 const shareTooltipShown = ref(false);
 
 onMounted(async () => {
-  // console.log('PyramidView: onMounted called with props:', {
+  console.log('PyramidView: onMounted called with props:', {
     gameHeader: props.gameHeader,
     worstHeader: props.worstHeader,
     hideRowLabel: props.hideRowLabel,
@@ -138,7 +138,7 @@ async function preloadImages() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        // console.warn('PyramidView: Failed to get canvas context for', img.src);
+        console.warn('PyramidView: Failed to get canvas context for', img.src);
         resolve();
         return;
       }
@@ -166,17 +166,17 @@ async function preloadImages() {
         ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
         const dataUrl = canvas.toDataURL('image/png');
         preprocessedImages.value.set(img.src, dataUrl);
-        // // console.log('PyramidView: Preprocessed image:', img.src, 'Dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+        // console.log('PyramidView: Preprocessed image:', img.src, 'Dimensions:', img.naturalWidth, 'x', img.naturalHeight);
         resolve();
       };
 
       img.onerror = () => {
-        // console.warn('PyramidView: Image failed to load:', img.src);
+        console.warn('PyramidView: Image failed to load:', img.src);
         resolve();
       };
 
       img.onabort = () => {
-        // console.warn('PyramidView: Image load aborted:', img.src);
+        console.warn('PyramidView: Image load aborted:', img.src);
         resolve();
       };
 
@@ -219,16 +219,16 @@ async function preloadImages() {
     );
   }
 
-  // console.log('PyramidView: Preloading images:', Array.from(uniqueImageUrls));
+  console.log('PyramidView: Preloading images:', Array.from(uniqueImageUrls));
   if (imagePromises.length === 0) {
-    // console.log('PyramidView: No images to preload');
+    console.log('PyramidView: No images to preload');
     isImageLoading.value = false;
     return;
   }
 
   try {
     await Promise.all(imagePromises);
-    // console.log('PyramidView: All images preprocessed');
+    console.log('PyramidView: All images preprocessed');
     // Update image sources to preprocessed versions
     if (userImage.value && preprocessedImages.value.has(profileImage)) {
       userImage.value.src = preprocessedImages.value.get(profileImage)!;

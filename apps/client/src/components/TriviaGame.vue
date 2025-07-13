@@ -86,14 +86,14 @@ watch(
     setTimeout(() => {
       isAnimated.value = true;
     }, 50);
-    // console.log('Time left updated:', props.timeLeft);
+    console.log('Time left updated:', props.timeLeft);
   }
 );
 
 watch(
   () => props.currentQuestion,
   (newValue) => {
-    // console.log('Current question in TriviaGame:', newValue);
+    console.log('Current question in TriviaGame:', newValue);
   },
   { immediate: true }
 );
