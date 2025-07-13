@@ -145,12 +145,12 @@ async function saveItem() {
       };
       console.log('newItem:', newItem);
 
-      // Save to Firestore communityItems array
+      // Save to Firestore communityItems array under custom configuration
       const gameRef = doc(db, 'games', props.gameId);
       await updateDoc(gameRef, {
-        communityItems: arrayUnion(newItem)
+        'custom.communityItems': arrayUnion(newItem)
       });
-      console.log('PyramidAddItemPopup: Item added to communityItems in Firestore:', newItem);
+      console.log('PyramidAddItemPopup: Item added to custom.communityItems in Firestore:', newItem);
 
       // Emit new item to parent
       emit('add-item', newItem);

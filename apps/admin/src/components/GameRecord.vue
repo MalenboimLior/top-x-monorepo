@@ -329,9 +329,10 @@ const save = async () => {
         worstShow: 'worstShow' in (localGame.value.custom || {})
           ? (localGame.value.custom as PyramidConfig).worstShow
           : true,
-        communityItems: 'communityItems' in (localGame.value.custom || {})
-          ? (localGame.value.custom as PyramidConfig).communityItems
-          : [],
+        communityItems:
+          'communityItems' in (localGame.value.custom || {})
+            ? (localGame.value.custom as PyramidConfig).communityItems
+            : ((localGame.value as any).communityItems || []),
         communityHeader: 'communityHeader' in (localGame.value.custom || {})
           ? (localGame.value.custom as PyramidConfig).communityHeader
           : undefined,
@@ -350,7 +351,7 @@ const save = async () => {
   }
 
   try {
-    const gameData = {
+    const gameData: any = {
       name: localGame.value.name,
       description: localGame.value.description,
       gameTypeId: props.gameTypeId,
@@ -363,6 +364,9 @@ const save = async () => {
       image: localGame.value.image || '',
       active: localGame.value.active || false,
     };
+    if ((localGame.value as any).communityItems !== undefined) {
+      gameData.communityItems = (localGame.value as any).communityItems;
+    }
     console.log('Saving game to Firestore:', { id: localGame.value.id, data: gameData });
     await setDoc(doc(db, 'games', localGame.value.id), gameData);
     success.value = `Game '${localGame.value.name}' saved successfully`;
