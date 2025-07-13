@@ -1,75 +1,85 @@
 <template>
   <div class="pyramid-view">
-    <div ref="canvasContainer" class="pyramid-container  p-2">
-      <!-- User Image -->
-      <div class="user-image-container">
-        <img
-          v-if="userProfile?.photoURL"
-          :src="userProfile.photoURL"
-          alt="User Profile"
-          class="user-image"
-          ref="userImage"
-          crossorigin="anonymous"
-        />
-       <img
-    v-else
-    :src="defaultProfile"
-    alt="Default Profile"
-    class="user-image"
-    ref="userImage"
-    crossorigin="anonymous"
-  />
-      </div>
-      <!-- Game Header -->
-      <!-- <h2 class="subtitle has-text-success game-header" v-html="props.gameHeader"></h2> -->
-      <h2 class="subtitle has-text-success game-header"
-        v-if="props.shareImageTitle"
-        style="margin-bottom: 1rem;text-align:center"
-        v-html="props.shareImageTitle"
-      ></h2>
+    <div class="pyramid-container p-2">
+      <div class="content-wrapper">
+        <!-- User Image -->
+        <div class="user-image-container">
+          <img
+            v-if="userProfile?.photoURL"
+            :src="userProfile.photoURL"
+            alt="User Profile"
+            class="user-image"
+            ref="userImage"
+            crossorigin="anonymous"
+          />
+          <img
+            v-else
+            :src="defaultProfile"
+            alt="Default Profile"
+            class="user-image"
+            ref="userImage"
+            crossorigin="anonymous"
+          />
+        </div>
+        <!-- Logo -->
+        <div class="logo-container">
+          <img
+            :src="topxLogo"
+            alt="TOP-X Logo"
+            class="logo"
+            crossorigin="anonymous"
+          />
+        </div>
+        <!-- Game Header -->
+        <h2 class="subtitle has-text-success game-header" v-if="props.shareImageTitle" v-html="props.shareImageTitle"></h2>
+        <h2 class="subtitle has-text-success game-header" v-else v-html="props.gameHeader || 'Your Pyramid'"></h2>
 
-      <!-- Pyramid -->
-      <div class="pyramid">
-        <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
-          <div class="row-label has-text-white" v-if="!hideRowLabel">
-            {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
-          </div>
-          <div class="pyramid-row">
-            <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot box dark-slot">
-              <div v-if="slot.image" class="slot-style">
-                <img
-                  :src="slot.image.src"
-                  :alt="slot.image.label"
-                  class="draggable-image"
-                  ref="pyramidImages"
-                  crossorigin="anonymous"
-                />
-                <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+        <!-- Pyramid -->
+        <div class="pyramid">
+          <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
+            <div class="row-label has-text-white" v-if="!hideRowLabel">
+              {{ rows[rowIndex]?.label || toRoman(rowIndex + 1) }}
+            </div>
+            <div class="pyramid-row">
+              <div v-for="(slot, colIndex) in row" :key="colIndex" class="pyramid-slot box dark-slot">
+                <div v-if="slot.image" class="slot-style">
+                  <img
+                    :src="slot.image.src"
+                    :alt="slot.image.label"
+                    class="draggable-image"
+                    ref="pyramidImages"
+                    crossorigin="anonymous"
+                  />
+                  <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+                </div>
+                <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
               </div>
-              <div v-else class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
             </div>
           </div>
         </div>
-      </div>
-      <!-- Worst Item -->
-      <div class="worst-item-container">
-        <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
-        <div class="pyramid-slot box worst-slot dark-slot mx-auto">
-          <div v-if="worstItem" class="slot-style">
-            <img
-              :src="worstItem.src"
-              :alt="worstItem.label"
-              class="draggable-image"
-              ref="worstImage"
-              crossorigin="anonymous"
-            />
-            <div class="color-indicator-pyramid" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
+        <!-- Worst Item -->
+        <div class="worst-item-container">
+          <h3 class="subtitle has-text-centered has-text-white">{{ worstHeader || 'Worst Item' }}</h3>
+          <div class="pyramid-slot box worst-slot dark-slot mx-auto">
+            <div v-if="worstItem" class="slot-style">
+              <img
+                :src="worstItem.src"
+                :alt="worstItem.label"
+                class="draggable-image"
+                ref="worstImage"
+                crossorigin="anonymous"
+              />
+              <div class="color-indicator-pyramid" :style="{ backgroundColor: worstItem.color || '#fff' }"></div>
+            </div>
+            <div v-else class="tier-label has-text-danger">Worst</div>
           </div>
-          <div v-else class="tier-label has-text-danger">Worst</div>
         </div>
+        <!-- Top-X Label -->
+        <p class="top-x-label has-text-white has-text-centered">And what’s your vote?</p>
+        <p class="top-x-label has-text-centered" style="font-size: 16px;">
+          {{ props.shareLink || 'https://top-x.co' }}
+        </p>
       </div>
-      <!-- Top-X Label -->
-      <p class="top-x-label has-text-white has-text-centered mt-2">And what’s your vote? <br /> {{ props.shareLink || 'top-x.co/PrezPyramid' }}</p>
     </div>
     <!-- Download & Share Buttons -->
     <div class="buttons is-centered mt-2">
@@ -103,7 +113,8 @@ import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import html2canvas from 'html2canvas';
-import defaultProfile from '@/assets/profile.png'
+import defaultProfile from '@/assets/profile.png';
+import topxLogo from '@/assets/topx-logo.png';
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -340,12 +351,22 @@ function handleShareClick(e: MouseEvent) {
   align-items: center;
 }
 .pyramid-container {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
- border: 1px solid #00e8e0;
+  background-color: #121212;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  border: 1px solid #00e8e0;
   max-width: calc(100% - 0.4rem);
   margin: 0 auto;
   overflow: hidden;
+}
+.content-wrapper {
+  position: relative;
+  width: 100%;
 }
 .user-image-container {
   position: absolute;
@@ -359,6 +380,24 @@ function handleShareClick(e: MouseEvent) {
   border: 2px solid #00e8e0;
   object-fit: cover;
 }
+.logo-container {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 200px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.logo {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
 .pyramid {
   display: flex;
   flex-direction: column;
@@ -366,7 +405,6 @@ function handleShareClick(e: MouseEvent) {
   gap: 0.05rem;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
 }
 .pyramid-row-container {
   display: flex;
@@ -380,6 +418,7 @@ function handleShareClick(e: MouseEvent) {
   text-align: center;
   font-weight: bold;
   font-size: 0.7rem;
+  color: #fff;
 }
 .pyramid-row {
   display: flex;
@@ -401,36 +440,34 @@ function handleShareClick(e: MouseEvent) {
   justify-content: center;
   background-color: #1f1f1f;
   border: 1px dashed #444;
-  cursor: default;
-  transition: all 0.2s ease;
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   text-align: center;
   overflow: hidden;
   box-sizing: border-box;
-  margin-bottom: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 .worst-item-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: max-content;
-  margin: 0.3rem auto;
+  margin: 0.3rem 0;
 }
 .worst-item-container .subtitle {
   width: 100%;
   text-align: center;
-
   margin-bottom: 5px;
+  color: #eee;
+  font-size: 1rem;
+  font-weight: bold;
 }
 .worst-slot {
   border: 2px dashed #ff7777;
   background-color: #3d1f1f;
-  max-width: 90px;
-  max-height: 90px;
-  min-width: 50px;
-  min-height: 50px;
+  width: 90px;
+  height: 90px;
   box-sizing: border-box;
 }
 .slot-style {
@@ -456,8 +493,8 @@ function handleShareClick(e: MouseEvent) {
   touch-action: none;
   width: 100%;
   height: calc(100% - 4px);
-  object-fit: cover; /* fill slots */
-  object-position: top; /* crop from bottom */
+  object-fit: cover;
+  object-position: top;
   border-radius: 0.5rem 0.5rem 0 0;
 }
 .color-indicator-pyramid {
@@ -479,31 +516,47 @@ function handleShareClick(e: MouseEvent) {
   color: #ff5555;
 }
 .top-x-label {
-  font-size: 0.9rem !important;
+  font-size: 0.9rem;
   font-weight: bold;
-}
-.subtitle {
-  color: #eee;
-  font-size: 1rem;
-  font-weight: bold;
-  margin: 0.3rem 0;
+  color: #fff;
+  text-align: center;
+  margin-top: 0.5rem;
 }
 .game-header {
-margin-bottom: 0.3rem !important;
-  margin-left: 2rem;
-  margin-right: 2rem;
-  font-size: 17px;
-  text-align: center    ;
-
+  margin: 0.3rem 2rem 1rem;
+  font-size: 22px;
+  text-align: center;
+  color: #00e8e0;
 }
 .button.is-primary {
   margin: 0.3rem 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #3273dc;
+  color: #fff;
+  border: 1px solid #3273dc;
+  text-decoration: none;
+}
+.button.is-primary:hover {
+  background-color: #276cda;
+  border-color: #276cda;
+}
+.button.is-primary.is-disabled {
+  background-color: #7a7a7a;
+  border-color: #7a7a7a;
+  color: #dbdbdb;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 .share-button-container {
   position: relative;
   display: inline-block;
 }
-
 .share-tooltip {
   position: absolute;
   bottom: 120%;
@@ -520,29 +573,17 @@ margin-bottom: 0.3rem !important;
 @media screen and (max-width: 767px) {
   .pyramid-container {
     padding: 0.2rem;
-    max-width: calc(100% - 0.2rem);
+    width: 100%;
+    max-width: 400px;
   }
-  .pyramid-slot {
-    width: 20vw;
-    height: 20vw;
-    max-width: 80px;
-    max-height: 80px;
-    min-width: 45px;
-    min-height: 45px;
-  }
+  .pyramid-slot,
   .worst-slot {
-    max-width: 80px;
-    max-height: 80px;
-    min-width: 45px;
-    min-height: 45px;
+    width: 80px;
+    height: 80px;
   }
-  .pyramid-slot .draggable-image,
-  .worst-slot .draggable-image {
+  .draggable-image {
     width: 100%;
     height: calc(100% - 4px);
-    object-fit: cover;
-    object-position: top;
-    border-radius: 0.5rem 0.5rem 0 0;
   }
   .tier-label {
     font-size: 0.8rem;
@@ -552,6 +593,16 @@ margin-bottom: 0.3rem !important;
   }
   .top-x-label {
     font-size: 0.6rem;
+  }
+  .game-header {
+    font-size: 15px;
+  }
+  .logo {
+    width: 60px;
+  }
+  .button.is-primary {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
   }
 }
 </style>
