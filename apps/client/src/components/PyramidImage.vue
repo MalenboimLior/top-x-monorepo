@@ -21,6 +21,7 @@ import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import html2canvas from 'html2canvas';
 import defaultProfile from '@/assets/profile.png';
+import topxLogo from '@/assets/topx-logo.png';
 
 const props = defineProps<{
   pyramid: PyramidSlot[][];
@@ -135,6 +136,17 @@ async function preloadImages() {
     );
   }
 
+  const logoSrc = topxLogo;
+  if (logoSrc && !uniqueImageUrls.has(logoSrc)) {
+    uniqueImageUrls.add(logoSrc);
+    imagePromises.push(
+      Promise.race([
+        preprocessImage(logoSrc),
+        new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
+      ])
+    );
+  }
+
   props.pyramid.flat().forEach((slot) => {
     if (slot.image?.src && !uniqueImageUrls.has(slot.image.src)) {
       uniqueImageUrls.add(slot.image.src);
@@ -212,6 +224,25 @@ async function renderPyramidImage() {
         border: 2px solid #00e8e0;
         object-fit: cover;
       }
+      .logo-container {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 200px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.logo {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
       .pyramid {
         display: flex;
         flex-direction: column;
@@ -354,9 +385,12 @@ async function renderPyramidImage() {
         .row-label { font-size: 0.6rem; }
         .top-x-label { font-size: 0.6rem; }
         .game-header { font-size: 15px; }
+       
       }
     `;
     tempDiv.appendChild(styleElement);
+
+    const logoSrc = topxLogo;
 
     tempDiv.innerHTML += `
       <div class="content-wrapper">
@@ -365,6 +399,14 @@ async function renderPyramidImage() {
             src="${preprocessedImages.value.get(props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile) || defaultProfile}"
             alt="User Profile"
             class="user-image"
+            crossorigin="anonymous"
+          />
+        </div>
+        <div class="logo-container">
+          <img
+            src="${preprocessedImages.value.get(logoSrc) || logoSrc}"
+            alt="TOP-X Logo"
+            class="logo"
             crossorigin="anonymous"
           />
         </div>
