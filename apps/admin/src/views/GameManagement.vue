@@ -15,6 +15,9 @@
         <li v-if="shouldRenderItemList" :class="{ 'is-active': activeTab === 'items' }">
           <a @click="switchTab('items')">Items/Questions</a>
         </li>
+        <li v-if="shouldRenderCommunityItemList" :class="{ 'is-active': activeTab === 'community' }">
+          <a @click="switchTab('community')">Community Items</a>
+        </li>
       </ul>
     </div>
 
@@ -64,6 +67,11 @@
       @cancel="cancelEdit"
       @refresh="refreshItems"
     />
+    <CommunityItemList
+      v-if="activeTab === 'community' && gameTypeCustom === 'PyramidConfig' && selectedGameId"
+      ref="communityItemList"
+      :gameId="selectedGameId"
+    />
     <QuestionList
       v-if="activeTab === 'items' && gameTypeCustom === 'TriviaConfig' && selectedGameId"
       :gameId="selectedGameId"
@@ -91,13 +99,14 @@ import PyramidRowList from '@/components/PyramidRowList.vue';
 import PyramidRowRecord from '@/components/PyramidRowRecord.vue';
 import PyramidItemList from '@/components/PyramidItemList.vue';
 import PyramidItemRecord from '@/components/PyramidItemRecord.vue';
+import CommunityItemList from '@/components/CommunityItemList.vue';
 import QuestionList from '@/components/QuestionList.vue';
 import QuestionRecord from '@/components/QuestionRecord.vue';
 import type { GameType, Game, ConfigType } from '@top-x/shared/types/game';
 import type { PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 import type { TriviaQuestion } from '@top-x/shared/types';
 
-const activeTab = ref<'gameTypes' | 'games' | 'rows' | 'items'>('gameTypes');
+const activeTab = ref<'gameTypes' | 'games' | 'rows' | 'items' | 'community'>('gameTypes');
 const selectedGameTypeId = ref<string | null>(null);
 const selectedGameId = ref<string | null>(null);
 const gameTypeCustom = ref<ConfigType | null>(null);
@@ -108,6 +117,7 @@ const editingItem = ref<PyramidItem | null>(null);
 const editingQuestion = ref<TriviaQuestion | null>(null);
 const pyramidRowList = ref<InstanceType<typeof PyramidRowList> | null>(null);
 const pyramidItemList = ref<InstanceType<typeof PyramidItemList> | null>(null);
+const communityItemList = ref<InstanceType<typeof CommunityItemList> | null>(null);
 
 const shouldRenderRowList = computed(() => {
   const render = selectedGameTypeId.value && selectedGameId.value && gameTypeCustom.value === 'PyramidConfig';
@@ -121,12 +131,20 @@ const shouldRenderItemList = computed(() => {
   return render;
 });
 
+const shouldRenderCommunityItemList = computed(() => {
+  const render = selectedGameTypeId.value && selectedGameId.value && gameTypeCustom.value === 'PyramidConfig';
+  return render;
+});
+
 const switchTab = (tab: typeof activeTab.value) => {
   console.log('switchTab called:', { tab, currentTab: activeTab.value, selectedGameId: selectedGameId.value, gameTypeCustom: gameTypeCustom.value });
   activeTab.value = tab;
   if (tab === 'items' && pyramidItemList.value && selectedGameId.value) {
     console.log('Forcing PyramidItemList refresh on items tab switch');
     pyramidItemList.value.refresh();
+  }
+  if (tab === 'community' && communityItemList.value && selectedGameId.value) {
+    communityItemList.value.refresh();
   }
 };
 
@@ -228,6 +246,12 @@ const refreshItems = () => {
   console.log('refreshItems called');
   if (pyramidItemList.value && selectedGameId.value) {
     pyramidItemList.value.refresh();
+  }
+};
+
+const refreshCommunityItems = () => {
+  if (communityItemList.value && selectedGameId.value) {
+    communityItemList.value.refresh();
   }
 };
 
