@@ -17,6 +17,7 @@
           :share-image-title="shareImageTitle"
 
           :hide-row-label="props.hideRowLabel"
+          :worst-show="props.worstShow"
           :user-profile="{ photoURL: vote.photoURL }"
         />
       </div>
@@ -40,6 +41,7 @@ const props = defineProps<{
   gameTitle?: string;
   hideRowLabel?: boolean;
   shareImageTitle?: string;
+  worstShow?: boolean;
 
 }>();
 
