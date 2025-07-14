@@ -4,7 +4,7 @@ import { auth, db, functions } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
-import { User } from '@top-x/shared/types/user';
+import { User, UserGameData } from '@top-x/shared/types/user';
 
 // Define a sanitized user type to avoid reactivity issues
 interface SanitizedUser {
@@ -253,9 +253,7 @@ export const useUserStore = defineStore('user', () => {
   async function updateGameProgress(
     gameTypeId: string,
     gameId: string,
-    score: number,
-    streak: number,
-    custom?: Record<string, any>
+    gameData: UserGameData
   ) {
     if (!user.value) {
       console.log('Cannot update game progress: no user logged in');
@@ -264,14 +262,6 @@ export const useUserStore = defineStore('user', () => {
     }
     try {
       const userDocRef = doc(db, 'users', user.value.uid);
-      const gameData: any = {
-        score,
-        streak,
-        lastPlayed: new Date().toISOString(),
-      };
-      if (custom) {
-        gameData.custom = custom;
-      }
       await setDoc(
         userDocRef,
         {

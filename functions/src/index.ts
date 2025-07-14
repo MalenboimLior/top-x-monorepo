@@ -7,6 +7,7 @@ import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
+import type { UserGameData, User } from '@top-x/shared/types';
 
 // -------------------------------------------------------------
 // Cloud Functions used by the TOP-X backend
@@ -35,6 +36,7 @@ interface GameStats {
   totalPlayers: number;
   scoreDistribution: { [score: number]: number };
   updatedAt: number;
+  custom?: Record<string, any>;
 }
 
 const oauth = new OAuth({
@@ -96,9 +98,8 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
 });
 
 // Firestore trigger that updates the leaderboard and aggregate
-// statistics every time a user document changes. It keeps the
-// per-game leaderboards and score distributions consistent.
-export const syncScores = functions.firestore.onDocumentWritten('users/{uid}', async (event: FirestoreEvent<Change<DocumentSnapshot> | undefined, { uid: string }>) => {
+// statistics every time a user's game data changes.
+export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{uid}', async (event: FirestoreEvent<Change<DocumentSnapshot> | undefined, { uid: string }>) => {
   const uid = event.params.uid;
   const change = event.data;
 
@@ -118,62 +119,97 @@ export const syncScores = functions.firestore.onDocumentWritten('users/{uid}', a
   const gamesAfter = afterData.games || {};
   const gamesBefore = beforeData?.games || {};
 
-  for (const gameId in gamesAfter) {
-    const gameDataAfter = gamesAfter[gameId];
-    const gameDataBefore = gamesBefore[gameId];
+  for (const gameTypeId in gamesAfter) {
+    for (const gameId in gamesAfter[gameTypeId]) {
+      const gameDataAfter = gamesAfter[gameTypeId][gameId] as UserGameData;
+      const gameDataBefore = gamesBefore?.[gameTypeId]?.[gameId] as UserGameData | undefined;
 
-    if (JSON.stringify(gameDataAfter) !== JSON.stringify(gameDataBefore)) {
-      console.log(`Updating leaderboard and stats for game ${gameId} for user ${uid}`);
+      if (JSON.stringify(gameDataAfter) !== JSON.stringify(gameDataBefore)) {
+        console.log(`Updating leaderboard and stats for gameType ${gameTypeId} game ${gameId} for user ${uid}`);
 
-      await db.runTransaction(async (tx) => {
-        // Update leaderboard
-        const leaderboardRef = db.collection(`leaderboards_${gameId}`).doc(uid);
-        const statsRef = db.collection('stats').doc(gameId);
+        await db.runTransaction(async (tx) => {
+          // Update leaderboard
+          const leaderboardRef = db.collection('games').doc(gameId).collection('leaderboard').doc(uid);
+          const statsRef = db.collection('games').doc(gameId).collection('stats').doc('general');
 
-        const statsDoc = await tx.get(statsRef);
-        const currentStats = statsDoc.exists
-          ? statsDoc.data()!
-          : { totalPlayers: 0, scoreDistribution: {} };
+          const statsDoc = await tx.get(statsRef);
+          const currentStats = statsDoc.exists
+            ? statsDoc.data() as GameStats
+            : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() };
 
-        const distribution = { ...currentStats.scoreDistribution };
-        let totalPlayers = currentStats.totalPlayers;
+          const distribution = { ...currentStats.scoreDistribution };
+          let totalPlayers = currentStats.totalPlayers;
+          let custom = { ...currentStats.custom };
 
-        const beforeScore = gameDataBefore?.default?.score || null;
-        const afterScore = gameDataAfter?.default?.score || null;
+          const beforeScore = gameDataBefore?.score || null;
+          const afterScore = gameDataAfter.score;
 
-        if (!gameDataBefore && afterScore !== null) {
-          distribution[afterScore] = (distribution[afterScore] || 0) + 1;
-          totalPlayers++;
-        } else if (!gameDataAfter && beforeScore !== null) {
-          distribution[beforeScore] = Math.max((distribution[beforeScore] || 1) - 1, 0);
-          totalPlayers = Math.max(totalPlayers - 1, 0);
-        } else if (beforeScore !== afterScore) {
-          if (beforeScore !== null) {
-            distribution[beforeScore] = Math.max((distribution[beforeScore] || 1) - 1, 0);
-          }
-          if (afterScore !== null) {
+          if (!gameDataBefore) {
+            // New entry
+            distribution[afterScore] = (distribution[afterScore] || 0) + 1;
+            totalPlayers++;
+          } else if (beforeScore !== afterScore) {
+            // Score changed
+            if (beforeScore !== null) {
+              distribution[beforeScore] = Math.max((distribution[beforeScore] || 1) - 1, 0);
+            }
             distribution[afterScore] = (distribution[afterScore] || 0) + 1;
           }
-        }
 
-        // Set leaderboard data
-        tx.set(leaderboardRef, {
-          uid,
-          displayName: afterData.displayName || 'Anonymous',
-          username: afterData.username || 'Anonymous',
-          photoURL: afterData.photoURL || 'https://www.top-x.co/assets/profile.png',
-          score: afterScore || 0,
-          streak: gameDataAfter?.default?.streak || 0,
-          updatedAt: Date.now(),
-        });
+          // For pyramid-specific custom stats
+          if (gameTypeId === 'PyramidTier') {
+            const itemRanks = custom.itemRanks || {};
+            const worstItemCounts = custom.worstItemCounts || {};
 
-        // Update stats
-        tx.set(statsRef, {
-          scoreDistribution: distribution,
-          totalPlayers,
-          updatedAt: Date.now(),
+            // Decrement old custom if exists
+            if (gameDataBefore?.custom) {
+              gameDataBefore.custom.pyramid.forEach((tier: { tier: number; slots: string[] }) => {
+                tier.slots.forEach((itemId: string | null) => {
+                  if (itemId) {
+                    const rowId = tier.tier;
+                    itemRanks[itemId] = itemRanks[itemId] || {};
+                    itemRanks[itemId][rowId] = Math.max((itemRanks[itemId][rowId] || 1) - 1, 0);
+                  }
+                });
+              });
+              if (gameDataBefore.custom.worstItem) {
+                const itemId = gameDataBefore.custom.worstItem.id;
+                worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
+              }
+            }
+
+            // Increment new custom
+            if (gameDataAfter.custom) {
+              gameDataAfter.custom.pyramid.forEach((tier: { tier: number; slots: string[] }) => {
+                tier.slots.forEach((itemId: string | null) => {
+                  if (itemId) {
+                    const rowId = tier.tier;
+                    itemRanks[itemId] = itemRanks[itemId] || {};
+                    itemRanks[itemId][rowId] = (itemRanks[itemId][rowId] || 0) + 1;
+                  }
+                });
+              });
+              if (gameDataAfter.custom.worstItem) {
+                const itemId = gameDataAfter.custom.worstItem.id;
+                worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
+              }
+            }
+
+            custom = { itemRanks, worstItemCounts };
+          }
+
+          // Set leaderboard data
+          tx.set(leaderboardRef, gameDataAfter);
+
+          // Update stats
+          tx.set(statsRef, {
+            scoreDistribution: distribution,
+            totalPlayers,
+            custom,
+            updatedAt: Date.now(),
+          });
         });
-      });
+      }
     }
   }
 });
@@ -190,16 +226,16 @@ export const getTopLeaderboard = functions.https.onRequest((req, res) => {
 
     try {
       const snapshot = await db
-        .collection(`leaderboards_${gameId}`)
+        .collection('games').doc(gameId).collection('leaderboard')
         .orderBy('score', 'desc')
         .orderBy('streak', 'desc')
         .limit(maxResults)
         .get();
       const leaderboard: LeaderboardEntry[] = snapshot.docs.map(doc => ({
-        uid: doc.data().uid,
-        displayName: doc.data().displayName,
-        username: doc.data().username,
-        photoURL: doc.data().photoURL,
+        uid: doc.id,
+        displayName: doc.data().displayName || 'Anonymous',
+        username: doc.data().username || 'Anonymous',
+        photoURL: doc.data().photoURL || 'https://www.top-x.co/assets/profile.png',
         score: doc.data().score,
         streak: doc.data().streak,
       }));
@@ -225,27 +261,27 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
     }
 
     try {
-      const userDoc = await db.collection(`leaderboards_${gameId}`).doc(uid).get();
+      const userDoc = await db.collection('games').doc(gameId).collection('leaderboard').doc(uid).get();
       if (!userDoc.exists) {
         res.status(404).json({ error: 'User not found in leaderboard' });
         return;
       }
-      const userData = userDoc.data();
+      const userData = userDoc.data() as User;
       if (!userData) {
         res.status(500).json({ error: 'User data is undefined' });
         return;
       }
-      const userScore = userData.score;
+      const userScore =0//need to fix userData.score;
 
       const aboveSnapshot = await db
-        .collection(`leaderboards_${gameId}`)
+        .collection('games').doc(gameId).collection('leaderboard')
         .orderBy('score', 'desc')
         .orderBy('updatedAt', 'desc')
         .where('score', '>', userScore)
         .limit(5)
         .get();
       const above = aboveSnapshot.docs.map(doc => ({
-        uid: doc.data().uid,
+        uid: doc.id,
         displayName: doc.data().displayName,
         username: doc.data().username,
         photoURL: doc.data().photoURL,
@@ -254,14 +290,14 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
       }));
 
       const belowSnapshot = await db
-        .collection(`leaderboards_${gameId}`)
+        .collection('games').doc(gameId).collection('leaderboard')
         .orderBy('score', 'asc')
         .orderBy('updatedAt', 'asc')
         .where('score', '<', userScore)
         .limit(5)
         .get();
       const below = belowSnapshot.docs.map(doc => ({
-        uid: doc.data().uid,
+        uid: doc.id,
         displayName: doc.data().displayName,
         username: doc.data().username,
         photoURL: doc.data().photoURL,
@@ -270,12 +306,12 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
       }));
 
       const current: LeaderboardEntry = {
-        uid: userData.uid,
+        uid: uid,
         displayName: userData.displayName,
         username: userData.username,
-        photoURL: userData.photoURL,
-        score: userData.score,
-        streak: userData.streak,
+        photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+        score: 0,// need to fix userData.score,
+        streak:0,// need to fix  userData.streak,
       };
 
       const leaderboard = [...above, current, ...below.reverse()];
@@ -305,29 +341,29 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
         res.status(404).json({ error: 'User not found' });
       }
       const userData = userDoc.data();
-      if (!userData || !userData.friends) {
+      if (!userData || !userData.frenemies) {
         res.status(200).json([]);
         return;
       }
-      const friends: string[] = userData.friends;
+      const frenemies: string[] = userData.frenemies;
 
       const leaderboard: LeaderboardEntry[] = [];
-      for (let i = 0; i < friends.length; i += 30) {
-        const batch = friends.slice(i, i + 30);
+      for (let i = 0; i < frenemies.length; i += 30) {
+        const batch = frenemies.slice(i, i + 30);
         const snapshot = await db
-          .collection(`leaderboards_${gameId}`)
-          .where('uid', 'in', batch)
+          .collection('games').doc(gameId).collection('leaderboard')
+          .where(admin.firestore.FieldPath.documentId(), 'in', batch)
           .orderBy('score', 'desc')
           .get();
         snapshot.forEach(doc => {
-          const data = doc.data();
+          const data = doc.data() as UserGameData;
           leaderboard.push({
-            uid: data.uid,
-            displayName: data.displayName,
-            username: data.username,
-            photoURL: data.photoURL,
+            uid: doc.id,
+            displayName: userData.displayName,
+            username: userData.username,
+            photoURL: userData.photoURL,
             score: data.score,
-            streak: doc.data().streak,
+            streak: data.streak,
           });
         });
       }
@@ -355,19 +391,19 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
     }
 
     try {
-      const userDoc = await db.collection(`leaderboards_${gameId}`).doc(uid).get();
+      const userDoc = await db.collection('games').doc(gameId).collection('leaderboard').doc(uid).get();
       if (!userDoc.exists) {
         res.status(404).json({ error: 'User not found in leaderboard' });
         return;
       }
-      const userData = userDoc.data();
+      const userData = userDoc.data() as UserGameData;
       if (!userData) {
         res.status(500).json({ error: 'User data is undefined' });
         return;
       }
       const userScore = userData.score;
 
-      const statsDoc = await db.collection('stats').doc(gameId).get();
+      const statsDoc = await db.collection('games').doc(gameId).collection('stats').doc('general').get();
       if (!statsDoc.exists) {
         res.status(404).json({ error: 'Stats not available' });
         return;
@@ -418,19 +454,19 @@ export const getVipLeaderboard = functions.https.onRequest((req, res) => {
       for (let i = 0; i < vipUids.length; i += 30) {
         const batch = vipUids.slice(i, i + 30);
         const snapshot = await db
-          .collection(`leaderboards_${gameId}`)
-          .where('uid', 'in', batch)
+          .collection('games').doc(gameId).collection('leaderboard')
+          .where(admin.firestore.FieldPath.documentId(), 'in', batch)
           .orderBy('score', 'desc')
           .get();
         snapshot.forEach(doc => {
-          const data = doc.data();
+          const data = doc.data() as UserGameData;
           leaderboard.push({
-            uid: data.uid,
-            displayName: data.displayName,
-            username: data.username,
-            photoURL: data.photoURL,
+            uid: doc.id,
+            displayName:"0",// need to fix  data.displayName,
+            username: "0",// need to fix data.username,
+            photoURL: "0",// need to fix data.photoURL,
             score: data.score,
-            streak: doc.data().streak,
+            streak: data.streak,
           });
         });
       }
