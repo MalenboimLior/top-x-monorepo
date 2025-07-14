@@ -1,7 +1,7 @@
 <template>
   <div class="pyramid-stats">
     <h2 class="subtitle has-text-white">{{ gameTitle || 'Your Pyramid' }}</h2>
-    <div class="table-container">
+    <div class="table-container" :class="{ 'blurred': !user }">
       <table class="table is-fullwidth is-hoverable has-background-dark">
         <thead>
           <tr>
@@ -95,6 +95,25 @@
       </table>
     </div>
 
+    <!-- Login Tab -->
+    <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
+      <div class="tab-content" @click.stop>
+        <p class="question-text">Hi, if you want to see the vote statistics you need to login, also your vote will be count</p>
+        <p class="answer-text">We only use your username and image, and we’ll never post on your behalf.</p>
+        
+        
+        <!-- <button style="color:#c4ff00;" @click="closeLoginTab">Close</button> -->
+      </div>
+      <div  class="has-text-centered">
+          <CustomButton
+            type="is-primary"
+            label="Login with X"
+            :icon="['fab', 'x-twitter']"
+            @click="handleLogin"
+          />
+        </div>
+    </div>
+
     <!-- President Details Modal -->
     <div class="modal" :class="{ 'is-active': selectedPresident }" ref="modalContainer">
       <div class="modal-background" @click="closeModal"></div>
@@ -140,6 +159,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
+import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidStats } from '@top-x/shared/types/pyramid';
 import { formatNumber } from '@top-x/shared/utils/format';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
@@ -161,6 +181,8 @@ const props = defineProps<{
 }>();
 
 const worstShow = computed(() => props.worstShow !== false);
+const userStore = useUserStore();
+const user = computed(() => userStore.user);
 
 const sortColumn = ref<string>('score');
 const sortDirection = ref<'asc' | 'desc'>('desc');
@@ -169,9 +191,13 @@ const selectedPresident = ref<any>(null);
 const modalContainer = ref<HTMLElement | null>(null);
 const isImageLoading = ref(true);
 const totalPlayers = ref(0);
+const showLoginTab = ref(false);
 
 onMounted(async () => {
   console.log('PyramidStats: onMounted called with gameId:', props.gameId);
+  if (!user.value) {
+    showLoginTab.value = true;
+  }
   try {
     const statsDoc = await getDoc(doc(db, 'games', props.gameId, 'stats', 'general'));
     if (statsDoc.exists()) {
@@ -287,6 +313,15 @@ async function downloadPresidentStats() {
     console.error('PyramidStats: Error generating download image:', err.message, err);
     alert('Failed to download image. Some images may not be accessible due to CORS restrictions.');
   }
+}
+
+async function handleLogin() {
+  await userStore.loginWithX();
+  closeLoginTab();
+}
+
+function closeLoginTab() {
+  showLoginTab.value = false;
 }
 </script>
 
@@ -411,6 +446,49 @@ tr:hover {
 }
 .modal-close {
   background-color: #ff5555;
+}
+.description-tab {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1f1f1f;
+  color: white;
+  padding: 1rem;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+}
+.description-tab.show {
+  transform: translateY(0);
+}
+.tab-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+@media screen and (min-width: 768px) {
+  .description-tab {
+    width: 400px; /* Matches image-pool: 4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 2px */
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+  }
+  .description-tab.show {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+.question-text {
+  color: #00e8e0;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.answer-text {
+  color: #eee;
+}
+.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
 }
 @media screen and (max-width: 767px) {
   .pyramid-stats {
