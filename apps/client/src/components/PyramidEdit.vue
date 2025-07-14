@@ -1113,6 +1113,7 @@ function closeTab() {
 }
  .info-icon.selected {
   color: #c4ff00;
+  border: none !important;
 }
 @media screen and (max-width: 767px) {
   .section {

@@ -57,7 +57,7 @@ useHead({
 
 // Countdown timer logic
 const updateTimer = () => {
-  const launchDate = new Date('2025-07-14T00:00:00'); // Set to August 5, 2025
+  const launchDate = new Date('2025-07-16T00:00:00'); // Set to August 5, 2025
   const now = new Date();
   const diff = launchDate.getTime() - now.getTime();
 
