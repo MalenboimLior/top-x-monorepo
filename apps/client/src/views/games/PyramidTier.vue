@@ -1,4 +1,3 @@
-<!-- PyramidTier.vue -->
 <template>
   <div class="pyramid-tier">
     <!-- <h1>{{ gameDescription }}</h1> -->
@@ -43,12 +42,13 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
-import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import PyramidEdit from '@/components/PyramidEdit.vue';
 import PyramidNav from '@/components/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
+import { UserGameData } from '@top-x/shared/types/user';
 
 const route = useRoute();
 const router = useRouter();
@@ -222,20 +222,17 @@ async function handleSubmit(data: PyramidData) {
     return;
   }
 
-  const userId = userStore.user.uid;
   const gameTypeId = 'PyramidTier';
   const custom = {
-    pyramid: Array.isArray(data.pyramid)
-      ? data.pyramid.map((row, index) => ({
-          tier: index + 1,
-          slots: row.map(slot => slot.image?.id || null)
-        }))
-      : [],
+    pyramid: data.pyramid.map((row, index) => ({
+      tier: index + 1,
+      slots: row.map(slot => slot.image?.id || null)
+    })),
     worstItem: data.worstItem ? { id: data.worstItem.id, label: data.worstItem.label, src: data.worstItem.src } : null,
   };
 
   try {
-    await userStore.updateGameProgress(gameTypeId, gameId.value, score, 0, custom);
+    await userStore.updateGameProgress(gameTypeId, gameId.value, { score, streak: 0, lastPlayed: new Date().toISOString(), custom });
     console.log('PyramidTier: User progress updated successfully');
     await updateGameStats(gameId.value, data.pyramid, rows.value, data.worstItem);
     console.log('PyramidTier: Game stats updated successfully');
@@ -268,35 +265,38 @@ async function updateGameStats(gameId: string, pyramid: PyramidSlot[][], rows: P
   console.log('PyramidTier: Updating game stats for gameId:', gameId);
   const statsRef = doc(db, 'games', gameId, 'stats', 'general');
 
-  try {
-    await runTransaction(db, async (transaction) => {
-      const statsDoc = await transaction.get(statsRef);
-      let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, itemRanks: {}, worstItemCounts: {} };
-      stats.totalPlayers = (stats.totalPlayers || 0) + 1;
+  await runTransaction(db, async (transaction) => {
+    const statsDoc = await transaction.get(statsRef);
+    let stats = statsDoc.exists() ? statsDoc.data() : { totalPlayers: 0, scoreDistribution: {}, custom: { itemRanks: {}, worstItemCounts: {} } };
+    stats.totalPlayers = (stats.totalPlayers || 0) + 1;
 
-      pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
-        row.forEach((slot: PyramidSlot) => {
-          if (slot.image) {
-            const itemId = slot.image.id;
-            const rowId = rows[rowIndex]?.id || rowIndex + 1;
-            stats.itemRanks[itemId] = stats.itemRanks[itemId] || {};
-            stats.itemRanks[itemId][rowId] = (stats.itemRanks[itemId][rowId] || 0) + 1;
-          }
-        });
+    const itemRanks = stats.custom?.itemRanks || {};
+    pyramid.forEach((row: PyramidSlot[], rowIndex: number) => {
+      row.forEach((slot: PyramidSlot) => {
+        if (slot.image) {
+          const itemId = slot.image.id;
+          const rowId = rows[rowIndex]?.id || rowIndex + 1;
+          itemRanks[itemId] = itemRanks[itemId] || {};
+          itemRanks[itemId][rowId] = (itemRanks[itemId][rowId] || 0) + 1;
+        }
       });
-
-      if (worstItem) {
-        const itemId = worstItem.id;
-        stats.worstItemCounts[itemId] = (stats.worstItemCounts[itemId] || 0) + 1;
-      }
-
-      console.log('PyramidTier: Updated stats:', stats);
-      transaction.set(statsRef, stats);
     });
-  } catch (err: any) {
-    console.error('PyramidTier: Error in runTransaction:', err.message, err);
-    throw err;
-  }
+
+    const worstItemCounts = stats.custom?.worstItemCounts || {};
+    if (worstItem) {
+      const itemId = worstItem.id;
+      worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
+    }
+
+    transaction.set(statsRef, {
+      ...stats,
+      custom: {
+        itemRanks,
+        worstItemCounts
+      },
+      updatedAt: Date.now(),
+    });
+  });
 }
 </script>
 
