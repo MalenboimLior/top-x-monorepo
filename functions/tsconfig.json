@@ -7,8 +7,10 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
-    "esModuleInterop": true
-
+    "esModuleInterop": true,
+    "paths": {
+      "@top-x/shared/*": ["../packages/shared/src/*"]
+    }
   },
   "compileOnSave": true,
   "include": ["src"]
