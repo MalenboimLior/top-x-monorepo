@@ -21,12 +21,12 @@
             <input class="input is-dark" type="text" v-model="form.name" placeholder="Item name" />
           </div>
         </div>
-        <!-- <div class="field">
-          <label class="label has-text-white">Description</label>
+       <div class="field">
+          <label class="label has-text-white">What does Grok have to say about it?</label>
           <div class="control">
             <textarea class="textarea is-dark" v-model="form.description" placeholder="Item description"></textarea>
           </div>
-        </div> -->
+        </div> 
         <div class="field">
           <label class="label has-text-white">Image</label>
           <div class="control">
@@ -138,7 +138,7 @@ async function saveItem() {
         label: form.value.name,
         name: form.value.name,
         src,
-        description: '',
+        description: form.value.description,
         color: form.value.color,
         active: true,
         source: userStore.user.displayName || 'anonymous',
