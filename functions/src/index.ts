@@ -7,7 +7,7 @@ import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
-import type { UserGameData, User } from '@top-x/shared/types';
+import { UserGameData,LeaderboardEntry } from '@top-x/shared/types';
 
 // -------------------------------------------------------------
 // Cloud Functions used by the TOP-X backend
@@ -23,14 +23,6 @@ const db = admin.firestore();
 
 const corsHandler = cors({ origin: true });
 
-interface LeaderboardEntry {
-  uid: string;
-  displayName: string;
-  username: string;
-  photoURL: string;
-  score: number;
-  streak: number;
-}
 
 interface GameStats {
   totalPlayers: number;
@@ -71,7 +63,7 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
   };
 
   const requestData = {
-    url: 'https://api.twitter.com/2/users/me?user.fields=username,public_metrics',
+    url: 'https://api.twitter.com/2/users/me?user.fields=name,username,profile_image_url,public_metrics',
     method: 'GET',
   };
 
@@ -79,13 +71,17 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
     const header = oauth.toHeader(oauth.authorize(requestData, token));
     const response = await axios.get(requestData.url, { headers: { Authorization: header.Authorization } });
     const xData = {
+      displayName: response.data.data.name,
       username: response.data.data.username,
+      photoURL: response.data.data.profile_image_url,
       followersCount: response.data.data.public_metrics.followers_count,
       followingCount: response.data.data.public_metrics.following_count,
     };
 
     await db.collection('users').doc(uid).update({
+      displayName: xData.displayName,
       username: xData.username,
+      photoURL: xData.photoURL,
       followersCount: xData.followersCount,
       followingCount: xData.followingCount,
       updatedAt: Date.now(),
@@ -199,7 +195,12 @@ export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{u
           }
 
           // Set leaderboard data
-          tx.set(leaderboardRef, gameDataAfter);
+          tx.set(leaderboardRef, {
+            ...gameDataAfter,
+            displayName: afterData.displayName,
+            username: afterData.username,
+            photoURL: afterData.photoURL
+          });
 
           // Update stats
           tx.set(statsRef, {
@@ -261,17 +262,17 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
     }
 
     try {
-      const userDoc = await db.collection('games').doc(gameId).collection('leaderboard').doc(uid).get();
-      if (!userDoc.exists) {
+      const leaderboardEntryDoc = await db.collection('games').doc(gameId).collection('leaderboard').doc(uid).get();
+      if (!leaderboardEntryDoc.exists) {
         res.status(404).json({ error: 'User not found in leaderboard' });
         return;
       }
-      const userData = userDoc.data() as User;
-      if (!userData) {
+      const leaderboardEntryData = leaderboardEntryDoc.data() as LeaderboardEntry;
+      if (!leaderboardEntryData) {
         res.status(500).json({ error: 'User data is undefined' });
         return;
       }
-      const userScore =0//need to fix userData.score;
+      const userScore = leaderboardEntryData.score;
 
       const aboveSnapshot = await db
         .collection('games').doc(gameId).collection('leaderboard')
@@ -305,16 +306,16 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
         streak: doc.data().streak,
       }));
 
-      const current: LeaderboardEntry = {
-        uid: uid,
-        displayName: userData.displayName,
-        username: userData.username,
-        photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
-        score: 0,// need to fix userData.score,
-        streak:0,// need to fix  userData.streak,
-      };
+      // const current: LeaderboardEntry = {
+      //   uid: uid,
+      //   displayName: userData.displayName,
+      //   username: userData.username,
+      //   photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+      //   score: userData.score,
+      //   streak: userData.streak,
+      // };
 
-      const leaderboard = [...above, current, ...below.reverse()];
+      const leaderboard = [...above, leaderboardEntryData, ...below.reverse()];
       res.status(200).json(leaderboard);
     } catch (error) {
       console.error('Error fetching around leaderboard:', error);
@@ -356,14 +357,15 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
           .orderBy('score', 'desc')
           .get();
         snapshot.forEach(doc => {
-          const data = doc.data() as UserGameData;
+          const data = doc.data() as LeaderboardEntry;
           leaderboard.push({
             uid: doc.id,
-            displayName: userData.displayName,
-            username: userData.username,
-            photoURL: userData.photoURL,
+            displayName: data.displayName,
+            username: data.username,
+            photoURL: data.photoURL,
             score: data.score,
             streak: data.streak,
+            custom: data.custom,
           });
         });
       }
@@ -459,14 +461,15 @@ export const getVipLeaderboard = functions.https.onRequest((req, res) => {
           .orderBy('score', 'desc')
           .get();
         snapshot.forEach(doc => {
-          const data = doc.data() as UserGameData;
+          const data = doc.data() as LeaderboardEntry;
           leaderboard.push({
             uid: doc.id,
-            displayName:"0",// need to fix  data.displayName,
-            username: "0",// need to fix data.username,
-            photoURL: "0",// need to fix data.photoURL,
+            displayName: data.displayName,
+            username: data.username,
+            photoURL: data.photoURL,
             score: data.score,
             streak: data.streak,
+            custom: data.custom,
           });
         });
       }

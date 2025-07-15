@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "commonjs",
+    "lib": ["es2017"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@top-x/shared/*": ["../packages/shared/src/*"]
+    },
+    "skipLibCheck": true,
+    "composite": true
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../packages/shared/tsconfig.json" }
+  ]
+}

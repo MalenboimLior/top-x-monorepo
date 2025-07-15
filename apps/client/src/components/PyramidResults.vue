@@ -6,7 +6,10 @@
     </div>
     <div v-else class="votes-list">
       <div v-for="vote in userVotes" :key="vote.uid" class="vote-item">
-        <h3 class="has-text-white has-text-centered" style="padding-bottom: 15px;font-size:22px">{{ vote.displayName || 'Anonymous' }}</h3>
+        <div class="user-header has-text-centered">
+          <img :src="vote.photoURL" alt="User Profile" class="user-profile-image" />
+          <h3 class="has-text-white" style="font-size:22px">{{ vote.displayName || 'Anonymous' }}</h3>
+        </div>
         <PyramidView
           :pyramid="vote.pyramid"
           :worst-item="vote.worstItem"
@@ -15,10 +18,8 @@
           :worst-header="props.worstHeader"
           :game-title="props.gameTitle"
           :share-image-title="shareImageTitle"
-
           :hide-row-label="props.hideRowLabel"
           :worst-show="props.worstShow"
-          :user-profile="{ photoURL: vote.photoURL }"
         />
       </div>
     </div>
@@ -56,6 +57,7 @@ import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyrami
 const props = defineProps<{
   gameId: string;
   items: PyramidItem[];
+  communityItems: PyramidItem[];
   rows: PyramidRow[];
   gameHeader?: string;
   worstHeader?: string;
@@ -63,7 +65,6 @@ const props = defineProps<{
   hideRowLabel?: boolean;
   shareImageTitle?: string;
   worstShow?: boolean;
-
 }>();
 
 const userStore = useUserStore();
@@ -89,17 +90,18 @@ onMounted(async () => {
   try {
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const votes = [];
+    const allItems = [...props.items, ...props.communityItems];
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const gameData = userData.games?.PyramidTier?.[props.gameId];
       if (gameData?.custom) {
         const pyramid = gameData.custom.pyramid.map((tier: any) =>
           tier.slots.map((itemId: string | null) => ({
-            image: itemId ? props.items.find(item => item.id === itemId) || null : null,
+            image: itemId ? allItems.find(item => item.id === itemId) || null : null,
           }))
         );
         const worstItem = gameData.custom.worstItem
-          ? props.items.find(item => item.id === gameData.custom.worstItem.id) || null
+          ? allItems.find(item => item.id === gameData.custom.worstItem.id) || null
           : null;
         votes.push({
           uid: userDoc.id,
@@ -148,6 +150,20 @@ function closeLoginTab() {
 .vote-item {
  padding-bottom: 1rem;
 }
+.user-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.user-profile-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #00e8e0;
+  object-fit: cover;
+}
 .subtitle {
   color: #eee;
   font-size: 1rem;
@@ -194,6 +210,10 @@ function closeLoginTab() {
 @media screen and (max-width: 767px) {
   .pyramid-results {
     padding: 0.1rem 0.05rem;
+  }
+  .user-profile-image {
+    width: 30px;
+    height: 30px;
   }
 }
 </style>

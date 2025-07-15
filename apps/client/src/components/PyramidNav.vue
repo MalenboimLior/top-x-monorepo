@@ -33,6 +33,7 @@
         v-if="activeTab === 'stats'"
         :game-id="gameId"
         :items="items ?? []"
+        :community-items="communityItems ?? []"
         :rows="rows ?? []"
         :worstPoints="worstPoints ?? 0"
         :game-header="gameHeader"
@@ -43,6 +44,7 @@
         v-if="activeTab === 'results'"
         :game-id="gameId"
         :items="items ?? []"
+        :community-items="communityItems ?? []"
         :rows="rows ?? []"
         :game-header="gameHeader"
         :share-image-title="shareImageTitle"
@@ -71,6 +73,7 @@ const props = defineProps<{
   pyramid: PyramidSlot[][];
   worstItem: PyramidItem | null;
   items?: PyramidItem[];
+  communityItems?: PyramidItem[];
   rows?: PyramidRow[];
   gameHeader?: string;
   worstHeader?: string;

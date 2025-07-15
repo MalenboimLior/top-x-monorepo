@@ -119,7 +119,7 @@ async function saveItem() {
   }
 
   const randomNum = Math.floor(1000 + Math.random() * 9000);
-  const id = `${userStore.user.displayName || 'anonymous'}_${randomNum}`;
+  const id = `${userStore.user.uid || 'anonymous'}_${randomNum}`;
   const filename = `${id}.jpg`;
   const storagePath = `presidents/${filename}`;
   console.log('props.gameId:', props.gameId);
