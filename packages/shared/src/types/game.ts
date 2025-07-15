@@ -27,5 +27,15 @@ export interface Game {
   custom: PyramidConfig | TriviaConfig; // Union of possible config types
 }
 
+export interface LeaderboardEntry {
+  uid: string;
+  displayName: string;
+  username: string;
+  photoURL: string;
+  score: number;
+  streak: number;
+  custom?: Record<string, any>;
+}
+
 export type ConfigType = 'PyramidConfig' | 'TriviaConfig';
 export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig'];

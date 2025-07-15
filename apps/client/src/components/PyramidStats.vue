@@ -175,6 +175,7 @@ const props = defineProps<{
   gameTitle?: string;
   gameHeader?: string;
   items: PyramidItem[];
+  communityItems: PyramidItem[];
   rows: PyramidRow[];
   worstPoints: number;
   worstShow?: boolean;
@@ -203,10 +204,11 @@ onMounted(async () => {
     if (statsDoc.exists()) {
       const data = statsDoc.data();
       stats.value = {
-        itemRanks: data.itemRanks || {},
-        totalPlayers: data.totalPlayers || 0,
-        worstItemCounts: data.worstItemCounts || {},
+        itemRanks: data.custom.itemRanks || {},
+        totalPlayers: data.custom.totalPlayers || 0,
+        worstItemCounts: data.custom.worstItemCounts || {},
       };
+      
       totalPlayers.value = stats.value.totalPlayers;
       console.log('PyramidStats: Stats fetched:', stats.value);
       isImageLoading.value = false; // Assume images are preloaded
@@ -221,8 +223,9 @@ onMounted(async () => {
 });
 
 const sortedItemStats = computed(() => {
+  const allItems = [...props.items, ...props.communityItems];
   const statsArray = Object.entries(stats.value.itemRanks).map(([itemId, ranks]) => {
-    const item = props.items.find((i: PyramidItem) => i.id === itemId);
+    const item = allItems.find((i: PyramidItem) => i.id === itemId);
     const score = props.rows.reduce((total: number, row: PyramidRow) => {
       return total + (ranks[row.id] || 0) * row.points;
     }, 0) + ((stats.value.worstItemCounts[itemId] || 0) * (props.worstPoints || 0));

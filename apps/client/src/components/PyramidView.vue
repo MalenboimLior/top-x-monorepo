@@ -2,25 +2,6 @@
   <div class="pyramid-view">
     <div class="pyramid-container p-2">
       <div class="content-wrapper">
-        <!-- User Image -->
-        <div class="user-image-container">
-          <img
-            v-if="userProfile?.photoURL"
-            :src="userProfile.photoURL"
-            alt="User Profile"
-            class="user-image"
-            ref="userImage"
-            crossorigin="anonymous"
-          />
-          <img
-            v-else
-            :src="defaultProfile"
-            alt="Default Profile"
-            class="user-image"
-            ref="userImage"
-            crossorigin="anonymous"
-          />
-        </div>
         <!-- Logo -->
         <div class="logo-container">
           <img
@@ -75,7 +56,7 @@
           </div>
         </div>
         <!-- Top-X Label -->
-        <p class="top-x-label has-text-white has-text-centered">And what’s your vote?</p>
+        <!-- <p class="top-x-label has-text-white has-text-centered">And what’s your vote?</p> -->
         <p class="top-x-label has-text-centered" style="font-size: 16px;">
           {{ props.shareLink || 'https://top-x.co' }}
         </p>
@@ -87,11 +68,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
-import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
-import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import html2canvas from 'html2canvas';
-import defaultProfile from '@/assets/profile.png';
 import topxLogo from '@/assets/topx-logo.png';
 
 const props = defineProps<{
@@ -102,15 +79,12 @@ const props = defineProps<{
   worstHeader?: string;
   gameTitle?: string;
   hideRowLabel?: boolean;
-  userProfile?: { photoURL: string };
   shareImageTitle?: string;
   shareText?: string;
   shareLink?: string;
   worstShow?: boolean;
 }>();
 
-const userStore = useUserStore();
-const userImage = ref<HTMLImageElement | null>(null);
 const pyramidImages = ref<HTMLImageElement[]>([]);
 const worstImage = ref<HTMLImageElement | null>(null);
 const isImageLoading = ref(true);
@@ -185,18 +159,6 @@ async function preloadImages() {
       }
     });
 
-  const profileImage = props.userProfile?.photoURL || userStore.profile?.photoURL || '@/assets/profile.png';
-  if (userImage.value?.src && !uniqueImageUrls.has(profileImage)) {
-    uniqueImageUrls.add(profileImage);
-    userImage.value.crossOrigin = 'anonymous';
-    imagePromises.push(
-      Promise.race([
-        preprocessImage(userImage.value),
-        new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
-      ])
-    );
-  }
-
   pyramidImages.value.forEach((img) => {
     if (img.src && !uniqueImageUrls.has(img.src)) {
       uniqueImageUrls.add(img.src);
@@ -230,9 +192,6 @@ async function preloadImages() {
     await Promise.all(imagePromises);
     console.log('PyramidView: All images preprocessed');
     // Update image sources to preprocessed versions
-    if (userImage.value && preprocessedImages.value.has(profileImage)) {
-      userImage.value.src = preprocessedImages.value.get(profileImage)!;
-    }
     pyramidImages.value.forEach((img) => {
       if (preprocessedImages.value.has(img.src)) {
         img.src = preprocessedImages.value.get(img.src)!;
@@ -310,24 +269,11 @@ function handleShareClick(e: MouseEvent) {
   position: relative;
   width: 100%;
 }
-.user-image-container {
-  position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
-}
-.user-image {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  border: 2px solid #00e8e0;
-  object-fit: cover;
-}
 .logo-container {
   position: absolute;
-  top: 0.6rem;
-  right: 0.2rem;
-  width: 80px;
-  
+  top: 0.3rem;
+  left: 0.3rem;
+  width: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -465,7 +411,7 @@ function handleShareClick(e: MouseEvent) {
   margin-top: 0.5rem;
 }
 .game-header {
-  margin: 0.3rem 2rem 1rem;
+  margin: 0.3rem 0 1rem;
   font-size: 22px;
   text-align: center;
   color: #00e8e0;
