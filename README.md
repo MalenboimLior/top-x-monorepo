@@ -1,5 +1,15 @@
 # top-x-monorepo
 
+Usage Tips
+Build All: npm run build – Runs "build" script in every workspace (apps/client, apps/admin, packages/shared, functions) if defined.
+Build Specific: e.g., npm run build:client – Targets one package.
+Deploy: npm run deploy – Builds all, then deploys to Firebase.
+Install Deps: From root, npm install installs across workspaces (hoists common deps).
+Add Dep to Package: e.g., In apps/client: npm install axios --workspace=apps/client.
+Troubleshoot: If builds nest unexpectedly (e.g., lib/functions/src), check tsconfig.json "rootDir" and "include" in each package.
+
+
+
 npm run dev
 pnpm dev --host  
 pnpm build

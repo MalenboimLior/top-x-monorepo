@@ -14,7 +14,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@top-x/shared": "workspace:*",
+    "@top-x/shared": "file:./packages/shared",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
     "firebase-admin": "^12.7.0",
