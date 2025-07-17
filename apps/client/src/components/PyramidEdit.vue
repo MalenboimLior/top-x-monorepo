@@ -158,12 +158,12 @@
           />
         </div>
       </div>
-<ins class="adsbygoogle"
+<!-- <ins class="adsbygoogle"
            style="display:block"
            :data-ad-client="adClient"
            :data-ad-slot="adSlot"
            data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
+           data-full-width-responsive="true"></ins> -->
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content" @click.stop>

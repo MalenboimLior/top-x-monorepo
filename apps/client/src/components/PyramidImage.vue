@@ -234,8 +234,8 @@ async function renderPyramidImage() {
       }
       .user-image-container { position: absolute; top: 0.6rem; left: 0.6rem; }
       .user-image {
-        width: 3rem;
-        height: 3rem;
+        width: 7rem;
+        height: 7rem;
         border-radius: 50%;
         border: 2px solid #00e8e0;
         object-fit: cover;
@@ -244,7 +244,7 @@ async function renderPyramidImage() {
         position: absolute;
         top: 0.6rem;
         right: 0.2rem;
-        width: 70px;
+        width: 160px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -399,6 +399,11 @@ async function renderPyramidImage() {
         .row-label { font-size: 0.6rem; }
         .top-x-label { font-size: 0.8rem; }
        .game-header {font-size: 22px !important;}
+       .logo-container {width: 70px;}
+       .user-image {
+        width: 3rem;
+        height: 3rem;}
+
       }
     `;
     tempDiv.appendChild(styleElement);

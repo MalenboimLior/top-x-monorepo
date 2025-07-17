@@ -3,6 +3,9 @@ import Home from '@/views/Home.vue';
 import ComingSoon from '@/views/ComingSoon.vue';
 import Profile from '@/views/Profile.vue';
 import About from '@/views/About.vue';
+import TermsOfUse from '@/views/TermsOfUse.vue';
+import PrivacyPolicy from '@/views/PrivacyPolicy.vue';
+import ContactUs from '@/views/ContactUs.vue';
 import FAQ from '@/views/FAQ.vue';
 import Trivia from '@/views/games/Trivia.vue';
 import PyramidTier from '@/views/games/PyramidTier.vue';
@@ -40,7 +43,11 @@ const routes = [
     component: Profile,
   },
   { path: '/about', name: 'About', component: About },
+  { path: '/terms', name: 'TermsOfUse', component: TermsOfUse },
+  { path: '/privacy', name: 'PrivacyPolicy', component: PrivacyPolicy },
+  { path: '/contact', name: 'ContactUs', component: ContactUs },
   { path: '/faq', name: 'FAQ', component: FAQ },
+
   { path: '/frenemies', name: 'FrenemySearch', component: FrenemySearch },
   { path: '/games/trivia', name: 'Trivia', component: Trivia },
   {
@@ -56,7 +63,7 @@ const routes = [
     },
   },
   {
-    path: '/IsraelSoccerPyramid',
+    path: '/FootballStarsIL',
     redirect: {
       path: '/games/PyramidTier',
       query: { game: 'Pyramid_soccer_israel' },

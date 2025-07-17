@@ -9,7 +9,8 @@
       @click="handleShare"
     />
     <div v-if="showShareTooltip" class="share-tooltip">
-        Share text copied to clipboard!
+        Cool! Text copied to clipboard. <br/>
+Paste it in your post and add the image.
     </div>
   </div>
 </template>
@@ -75,7 +76,7 @@ const handleShare = async () => {
       showShareTooltip.value = true;
       setTimeout(() => {
         showShareTooltip.value = false;
-      }, 3000);
+      }, 6000);
 
       //alert('Image downloaded and text copied to clipboard.');
     } catch (err) {
@@ -107,7 +108,7 @@ const handleShare = async () => {
   color: #fff;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 1.2rem;
   white-space: nowrap;
   z-index: 20;
 }
