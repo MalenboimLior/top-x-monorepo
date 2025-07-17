@@ -434,23 +434,23 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
 });
 
 // Fetches leaderboard information for a curated list of VIP users.
-// The list of UIDs is stored in the 'config/vip_users' document in Firestore.
+// The list of UIDs is now stored in the game's document under the 'vip' field.
 export const getVipLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
 
     try {
-      const vipDoc = await db.collection('config').doc('vip_users').get();
-      if (!vipDoc.exists) {
-        res.status(404).json({ error: 'VIP list not found' });
+      const gameDoc = await db.collection('games').doc(gameId).get();
+      if (!gameDoc.exists) {
+        res.status(404).json({ error: 'Game not found' });
         return;
       }
-      const vipData = vipDoc.data();
-      if (!vipData || !vipData.uids) {
+      const gameData = gameDoc.data();
+      if (!gameData || !gameData.vip) {
         res.status(200).json([]);
         return;
       }
-      const vipUids: string[] = vipData.uids;
+      const vipUids: string[] = gameData.vip;
 
       const leaderboard: LeaderboardEntry[] = [];
       for (let i = 0; i < vipUids.length; i += 30) {

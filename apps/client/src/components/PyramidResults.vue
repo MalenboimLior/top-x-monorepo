@@ -26,6 +26,15 @@
       </div>
     </div>
 
+    <div v-if="user" class="has-text-centered mt-4">
+      <p class="has-text-white">Can't spot your pals? Time to hunt for more frenemies!</p>
+      <CustomButton
+        type="is-primary"
+        label="Search more frenemies"
+        @click="searchFrenemies"
+      />
+    </div>
+
     <!-- Login Tab -->
     <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
       <div class="tab-content" @click.stop>
@@ -49,12 +58,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@top-x/shared';
 import PyramidView from '@/components/PyramidView.vue';
 import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
+import { LeaderboardEntry } from '@top-x/shared/types/game';
+import axios from 'axios';
+import router from '@/router';
 
 const props = defineProps<{
   gameId: string;
@@ -89,39 +99,53 @@ onMounted(async () => {
   console.log('PyramidResults: onMounted called with gameId:', props.gameId);
   if (!user.value) {
     showLoginTab.value = true;
-   
-  }
-  try {
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const votes = [];
-    const allItems = [...props.items, ...props.communityItems];
-    for (const userDoc of usersSnapshot.docs) {
-      const userData = userDoc.data();
-      const gameData = userData.games?.PyramidTier?.[props.gameId];
-      if (gameData?.custom) {
-        const pyramid = gameData.custom.pyramid.map((tier: any) =>
-          tier.slots.map((itemId: string | null) => ({
-            image: itemId ? allItems.find(item => item.id === itemId) || null : null,
-          }))
-        );
-        const worstItem = gameData.custom.worstItem
-          ? allItems.find(item => item.id === gameData.custom.worstItem.id) || null
-          : null;
-        votes.push({
-          uid: userDoc.id,
-          displayName: userData.displayName || 'Anonymous',
-          photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
-          pyramid,
-          worstItem,
-        });
-      }
+    const votes = await fetchLeaderboard(true);
+    processVotes(votes);
+  } else {
+    const friendsVotes = await fetchLeaderboard(false);
+    let votes = friendsVotes;
+    if (friendsVotes.length === 0) {
+      votes = await fetchLeaderboard(true);
     }
-    userVotes.value = votes;
-    console.log('PyramidResults: Fetched votes:', userVotes.value);
-  } catch (err: any) {
-    console.error('PyramidResults: Error fetching votes:', err.message, err);
+    processVotes(votes);
   }
 });
+
+async function fetchLeaderboard(isVip: boolean = false) {
+  const endpoint = isVip ? '/getVipLeaderboard' : '/getFriendsLeaderboard';
+  const params: { gameId: string; uid?: string } = { gameId: props.gameId };
+  if (!isVip && user.value) {
+    params.uid = user.value.uid;
+  }
+  try {
+    const response = await axios.get(endpoint, { params });
+    console.log(`PyramidResults: Fetched ${isVip ? 'VIP' : 'friends'} leaderboard:`, response.data);
+    return response.data as LeaderboardEntry[];
+  } catch (err: any) {
+    console.error('PyramidResults: Error fetching leaderboard:', err.message, err);
+    return [];
+  }
+}
+
+function processVotes(leaderboard: LeaderboardEntry[]) {
+  const allItems = [...props.items, ...props.communityItems];
+  userVotes.value = leaderboard
+    .filter(entry => entry.custom && entry.custom.pyramid) // Filter out entries without pyramid data
+    .map(entry => ({
+      uid: entry.uid,
+      displayName: entry.displayName || 'Anonymous',
+      photoURL: entry.photoURL || 'https://www.top-x.co/assets/profile.png',
+      pyramid: (entry.custom!.pyramid as Array<{ tier: number; slots: string[] }>).map(tier => 
+        tier.slots.map(itemId => ({
+          image: itemId ? allItems.find(item => item.id === itemId) || null : null,
+        }))
+      ),
+      worstItem: entry.custom!.worstItem 
+        ? allItems.find(item => item.id === (entry.custom!.worstItem as { id: string }).id) || null 
+        : null,
+    }));
+  console.log('PyramidResults: Processed votes:', userVotes.value);
+}
 
 async function handleLogin() {
   await userStore.loginWithX();
@@ -132,6 +156,10 @@ async function handleLogin() {
 
 function closeLoginTab() {
   showLoginTab.value = false;
+}
+
+function searchFrenemies() {
+  router.push('/frenemies');
 }
 </script>
 

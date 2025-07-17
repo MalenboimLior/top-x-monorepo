@@ -55,7 +55,7 @@ const router = useRouter();
 const userStore = useUserStore();
 
 useHead({
-  title: 'Pyramid Tier Game - TOP-X',
+  title: 'TOP-X Pyramid',
   meta: [
     { name: 'description', content: 'Rank items and build your pyramid in the TOP-X Pyramid Tier game.' },
   ],

@@ -1,7 +1,6 @@
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
-
-// Type definitions for games and game types
+// packages/shared/types/game.ts
 export interface GameType {
   id: string;
   name: string;
@@ -24,6 +23,7 @@ export interface Game {
   /** Optional link shown on shared images */
   shareLink?: string;
   image: string;
+  vip: string[];
   custom: PyramidConfig | TriviaConfig; // Union of possible config types
 }
 
