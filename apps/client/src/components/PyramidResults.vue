@@ -20,6 +20,8 @@
           :share-image-title="shareImageTitle"
           :hide-row-label="props.hideRowLabel"
           :worst-show="props.worstShow"
+          :share-link="shareLink"
+
         />
       </div>
     </div>
@@ -65,6 +67,8 @@ const props = defineProps<{
   hideRowLabel?: boolean;
   shareImageTitle?: string;
   worstShow?: boolean;
+    shareLink?: string;
+
 }>();
 
 const userStore = useUserStore();

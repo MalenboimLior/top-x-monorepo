@@ -415,6 +415,7 @@ function handleShareClick(e: MouseEvent) {
   font-size: 22px;
   text-align: center;
   color: #00e8e0;
+  font-weight: bold;
 }
 .button.is-primary {
   margin: 0.3rem 0;

@@ -52,6 +52,8 @@
         :game-title="gameTitle"
         :hide-row-label="hideRowLabel"
         :worst-show="worstShow"
+        :share-link="shareLink"
+
       />
     </div>
   </div>

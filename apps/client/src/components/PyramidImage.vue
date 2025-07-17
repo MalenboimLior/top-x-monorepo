@@ -93,7 +93,7 @@ async function preloadImages() {
           ctx.drawImage(img, 0, 0);
         } else {
           // Crop to square
-          const size = 90;
+          const size = 180;
           canvas.width = size;
           canvas.height = size;
           const imgAspect = img.naturalWidth / img.naturalHeight;
@@ -120,7 +120,7 @@ async function preloadImages() {
 
           ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, size, size);
         }
-        const dataUrl = canvas.toDataURL('image/jpeg');
+        const dataUrl = canvas.toDataURL('image/png');
         preprocessedImages.value.set(src, dataUrl);
         console.log('PyramidView: Preprocessed image:', src);
         resolve();
@@ -210,7 +210,7 @@ async function renderPyramidImage() {
     tempDiv.style.position = 'absolute';
     tempDiv.style.top = '-9999px';
     tempDiv.style.left = '-9999px';
-    tempDiv.style.width = '500px';
+    tempDiv.style.width = '1000px';
     tempDiv.style.display = 'flex';
     tempDiv.style.flexDirection = 'column';
     tempDiv.style.alignItems = 'center';
@@ -287,8 +287,8 @@ async function renderPyramidImage() {
         flex-wrap: nowrap;
       }
       .pyramid-slot {
-        width: 90px;
-        height: 90px;
+        width: 180px;
+        height: 180px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -321,8 +321,8 @@ async function renderPyramidImage() {
       .worst-slot {
         border: 2px dashed #ff7777;
         background-color: #3d1f1f;
-        width: 90px;
-        height: 90px;
+        width: 180px;
+        height: 180px;
         box-sizing: border-box;
       }
       .slot-style {
@@ -367,7 +367,7 @@ async function renderPyramidImage() {
       }
       .tier-label.has-text-danger { color: #ff5555; }
       .top-x-label {
-        font-size: 0.9rem;
+        font-size: 30px;
         font-weight: bold;
         color: #fff;
         text-align: center;
@@ -381,7 +381,7 @@ async function renderPyramidImage() {
       }
       .game-header {
         margin: 0.3rem 2rem 1rem;
-        font-size: 22px;
+        font-size: 50px !important;
         text-align: center;
         color: #00e8e0;
       }
@@ -397,9 +397,8 @@ async function renderPyramidImage() {
         }
         .tier-label { font-size: 0.8rem; }
         .row-label { font-size: 0.6rem; }
-        .top-x-label { font-size: 0.6rem; }
-        .game-header { font-size: 15px; }
-       
+        .top-x-label { font-size: 0.8rem; }
+       .game-header {font-size: 22px !important;}
       }
     `;
     tempDiv.appendChild(styleElement);
@@ -485,7 +484,7 @@ async function renderPyramidImage() {
         <p class="top-x-label has-text-white has-text-centered">
           And what’s your vote?
         </p>
-        <p class="top-x-label has-text-centered" style="font-size: 16px;">
+        <p class="top-x-label has-text-centered" >
           ${props.shareLink || 'https://top-x.co'}
         </p>
         
@@ -494,7 +493,7 @@ async function renderPyramidImage() {
 
     const canvas = await html2canvas(tempDiv, {
       backgroundColor: '#121212',
-      scale: 2,
+      scale: 3,
       useCORS: true,
       logging: true,
       allowTaint: false,
@@ -502,7 +501,7 @@ async function renderPyramidImage() {
     });
     console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
     console.log('tempDiv:', tempDiv);
-    generatedImage.value = canvas.toDataURL('image/jpeg', 0.9);
+    generatedImage.value = canvas.toDataURL('image/png');
     isImageLoading.value = false;
   } catch (err: any) {
     console.error('PyramidView: Error generating image:', err.message, err);
