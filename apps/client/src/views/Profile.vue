@@ -2,7 +2,7 @@
 <template>
   <div class="profile-container">
     <h1 class="title has-text-white">Your Profile</h1>
-    <div v-if="isLoggedIn">
+    <div :class="{ blurred: !isLoggedIn }">
       <Card>
         <div class="media">
           <div class="media-left">
@@ -50,9 +50,19 @@
         </template>
       </Leaderboard>
     </div>
-    <div v-else class="notification is-warning">
-      Please log in to view your profile.
-      <CustomButton type="is-primary" label="Login with " :icon="['fab', 'x-twitter']" @click="userStore.loginWithX" />
+    <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
+      <div class="tab-content" @click.stop>
+        <p class="question-text">Hi, if you want to see the vote statistics you need to login, also your vote will be count</p>
+        <p class="answer-text">We only use your username and image, and we’ll never post on your behalf.</p>
+      </div>
+      <div class="has-text-centered">
+        <CustomButton
+          type="is-primary"
+          label="Login with X"
+          :icon="['fab', 'x-twitter']"
+          @click="handleLogin"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -97,6 +107,7 @@ const frenemyEntries = ref<LeaderboardEntry[]>([]);
 const addedByEntries = ref<LeaderboardEntry[]>([]);
 const loadingFrenemies = ref(false);
 const loadingAddedBy = ref(false);
+const showLoginTab = ref(false);
 
 async function fetchFrenemies() {
   if (!userStore.profile?.frenemies || userStore.profile.frenemies.length === 0) {
@@ -166,14 +177,68 @@ async function addFrenemy(uid: string) {
   }
 }
 
+async function handleLogin() {
+  await userStore.loginWithX();
+  closeLoginTab();
+}
+
+function closeLoginTab() {
+  showLoginTab.value = false;
+}
+
 onMounted(() => {
   if (isLoggedIn.value) {
     fetchFrenemies();
     fetchAddedBy();
+  } else {
+    showLoginTab.value = true;
   }
 });
 </script>
 
 <style scoped>
 @import '../styles/Profile.css';
+.description-tab {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1f1f1f;
+  color: white;
+  padding: 1rem;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+}
+.description-tab.show {
+  transform: translateY(0);
+}
+.tab-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+@media screen and (min-width: 768px) {
+  .description-tab {
+    width: 400px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+  }
+  .description-tab.show {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+.question-text {
+  color: #00e8e0;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.answer-text {
+  color: #eee;
+}
+.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
 </style>

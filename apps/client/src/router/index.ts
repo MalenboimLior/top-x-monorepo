@@ -38,7 +38,6 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
-    meta: { requiresAuth: true },
   },
   { path: '/about', name: 'About', component: About },
   { path: '/faq', name: 'FAQ', component: FAQ },
