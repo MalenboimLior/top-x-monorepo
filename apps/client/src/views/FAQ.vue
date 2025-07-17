@@ -5,13 +5,13 @@
         <div class="container has-text-centered">
           <h1 class="title is-1 has-text-white">Frequently Asked Questions</h1>
           <p class="subtitle is-4 has-text-light">
-            Got questions? We've got answers!
+            Quick answers to common questions about TOP-X.
           </p>
         </div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="section fade-in">
       <div class="container">
         <div class="content">
           <div v-for="(faq, index) in faqs" :key="index" class="faq-item mb-5">
@@ -19,9 +19,9 @@
             <p class="is-size-5 has-text-light">{{ faq.answer }}</p>
           </div>
           <CustomButton
-            text="Back to Home"
+            label="Back to Home"
+            type="is-primary is-large mt-5"
             @click="$router.push('/')"
-            class="is-primary is-large mt-5"
           />
         </div>
       </div>
@@ -43,7 +43,7 @@ export default defineComponent({
     useHead({
       title: 'TOP-X FAQ',
       meta: [
-        { name: 'description', content: 'Frequently asked questions about TOP-X login, privacy, and gameplay.' },
+        { name: 'description', content: 'Answers to frequently asked questions about TOP-X, including login, privacy, and games.' },
       ],
     });
   },
@@ -51,39 +51,44 @@ export default defineComponent({
     return {
       faqs: [
         {
-          question: 'Why do I need to log in to TOP-X?',
+          question: 'Why log in to TOP-X?',
           answer:
-            'Logging in lets you unlock the full TOP-X experience! With an account, you can save your game progress, climb leaderboards, find rivals, and show off your skills. It’s all about connecting you to the global TOP-X community while keeping your data safe.',
+            'Logging in unlocks full features like saving progress, leaderboards, and rival searches. It connects you to the community while keeping your data secure.',
         },
         {
-          question: 'Is logging in with X safe?',
+          question: 'Is logging in with X secure?',
           answer:
-            'Absolutely, it’s super safe! We use X’s login system with minimal permissions to ensure your privacy. Your information is protected, and we only access what’s needed to make your gaming experience awesome.',
+            'Yes! We use X\'s secure OAuth with minimal permissions. Your data stays private, and we can\'t access DMs or post for you.',
         },
         {
-          question: 'What permissions does TOP-X use when I log in with X?',
+          question: 'What X permissions does TOP-X need?',
           answer:
-            'We keep it light! TOP-X only requests basic permissions from the X App: reading your public posts and profile info. We can’t post on your behalf or access any private messages or data. Your privacy is our priority!',
+            'Just basics: Reading your public profile and posts. No posting, no private data—privacy first!',
         },
         {
-          question: 'Is TOP-X free to use?',
+          question: 'Is TOP-X free?',
           answer:
-            '100% free! Every game, challenge, and feature on TOP-X is available at no cost. We believe everyone should enjoy the fun, so dive in and play without worrying about a price tag!',
+            'Totally free! All games and features are accessible without any costs. Jump in and enjoy!',
         },
         {
-          question: 'Who built TOP-X?',
+          question: 'Who powers TOP-X?',
           answer:
-            'The star of the show is Grok, created by xAI! This incredible AI wrote 99% of TOP-X’s code, designed the games, crafted the content, and even inspired our marketing. We’re just here to sprinkle a little human magic on top!',
+            'Grok from xAI built 99% of it—code, games, content, and more. We add the human touch for perfection!',
         },
         {
-          question: 'What kind of games can I play on TOP-X?',
+          question: 'What games are available?',
           answer:
-            'TOP-X is your playground for mini-games like Trivia, with more exciting challenges on the way! Compete with friends, chase high scores, and explore social features like leaderboards and rival searches. There’s something for everyone!',
+            'Start with Trivia and more mini-games coming soon. Compete socially with leaderboards and friends.',
         },
         {
-          question: 'What’s next for TOP-X?',
+          question: 'How is my data protected?',
           answer:
-            'Grok’s got big plans! We’re cooking up new games, features, and surprises to keep the fun flowing. Expect more ways to connect, compete, and share your victories with the world. Stay tuned!',
+            'We use Firebase for secure storage, minimal collection, and compliance with privacy laws. You control your info.',
+        },
+        {
+          question: 'What\'s next for TOP-X?',
+          answer:
+            'Grok is innovating! Expect new games, enhanced social tools, and exciting updates. Follow us on X for news.',
         },
       ],
     };
@@ -94,7 +99,6 @@ export default defineComponent({
 <style scoped>
 .faq-page {
   background-color: #000000;
-
   min-height: 100vh;
   color: #ffffff;
 }
@@ -111,10 +115,28 @@ export default defineComponent({
 .faq-item {
   border-bottom: 1px solid #333;
   padding-bottom: 1.5rem;
+  transition: background 0.3s ease;
+}
+
+.faq-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
 }
 
 .content p {
   line-height: 1.6;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {

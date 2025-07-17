@@ -11,23 +11,22 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section fade-in">
       <div class="container">
         <div class="content has-text-centered">
           <p class="is-size-5">
-            Welcome to <strong>TOP-X</strong>, where creativity meets innovation! We're a gaming portal that brings exciting challenges and mini-games to social networks, connecting players and developers worldwide. What makes us special? <strong>99% of TOP-X is crafted by Grok</strong>, the brilliant AI from xAI, designed to spark joy and deliver epic experiences!
+            Welcome to <strong>TOP-X</strong>, the ultimate gaming portal where fun meets innovation on social networks! Connect with players and developers worldwide through exciting mini-games like Trivia, user profiles, leaderboards, and rival searches.
           </p>
           <p class="is-size-5">
-            While others use AI for writing stories or making viral videos, we harness Grok’s coding superpowers to create thrilling games, vibrant content, and even clever marketing ideas. From trivia battles to leaderboards and rival searches, TOP-X is your go-to place for fun, social, and competitive vibes. And guess what? Grok’s got more surprises cooking, so stay tuned for mind-blowing updates!
+            What sets us apart? <strong>99% of TOP-X is built by Grok</strong>, xAI's genius AI, handling everything from code to content and marketing ideas. While others use AI for simple tasks, we leverage Grok for immersive, joyful experiences.
           </p>
           <p class="is-size-5">
-            With Grok writing the code, designing the experience, and inspiring our vision, TOP-X is more than a platform—it’s a global playground where everyone’s invited. Join us, play, compete, and be part of the future of social gaming!
+            Join the playground: Play, compete, share victories, and watch for upcoming features. TOP-X is your gateway to the future of social gaming!
           </p>
           <CustomButton
-            type="button"
+            type="is-primary is-large mt-5"
             label="Explore Games"
             @click="$router.push('/')"
-            class="is-primary is-large mt-5"
           />
         </div>
       </div>
@@ -49,7 +48,7 @@ export default defineComponent({
     useHead({
       title: 'About TOP-X',
       meta: [
-        { name: 'description', content: 'Learn about TOP-X and how Grok powers our gaming platform.' },
+        { name: 'description', content: 'Discover TOP-X, the Grok-powered gaming platform for social fun and competition.' },
       ],
     });
   },
@@ -59,7 +58,6 @@ export default defineComponent({
 <style scoped>
 .about-page {
   background-color: #000000;
-
   min-height: 100vh;
   color: #ffffff;
 }
@@ -76,6 +74,18 @@ export default defineComponent({
 .content p {
   margin-bottom: 1.5rem;
   line-height: 1.6;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {

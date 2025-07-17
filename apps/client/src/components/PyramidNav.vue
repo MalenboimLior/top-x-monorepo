@@ -3,13 +3,13 @@
     <div class="tabs is-centered is-boxed">
       <ul>
         <li :class="{ 'is-active': activeTab === 'my-vote' }">
-          <a @click="setActiveTab('my-vote')">My Vote</a>
+          <a @click="setActiveTab('my-vote')">🗳️ My Vote</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'stats' }">
-          <a @click="setActiveTab('stats')">Statistics</a>
+          <a @click="setActiveTab('stats')">📊 Statistics</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'results' }">
-          <a @click="setActiveTab('results')">Other Votes</a>
+          <a @click="setActiveTab('results')">👥 Other Votes</a>
         </li>
       </ul>
     </div>

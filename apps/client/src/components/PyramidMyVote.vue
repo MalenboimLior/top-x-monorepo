@@ -41,11 +41,9 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/PyramidImage.vue';
 import PyramidLoginPopup from '@/components/PyramidLoginPopup.vue';
-import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 
