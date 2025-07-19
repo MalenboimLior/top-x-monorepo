@@ -5,7 +5,7 @@
       <button class="delete is-large" aria-label="close" @click="close"></button>
       <h2 class="title has-text-white">Add New Item</h2>
       <div v-if="!userStore.user" class="mb-4">
-        <p>Please log in to add a new item.</p>
+        <p>Feeling sneaky? Logged-in users only for adding items. Sign in with X and unleash your picks! ⚡</p>
         <button class="button is-success" @click="handleLogin">Log in with X</button>
       </div>
       <div v-else>

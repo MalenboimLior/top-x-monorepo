@@ -38,8 +38,11 @@
     <!-- Login Tab -->
     <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
       <div class="tab-content" @click.stop>
-        <p class="question-text">If you want to see what your friends votes and add new friends login</p>
-        <p class="answer-text">We only use your username and image, and we’ll never post on your behalf.</p>
+        <!-- <p class="question-text">If you want to see what your friends votes and add new friends login</p> -->
+        <p class="answer-text">See your friends' picks? 👥 <br>
+Log in to add friends (or frenemies!)  & check their votes.<br>
+Username + pic - we promise, we stay out of your posts! 🔒<br>
+</p>
 
       
         <!-- <button style="color:#c4ff00;" @click="closeLoginTab">Close</button> -->

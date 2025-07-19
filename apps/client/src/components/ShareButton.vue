@@ -9,8 +9,7 @@
       @click="handleShare"
     />
     <div v-if="showShareTooltip" class="share-tooltip">
-        Cool! Text copied to clipboard. <br/>
-Paste it in your post and add the image.
+        Nailed it! Image saved. Text copied → paste it in your post and show off your top picks! 🚀
     </div>
   </div>
 </template>

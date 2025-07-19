@@ -3,14 +3,13 @@
     <div class="modal-background"></div>
     <div class="modal-content box has-background-dark has-text-white">
       <button class="delete is-large" aria-label="close" @click="close"></button>
-      <h2 class="title has-text-white">Great Pyramid!</h2>
+      <h2 class="title has-text-white">Make It Count!</h2>
       <p class="mb-4">
-        Log in to make your vote count and unlock cool features:<br>
-        - Your vote is saved<br>
-        - See your friends’ votes<br>
-        - Get detailed stats on all votes<br>
-        - Show your profile image and share a unique invite link<br><br>
-        We only use your username and image, and we’ll never post on your behalf.
+       Log in with X to:<br>
+Make your vote count (no dupes!) ✅:<br>
+Unlock full results & friends' votes 👀:<br>
+We grab just your username + pic - promise, no funny business. 🔒:<br>
+
       </p>
       <div class="buttons">
         <button class="button is-success" @click="handleLogin">Log in with X</button>
