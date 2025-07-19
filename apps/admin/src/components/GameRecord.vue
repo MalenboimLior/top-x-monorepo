@@ -64,6 +64,19 @@
         <input type="checkbox" v-model="localGame.active" />
       </div>
     </div>
+    <div class="field">
+      <label class="label has-text-white">VIP User ID</label>
+      <div class="control has-addons">
+        <input v-model="vipInput" class="input" type="text" placeholder="Add UID" @keyup.enter="addVip" />
+        <CustomButton type="is-info" label="Add" @click="addVip" />
+      </div>
+      <div class="mt-2">
+        <span v-for="id in vipList" :key="id" class="tag is-info mr-1">
+          {{ id }}
+          <button class="delete is-small" @click="removeVip(id)"></button>
+        </span>
+      </div>
+    </div>
     <div v-if="gameTypeCustom === 'PyramidConfig'">
       <h3 class="subtitle has-text-white">Pyramid Config</h3>
       <p class="has-text-grey-light">Rows are managed in the Rows tab.</p>
@@ -171,7 +184,9 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGame = ref<Game>({ language: 'en', image: '', active: false, ...props.game });
+const localGame = ref<Game>({ language: 'en', image: '', active: false, vip: [], ...props.game });
+const vipList = ref<string[]>([...(localGame.value.vip || [])]);
+const vipInput = ref('');
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -256,6 +271,20 @@ const isAdmin = computed(() => {
 });
 
 const gameTypeCustom = ref<ConfigType | null>(null);
+
+const addVip = () => {
+  const id = vipInput.value.trim();
+  if (id && !vipList.value.includes(id)) {
+    vipList.value.push(id);
+    localGame.value.vip = vipList.value;
+    vipInput.value = '';
+  }
+};
+
+const removeVip = (id: string) => {
+  vipList.value = vipList.value.filter(v => v !== id);
+  localGame.value.vip = vipList.value;
+};
 
 const fetchGameTypeCustom = async () => {
   console.log('fetchGameTypeCustom called with gameTypeId:', props.gameTypeId);
@@ -363,6 +392,7 @@ const save = async () => {
       shareLink: localGame.value.shareLink || null,
       image: localGame.value.image || '',
       active: localGame.value.active || false,
+      vip: vipList.value,
     };
     if ((localGame.value as any).communityItems !== undefined) {
       gameData.communityItems = (localGame.value as any).communityItems;
