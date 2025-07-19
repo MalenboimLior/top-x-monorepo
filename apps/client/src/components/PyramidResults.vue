@@ -63,8 +63,8 @@ import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import { LeaderboardEntry } from '@top-x/shared/types/game';
-import axios from 'axios';
 import router from '@/router';
+import { getFriendsLeaderboard, getVipLeaderboard } from '@/services/leaderboard';
 
 const props = defineProps<{
   gameId: string;
@@ -99,33 +99,17 @@ onMounted(async () => {
   console.log('PyramidResults: onMounted called with gameId:', props.gameId);
   if (!user.value) {
     showLoginTab.value = true;
-    const votes = await fetchLeaderboard(true);
+    const votes = await getVipLeaderboard(props.gameId);
     processVotes(votes);
   } else {
-    const friendsVotes = await fetchLeaderboard(false);
+    const friendsVotes = await getFriendsLeaderboard(props.gameId, user.value.uid);
     let votes = friendsVotes;
     if (friendsVotes.length === 0) {
-      votes = await fetchLeaderboard(true);
+      votes = await getVipLeaderboard(props.gameId);
     }
     processVotes(votes);
   }
 });
-
-async function fetchLeaderboard(isVip: boolean = false) {
-  const endpoint = isVip ? '/getVipLeaderboard' : '/getFriendsLeaderboard';
-  const params: { gameId: string; uid?: string } = { gameId: props.gameId };
-  if (!isVip && user.value) {
-    params.uid = user.value.uid;
-  }
-  try {
-    const response = await axios.get(endpoint, { params });
-    console.log(`PyramidResults: Fetched ${isVip ? 'VIP' : 'friends'} leaderboard:`, response.data);
-    return response.data as LeaderboardEntry[];
-  } catch (err: any) {
-    console.error('PyramidResults: Error fetching leaderboard:', err.message, err);
-    return [];
-  }
-}
 
 function processVotes(leaderboard: LeaderboardEntry[]) {
   const allItems = [...props.items, ...props.communityItems];
