@@ -194,11 +194,11 @@ import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidAddItemPopup from '@/components/PyramidAddItemPopup.vue';
 
-declare global {
-  interface Window {
-    adsbygoogle: unknown[];
-  }
-}
+// declare global {
+//   interface Window {
+//     adsbygoogle: unknown[];
+//   }
+// }
 
 const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
 const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
@@ -254,13 +254,13 @@ const displayedDescription = ref('');
 let typingInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
-  try {
-    if (typeof window !== 'undefined') {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    }
-  } catch (e) {
-    console.error('Adsense error:', e);
-  }
+  // try {
+  //   if (typeof window !== 'undefined') {
+  //     (window.adsbygoogle = window.adsbygoogle || []).push({});
+  //   }
+  // } catch (e) {
+  //   console.error('Adsense error:', e);
+  // }
 
   // Load from local storage if available
   const savedPyramid = localStorage.getItem(`pyramid_${gameId.value}`);
