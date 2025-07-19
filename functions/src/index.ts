@@ -127,8 +127,18 @@ export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{u
           // Update leaderboard
           const leaderboardRef = db.collection('games').doc(gameId).collection('leaderboard').doc(uid);
           const statsRef = db.collection('games').doc(gameId).collection('stats').doc('general');
+          const gameRef = db.collection('games').doc(gameId);
 
-          const statsDoc = await tx.get(statsRef);
+          const [statsDoc, gameDoc] = await Promise.all([
+            tx.get(statsRef),
+            tx.get(gameRef)
+          ]);
+
+          if (!gameDoc.exists) {
+            console.error(`Game ${gameId} does not exist`);
+            return;
+          }
+
           const currentStats = statsDoc.exists
             ? statsDoc.data() as GameStats
             : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() };
@@ -209,6 +219,15 @@ export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{u
             custom,
             updatedAt: Date.now(),
           });
+
+          // Add to VIP if eligible
+          if (!gameDataBefore && afterData.followersCount > 2000) {
+            let vip = gameDoc.data()?.vip || [];
+            if (!vip.includes(uid)) {
+              vip = [...vip, uid];
+              tx.update(gameRef, { vip });
+            }
+          }
         });
       }
     }
@@ -434,7 +453,7 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
 });
 
 // Fetches leaderboard information for a curated list of VIP users.
-// The list of UIDs is now stored in the game's document under the 'vip' field.
+// The list of UIDs is stored in the 'config/vip_users' document in Firestore.
 export const getVipLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
