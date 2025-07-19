@@ -52,8 +52,11 @@
     </div>
     <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
       <div class="tab-content" @click.stop>
-        <p class="question-text">Hi, if you want to see the vote statistics you need to login, also your vote will be count</p>
-        <p class="answer-text">We only use your username and image, and we’ll never post on your behalf.</p>
+        <!-- <p class="question-text">Hi, if you want to see the vote statistics you need to login, also your vote will be count</p> -->
+        <p class="answer-text">Unlock Your Profile? 🧐 <br>
+Log in to reveal your picks, stats and frenemies' results!<br>
+Just your X username + pic - we promise, no meddling with your account! 🔒<br>
+</p>
       </div>
       <div class="has-text-centered">
         <CustomButton

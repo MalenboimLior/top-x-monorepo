@@ -6,10 +6,10 @@
           <a @click="setActiveTab('my-vote')">🗳️ My Vote</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'stats' }">
-          <a @click="setActiveTab('stats')">📊 Statistics</a>
+          <a @click="setActiveTab('stats')">📊 Results</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'results' }">
-          <a @click="setActiveTab('results')">👥 Other Votes</a>
+          <a @click="setActiveTab('results')">👥 Peer Picks</a>
         </li>
       </ul>
     </div>
