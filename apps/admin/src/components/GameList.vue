@@ -127,6 +127,7 @@ const createNew = () => {
         shareLink: '',
         image: '',
         active: false,
+        vip: []
       };
     console.log('createNew called, emitting edit with new game:', newGame);
     emit('edit', newGame);
