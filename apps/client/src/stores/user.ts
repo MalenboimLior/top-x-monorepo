@@ -25,7 +25,7 @@ export const useUserStore = defineStore('user', () => {
       user.value = {
         uid: currentUser.uid,
         displayName: currentUser.displayName,
-        photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal.jpg', '_400x400.jpg')
+        photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal', '_400x400')
             : 'https://www.top-x.co/assets/profile.png',
       };
       const userDoc = doc(db, 'users', currentUser.uid);
@@ -58,7 +58,7 @@ export const useUserStore = defineStore('user', () => {
       user.value = {
         uid: result.user.uid,
         displayName: result.user.displayName,
-        photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
+        photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal', '_400x400')
             : 'https://www.top-x.co/assets/profile.png',
       };
       console.log('Login result.user.photoURL:', result.user.photoURL);
@@ -78,7 +78,7 @@ export const useUserStore = defineStore('user', () => {
           xSecret,
           displayName: result.user.displayName || 'Anonymous',
           photoURL: result.user.photoURL
-            ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
+            ? result.user.photoURL.replace('_normal', '_400x400')
             : 'https://www.top-x.co/assets/profile.png',
         });
         console.log('Updated user profile with X credentials');
@@ -136,7 +136,7 @@ export const useUserStore = defineStore('user', () => {
       displayName: user.displayName || 'Anonymous',
       email: user.email || '',
       photoURL: user.photoURL
-        ? user.photoURL.replace('_normal.jpg', '_400x400.jpg')
+        ? user.photoURL.replace('_normal', '_400x400')
         : 'https://www.top-x.co/assets/profile.png',
       isAdmin: false,
       followersCount: 0,
