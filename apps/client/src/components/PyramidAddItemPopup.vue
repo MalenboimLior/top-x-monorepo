@@ -43,7 +43,10 @@
           </div>
         </div> -->
         <div class="buttons mt-4">
-          <button class="button is-success" :disabled="!isFormValid" @click="saveItem">Save</button>
+          <button class="button is-success" :disabled="!isFormValid || isSaving" @click="saveItem">
+            <span v-if="isSaving">Saving...</span>
+            <span v-else>Save</span>
+          </button>
           <button class="button is-text has-text-white" @click="close">Cancel</button>
         </div>
       </div>
@@ -58,6 +61,8 @@ import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@top-x/shared';
 import { PyramidItem } from '@top-x/shared/types/pyramid';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 const props = defineProps<{
   isActive: boolean;
@@ -74,10 +79,11 @@ const form = ref({
   label: '',
   name: '',
   description: '',
-  color: '#ffffff',
+  color: '#9900ff',
   image: null as File | null,
 });
 const imagePreview = ref<string | null>(null);
+const isSaving = ref(false);
 
 const isFormValid = computed(() => {
   return  form.value.name.trim() && form.value.image;
@@ -88,6 +94,9 @@ async function handleLogin() {
     const success = await userStore.loginWithX();
     if (success) {
       console.log('PyramidAddItemPopup: Login successful');
+      if (analytics) {
+        logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'add_item_popup' });
+      }
     } else {
       console.error('PyramidAddItemPopup: Login failed');
       alert('Failed to log in. Please try again.');
@@ -117,6 +126,8 @@ async function saveItem() {
     alert('Please log in and ensure a game is selected.');
     return;
   }
+
+  isSaving.value = true;
 
   const randomNum = Math.floor(1000 + Math.random() * 9000);
   const id = `${userStore.user.uid || 'anonymous'}_${randomNum}`;
@@ -151,7 +162,9 @@ async function saveItem() {
         'custom.communityItems': arrayUnion(newItem)
       });
       console.log('PyramidAddItemPopup: Item added to custom.communityItems in Firestore:', newItem);
-
+if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'save_item', game_id: props.gameId, item_id: newItem.id });
+  }
       // Emit new item to parent
       emit('add-item', newItem);
 
@@ -175,6 +188,8 @@ async function saveItem() {
       stack: err.stack
     });
     alert('Failed to save item. Please try again.');
+  } finally {
+    isSaving.value = false;
   }
 }
 

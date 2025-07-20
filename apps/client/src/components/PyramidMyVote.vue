@@ -46,6 +46,8 @@ import PyramidImage from '@/components/PyramidImage.vue';
 import PyramidLoginPopup from '@/components/PyramidLoginPopup.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -102,6 +104,9 @@ function closeLoginPopup() {
 
 function editPyramid() {
   if (props.gameId) {
+    if (analytics) {
+      logEvent(analytics, 'user_action', { action: 'edit', game_id: props.gameId });
+    }
     router.push({ name: 'PyramidTier', query: { game: props.gameId, edit: 'true' } });
     console.log('PyramidMyVote: Navigating to PyramidEdit with edit=true');
   }

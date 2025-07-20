@@ -24,6 +24,8 @@ import { ref } from 'vue';
 import { useUserStore } from '../stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
 import { UserGameData } from '@top-x/shared/types/user';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 const props = defineProps<{
   isActive: boolean;
@@ -50,6 +52,9 @@ async function handleLogin() {
         await saveCachedVote(voteData, userStore.user.uid);
         localStorage.removeItem(`pyramid_${props.gameId}`);
         console.log('PyramidLoginPopup: Vote saved and localStorage cleared');
+      }
+      if (analytics) {
+        logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'login_popup', game_id: props.gameId });
       }
       emit('login');
     }
@@ -96,6 +101,9 @@ function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null)
 
 const skip = () => {
   console.log('PyramidLoginPopup: Skip clicked');
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'skip_login', context: 'login_popup', game_id: props.gameId });
+  }
   emit('skip');
 };
 
