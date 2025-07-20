@@ -9,7 +9,8 @@
       @click="handleShare"
     />
     <div v-if="showShareTooltip" class="share-tooltip">
-        Nailed it! Image saved. Text copied → paste it in your post and show off your top picks! 🚀
+        Nailed it! Image saved. Text copied → <br>
+         paste it in your post and show off your top picks! 🚀
     </div>
   </div>
 </template>
@@ -75,7 +76,7 @@ const handleShare = async () => {
       showShareTooltip.value = true;
       setTimeout(() => {
         showShareTooltip.value = false;
-      }, 6000);
+      }, 5000);
 
       //alert('Image downloaded and text copied to clipboard.');
     } catch (err) {
@@ -103,11 +104,11 @@ const handleShare = async () => {
   bottom: 120%;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #3273dc;
-  color: #fff;
+  background-color: #00e8e0;
+  color: black;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 1.2rem;
+  font-size: 1rem;
   white-space: nowrap;
   z-index: 20;
 }

@@ -234,8 +234,8 @@ async function renderPyramidImage() {
       }
       .user-image-container { position: absolute; top: 0.6rem; left: 0.6rem; }
       .user-image {
-        width: 7rem;
-        height: 7rem;
+        width: 8rem;
+        height: 8rem;
         border-radius: 50%;
         border: 2px solid #00e8e0;
         object-fit: cover;
@@ -367,6 +367,13 @@ async function renderPyramidImage() {
       }
       .tier-label.has-text-danger { color: #ff5555; }
       .top-x-label {
+        font-size: 34px;
+        font-weight: bold;
+        color: #fff;
+        text-align: center;
+        margin-top: 0.5rem;
+      }
+        .top-x-labelsmall {
         font-size: 30px;
         font-weight: bold;
         color: #fff;
@@ -397,7 +404,8 @@ async function renderPyramidImage() {
         }
         .tier-label { font-size: 0.8rem; }
         .row-label { font-size: 0.6rem; }
-        .top-x-label { font-size: 0.8rem; }
+        .top-x-label { font-size: 1rem; }
+        .top-x-labelsmall { font-size: 0.8rem; }
        .game-header {font-size: 22px !important;}
        .logo-container {width: 70px;}
        .user-image {
@@ -489,7 +497,7 @@ async function renderPyramidImage() {
         <p class="top-x-label has-text-white has-text-centered">
           And what’s your vote?
         </p>
-        <p class="top-x-label has-text-centered" >
+        <p class="top-x-labelsmall has-text-centered" >
           ${props.shareLink || 'https://top-x.co'}
         </p>
         

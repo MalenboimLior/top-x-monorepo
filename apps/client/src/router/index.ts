@@ -1,6 +1,7 @@
+
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/views/Home.vue';
-import ComingSoon from '@/views/ComingSoon.vue';
+// import ComingSoon from '@/views/ComingSoon.vue';
 import Profile from '@/views/Profile.vue';
 import About from '@/views/About.vue';
 import TermsOfUse from '@/views/TermsOfUse.vue';
@@ -15,25 +16,25 @@ import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 
 const routes = [
+  // {
+  //   path: '/',
+  //   name: 'ComingSoon',
+  //   component: ComingSoon,
+  //   beforeEnter: (to: import('vue-router').RouteLocationNormalized, from: import('vue-router').RouteLocationNormalized, next: import('vue-router').NavigationGuardNext) => {
+  //     const params = new URLSearchParams(to.query as Record<string, string>);
+  //     const game = params.get('game');
+  //     const allowedGames = ['us_presidents_game', 'secret']; // Add other game IDs as needed
+  //     if (game && allowedGames.includes(game)) {
+  //       console.log('Router: Bypassing ComingSoon for game:', game);
+  //       next(`/games/PyramidTier?game=${game}`);
+  //     } else {
+  //       console.log('Router: Showing ComingSoon page');
+  //       next();
+  //     }
+  //   },
+  // },
   {
     path: '/',
-    name: 'ComingSoon',
-    component: ComingSoon,
-    beforeEnter: (to: import('vue-router').RouteLocationNormalized, from: import('vue-router').RouteLocationNormalized, next: import('vue-router').NavigationGuardNext) => {
-      const params = new URLSearchParams(to.query as Record<string, string>);
-      const game = params.get('game');
-      const allowedGames = ['us_presidents_game', 'secret']; // Add other game IDs as needed
-      if (game && allowedGames.includes(game)) {
-        console.log('Router: Bypassing ComingSoon for game:', game);
-        next(`/games/PyramidTier?game=${game}`);
-      } else {
-        console.log('Router: Showing ComingSoon page');
-        next();
-      }
-    },
-  },
-  {
-    path: '/home',
     name: 'Home',
     component: Home,
   },
@@ -66,7 +67,7 @@ const routes = [
     path: '/FootballStarsIL',
     redirect: {
       path: '/games/PyramidTier',
-      query: { game: 'Pyramid_soccer_israel' },
+      query: { game: 'FootballStarsIL' },
     },
   },
 
@@ -75,6 +76,9 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    return { top: 0 };
+  },
 });
 
 router.beforeEach((to, from, next) => {
@@ -92,10 +96,13 @@ router.beforeEach((to, from, next) => {
 });
 
 router.afterEach((to) => {
-  logEvent(analytics, 'page_view', {
-    page_path: to.fullPath,
-    page_title: String(to.name || to.fullPath),
-  });
+  if (analytics) {
+    logEvent(analytics, 'page_view_public', {
+      page_path: to.path,
+      page_search: to.fullPath.split('?')[1] || '', // Captures ?game=footballstarsil etc.
+      page_title: document.title || to.name, // Or custom title
+    });
+  }
 });
 
 export default router;

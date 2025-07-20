@@ -38,8 +38,8 @@
     <!-- Login Tab -->
     <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
       <div class="tab-content" @click.stop>
-        <!-- <p class="question-text">If you want to see what your friends votes and add new friends login</p> -->
-        <p class="answer-text">See your friends' picks? 👥 <br>
+    <p class="question-text">See your friends' picks? 👥</p> 
+        <p class="answer-text">
 Log in to add friends (or frenemies!)  & check their votes.<br>
 Username + pic - we promise, we stay out of your posts! 🔒<br>
 </p>

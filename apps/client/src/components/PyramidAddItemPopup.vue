@@ -36,12 +36,12 @@
             </p>
           </div>
         </div>
-        <div class="field">
+        <!-- <div class="field">
           <label class="label has-text-white">Color</label>
           <div class="control">
             <input type="color" v-model="form.color" />
           </div>
-        </div>
+        </div> -->
         <div class="buttons mt-4">
           <button class="button is-success" :disabled="!isFormValid" @click="saveItem">Save</button>
           <button class="button is-text has-text-white" @click="close">Cancel</button>
@@ -160,7 +160,7 @@ async function saveItem() {
         label: '',
         name: '',
         description: '',
-        color: '#ffffff',
+        color: '#9900ff',
         image: null,
       };
       imagePreview.value = null;
@@ -184,7 +184,7 @@ function close() {
     label: '',
     name: '',
     description: '',
-    color: '#ffffff',
+    color: '#9900ff',
     image: null,
   };
   imagePreview.value = null;
