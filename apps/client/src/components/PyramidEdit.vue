@@ -5,7 +5,7 @@
       <h2 class="subtitle has-text-success" v-html="props.gameHeader"></h2>
       <h2 class="has-text-white" style="margin-bottom: 1rem;" v-html="props.gameInstruction"></h2>
 
-      <div class="pyramid">
+      <div class="pyramid" ref="pyramidRef">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
           <div class="pyramid-row-wrapper">
             <div class="pyramid-row">
@@ -99,10 +99,19 @@
             </span>
           </div>
         </div>
-        <a
-          style="font-size: 14px;"
-          @click="clearPyramid"
-        >clear pyramid</a>
+        <div class="clear-link-wrapper">
+          <a
+            style="font-size: 14px;"
+            @click.stop.prevent="clearPyramid"
+          >clear pyramid</a>
+          <div v-if="showConfirm" class="confirm-tooltip">
+            <p>Are you sure you want to clear the pyramid?</p>
+            <div class="buttons">
+              <button class="button is-small is-success" @click="confirmClear(true)">Yes</button>
+              <button class="button is-small is-danger" @click="confirmClear(false)">No</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToOfficialPool">
         <div
@@ -110,7 +119,7 @@
           :key="image.id"
           class="pyramid-slot image-box slot-style dark-slot"
           :class="{ 'selected': isSelected(image) }"
-          draggable="true"
+          :draggable="!isTouchDevice"
           @dragstart="() => onDragStart(image)"
           @click.stop="() => onTapSelect(image)"
         >
@@ -143,7 +152,7 @@
           :key="image.id"
           class="pyramid-slot image-box slot-style dark-slot"
           :class="{ 'selected': isSelected(image) }"
-          draggable="true"
+          :draggable="!isTouchDevice"
           @dragstart="() => onDragStart(image)"
           @click.stop="() => onTapSelect(image)"
         >
@@ -206,7 +215,7 @@ const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 library.add(faCircleInfo, faSearch, faEraser, faPlus);
 
 const route = useRoute();
-const gameId = ref(route.query.game as string);
+const gameId = ref((route.query.game as string).toLowerCase());const gameTitle = ref('');
 
 const props = defineProps<{
   items: PyramidItem[];
@@ -253,6 +262,10 @@ const describedItem = ref<PyramidItem | null>(null);
 const displayedDescription = ref('');
 let typingInterval: ReturnType<typeof setInterval> | null = null;
 
+const showConfirm = ref(false);
+const pyramidRef = ref<HTMLElement | null>(null);
+const isTouchDevice = ref(false);
+
 onMounted(() => {
   // try {
   //   if (typeof window !== 'undefined') {
@@ -261,6 +274,8 @@ onMounted(() => {
   // } catch (e) {
   //   console.error('Adsense error:', e);
   // }
+
+  isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   // Load from local storage if available
   const savedPyramid = localStorage.getItem(`pyramid_${gameId.value}`);
@@ -279,6 +294,12 @@ onMounted(() => {
       if (tabElement && !tabElement.contains(event.target as Node)) {
         closeTab();
         selectedInfoIcon.value = null; // Reset selected info icon
+      }
+    }
+    if (showConfirm.value) {
+      const confirmElement = document.querySelector('.confirm-tooltip');
+      if (confirmElement && !confirmElement.contains(event.target as Node)) {
+        showConfirm.value = false;
       }
     }
   };
@@ -395,35 +416,41 @@ watch(
 );
 
 function clearPyramid() {
-  console.log('PyramidEdit: Clearing pyramid');
-  // Collect all items from pyramid and worst slot
-  const itemsToReturn: PyramidItem[] = [];
-  pyramid.value.forEach(row => {
-    row.forEach(slot => {
-      if (slot.image) {
-        itemsToReturn.push(slot.image);
-        slot.image = null;
+  showConfirm.value = true;
+}
+
+function confirmClear(yes: boolean) {
+  showConfirm.value = false;
+  if (yes) {
+    // Collect all items from pyramid and worst slot
+    const itemsToReturn: PyramidItem[] = [];
+    pyramid.value.forEach(row => {
+      row.forEach(slot => {
+        if (slot.image) {
+          itemsToReturn.push(slot.image);
+          slot.image = null;
+        }
+      });
+    });
+    if (worstItem.value) {
+      itemsToReturn.push(worstItem.value);
+      worstItem.value = null;
+    }
+    // Separate into official and community
+    const officialItems: PyramidItem[] = [];
+    const communityItems: PyramidItem[] = [];
+    itemsToReturn.forEach(item => {
+      if (props.communityItems.some(i => i.id === item.id)) {
+        communityItems.push(item);
+      } else {
+        officialItems.push(item);
       }
     });
-  });
-  if (worstItem.value) {
-    itemsToReturn.push(worstItem.value);
-    worstItem.value = null;
+    // Add back to respective pools and sort
+    officialPool.value = [...officialPool.value, ...officialItems].sort(sortFunction);
+    communityPool.value = [...communityPool.value, ...communityItems].sort(sortFunction);
+    console.log('PyramidEdit: Pyramid cleared, items returned to pools:', { official: officialPool.value, community: communityPool.value });
   }
-  // Separate into official and community
-  const officialItems: PyramidItem[] = [];
-  const communityItems: PyramidItem[] = [];
-  itemsToReturn.forEach(item => {
-    if (props.communityItems.some(i => i.id === item.id)) {
-      communityItems.push(item);
-    } else {
-      officialItems.push(item);
-    }
-  });
-  // Add back to respective pools and sort
-  officialPool.value = [...officialPool.value, ...officialItems].sort(sortFunction);
-  communityPool.value = [...communityPool.value, ...communityItems].sort(sortFunction);
-  console.log('PyramidEdit: Pyramid cleared, items returned to pools:', { official: officialPool.value, community: communityPool.value });
 }
 
 function isSelected(item: PyramidItem | null): boolean {
@@ -447,6 +474,11 @@ function onTapSelect(item: PyramidItem) {
   selectedItem.value = selectedItem.value?.id === item.id ? null : item;
   draggedItem.value = selectedItem.value;
   console.log('PyramidEdit: Item selected via tap:', selectedItem.value);
+  if (selectedItem.value) {
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1000);
+  }
 }
 
 function onDragEnterSlot(row: number, col: number) {
@@ -1227,5 +1259,50 @@ function closeTab() {
     z-index: 10;
   }
  
+}
+.clear-link-wrapper {
+  position: relative;
+}
+.confirm-tooltip {
+  position: absolute;
+  background-color: #2a2a2a;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 100;
+  width: 250px;
+  text-align: center;
+  top: 100%;
+  left: 0;
+}
+.confirm-tooltip:before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid #2a2a2a;
+}
+.buttons {
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+@media screen and (max-width: 767px) {
+  .confirm-tooltip {
+    left: auto;
+    right: 0;
+    width: 200px;
+  }
+  .confirm-tooltip:before {
+    left: auto;
+    right: 10px;
+  }
+}
+.image-pool {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
 }
 </style>

@@ -20,6 +20,13 @@
           <p class="has-text-white">Best Score: {{ triviaStats.score }}</p>
           <p class="has-text-white">Best Streak: {{ triviaStats.streak }}</p>
         </div>
+        <div class="has-text-centered mt-4">
+          <CustomButton
+            type="is-light"
+            label="Logout"
+            @click="logout"
+          />
+        </div>
       </Card>
       <Leaderboard
         title="Your Frenemies"
@@ -52,8 +59,8 @@
     </div>
     <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
       <div class="tab-content" @click.stop>
-        <!-- <p class="question-text">Hi, if you want to see the vote statistics you need to login, also your vote will be count</p> -->
-        <p class="answer-text">Unlock Your Profile? 🧐 <br>
+        <p class="question-text">Unlock Your Profile? 🧐</p>
+        <p class="answer-text">
 Log in to reveal your picks, stats and frenemies' results!<br>
 Just your X username + pic - we promise, no meddling with your account! 🔒<br>
 </p>
@@ -74,6 +81,7 @@ Just your X username + pic - we promise, no meddling with your account! 🔒<br>
 import { useUserStore } from '@/stores/user';
 import { computed, ref, onMounted } from 'vue';
 import { useHead } from '@vueuse/head';
+import { useRouter } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 
@@ -91,6 +99,7 @@ interface LeaderboardEntry {
 }
 
 const userStore = useUserStore();
+const router = useRouter();
 
 useHead({
   title: 'Your Profile - TOP-X',
@@ -183,6 +192,11 @@ async function addFrenemy(uid: string) {
 async function handleLogin() {
   await userStore.loginWithX();
   closeLoginTab();
+}
+
+async function logout() {
+  await userStore.logout();
+  router.push('/');
 }
 
 function closeLoginTab() {

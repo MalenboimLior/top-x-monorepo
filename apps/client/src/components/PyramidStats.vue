@@ -98,7 +98,9 @@
     <!-- Login Tab -->
     <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
       <div class="tab-content" @click.stop>
-        <p class="answer-text">Want the full scoop on rankings? 📊<br>
+            <p class="question-text">Want the full scoop on rankings? 📊</p> 
+
+        <p class="answer-text">
 Log in to unlock them & make your vote count!<br>
 Just your X username + pic - we promise, hands off your feed! 🔒<br>
 </p>
@@ -132,7 +134,7 @@ Just your X username + pic - we promise, hands off your feed! 🔒<br>
           <h3 class="title has-text-white has-text-centered" style="margin:0px">{{ selectedPresident?.name }}</h3>
           <div class="stats-container">
             <p class="has-text-white">Score: {{ formatNumber(selectedPresident?.score || 0) }}</p>
-            <p class="has-text-white">Tier Distribution:</p>
+            <p class="has-text-white">Votes:</p>
             <ul>
               <li v-for="row in props.rows" :key="row.id" class="has-text-white">
                 {{ row.label || toRoman(row.id) }}: {{ formatNumber(selectedPresident?.ranks[row.id] || 0) }}
@@ -145,7 +147,7 @@ Just your X username + pic - we promise, hands off your feed! 🔒<br>
           <div class="buttons is-centered mt-4">
             <CustomButton
               type="is-primary"
-              label="Download Stats"
+              label="Download image"
               :icon="['fas', 'download']"
               :disabled="isImageLoading"
               @click="downloadPresidentStats"
@@ -349,6 +351,7 @@ function closeLoginTab() {
 .table {
   background-color: #1a1a1a;
   border-radius: 8px;
+  max-width: 600px;
   overflow: hidden;
 }
 th,

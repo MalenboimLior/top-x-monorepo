@@ -1,3 +1,4 @@
+
 <!-- Landing page listing available games -->
 <template>
   <div class="home-container">
@@ -9,7 +10,7 @@
     >
     <p class="subtitle has-text-grey-light">Play, compete, and share with friends!</p>
     <div class="columns is-multiline is-mobile">
-      <div v-for="game in games" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile">
+      <div v-for="game in games" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
         <Card>
           <div class="card-image">
             <figure class="image is-4by3">
@@ -23,7 +24,6 @@
               v-if="!game.isComingSoon"
               type="is-primary mt-4"
               :label="'Play Now'"
-              @click="$router.push(game.route)"
             />
             <CustomButton
               v-else
@@ -41,11 +41,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useHead } from '@vueuse/head';
+import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import fallbackImg from '@/assets/images/fallback.png';
+
+const router = useRouter();
 
 interface Game {
   id: string;
@@ -97,8 +100,15 @@ onMounted(() => {
     console.error('Home: Error fetching games:', err.message, err);
   });
 });
+
+function navigateToGame(route: string) {
+  router.push(route);
+}
 </script>
 
 <style scoped>
 @import '../styles/Home.css';
+.is-clickable {
+  cursor: pointer;
+}
 </style>

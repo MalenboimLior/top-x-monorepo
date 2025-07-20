@@ -1,3 +1,4 @@
+
 <!-- Top navigation bar for the client app -->
 <template>
   <nav class="navbar" role="navigation" aria-label="main navigation">
@@ -36,19 +37,22 @@
         <div class="navbar-item">
           <div class="buttons">
             <CustomButton
-  v-if="!user"
-  type="is-primary"
-  label="Login with"
-  :icon="['fab', 'x-twitter']"
-  @click="handleLogin"
-/>
-
-            <CustomButton
-              v-else
-              type="is-light"
-              label="Logout"
-              @click="logout"
+              v-if="!user"
+              type="is-primary"
+              label="Login with"
+              :icon="['fab', 'x-twitter']"
+              @click="handleLogin"
             />
+            <router-link
+              v-else
+              to="/profile"
+              @click="closeMenu"
+              class="navbar-item profile-link"
+            >
+              <figure class="image is-32x32">
+                <img :src="user.photoURL || 'https://www.top-x.co/assets/profile.png'" alt="Profile" class="is-rounded" />
+              </figure>
+            </router-link>
           </div>
         </div>
       </div>
@@ -81,7 +85,7 @@ const handleLogin = async () => {
   await userStore.loginWithX();
   if (userStore.user && userStore.profile) {
     console.log('Login successful, redirecting to /profile');
-    router.push('/profile');
+    // router.push('/profile');
     isMenuActive.value = false;
   } else {
     console.warn('Login failed or no profile loaded');
@@ -115,6 +119,10 @@ const closeMenu = () => {
  
   font-size: 1.2rem;
 }
-
-
+.profile-link {
+  padding: 0;
+}
+.profile-link .image {
+  margin: 0;
+}
 </style>

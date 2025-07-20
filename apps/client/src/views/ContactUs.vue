@@ -29,11 +29,11 @@
         
         </div>
         <div>
-              <CustomButton
+              <!-- <CustomButton
             label="Back to Home"
             type="is-primary is-large mt-6"
             @click="$router.push('/')"
-          />
+          /> -->
         </div>
       </div>
     </section>

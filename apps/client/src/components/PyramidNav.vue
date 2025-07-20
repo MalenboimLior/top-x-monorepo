@@ -3,7 +3,7 @@
     <div class="tabs is-centered is-boxed">
       <ul>
         <li :class="{ 'is-active': activeTab === 'my-vote' }">
-          <a @click="setActiveTab('my-vote')">🗳️ My Vote</a>
+          <a @click="setActiveTab('my-vote')">🎯 My Vote</a>
         </li>
         <li :class="{ 'is-active': activeTab === 'stats' }">
           <a @click="setActiveTab('stats')">📊 Results</a>
@@ -143,7 +143,7 @@ function setActiveTab(tab: 'my-vote' | 'stats' | 'results') {
     padding: 0.1rem 0.05rem;
   }
   .tabs a {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     padding: 0.5rem;
   }
 }

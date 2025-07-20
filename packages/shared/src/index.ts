@@ -3,7 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
-import { getAnalytics } from 'firebase/analytics';
+import { getAnalytics} from 'firebase/analytics';
 import { getStorage } from 'firebase/storage';
 
 const detectedHost = window.location.hostname;

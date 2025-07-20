@@ -3,25 +3,19 @@
     <div class="container">
       <div class="content has-text-centered">
         <p>
-          <a
-            href="https://x.ai"
-            target="_blank"
-            class="grok-badge"
-            title="Powered by Grok, created by xAI"
-          >
-            Powered by Grok with 💖
-          </a>
+           <router-link to="/about" class="grok-badge"> Powered by Grok with 💖</router-link>
+        
         </p>
         <div class="footer-links">
-          <router-link to="/terms" class="footer-link">Terms of Use</router-link>
-          <router-link to="/privacy" class="footer-link">Privacy Policy</router-link>
+          <router-link to="/contact" class="footer-link">Terms of Use</router-link>
+          <router-link to="/contact" class="footer-link">Privacy Policy</router-link> 
           <router-link to="/contact" class="footer-link">Contact Us</router-link>
           <a href="https://x.com/Topxapp" target="_blank" class="footer-link">
-            <font-awesome-icon :icon="['fab', 'x-twitter']" class="mr-1" /> @Topxapp
+            <font-awesome-icon :icon="['fab', 'x-twitter']"  /> @Topxapp
           </a>
-          <a @click.prevent="manageCookies" class="footer-link" style="cursor: pointer;">
+          <!-- <a @click.prevent="manageCookies" class="footer-link" style="cursor: pointer;">
             Manage Cookie Preferences
-          </a>
+          </a> -->
         </div>
         <p class="is-size-7 mt-2">
           © 2025 TOP-X. All rights reserved.
