@@ -49,6 +49,8 @@ import PyramidEdit from '@/components/PyramidEdit.vue';
 import PyramidNav from '@/components/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 const route = useRoute();
 const router = useRouter();
@@ -106,6 +108,9 @@ watch([pyramid, worstItem, baseShareText], updateShareText);
 const showEdit = computed(() => route.query.edit === 'true' || !hasSubmitted.value);
 
 onMounted(async () => {
+  if (analytics) {
+    logEvent(analytics, 'game_view', { game_name: gameId.value, view_type: showEdit.value ? 'edit' : 'nav' });
+  }
   console.log('PyramidTier: onMounted called with gameId:', gameId.value);
   if (!gameId.value) {
     console.error('PyramidTier: No gameId provided');
@@ -238,6 +243,9 @@ async function handleSubmit(data: PyramidData) {
   } catch (err: any) {
     console.error('PyramidTier: Error in handleSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');
+  }
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'submit_vote', game_id: gameId.value, score });
   }
 }
 

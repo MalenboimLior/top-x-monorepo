@@ -1,3 +1,4 @@
+
 <!-- PyramidEdit.vue -->
 <template>
   <section class="section">
@@ -80,6 +81,7 @@
         type="is-primary"
         label="Place your Vote"
         :icon="['fas', 'square-poll-vertical']"
+        :disabled="isSubmitting"
         @click="submitPyramid"
       />
       </div>
@@ -202,7 +204,8 @@ import { faCircleInfo, faSearch, faEraser, faPlus } from '@fortawesome/free-soli
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidAddItemPopup from '@/components/PyramidAddItemPopup.vue';
-
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 // declare global {
 //   interface Window {
 //     adsbygoogle: unknown[];
@@ -265,6 +268,7 @@ let typingInterval: ReturnType<typeof setInterval> | null = null;
 const showConfirm = ref(false);
 const pyramidRef = ref<HTMLElement | null>(null);
 const isTouchDevice = ref(false);
+const isSubmitting = ref(false);
 
 onMounted(() => {
   // try {
@@ -275,6 +279,10 @@ onMounted(() => {
   //   console.error('Adsense error:', e);
   // }
 
+  if (analytics) {
+    logEvent(analytics, 'game_view', { game_name: gameId.value || 'unknown', view_type: 'edit' });
+  }
+});
   isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   // Load from local storage if available
@@ -308,7 +316,7 @@ onMounted(() => {
   onUnmounted(() => {
     document.removeEventListener('click', handleOutsideClick);
   });
-});
+
 
 // Save to local storage on every change
 watch([pyramid, worstItem], () => {
@@ -422,6 +430,9 @@ function clearPyramid() {
 function confirmClear(yes: boolean) {
   showConfirm.value = false;
   if (yes) {
+    if (analytics) {
+      logEvent(analytics, 'user_action', { action: 'clear_pyramid', game_id: gameId.value });
+    }
     // Collect all items from pyramid and worst slot
     const itemsToReturn: PyramidItem[] = [];
     pyramid.value.forEach(row => {
@@ -477,7 +488,7 @@ function onTapSelect(item: PyramidItem) {
   if (selectedItem.value) {
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1000);
+    }, 500);
   }
 }
 
@@ -683,10 +694,12 @@ function showAddItemPopup() {
   showAddPopup.value = true;
   console.log('PyramidEdit: Showing add item popup');
 }
-
 function addNewItem(newItem: PyramidItem) {
   communityPool.value = [newItem, ...communityPool.value];
   console.log('PyramidEdit: Added new item to community pool:', newItem);
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'add_item', game_id: gameId.value, item_id: newItem.id });
+  }
   showAddPopup.value = false;
 }
 
@@ -724,6 +737,9 @@ function toRoman(num: number): string {
 
 function submitPyramid() {
   console.log('PyramidEdit: Submitting pyramid and worst item:', { pyramid: pyramid.value, worstItem: worstItem.value });
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'vote', game_id: gameId.value });
+  }
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 
@@ -732,6 +748,9 @@ function showDescription(item: PyramidItem) {
   showTab.value = true;
   displayedDescription.value = '';
   selectedInfoIcon.value = item.id; // Set the selected info icon
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'view_description', game_id: gameId.value, item_id: item.id });
+  }
   startTypingAnimation(item.description || 'No description available.');
 }
 function startTypingAnimation(fullDescription: string) {
@@ -976,6 +995,7 @@ function closeTab() {
   padding: 0.3rem;
   margin-top: 0.3rem;
   background-color: #1f1f1f;
+  
 }
 .image-box {
   width: 100%;
@@ -1304,5 +1324,7 @@ function closeTab() {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   overflow-y: auto;
+  
 }
 </style>
+

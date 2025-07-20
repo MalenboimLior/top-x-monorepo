@@ -25,7 +25,8 @@ export const useUserStore = defineStore('user', () => {
       user.value = {
         uid: currentUser.uid,
         displayName: currentUser.displayName,
-        photoURL: currentUser.photoURL
+        photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal.jpg', '_400x400.jpg')
+            : 'https://www.top-x.co/assets/profile.png',
       };
       const userDoc = doc(db, 'users', currentUser.uid);
       onSnapshot(userDoc, (snapshot) => {
@@ -57,8 +58,10 @@ export const useUserStore = defineStore('user', () => {
       user.value = {
         uid: result.user.uid,
         displayName: result.user.displayName,
-        photoURL: result.user.photoURL
+        photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal.jpg', '_400x400.jpg')
+            : 'https://www.top-x.co/assets/profile.png',
       };
+      console.log('Login result.user.photoURL:', result.user.photoURL);
 
       const credential = TwitterAuthProvider.credentialFromResult(result);
       if (!credential || !credential.accessToken || !credential.secret) {

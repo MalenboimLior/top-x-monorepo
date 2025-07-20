@@ -73,7 +73,7 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
     const xData = {
       displayName: response.data.data.name,
       username: response.data.data.username,
-      photoURL: response.data.data.profile_image_url,
+      photoURL: response.data.data.profile_image_url ? response.data.data.profile_image_url.replace('_normal.jpg', '_400x400.jpg') : 'https://www.top-x.co/assets/profile.png',
       followersCount: response.data.data.public_metrics.followers_count,
       followingCount: response.data.data.public_metrics.following_count,
     };
@@ -221,7 +221,7 @@ export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{u
           });
 
           // Add to VIP if eligible
-          if (!gameDataBefore && afterData.followersCount > 2000) {
+          if (!gameDataBefore && afterData.followersCount >=0) {
             let vip = gameDoc.data()?.vip || [];
             if (!vip.includes(uid)) {
               vip = [...vip, uid];

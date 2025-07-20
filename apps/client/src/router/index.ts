@@ -1,7 +1,6 @@
 
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/views/Home.vue';
-// import ComingSoon from '@/views/ComingSoon.vue';
 import Profile from '@/views/Profile.vue';
 import About from '@/views/About.vue';
 import TermsOfUse from '@/views/TermsOfUse.vue';
@@ -97,12 +96,13 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach((to) => {
   if (analytics) {
+    const game = to.query.game || 'unknown';
     logEvent(analytics, 'page_view_public', {
       page_path: to.path,
-      page_search: to.fullPath.split('?')[1] || '', // Captures ?game=footballstarsil etc.
-      page_title: document.title || to.name, // Or custom title
+      page_search: to.fullPath.split('?')[1] || '',
+      page_title: document.title || to.name,
+      game_id: game,  // Added for game-specific tracking
     });
   }
 });
-
 export default router;

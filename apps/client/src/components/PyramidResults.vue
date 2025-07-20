@@ -68,6 +68,8 @@ import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyrami
 import { LeaderboardEntry } from '@top-x/shared/types/game';
 import router from '@/router';
 import { getFriendsLeaderboard, getVipLeaderboard } from '@/services/leaderboard';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 const props = defineProps<{
   gameId: string;
@@ -112,6 +114,9 @@ onMounted(async () => {
     }
     processVotes(votes);
   }
+  if (analytics) {
+    logEvent(analytics, 'game_view', { game_name: props.gameId, view_type: 'results' });
+  }
 });
 
 function processVotes(leaderboard: LeaderboardEntry[]) {
@@ -136,6 +141,9 @@ function processVotes(leaderboard: LeaderboardEntry[]) {
 
 async function handleLogin() {
   await userStore.loginWithX();
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'results_tab', game_id: props.gameId });
+  }
   closeLoginTab();
   // Reload or refetch votes after login
   location.reload(); // Simple way to refresh the component
@@ -146,6 +154,9 @@ function closeLoginTab() {
 }
 
 function searchFrenemies() {
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'search_frenemies', game_id: props.gameId });
+  }
   router.push('/frenemies');
 }
 </script>

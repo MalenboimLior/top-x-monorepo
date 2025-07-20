@@ -172,6 +172,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faSortUp, faSortDown, faMedal, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import html2canvas from 'html2canvas';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '@top-x/shared';
 
 library.add(faSortUp, faSortDown, faMedal,faDownload);
 
@@ -200,6 +202,9 @@ const totalPlayers = ref(0);
 const showLoginTab = ref(false);
 
 onMounted(async () => {
+  if (analytics) {
+    logEvent(analytics, 'game_view', { game_name: props.gameId, view_type: 'stats' });
+  }
   console.log('PyramidStats: onMounted called with gameId:', props.gameId);
   if (!user.value) {
     showLoginTab.value = true;
@@ -281,15 +286,21 @@ function toRoman(num: number): string {
 
 function showPresidentModal(item: any) {
   selectedPresident.value = item;
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'view_details', game_id: props.gameId, item_id: item.id });
+  }
   console.log('PyramidStats: Opening modal for president:', item.name);
 }
-
 function closeModal() {
   selectedPresident.value = null;
   console.log('PyramidStats: Modal closed');
 }
 
 async function downloadPresidentStats() {
+  console.log('PyramidStats: downloadPresidentStats called');
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'download_stats', game_id: props.gameId, item_id: selectedPresident.value?.id });
+  }
   console.log('PyramidStats: downloadPresidentStats called');
   if (!modalContainer.value) {
     console.error('PyramidStats: Modal container not found');
@@ -325,6 +336,9 @@ async function downloadPresidentStats() {
 
 async function handleLogin() {
   await userStore.loginWithX();
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'stats_tab', game_id: props.gameId });
+  }
   closeLoginTab();
 }
 
