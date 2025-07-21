@@ -47,6 +47,7 @@ import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import fallbackImg from '@/assets/images/fallback.png';
+import { analytics, trackEvent } from '@top-x/shared';
 
 const router = useRouter();
 
@@ -77,8 +78,9 @@ useHead({
 
 onMounted(() => {
   console.log('Home: Fetching games from Firestore...');
-    const q = query(collection(db, 'games'));
-    onSnapshot(q, (snapshot) => {
+  trackEvent(analytics, 'page_view', { page_name: 'home' });
+  const q = query(collection(db, 'games'));
+  onSnapshot(q, (snapshot) => {
     games.value = snapshot.docs.map((doc) => {
       const data = doc.data();
       console.log('Home: Game fetched:', { id: doc.id, data });
@@ -102,6 +104,9 @@ onMounted(() => {
 });
 
 function navigateToGame(route: string) {
+  const idMatch = route.match(/game=([^&]+)/);
+  const gameId = idMatch ? idMatch[1] : 'unknown';
+  trackEvent(analytics, 'select_game', { game_id: gameId });
   router.push(route);
 }
 </script>
