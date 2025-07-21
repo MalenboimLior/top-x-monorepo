@@ -107,19 +107,7 @@ const createNew = () => {
         name: '',
         description: '',
         gameTypeId: props.selectedGameTypeId,
-        custom: {
-          items: [],
-          rows: [],
-          sortItems: { orderBy: 'id', order: 'asc' },
-          HideRowLabel: false,
-          shareImageTitle: '',
-          poolHeader: '',
-          communityHeader: '',
-          worstHeader: '',
-          worstPoints: 0,
-          worstShow: true,
-          communityItems: []
-        }, // Default for PyramidConfig
+        custom: {}, // config will be set in GameRecord
         gameHeader: '',
         shareText: '',
         gameInstruction: '',
