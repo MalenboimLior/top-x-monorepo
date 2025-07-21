@@ -94,14 +94,21 @@ router.beforeEach((to, from, next) => {
   }
 });
 
-router.afterEach((to) => {
+router.afterEach((to, from) => {
   if (analytics) {
+    const userStore = useUserStore();
     const game = to.query.game || 'unknown';
+    logEvent(analytics, 'navigation', {
+      from_path: from.fullPath,
+      to_path: to.fullPath,
+      logged_in: !!userStore.user,
+      game_id: game,
+    });
     logEvent(analytics, 'page_view_public', {
       page_path: to.path,
       page_search: to.fullPath.split('?')[1] || '',
       page_title: document.title || to.name,
-      game_id: game,  // Added for game-specific tracking
+      game_id: game,
     });
   }
 });

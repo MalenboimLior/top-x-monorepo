@@ -68,6 +68,7 @@ import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import { analytics, trackEvent } from '@top-x/shared';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -82,9 +83,11 @@ const error = computed(() => userStore.error);
 
 const handleLogin = async () => {
   console.log('Initiating login with X');
+  trackEvent(analytics, 'user_action', { action: 'login_click', context: 'nav' });
   await userStore.loginWithX();
   if (userStore.user && userStore.profile) {
     console.log('Login successful, redirecting to /profile');
+    trackEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'nav' });
     // router.push('/profile');
     isMenuActive.value = false;
   } else {
@@ -95,6 +98,7 @@ const handleLogin = async () => {
 const logout = async () => {
   console.log('Initiating logout');
   await userStore.logout();
+  trackEvent(analytics, 'user_action', { action: 'logout' });
   router.push('/');
   isMenuActive.value = false;
 };
