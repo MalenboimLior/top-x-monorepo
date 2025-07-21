@@ -1,13 +1,7 @@
 // Helper functions for calling trivia-related Cloud Functions
-const FUNCTION_BASE_URL = 'u6yhyetroa-uc.a.run.app';
+import type { LeaderboardEntry } from '@top-x/shared/types/game';
 
-interface LeaderboardEntry {
-  uid: string;
-  displayName: string;
-  username: string;
-  photoURL: string;
-  score: number;
-}
+const FUNCTION_BASE_URL = 'u6yhyetroa-uc.a.run.app';
 
 async function fetchJson<T>(url: string): Promise<T> {
   console.log('Fetching:', url);
