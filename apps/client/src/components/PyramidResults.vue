@@ -17,6 +17,12 @@
               {{ vote.displayName || 'Anonymous' }}
             </router-link>
           </h3>
+          <CustomButton
+            v-if="user && user.uid !== vote.uid && !frenemies.includes(vote.uid)"
+            type="is-primary is-small"
+            label="Add to Frenemies"
+            @click="addFrenemy(vote.uid)"
+          />
         </div>
         <PyramidView
           :pyramid="vote.pyramid"
@@ -97,6 +103,7 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const user = computed(() => userStore.user);
+const frenemies = computed(() => userStore.profile?.frenemies || []);
 const showLoginTab = ref(false);
 
 const userVotes = ref<
@@ -163,6 +170,18 @@ async function handleLogin() {
 
 function closeLoginTab() {
   showLoginTab.value = false;
+}
+
+async function addFrenemy(uid: string) {
+  if (!user.value) {
+    showLoginTab.value = true;
+    return;
+  }
+  try {
+    await userStore.addFrenemy(uid);
+  } catch (err) {
+    console.error('Error adding frenemy:', err);
+  }
 }
 
 function searchFrenemies() {
