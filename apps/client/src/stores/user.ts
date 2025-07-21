@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
-import { auth, db, functions } from '@top-x/shared';
+import { auth, db, functions, analytics, trackEvent } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
@@ -208,6 +208,7 @@ export const useUserStore = defineStore('user', () => {
           addedBy: arrayUnion(user.value.uid),
         });
         console.log(`Successfully updated frenemy ${frenemyUid} addedBy with ${user.value.uid}`);
+        trackEvent(analytics, 'user_action', { action: 'add_frenemy', frenemy_uid: frenemyUid });
       } catch (err: any) {
         console.error('Error updating frenemy addedBy:', {
           userId: user.value.uid,
@@ -247,6 +248,7 @@ export const useUserStore = defineStore('user', () => {
         addedBy: arrayRemove(user.value.uid),
       });
       console.log(`Removed frenemy ${frenemyUid} for user ${user.value.uid}`);
+      trackEvent(analytics, 'user_action', { action: 'remove_frenemy', frenemy_uid: frenemyUid });
     } catch (err: any) {
       console.error('Error removing frenemy:', err);
       error.value = err.message;
