@@ -8,7 +8,15 @@
       <div v-for="vote in userVotes" :key="vote.uid" class="vote-item">
         <div class="user-header has-text-centered">
           <img :src="vote.photoURL" alt="User Profile" class="user-profile-image" />
-          <h3 class="has-text-white" style="font-size:22px">{{ vote.displayName || 'Anonymous' }}</h3>
+          <h3 class="has-text-white" style="font-size:22px">
+            <router-link
+              :to="{ path: '/profile', query: { user: vote.uid } }"
+              class="has-text-white"
+              style="text-decoration: none;"
+            >
+              {{ vote.displayName || 'Anonymous' }}
+            </router-link>
+          </h3>
         </div>
         <PyramidView
           :pyramid="vote.pyramid"
