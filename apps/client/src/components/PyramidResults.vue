@@ -48,7 +48,8 @@
       <div class="tab-content" @click.stop>
     <p class="question-text">See your friends' picks? 👥</p> 
         <p class="answer-text">
-Log in to add friends (or frenemies!)  & check their votes.<br>
+
+          Log in to add people you want to follow & check their votes.<br>
 Username + pic - we promise, we stay out of your posts! 🔒<br>
 </p>
 
