@@ -1,4 +1,3 @@
-
 <!-- Top navigation bar for the client app -->
 <template>
   <nav class="navbar" role="navigation" aria-label="main navigation">
@@ -34,7 +33,7 @@
       </div>
 
       <div class="navbar-end">
-        <div class="navbar-item">
+        <div class="navbar-item profile-div">
           <div class="buttons">
             <CustomButton
               v-if="!user"
@@ -49,7 +48,7 @@
               @click="closeMenu"
               class="navbar-item profile-link"
             >
-              <figure class="image is-32x32">
+              <figure class="image is-48x48">
                 <img :src="user.photoURL || 'https://www.top-x.co/assets/profile.png'" alt="Profile" class="is-rounded" />
               </figure>
             </router-link>
@@ -113,14 +112,13 @@ const closeMenu = () => {
 </script>
 
 <style scoped>
-.navbar-burger{
+.navbar-burger {
   color: #00e8e0;
 }
 @media screen and (max-width: 1023px) {
  
 }
 .navbar-icon {
- 
   font-size: 1.2rem;
 }
 .profile-link {
@@ -128,5 +126,10 @@ const closeMenu = () => {
 }
 .profile-link .image {
   margin: 0;
+}
+.profile-link .image img {
+  width: 48px;
+  height: 48px;
+  max-height: 48px;
 }
 </style>
