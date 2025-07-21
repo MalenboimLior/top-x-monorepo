@@ -59,14 +59,7 @@
 
 <script setup lang="ts">
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-
-interface LeaderboardEntry {
-  uid: string;
-  displayName: string;
-  username: string;
-  photoURL: string;
-  score: number;
-}
+import type { LeaderboardEntry } from '@top-x/shared/types/game';
 
 defineProps<{
   title: string;
