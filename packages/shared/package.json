@@ -40,6 +40,10 @@
     "./types/game": {
       "types": "./src/types/game.ts",
       "default": "./src/types/game.ts"
+    },
+    "./types/territoryCapture": {
+      "types": "./src/types/territoryCapture.ts",
+      "default": "./src/types/territoryCapture.ts"
     }
   }
 }
