@@ -1,3 +1,4 @@
+
 <template>
   <div class="pyramid-view">
     <div class="pyramid-container p-2">
@@ -66,6 +67,13 @@ watch(
   }
 );
 
+function getHighResProfileUrl(src: string): string {
+  if (src.includes('pbs.twimg.com/profile_images')) {
+    return src.replace(/_normal(\.\w+)$/, '$1');
+  }
+  return src;
+}
+
 async function preloadImages() {
   const imagePromises: Promise<void>[] = [];
   const uniqueImageUrls = new Set<string>();
@@ -93,7 +101,7 @@ async function preloadImages() {
           ctx.drawImage(img, 0, 0);
         } else {
           // Crop to square
-          const size = 180;
+          const size = 540;
           canvas.width = size;
           canvas.height = size;
           const imgAspect = img.naturalWidth / img.naturalHeight;
@@ -142,11 +150,12 @@ async function preloadImages() {
     });
 
   const profileImage = props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile;
-  if (profileImage && !uniqueImageUrls.has(profileImage)) {
-    uniqueImageUrls.add(profileImage);
+  const highResProfile = getHighResProfileUrl(profileImage);
+  if (highResProfile && !uniqueImageUrls.has(highResProfile)) {
+    uniqueImageUrls.add(highResProfile);
     imagePromises.push(
       Promise.race([
-        preprocessImage(profileImage, true, 'center'), // center crop for profile
+        preprocessImage(highResProfile, true, 'center'), // center crop for profile
         new Promise<void>((resolve) => setTimeout(() => resolve(), timeoutMs)),
       ])
     );
@@ -417,12 +426,14 @@ async function renderPyramidImage() {
     tempDiv.appendChild(styleElement);
 
     const logoSrc = topxLogo;
+    const profileImage = props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile;
+    const highResProfile = getHighResProfileUrl(profileImage);
 
     tempDiv.innerHTML += `
       <div class="content-wrapper">
         <div class="user-image-container">
           <img
-            src="${preprocessedImages.value.get(props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile) || defaultProfile}"
+            src="${preprocessedImages.value.get(highResProfile) || defaultProfile}"
             alt="User Profile"
             class="user-image"
             crossorigin="anonymous"
