@@ -9,6 +9,8 @@ import ContactUs from '@/views/ContactUs.vue';
 import FAQ from '@/views/FAQ.vue';
 import Trivia from '@/views/games/Trivia.vue';
 import PyramidTier from '@/views/games/PyramidTier.vue';
+import TerritoryCapture from '@/views/games/TerritoryCapture.vue';
+
 import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
@@ -50,6 +52,11 @@ const routes = [
 
   { path: '/frenemies', name: 'FrenemySearch', component: FrenemySearch },
   { path: '/games/trivia', name: 'Trivia', component: Trivia },
+  {
+    path: '/games/TerritoryCapture',
+    name: 'TerritoryCapture',
+    component: TerritoryCapture,
+  },
   {
     path: '/games/PyramidTier',
     name: 'PyramidTier',

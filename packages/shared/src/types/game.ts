@@ -1,11 +1,13 @@
+// Updated packages/shared/types/game.ts
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
-// packages/shared/types/game.ts
+import { TerritoryCaptureConfig } from "./territoryCapture";
+
 export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig'; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig'; // String to specify config type
 }
 
 export interface Game {
@@ -24,7 +26,7 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
-  custom: PyramidConfig | TriviaConfig; // Union of possible config types
+  custom: PyramidConfig | TriviaConfig | TerritoryCaptureConfig; // Union of possible config types
 }
 
 export interface LeaderboardEntry {
@@ -37,5 +39,5 @@ export interface LeaderboardEntry {
   custom?: Record<string, any>;
 }
 
-export type ConfigType = 'PyramidConfig' | 'TriviaConfig';
-export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig'];
+export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig';
+export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'TerritoryCaptureConfig'];

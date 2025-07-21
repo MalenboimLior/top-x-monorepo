@@ -36,7 +36,7 @@
         </div>
       </Card>
       <!-- Tabs -->
-      <div class="tabs is-centered">
+      <div class="tabs is-centered is-small">
         <ul>
           <li :class="{ 'is-active': activeTab === 'games' }"><a @click="setActiveTab('games')">Games</a></li>
           <li :class="{ 'is-active': activeTab === 'badges' }"><a @click="setActiveTab('badges')">Badges</a></li>
@@ -55,8 +55,8 @@
             :worst-show="worstShow"
           />
         </div>
-        <div class="table-container mt-4">
-          <table class="table is-fullwidth is-striped">
+        <div v-else class="table-container mt-4">
+          <table class="table is-fullwidth is-striped is-narrow">
             <thead>
               <tr>
                 <th>Game</th>
@@ -67,11 +67,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="!profile?.games">
+              <tr v-if="!profile?.games || Object.keys(profile.games).length === 0">
                 <td colspan="5" class="has-text-centered">No games played yet.</td>
               </tr>
               <template v-else>
-                <template v-for="(modes, gameName) in profile.games" :key="gameName">
+                <template v-for="(modes, gameName) in filteredGames" :key="gameName">
                   <tr v-for="(data, modeName) in modes" :key="gameName + '-' + modeName">
                     <td>{{ gameName }}</td>
                     <td>{{ modeName }}</td>
@@ -103,7 +103,9 @@
               </figure>
             </div>
             <div class="media-content">
-              <p class="title is-5 has-text-white">{{ entry.displayName }}</p>
+              <p class="title is-5 has-text-white">
+                <RouterLink :to="{ path: '/profile', query: { user: entry.uid } }">{{ entry.displayName }}</RouterLink>
+              </p>
               <p class="subtitle is-6 has-text-grey-light">{{ entry.username }}</p>
             </div>
             <div class="media-right">
@@ -116,6 +118,13 @@
               />
             </div>
           </div>
+        </div>
+        <div class="has-text-centered mt-4">
+          <CustomButton
+            type="is-primary"
+            label="Search More Frenemies"
+            @click="searchMoreFrenemies"
+          />
         </div>
       </div>
       <div v-if="activeTab === 'whoadded' && isOwnProfile">
@@ -133,7 +142,9 @@
               </figure>
             </div>
             <div class="media-content">
-              <p class="title is-5 has-text-white">{{ entry.displayName }}</p>
+              <p class="title is-5 has-text-white">
+                <RouterLink :to="{ path: '/profile', query: { user: entry.uid } }">{{ entry.displayName }}</RouterLink>
+              </p>
               <p class="subtitle is-6 has-text-grey-light">{{ entry.username }}</p>
             </div>
             <div class="media-right">
@@ -175,6 +186,7 @@ import { useUserStore } from '@/stores/user';
 import { computed, ref, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter, useRoute } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 
@@ -207,9 +219,7 @@ const worstShow = ref(true);
 const displayName = computed(() => profile.value?.displayName || 'Anonymous');
 const username = computed(() => profile.value?.username ? `@${profile.value.username}` : '@Anonymous');
 const photoURL = computed(() => profile.value?.photoURL || 'https://www.top-x.co/assets/profile.png');
-const isLoggedIn = computed(() => {
-  return !!userStore.user;
-});
+const isLoggedIn = computed(() => !!userStore.user);
 const isOwnProfile = computed(() => {
   const uidParam = route.query.user as string | undefined;
   return !uidParam || uidParam === userStore.user?.uid;
@@ -227,6 +237,13 @@ const showLoginTab = ref(false);
 const activeTab = ref('games');
 const loadedFrenemies = ref(false);
 const loadedAddedBy = ref(false);
+
+const filteredGames = computed(() => {
+  if (!profile.value?.games) return {};
+  const games = { ...profile.value.games };
+  delete games.PyramidTier;
+  return games;
+});
 
 async function loadProfile() {
   const uidParam = route.query.user as string | undefined;
@@ -344,6 +361,10 @@ function setActiveTab(tab: string) {
   activeTab.value = tab;
 }
 
+function searchMoreFrenemies() {
+  router.push('/frenemies');
+}
+
 watch(
   [() => route.query.user, () => userStore.profile],
   async () => {
@@ -353,6 +374,9 @@ watch(
       showLoginTab.value = true;
     } else {
       showLoginTab.value = false;
+    }
+    if (!isOwnProfile.value) {
+      activeTab.value = 'games';
     }
   },
   { immediate: true }
@@ -417,5 +441,19 @@ onMounted(() => {
   filter: blur(8px);
   pointer-events: none;
   user-select: none;
+}
+.profile-container {
+  max-width: 100%;
+  overflow-x: hidden;
+  padding: 0 1rem;
+}
+.media {
+  align-items: center;
+}
+.table-container {
+  overflow-x: auto;
+}
+.tabs ul {
+  flex-wrap: wrap;
 }
 </style>
