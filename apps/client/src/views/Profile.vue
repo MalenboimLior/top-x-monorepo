@@ -89,6 +89,7 @@ import Leaderboard from '@/components/Leaderboard.vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { User, UserGameData } from '@top-x/shared/types/user';
+import { analytics, trackEvent } from '@top-x/shared';
 
 interface LeaderboardEntry {
   uid: string;
@@ -204,6 +205,7 @@ function closeLoginTab() {
 }
 
 onMounted(() => {
+  trackEvent(analytics, 'page_view', { page_name: 'profile' });
   if (isLoggedIn.value) {
     fetchFrenemies();
     fetchAddedBy();
