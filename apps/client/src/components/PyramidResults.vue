@@ -107,11 +107,14 @@ onMounted(async () => {
     const votes = await getVipLeaderboard(props.gameId);
     processVotes(votes);
   } else {
-    const friendsVotes = await getFriendsLeaderboard(props.gameId, user.value.uid);
-    let votes = friendsVotes;
-    if (friendsVotes.length === 0) {
-      votes = await getVipLeaderboard(props.gameId);
-    }
+    // const friendsVotes = await getFriendsLeaderboard(props.gameId, user.value.uid);
+    // let votes = friendsVotes;
+    // if (friendsVotes.length === 0) {
+    //   votes = await getVipLeaderboard(props.gameId);
+    // }
+    //remove frendes for now
+    const votes = await getVipLeaderboard(props.gameId);
+
     processVotes(votes);
   }
   if (analytics) {
