@@ -245,9 +245,85 @@
     <div v-if="gameTypeCustom === 'ZoneBreakerConfig'">
       <h3 class="subtitle has-text-white">ZoneBreaker Config</h3>
       <div class="field">
-        <label class="label has-text-white">Config JSON</label>
+        <label class="label has-text-white">Levels JSON</label>
         <div class="control">
-          <textarea v-model="zoneBreakerConfigText" class="textarea" rows="10"></textarea>
+          <textarea v-model="zoneLevelsText" class="textarea"></textarea>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Win Percentage</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).winPercentage" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Player Speed</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).playerSpeed" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Enemy Speed</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).enemySpeed" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Enemy Count</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).enemyCount" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Power Ups JSON</label>
+        <div class="control">
+          <textarea v-model="zonePowerUpsText" class="textarea"></textarea>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Line Style</label>
+        <div class="control select">
+          <select v-model="(localGame.custom as any).lineStyle">
+            <option value="solid">solid</option>
+            <option value="dashed">dashed</option>
+            <option value="energy">energy</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Trail Decay</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).trailDecay" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Lives</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).lives" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Time Limit</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).timeLimit" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Screen Width</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).screenWidth" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Screen Height</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).screenHeight" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Brush Size</label>
+        <div class="control">
+          <input v-model.number="(localGame.custom as any).brushSize" class="input" type="number" />
         </div>
       </div>
     </div>
@@ -278,45 +354,6 @@ import type { TriviaConfig } from '@top-x/shared/types';
 import type { TerritoryCaptureConfig } from '@top-x/shared/types/territoryCapture';
 import type { ZoneBreakerConfig } from '@top-x/shared/types/zoneBreaker';
 
-const DEFAULT_ZONEBREAKER_CONFIG: ZoneBreakerConfig = {
-  levels: [
-    {
-      backgroundImage: 'https://storage.googleapis.com/your-bucket/level1-bg.jpg',
-      enemyTypes: [
-        {
-          type: 'core',
-          asset: 'https://storage.googleapis.com/your-bucket/core-enemy.png',
-          speed: 150,
-          behavior: 'roam',
-        },
-        {
-          type: 'chaser',
-          asset: 'https://storage.googleapis.com/your-bucket/chaser.png',
-          speed: 200,
-          behavior: 'borderChase',
-        },
-      ],
-      enemyCount: 3,
-      powerUpCount: 2,
-    },
-  ],
-  winPercentage: 75,
-  playerSpeed: 300,
-  enemySpeed: 200,
-  enemyCount: 3,
-  powerUps: [
-    { type: 'speed', asset: 'https://storage.googleapis.com/your-bucket/speed.png' },
-    { type: 'shield', asset: 'https://storage.googleapis.com/your-bucket/shield.png' },
-  ],
-  lineStyle: 'solid',
-  trailDecay: 10,
-  lives: 3,
-  mode: 'arcade',
-  screenWidth: 800,
-  screenHeight: 600,
-  brushSize: 2,
-};
-
 const props = defineProps<{
   game: Game;
   gameTypeId: string | null;
@@ -334,7 +371,8 @@ const vipInput = ref('');
 const enemyAssetsText = ref('');
 const enemyMovementsText = ref('');
 const powerUpsText = ref('');
-const zoneBreakerConfigText = ref('');
+const zoneLevelsText = ref('');
+const zonePowerUpsText = ref('');
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -453,10 +491,9 @@ const fetchGameTypeCustom = async () => {
             : '';
           powerUpsText.value = cfg.powerUps ? JSON.stringify(cfg.powerUps) : '';
         } else if (gameTypeCustom.value === 'ZoneBreakerConfig') {
-          if (!localGame.value.custom || Object.keys(localGame.value.custom).length === 0) {
-            localGame.value.custom = { ...DEFAULT_ZONEBREAKER_CONFIG };
-          }
-          zoneBreakerConfigText.value = JSON.stringify(localGame.value.custom, null, 2);
+          const cfg = localGame.value.custom as Partial<ZoneBreakerConfig>;
+          zoneLevelsText.value = cfg.levels ? JSON.stringify(cfg.levels) : '';
+          zonePowerUpsText.value = cfg.powerUps ? JSON.stringify(cfg.powerUps) : '';
         }
       } else {
         error.value = 'Game Type not found';
@@ -577,13 +614,55 @@ const save = async () => {
     } as TerritoryCaptureConfig;
     console.log('TerritoryCaptureConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'ZoneBreakerConfig') {
-    try {
-      customData = JSON.parse(zoneBreakerConfigText.value) as ZoneBreakerConfig;
-    } catch {
-      customError.value = 'Invalid ZoneBreakerConfig JSON';
+    const levels = zoneLevelsText.value.trim().length > 0
+      ? (() => {
+          try {
+            return JSON.parse(zoneLevelsText.value);
+          } catch {
+            customError.value = 'Invalid levels JSON';
+            return [];
+          }
+        })()
+      : [];
+    const powerUps = zonePowerUpsText.value.trim().length > 0
+      ? (() => {
+          try {
+            return JSON.parse(zonePowerUpsText.value);
+          } catch {
+            customError.value = 'Invalid powerUps JSON';
+            return undefined;
+          }
+        })()
+      : undefined;
+    if (customError.value) {
       isSaving.value = false;
       return;
     }
+    customData = {
+      levels,
+      winPercentage: Number((localGame.value.custom as any).winPercentage) || 0,
+      playerSpeed: Number((localGame.value.custom as any).playerSpeed) || 0,
+      enemySpeed: Number((localGame.value.custom as any).enemySpeed) || 0,
+      enemyCount: Number((localGame.value.custom as any).enemyCount) || 0,
+      powerUps,
+      lineStyle: (localGame.value.custom as any).lineStyle || undefined,
+      trailDecay:
+        (localGame.value.custom as any).trailDecay !== undefined
+          ? Number((localGame.value.custom as any).trailDecay)
+          : undefined,
+      lives: Number((localGame.value.custom as any).lives) || 0,
+      timeLimit:
+        (localGame.value.custom as any).timeLimit !== undefined
+          ? Number((localGame.value.custom as any).timeLimit)
+          : undefined,
+      mode: 'arcade',
+      screenWidth: Number((localGame.value.custom as any).screenWidth) || 0,
+      screenHeight: Number((localGame.value.custom as any).screenHeight) || 0,
+      brushSize:
+        (localGame.value.custom as any).brushSize !== undefined
+          ? Number((localGame.value.custom as any).brushSize)
+          : undefined,
+    } as ZoneBreakerConfig;
     console.log('ZoneBreakerConfig customData created:', customData);
   } else {
     error.value = 'Invalid game type configuration';
