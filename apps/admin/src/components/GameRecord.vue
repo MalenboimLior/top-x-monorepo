@@ -242,6 +242,15 @@
         </div>
       </div>
     </div>
+    <div v-if="gameTypeCustom === 'ZoneBreakerConfig'">
+      <h3 class="subtitle has-text-white">ZoneBreaker Config</h3>
+      <div class="field">
+        <label class="label has-text-white">Config JSON</label>
+        <div class="control">
+          <textarea v-model="zoneBreakerConfigText" class="textarea" rows="10"></textarea>
+        </div>
+      </div>
+    </div>
     <div class="field is-grouped">
       <div class="control">
         <CustomButton type="is-primary" label="Save" @click="save" :disabled="isSaving" />
@@ -251,6 +260,7 @@
       </div>
     </div>
     <p v-if="error" class="notification is-danger">{{ error }}</p>
+    <p v-if="customError" class="notification is-danger">{{ customError }}</p>
     <p v-if="success" class="notification is-success">{{ success }}</p>
   </Card>
 </template>
@@ -266,6 +276,46 @@ import type { Game, ConfigType } from '@top-x/shared/types/game';
 import type { PyramidConfig,PyramidRow } from '@top-x/shared/types';
 import type { TriviaConfig } from '@top-x/shared/types';
 import type { TerritoryCaptureConfig } from '@top-x/shared/types/territoryCapture';
+import type { ZoneBreakerConfig } from '@top-x/shared/types/zoneBreaker';
+
+const DEFAULT_ZONEBREAKER_CONFIG: ZoneBreakerConfig = {
+  levels: [
+    {
+      backgroundImage: 'https://storage.googleapis.com/your-bucket/level1-bg.jpg',
+      enemyTypes: [
+        {
+          type: 'core',
+          asset: 'https://storage.googleapis.com/your-bucket/core-enemy.png',
+          speed: 150,
+          behavior: 'roam',
+        },
+        {
+          type: 'chaser',
+          asset: 'https://storage.googleapis.com/your-bucket/chaser.png',
+          speed: 200,
+          behavior: 'borderChase',
+        },
+      ],
+      enemyCount: 3,
+      powerUpCount: 2,
+    },
+  ],
+  winPercentage: 75,
+  playerSpeed: 300,
+  enemySpeed: 200,
+  enemyCount: 3,
+  powerUps: [
+    { type: 'speed', asset: 'https://storage.googleapis.com/your-bucket/speed.png' },
+    { type: 'shield', asset: 'https://storage.googleapis.com/your-bucket/shield.png' },
+  ],
+  lineStyle: 'solid',
+  trailDecay: 10,
+  lives: 3,
+  mode: 'arcade',
+  screenWidth: 800,
+  screenHeight: 600,
+  brushSize: 2,
+};
 
 const props = defineProps<{
   game: Game;
@@ -284,6 +334,7 @@ const vipInput = ref('');
 const enemyAssetsText = ref('');
 const enemyMovementsText = ref('');
 const powerUpsText = ref('');
+const zoneBreakerConfigText = ref('');
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -401,6 +452,11 @@ const fetchGameTypeCustom = async () => {
             ? cfg.enemyMovements.join(', ')
             : '';
           powerUpsText.value = cfg.powerUps ? JSON.stringify(cfg.powerUps) : '';
+        } else if (gameTypeCustom.value === 'ZoneBreakerConfig') {
+          if (!localGame.value.custom || Object.keys(localGame.value.custom).length === 0) {
+            localGame.value.custom = { ...DEFAULT_ZONEBREAKER_CONFIG };
+          }
+          zoneBreakerConfigText.value = JSON.stringify(localGame.value.custom, null, 2);
         }
       } else {
         error.value = 'Game Type not found';
@@ -438,7 +494,7 @@ const save = async () => {
   success.value = null;
   customError.value = null;
 
-  let customData: PyramidConfig | TriviaConfig | TerritoryCaptureConfig;
+  let customData: PyramidConfig | TriviaConfig | TerritoryCaptureConfig | ZoneBreakerConfig;
   if (gameTypeCustom.value === 'PyramidConfig') {
     console.log('Processing PyramidConfig');
       customData = {
@@ -520,6 +576,15 @@ const save = async () => {
           : undefined,
     } as TerritoryCaptureConfig;
     console.log('TerritoryCaptureConfig customData created:', customData);
+  } else if (gameTypeCustom.value === 'ZoneBreakerConfig') {
+    try {
+      customData = JSON.parse(zoneBreakerConfigText.value) as ZoneBreakerConfig;
+    } catch {
+      customError.value = 'Invalid ZoneBreakerConfig JSON';
+      isSaving.value = false;
+      return;
+    }
+    console.log('ZoneBreakerConfig customData created:', customData);
   } else {
     error.value = 'Invalid game type configuration';
     console.log('save blocked: Invalid gameTypeCustom:', gameTypeCustom.value);
