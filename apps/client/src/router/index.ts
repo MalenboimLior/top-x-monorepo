@@ -10,6 +10,7 @@ import FAQ from '@/views/FAQ.vue';
 import Trivia from '@/views/games/Trivia.vue';
 import PyramidTier from '@/views/games/PyramidTier.vue';
 import TerritoryCapture from '@/views/games/TerritoryCapture.vue';
+import ZoneBreaker from '@/views/games/ZoneBreaker.vue';
 
 import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
@@ -56,6 +57,11 @@ const routes = [
     path: '/games/TerritoryCapture',
     name: 'TerritoryCapture',
     component: TerritoryCapture,
+  },
+  {
+    path: '/games/ZoneBreaker',
+    name: 'ZoneBreaker',
+    component: ZoneBreaker,
   },
   {
     path: '/games/PyramidTier',
