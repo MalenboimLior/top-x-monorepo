@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export default defineConfig({
+  base: '/',
   plugins: [vue()],
   resolve: {
     alias: {

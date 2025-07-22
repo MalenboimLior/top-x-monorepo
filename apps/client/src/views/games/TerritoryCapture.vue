@@ -1,11 +1,11 @@
-```vue
 <template>
   <div class="territory-capture">
     <div id="phaser-container" ref="phaserContainer"></div>
     <div v-if="showEdit" class="game-instructions">{{ gameInstruction }}</div>
     <div v-if="!showEdit" class="game-results">
       <h2>Game Over</h2>
-      <p>Time: {{ score }} seconds</p>
+      <p v-if="score === Infinity">You lost! Try again.</p>
+      <p v-else>Time: {{ score }} seconds</p>
       <button @click="restartGame">Restart</button>
     </div>
   </div>
@@ -15,7 +15,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import Phaser from 'phaser';
@@ -100,6 +100,7 @@ onMounted(async () => {
         if (gameData) {
           score.value = gameData.score || 0;
           hasSubmitted.value = true;
+          console.log('TerritoryCapture: Loaded user pyramid data:', { score: score.value });
         }
       }
     } else {
@@ -107,6 +108,7 @@ onMounted(async () => {
       if (savedScore) {
         score.value = parseFloat(savedScore);
         hasSubmitted.value = true;
+        console.log('TerritoryCapture: Loaded score from local storage:', score.value);
       }
     }
 
@@ -168,19 +170,33 @@ let isInvincible = false;
 let timeElapsed = 0;
 
 function preload(this: Phaser.Scene) {
-  if (!config.value) return;
-  this.load.image('background', config.value.backgroundImage);
-  this.load.image('player', config.value.playerAsset);
+  console.log('Phaser: preload started');
+  if (!config.value) {
+    console.error('Phaser: No config in preload');
+    return;
+  }
+  console.log('Phaser: Loading background from:', config.value.backgroundImage);
+  this.load.image('background', new URL(config.value.backgroundImage, import.meta.url).href); // Resolve path
+  console.log('Phaser: Loading player from:', config.value.playerAsset);
+  this.load.image('player', new URL(config.value.playerAsset, import.meta.url).href);
   config.value.enemyAssets.forEach((asset: string, index: number) => {
-    this.load.image(`enemy${index}`, asset);
+    console.log(`Phaser: Loading enemy${index} from:`, asset);
+    this.load.image(`enemy${index}`, new URL(asset, import.meta.url).href);
   });
   if (config.value.powerUps) {
     config.value.powerUps.forEach((pu: { type: 'speed' | 'invincible'; asset: string }, index: number) => {
-      this.load.image(`powerup${index}`, pu.asset);
+      console.log(`Phaser: Loading powerup${index} from:`, pu.asset);
+      this.load.image(`powerup${index}`, new URL(pu.asset, import.meta.url).href);
     });
   }
+  this.load.on('complete', () => {
+    console.log('Phaser: All assets loaded successfully');
+  });
+  this.load.on('loaderror', (file: Phaser.Loader.File) => {
+    console.error('Phaser: Asset load error:', file.key, file.url, file.onError);
+  });
+  console.log('Phaser: preload completed');
 }
-
 function create(this: Phaser.Scene) {
   if (!config.value) return;
 
@@ -225,7 +241,7 @@ function create(this: Phaser.Scene) {
   // Power-ups
   if (config.value.powerUps) {
     powerUps = this.physics.add.group();
-    for (let i = 0; i < (config.value.powerUpCount ?? 0); i++) {
+    for (let i = 0; i < (config.value.powerUpCount || 0); i++) {
       const pu = powerUps.create(
         Phaser.Math.Between(0, config.value.screenWidth),
         Phaser.Math.Between(0, config.value.screenHeight),
@@ -283,22 +299,18 @@ function update(this: Phaser.Scene) {
   revealTexture.mask = new Phaser.Display.Masks.GeometryMask(this, maskGraphics);
   revealTexture.setMask(revealTexture.mask);
 
-  // Calculate capture percentage (approximate by sampling or count cleared pixels, but for perf, estimate)
-  // Placeholder: assume each brush adds fixed %, adjust to avoid over 100
-  capturePercentage += 0.01; // Tune this
+  // Placeholder capture calculation
+  capturePercentage += 0.01;
   if (capturePercentage >= config.value!.winPercentage) {
     winGame();
   }
-
-  // Animate player (if spritesheet, add animations here)
-  // Assuming single image, no anim for now
 }
 
 function hitEnemy(object1: any, object2: any) {
   if (isInvincible) return;
   currentLives--;
   livesText.setText(`Lives: ${currentLives}`);
-  (object1 as Phaser.Physics.Arcade.Sprite).setPosition(config.value!.screenWidth / 2, config.value!.screenHeight / 2); // Reset position
+  (object1 as Phaser.Physics.Arcade.Sprite).setPosition(config.value!.screenWidth / 2, config.value!.screenHeight / 2);
   if (currentLives <= 0) {
     loseGame();
   }
@@ -306,7 +318,7 @@ function hitEnemy(object1: any, object2: any) {
 
 function collectPowerUp(object1: any, object2: any) {
   object2.destroy();
-  const type = config.value!.powerUps?.find((pu: { type: 'speed' | 'invincible'; asset: string }) => pu.asset === (object2 as Phaser.GameObjects.Sprite).texture.key)?.type;
+  const type = config.value!.powerUps?.find(pu => pu.asset === (object2 as Phaser.GameObjects.Sprite).texture.key)?.type;
   if (type === 'speed') {
     config.value!.playerSpeed *= 1.5;
     setTimeout(() => config.value!.playerSpeed /= 1.5, 5000);
@@ -327,10 +339,21 @@ function winGame() {
 
 function loseGame() {
   if (phaserGame.value) phaserGame.value.destroy(true);
-  handleSubmit(Infinity); // High score means loss, or handle differently
+  handleSubmit(Infinity);
 }
 
-function restartGame() {
+async function restartGame() {
+  console.log('TerritoryCapture: Restarting game - clearing saved state');
+  if (userStore.user) {
+    const userDocRef = doc(db, 'users', userStore.user.uid);
+    await updateDoc(userDocRef, {
+      [`games.TerritoryCapture.${gameId.value}`]: deleteField()
+    });
+    console.log('TerritoryCapture: Cleared Firestore game progress');
+  } else {
+    localStorage.removeItem(`territory_score_${gameId.value}`);
+    console.log('TerritoryCapture: Cleared localStorage score');
+  }
   hasSubmitted.value = false;
   router.go(0); // Reload
 }
@@ -339,24 +362,19 @@ async function handleSubmit(finalScore: number) {
   console.log('TerritoryCapture: handleSubmit called with score:', finalScore);
   score.value = finalScore;
 
-  if (!gameId.value) {
-    console.error('TerritoryCapture: No gameId provided');
-    return;
-  }
+  if (!gameId.value) return;
 
   if (!userStore.user) {
-    console.log('TerritoryCapture: User not logged in, storing in localStorage');
     localStorage.setItem(`territory_score_${gameId.value}`, finalScore.toString());
     hasSubmitted.value = true;
     return;
   }
 
   const gameTypeId = 'TerritoryCapture';
-  const custom = {}; // Add any custom data if needed
+  const custom = {};
 
   try {
     await userStore.updateGameProgress(gameTypeId, gameId.value, { score: finalScore, streak: 0, lastPlayed: new Date().toISOString(), custom });
-    console.log('TerritoryCapture: User progress updated successfully');
     hasSubmitted.value = true;
   } catch (err: any) {
     console.error('TerritoryCapture: Error in handleSubmit:', err.message, err);
@@ -389,4 +407,3 @@ watch(score, () => {
   text-align: center;
 }
 </style>
-```
