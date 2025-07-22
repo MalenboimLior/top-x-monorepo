@@ -27,7 +27,7 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
-  custom: PyramidConfig | TriviaConfig | TerritoryCaptureConfig; // Union of possible config types
+  custom: PyramidConfig | TriviaConfig | TerritoryCaptureConfig | ZoneBreakerConfig; // Union of possible config types
 }
 
 export interface LeaderboardEntry {
