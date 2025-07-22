@@ -44,6 +44,10 @@
     "./types/territoryCapture": {
       "types": "./src/types/territoryCapture.ts",
       "default": "./src/types/territoryCapture.ts"
+    },
+    "./types/zoneBreaker": {
+      "types": "./src/types/zoneBreaker.ts",
+      "default": "./src/types/zoneBreaker.ts"
     }
   }
 }
