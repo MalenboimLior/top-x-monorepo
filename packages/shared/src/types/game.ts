@@ -2,12 +2,13 @@
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
 import { TerritoryCaptureConfig } from "./territoryCapture";
+import { ZoneBreakerConfig } from "./zoneBreaker";
 
 export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig'; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig' |'ZoneBreakerConfig'; // String to specify config type
 }
 
 export interface Game {
@@ -39,5 +40,5 @@ export interface LeaderboardEntry {
   custom?: Record<string, any>;
 }
 
-export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig';
-export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'TerritoryCaptureConfig'];
+export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig' |'ZoneBreakerConfig';
+export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'TerritoryCaptureConfig','ZoneBreakerConfig'];
