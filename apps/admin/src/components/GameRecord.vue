@@ -242,19 +242,31 @@
         </div>
       </div>
     </div>
-    <div v-if="gameTypeCustom === 'ZoneBreakerConfig'">
-      <h3 class="subtitle has-text-white">ZoneBreaker Config</h3>
-      <div class="field">
-        <label class="label has-text-white">Levels JSON</label>
-        <div class="control">
-          <textarea v-model="zoneLevelsText" class="textarea"></textarea>
+      <div v-if="gameTypeCustom === 'ZoneBreakerConfig'">
+        <h3 class="subtitle has-text-white">ZoneBreaker Config</h3>
+        <div class="field">
+          <label class="label has-text-white">Levels JSON</label>
+          <div class="control">
+            <textarea v-model="zoneLevelsText" class="textarea"></textarea>
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Win Percentage</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).winPercentage" class="input" type="number" />
+        <div class="field">
+          <label class="label has-text-white">Player Asset URL</label>
+          <div class="control">
+            <input v-model="(localGame.custom as any).playerAsset" class="input" type="text" />
+          </div>
         </div>
+        <div class="field">
+          <label class="label has-text-white">Player Scale</label>
+          <div class="control">
+            <input v-model.number="(localGame.custom as any).playerScale" class="input" type="number" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label has-text-white">Win Percentage</label>
+          <div class="control">
+            <input v-model.number="(localGame.custom as any).winPercentage" class="input" type="number" />
+          </div>
       </div>
       <div class="field">
         <label class="label has-text-white">Player Speed</label>
@@ -640,6 +652,11 @@ const save = async () => {
     }
     customData = {
       levels,
+      playerAsset: (localGame.value.custom as any).playerAsset || '',
+      playerScale:
+        (localGame.value.custom as any).playerScale !== undefined
+          ? Number((localGame.value.custom as any).playerScale)
+          : undefined,
       winPercentage: Number((localGame.value.custom as any).winPercentage) || 0,
       playerSpeed: Number((localGame.value.custom as any).playerSpeed) || 0,
       enemySpeed: Number((localGame.value.custom as any).enemySpeed) || 0,
