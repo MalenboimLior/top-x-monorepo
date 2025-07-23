@@ -6,6 +6,8 @@ export interface ZoneBreakerConfig {
   levels: LevelConfig[]; // Array of levels for Arcade mode
   winPercentage: number; // Default 75
   playerSpeed: number;
+  playerAsset: string;
+  playerScale?: number;
   enemySpeed: number; // Base, per enemy type
   enemyCount: number; // Base, overridden per level
   powerUps?: PowerUp[]; // Optional

@@ -1,3 +1,4 @@
+```vue
 <template>
   <div class="zone-breaker">
     <div id="phaser-container" ref="phaserContainer"></div>
@@ -158,7 +159,7 @@ function initPhaserGame() {
 
 let player: Phaser.Physics.Arcade.Sprite;
 let enemies: Phaser.Physics.Arcade.Group;
-let powerUps: Phaser.Physics.Arcade.Group;
+let powerUps: Phaser.Physics.Arcade.Group | null = null;
 let maskGraphics: Phaser.GameObjects.Graphics;
 let revealTexture: Phaser.GameObjects.RenderTexture;
 let background: Phaser.GameObjects.Image;
@@ -175,20 +176,70 @@ let isDrawing = false;
 let safeArea: Phaser.Geom.Polygon; // Initial border
 let comboCount = 0;
 
-function preload(this: Phaser.Scene) {
-  if (!config.value) return;
+async function preload(this: Phaser.Scene) {
+  console.log('ZoneBreaker: preload started');
+  if (!config.value) {
+    console.error('ZoneBreaker: No config in preload');
+    return;
+  }
   const level = config.value.levels[currentLevel.value];
+  const configValue = config.value; // Store config.value in a local variable
+
+  console.log('ZoneBreaker: Attempting to load background from:', level.backgroundImage);
   this.load.image('background', level.backgroundImage);
-  this.load.image('player', config.value.playerAsset);
-  level.enemyTypes.forEach((enemy, index) => {
-    this.load.image(`enemy${index}`, enemy.asset);
+
+  console.log('ZoneBreaker: Attempting to load player from:', configValue.playerAsset);
+  try {
+    const playerResponse = await fetch(configValue.playerAsset, { method: 'HEAD' });
+    if (!playerResponse.ok) {
+      console.error('ZoneBreaker: Player asset HEAD request failed:', config.value?.playerAsset, playerResponse.status, playerResponse.statusText);
+    } else {
+      console.log('ZoneBreaker: Player asset HEAD request succeeded, loading:', config.value?.playerAsset);
+      this.load.image('player', configValue.playerAsset);
+    }
+  } catch (error) {
+    console.error('ZoneBreaker: Error checking player asset:', configValue.playerAsset, error);
+  }
+
+  level.enemyTypes.forEach(async (enemy, index) => {
+    console.log(`ZoneBreaker: Attempting to load enemy${index} from:`, enemy.asset);
+    try {
+      const enemyResponse = await fetch(enemy.asset, { method: 'HEAD' });
+      if (!enemyResponse.ok) {
+        console.error(`ZoneBreaker: Enemy${index} asset HEAD request failed:`, enemy.asset, enemyResponse.status, enemyResponse.statusText);
+      } else {
+        console.log(`ZoneBreaker: Enemy${index} asset HEAD request succeeded, loading:`, enemy.asset);
+        this.load.image(`enemy${index}`, enemy.asset);
+      }
+    } catch (error) {
+      console.error(`ZoneBreaker: Error checking enemy${index} asset:`, enemy.asset, error);
+    }
   });
+
   if (config.value.powerUps) {
-    config.value.powerUps.forEach((pu, index) => {
-      this.load.image(`powerup${index}`, pu.asset);
+    config.value.powerUps.forEach(async (pu, index) => {
+      console.log(`ZoneBreaker: Attempting to load powerup${index} from:`, pu.asset);
+      try {
+        const powerUpResponse = await fetch(pu.asset, { method: 'HEAD' });
+        if (!powerUpResponse.ok) {
+          console.error(`ZoneBreaker: Powerup${index} asset HEAD request failed:`, pu.asset, powerUpResponse.status, powerUpResponse.statusText);
+        } else {
+          console.log(`ZoneBreaker: Powerup${index} asset HEAD request succeeded, loading:`, pu.asset);
+          this.load.image(`powerup${index}`, pu.asset);
+        }
+      } catch (error) {
+        console.error(`ZoneBreaker: Error checking powerup${index} asset:`, pu.asset, error);
+      }
     });
   }
-  // Load line textures if needed for lineStyle
+
+  this.load.on('complete', () => {
+    console.log('ZoneBreaker: All assets loaded successfully');
+  });
+  this.load.on('loaderror', (file: Phaser.Loader.File) => {
+    console.error('ZoneBreaker: Asset load error:', file.key, file.url);
+  });
+  console.log('ZoneBreaker: preload completed');
 }
 
 function create(this: Phaser.Scene) {
@@ -237,19 +288,21 @@ function create(this: Phaser.Scene) {
         break;
       // Add cases for zigzag, bounce, shoot, explode
     }
+    enemy.setData('type', enemyType.type); // For validation
   }
 
   // Power-ups
   if (config.value.powerUps) {
     powerUps = this.physics.add.group();
-    for (let i = 0; i < level.powerUpCount || 0; i++) {
-      powerUps.create(Phaser.Math.Between(50, config.value.screenWidth - 50), Phaser.Math.Between(50, config.value.screenHeight - 50), `powerup${i % config.value.powerUps.length}`);
+    for (let i = 0; i < (level.powerUpCount ?? 0); i++) {
+      const puSprite = powerUps.create(Phaser.Math.Between(50, config.value.screenWidth - 50), Phaser.Math.Between(50, config.value.screenHeight - 50), `powerup${i % config.value.powerUps.length}`);
+      puSprite.setData('type', config.value.powerUps[i % config.value.powerUps.length].type);
     }
   }
 
   // Collisions
-  this.physics.add.collider(player, enemies, hitEnemy);
-  if (powerUps) this.physics.add.overlap(player, powerUps, collectPowerUp);
+  this.physics.add.collider(player, enemies, hitEnemy, undefined, this);
+  if (powerUps) this.physics.add.overlap(player, powerUps, collectPowerUp, undefined, this);
 
   // UI
   timerText = this.add.text(10, 10, 'Time: 0', { fontSize: '24px', color: '#fff' });
@@ -264,7 +317,9 @@ function create(this: Phaser.Scene) {
   });
 
   // Input for movement and drawing
-  this.input.keyboard.on('keydown', handleKeyDown, this);
+  if (this.input && this.input.keyboard) {
+    this.input.keyboard.on('keydown', handleKeyDown, this);
+  }
 }
 
 function update(this: Phaser.Scene) {
@@ -272,9 +327,9 @@ function update(this: Phaser.Scene) {
   timerText.setText(`Time: ${timeElapsed}`);
 
   // Enemy movement in unsafe areas
-  enemies.children.entries.forEach((enemy: any) => {
+  enemies.children.entries.forEach((enemy: Phaser.GameObjects.GameObject) => {
     // Ensure enemies stay in unsafe (use Geom.contains for safeArea)
-    if (Phaser.Geom.Polygon.Contains(safeArea, enemy.x, enemy.y)) {
+    if (Phaser.Geom.Polygon.Contains(safeArea, (enemy as Phaser.Physics.Arcade.Sprite).x, (enemy as Phaser.Physics.Arcade.Sprite).y)) {
       // Bounce or redirect
     }
   });
@@ -282,7 +337,7 @@ function update(this: Phaser.Scene) {
   // Update captured %
   capturedPercent.value = calculateCapturedPercent();
   if (capturedPercent.value >= config.value!.winPercentage) {
-    winLevel();
+    winLevel.call(this);
   }
 
   // Trail decay if configured
@@ -295,12 +350,12 @@ function update(this: Phaser.Scene) {
   // Danger warning (flash if enemy near trail)
   if (isDrawing && enemyNearTrail()) {
     // Flash effect on trailGraphics
-    trailGraphics.setTint(0xff0000);
-    setTimeout(() => trailGraphics.clearTint(), 200);
+    trailGraphics.lineStyle(config.value!.brushSize || 2, 0xff0000); // Change color for flash
+    this.time.delayedCall(200, () => trailGraphics.lineStyle(config.value!.brushSize || 2, 0xffffff), [], this);
   }
 }
 
-function handleKeyDown(event: KeyboardEvent) {
+function handleKeyDown(this: Phaser.Scene, event: KeyboardEvent) {
   const speed = config.value!.playerSpeed;
   if (event.key === 'ArrowLeft') player.setVelocityX(-speed);
   else if (event.key === 'ArrowRight') player.setVelocityX(speed);
@@ -323,7 +378,8 @@ function handleKeyDown(event: KeyboardEvent) {
 
 function closesLoop(points: { x: number; y: number }[]) {
   // Check if last point connects back to start or border
-  return Phaser.Geom.Line.GetDistance(points[0], points[points.length - 1]) < 5; // Simple check, improve with intersection
+  const line = new Phaser.Geom.Line(points[0].x, points[0].y, points[points.length - 1].x, points[points.length - 1].y);
+  return Phaser.Geom.Line.Length(line) < 5; // Simple check, improve with intersection
 }
 
 function captureLoop(points: { x: number; y: number }[]) {
@@ -331,8 +387,8 @@ function captureLoop(points: { x: number; y: number }[]) {
   if (validCapture(polygon)) {
     // Fill area
     maskGraphics.fillPoints(polygon.points, true);
-    // Update safeArea by union with polygon
-    safeArea = Phaser.Geom.Polygon.Union(safeArea, polygon);
+    // Update safeArea by union with polygon (custom union as Phaser lacks built-in)
+    safeArea = customPolygonUnion(safeArea, polygon);
     comboCount++;
     // Bonus scoring if combo
     trailPoints = [];
@@ -344,11 +400,16 @@ function captureLoop(points: { x: number; y: number }[]) {
   }
 }
 
+function customPolygonUnion(poly1: Phaser.Geom.Polygon, poly2: Phaser.Geom.Polygon): Phaser.Geom.Polygon {
+  // Simple concatenation for demo; use clipper.js or custom algo for real union
+  return new Phaser.Geom.Polygon([...poly1.points, ...poly2.points]);
+}
+
 function validCapture(polygon: Phaser.Geom.Polygon) {
   // Check no core enemy inside
   let hasCoreEnemy = false;
-  enemies.children.entries.forEach((enemy: any) => {
-    if (enemy.data.get('type') === 'core' && Phaser.Geom.Polygon.Contains(polygon, enemy.x, enemy.y)) {
+  enemies.children.entries.forEach((enemy: Phaser.GameObjects.GameObject) => {
+    if ((enemy as Phaser.GameObjects.Sprite).getData('type') === 'core' && Phaser.Geom.Polygon.Contains(polygon, (enemy as Phaser.Physics.Arcade.Sprite).x, (enemy as Phaser.Physics.Arcade.Sprite).y)) {
       hasCoreEnemy = true;
     }
   });
@@ -356,8 +417,16 @@ function validCapture(polygon: Phaser.Geom.Polygon) {
 }
 
 function calculateCapturedPercent() {
-  // Approximate: Use mask pixel count or area calculation
-  return (Phaser.Geom.Polygon.GetArea(safeArea) / (config.value!.screenWidth * config.value!.screenHeight)) * 100;
+  // Calculate area using shoelace formula
+  let area = 0;
+  const points = safeArea.points;
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length;
+    area += points[i].x * points[j].y;
+    area -= points[j].x * points[i].y;
+  }
+  area = Math.abs(area) / 2;
+  return (area / (config.value!.screenWidth * config.value!.screenHeight)) * 100;
 }
 
 function enemyNearTrail() {
@@ -365,16 +434,16 @@ function enemyNearTrail() {
   return false; // Implement logic
 }
 
-function winLevel() {
+function winLevel(this: Phaser.Scene) {
   if (currentLevel.value < config.value!.levels.length - 1) {
     currentLevel.value++;
-    restartLevel(); // Reload scene with next level
+    restartLevel.call(this);
   } else {
     winGame();
   }
 }
 
-function restartLevel() {
+function restartLevel(this: Phaser.Scene) {
   // Reset trail, enemies, etc.
   trailPoints = [];
   trailGraphics.clear();
@@ -384,19 +453,23 @@ function restartLevel() {
   this.scene.restart();
 }
 
-function hitEnemy() {
+function hitEnemy(this: Phaser.Scene, object1: Phaser.GameObjects.GameObject | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile, object2: Phaser.GameObjects.GameObject | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile) {
   currentLives--;
   livesText.setText(`Lives: ${currentLives}`);
   if (currentLives <= 0) loseGame();
   // Reset to border
-  player.setPosition(0, config.value!.screenHeight / 2);
+  if (object1 instanceof Phaser.Physics.Arcade.Sprite) {
+    object1.setPosition(0, config.value!.screenHeight / 2);
+  }
 }
 
-function collectPowerUp(player, powerUp) {
-  powerUp.destroy();
-  const type = powerUp.data.get('type');
-  if (type === 'speed') config.value!.playerSpeed *= 1.5; // Etc.
-  // Implement others: shield (isInvincible), freeze (pause enemies), bomb (clear enemies)
+function collectPowerUp(this: Phaser.Scene, object1: Phaser.GameObjects.GameObject | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile, object2: Phaser.GameObjects.GameObject | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile) {
+  if (object2 instanceof Phaser.GameObjects.Sprite) {
+    object2.destroy();
+    const type = object2.getData('type') as string;
+    if (type === 'speed') config.value!.playerSpeed *= 1.5; // Etc.
+    // Implement others: shield (isInvincible), freeze (pause enemies), bomb (clear enemies)
+  }
 }
 
 function winGame() {
