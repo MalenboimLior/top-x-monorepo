@@ -377,7 +377,7 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGame = ref<Game>({ language: 'en', image: '', active: false, vip: [], ...props.game });
+const localGame = ref<Game>({ ...props.game, vip: [], language: props.game.language || 'en' });
 const vipList = ref<string[]>([...(localGame.value.vip || [])]);
 const vipInput = ref('');
 const enemyAssetsText = ref('');

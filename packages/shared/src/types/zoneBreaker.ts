@@ -1,8 +1,4 @@
 export interface ZoneBreakerConfig {
-  /** Sprite asset for the player */
-  playerAsset: string;
-  /** Optional scale for the player sprite */
-  playerScale?: number;
   levels: LevelConfig[]; // Array of levels for Arcade mode
   winPercentage: number; // Default 75
   playerSpeed: number;
