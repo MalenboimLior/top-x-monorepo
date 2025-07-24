@@ -154,13 +154,18 @@ export default class VolfiedScene extends Phaser.Scene {
       const queue = [{ x, y }];
       const points: { x: number; y: number }[] = [];
       let touchesTrail = false;
+      let touchesBorder = false;
 
       while (queue.length) {
-        const { x, y } = queue.pop()!;
-        if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) continue;
-        if (temp[y][x] !== 0) continue;
-
-        if (this.fillMask[y][x] === 2) touchesTrail = true;
+        const { x, y } = queue.shift()!;
+        if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) {
+          touchesBorder = true;
+          continue;
+        }
+        if (temp[y][x] !== 0) {
+          if (temp[y][x] === 2) touchesTrail = true;
+          continue;
+        }
 
         temp[y][x] = mark;
         points.push({ x, y });
@@ -171,7 +176,7 @@ export default class VolfiedScene extends Phaser.Scene {
         queue.push({ x, y: y - 1 });
       }
 
-      return { points, touchesTrail };
+      return { points, touchesTrail, touchesBorder };
     };
 
     let regionId = 10;
@@ -179,7 +184,7 @@ export default class VolfiedScene extends Phaser.Scene {
       for (let x = 0; x < GRID_W; x++) {
         if (temp[y][x] === 0) {
           const region = floodFill(x, y, regionId);
-          if (!region.touchesTrail) {
+          if (region.touchesTrail && !region.touchesBorder) {
             regions.push({ size: region.points.length, points: region.points });
           }
           regionId++;
@@ -187,13 +192,22 @@ export default class VolfiedScene extends Phaser.Scene {
       }
     }
 
-    if (regions.length === 0) return;
+    if (regions.length > 0) {
+      const largest = regions.reduce((a, b) => (a.size > b.size ? a : b));
+      for (const region of regions) {
+        if (region.size < largest.size) {
+          for (const { x, y } of region.points) {
+            this.fillMask[y][x] = 1;
+          }
+        }
+      }
+    }
 
-    const smallest = regions.reduce((a, b) => (a.size < b.size ? a : b));
-    for (const { x, y } of smallest.points) this.fillMask[y][x] = 1;
-    for (let y = 0; y < GRID_H; y++)
-      for (let x = 0; x < GRID_W; x++)
+    for (let y = 0; y < GRID_H; y++) {
+      for (let x = 0; x < GRID_W; x++) {
         if (this.fillMask[y][x] === 2) this.fillMask[y][x] = 1;
+      }
+    }
 
     this.filledTiles = this.fillMask.flat().filter(v => v === 1).length;
     const percent = Math.floor((this.filledTiles / (GRID_W * GRID_H)) * 100);
