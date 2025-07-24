@@ -7,7 +7,7 @@ const GRID_W = WIDTH / TILE_SIZE;
 const GRID_H = HEIGHT / TILE_SIZE;
 
 export default class VolfiedScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.GameObjects.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: 'up' | 'down' | 'left' | 'right' | null = null;
   private trail: { x: number; y: number }[] = [];
@@ -24,37 +24,40 @@ export default class VolfiedScene extends Phaser.Scene {
   preload() {
     this.load.image('bg', '/assets/bg.png');
     this.load.image('hidden', '/assets/reveal.png');
+    this.load.spritesheet('player', '/assets/player.png', {
+      frameWidth: 256,
+      frameHeight: 256
+    });
   }
 
   create() {
-    // 🖼️ רקע
-    this.add.image(WIDTH / 2, HEIGHT / 2, 'bg')
-      .setDisplaySize(WIDTH, HEIGHT)
-      .setDepth(-2);
+    this.add.image(WIDTH / 2, HEIGHT / 2, 'bg').setDisplaySize(WIDTH, HEIGHT).setDepth(-2);
+    const hiddenImage = this.add.image(WIDTH / 2, HEIGHT / 2, 'hidden').setDisplaySize(WIDTH, HEIGHT).setDepth(-1);
 
-    // 🖼️ תמונה שתיחשף בהדרגה
-    const hiddenImage = this.add.image(WIDTH / 2, HEIGHT / 2, 'hidden')
-      .setDisplaySize(WIDTH, HEIGHT)
-      .setDepth(-1);
-
-    // 🕳️ מסכה לגילוי
     this.revealMask = this.add.graphics().setDepth(2);
     this.revealMask.setVisible(false);
     const mask = this.revealMask.createGeometryMask();
     hiddenImage.setMask(mask);
 
-    // 🟥 שובל אדום
     this.trailGraphics = this.add.graphics();
 
     this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
     this.cursors = this.input.keyboard!.createCursorKeys();
 
-    this.player = this.add.rectangle(WIDTH / 2, HEIGHT - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE, 0x00ff00);
+    this.anims.create({
+      key: 'move',
+      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+      frameRate: 6,
+      repeat: -1
+    });
+
+    this.player = this.add.sprite(WIDTH / 2, HEIGHT - TILE_SIZE / 2, 'player')
+      .setScale(TILE_SIZE / 256)
+      .setDepth(50);
+    this.player.play('move');
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
-    this.player.setDepth(1);
 
-    // 🎯 מסכת מילוי
     this.fillMask = Array(GRID_H).fill(0).map(() => Array(GRID_W).fill(0));
     for (let x = 0; x < GRID_W; x++) {
       this.fillMask[0][x] = 1;
@@ -65,13 +68,11 @@ export default class VolfiedScene extends Phaser.Scene {
       this.fillMask[y][GRID_W - 1] = 1;
     }
 
-    // 🧾 טקסט אחוז
     this.filledText = this.add.text(10, 10, 'Filled: 0%', {
       font: '14px Arial',
       color: '#ffffff'
     });
 
-    // אירועים
     window.addEventListener('setDirection', (e: Event) => {
       const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
       this.setDirection(custom.detail);
@@ -86,7 +87,6 @@ export default class VolfiedScene extends Phaser.Scene {
       this.scene.restart();
     });
 
-    // 💡 תמיכה בסווייפ למובייל
     let swipeStart: Phaser.Math.Vector2 | null = null;
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       swipeStart = new Phaser.Math.Vector2(p.x, p.y);
@@ -203,11 +203,9 @@ export default class VolfiedScene extends Phaser.Scene {
       }
     }
 
-    for (let y = 0; y < GRID_H; y++) {
-      for (let x = 0; x < GRID_W; x++) {
+    for (let y = 0; y < GRID_H; y++)
+      for (let x = 0; x < GRID_W; x++)
         if (this.fillMask[y][x] === 2) this.fillMask[y][x] = 1;
-      }
-    }
 
     this.filledTiles = this.fillMask.flat().filter(v => v === 1).length;
     const percent = Math.floor((this.filledTiles / (GRID_W * GRID_H)) * 100);
