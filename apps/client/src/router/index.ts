@@ -12,7 +12,7 @@ import PyramidTier from '@/views/games/PyramidTier.vue';
 import TerritoryCapture from '@/views/games/TerritoryCapture.vue';
 import ZoneBreaker from '@/views/games/ZoneBreaker.vue';
 import Qix from '@/views/games/Qix.vue';
-
+import Snake from '@/views/games/Snake.vue';
 import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
@@ -64,6 +64,12 @@ const routes = [
     name: 'Qix',
     component: Qix,
   },
+  {
+  path: '/games/snake',
+  name: 'Snake',
+  component: Snake,
+  meta: { requiresAuth: false } // Or true if you want Firebase auth guard
+},
   {
     path: '/games/ZoneBreaker',
     name: 'ZoneBreaker',

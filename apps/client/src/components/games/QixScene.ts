@@ -7,11 +7,6 @@ const CONFIG = {
   playfieldWidth: 800,
   playfieldHeight: 600,
   playerSpeed: 200, // Pixels per second
-  coreEnemySpeed: 150,
-  sparkSpeed: 100,
-  numSparks: 2, // Initial sparks
-  // Custom enemies (extendable)
-  customEnemies: [], // e.g., [{ type: 'zigzag', speed: 180 }]
 };
 
 function calculatePolygonArea(points: { x: number; y: number }[]): number {
@@ -23,7 +18,6 @@ function calculatePolygonArea(points: { x: number; y: number }[]): number {
     area += points[i].x * points[j].y;
     area -= points[j].x * points[i].y;
   }
-  console.log('Calculated area:', Math.abs(area / 2)); // Debug log
   return Math.abs(area / 2);
 }
 
@@ -32,8 +26,6 @@ export class QixScene extends Phaser.Scene {
   private pathGraphics!: Phaser.GameObjects.Graphics; // For drawing player path
   private borderGraphics!: Phaser.GameObjects.Graphics; // For borders
   private fillGraphics!: Phaser.GameObjects.Graphics; // For captured areas
-  private coreEnemy!: Phaser.GameObjects.Rectangle; // Temp rect placeholder (replace with sprite once assets ready)
-  private sparks: Phaser.GameObjects.Rectangle[] = []; // Temp rect placeholders
   private isDrawing: boolean = false; // State: on border vs drawing path
   private pathPoints: Phaser.Math.Vector2[] = []; // Points in current path
   private capturedArea: number = 0; // Total captured pixels
@@ -41,7 +33,6 @@ export class QixScene extends Phaser.Scene {
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private score: number = 0; // Score based on captured area
   private borders: Phaser.Geom.Line[] = []; // Track all border lines for better onBorder check
-  private spaceKey!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super('QixScene');
@@ -50,16 +41,10 @@ export class QixScene extends Phaser.Scene {
   preload() {
     // Comment out failing loads until assets created; use placeholders in create()
     // this.load.image('player', 'assets/games/qix/player.png');
-    // this.load.image('core_enemy', 'assets/games/qix/core_enemy.png');
-    // this.load.image('spark_enemy', 'assets/games/qix/spark_enemy.png');
     // this.load.image('border_texture', 'assets/games/qix/border_texture.png');
     // this.load.image('fill_texture', 'assets/games/qix/fill_texture.png');
-    // this.load.audio('bg_music', 'assets/games/qix/bg_music.mp3');
     // this.load.audio('claim_sfx', 'assets/games/qix/claim_sfx.mp3');
-    // this.load.audio('death_sfx', 'assets/games/qix/death_sfx.mp3');
     // this.load.audio('move_sfx', 'assets/games/qix/move_sfx.mp3');
-    // this.load.atlas('core_enemy_atlas', 'assets/games/qix/core_enemy_atlas.png', 'assets/games/qix/core_enemy_atlas.json');
-    // this.load.atlas('spark_enemy_atlas', 'assets/games/qix/spark_enemy_atlas.png', 'assets/games/qix/spark_enemy_atlas.json');
   }
 
   create() {
@@ -75,6 +60,7 @@ export class QixScene extends Phaser.Scene {
     this.borderGraphics = this.add.graphics({ lineStyle: { width: 4, color: 0xffffff }, fillStyle: { color: 0x1f6feb } });
     this.fillGraphics = this.add.graphics({ fillStyle: { color: 0x1f6feb, alpha: 0.7 } });
     this.pathGraphics = this.add.graphics({ lineStyle: { width: 4, color: 0x00ff00 } }); // Thicker, green for visibility
+    this.pathGraphics.setDepth(10); // Ensure path is drawn above other graphics
 
     // Draw initial borders and track lines
     this.drawBorders();
@@ -83,29 +69,8 @@ export class QixScene extends Phaser.Scene {
     this.player = this.add.rectangle(0, 0, 16, 16, 0xffffff).setOrigin(0.5);
     this.player.setPosition(400, 0); // Start on top border
 
-    // Core enemy (placeholder rect; replace with sprite/anim once assets ready)
-    this.coreEnemy = this.add.rectangle(400, 300, 32, 32, 0xff0000).setOrigin(0.5);
-    this.physics.add.existing(this.coreEnemy);
-    (this.coreEnemy.body as Phaser.Physics.Arcade.Body).setVelocity(Phaser.Math.Between(-CONFIG.coreEnemySpeed, CONFIG.coreEnemySpeed), Phaser.Math.Between(-CONFIG.coreEnemySpeed, CONFIG.coreEnemySpeed));
-
-    // Sparks (placeholder rects; replace with sprites/anims)
-    for (let i = 0; i < CONFIG.numSparks; i++) {
-      const spark = this.add.rectangle(Phaser.Math.Between(0, CONFIG.playfieldWidth), 0, 16, 16, 0xffff00).setOrigin(0.5);
-      this.sparks.push(spark);
-      this.physics.add.existing(spark);
-    }
-
     // Input: Keyboard only
     this.keys = this.input.keyboard!.createCursorKeys();
-    this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    console.log('Input plugin ready?', this.input.enabled); // Debug if input enabled
-
-    // Audio (commented until assets; AudioContext needs user gesture anyway—Phaser resumes on interaction)
-    // this.sound.play('bg_music', { loop: true, volume: 0.5 });
-
-    // Physics setup (simple arcade for collisions)
-    this.physics.add.collider(this.player, this.coreEnemy, this.handleDeath, undefined, this);
-    this.sparks.forEach(spark => this.physics.add.collider(this.player, spark, this.handleDeath, undefined, this));
 
     // UI: Score text (Bulma-inspired dark theme)
     const scoreText = this.add.text(10, 10, 'Captured: 0%', {
@@ -135,6 +100,8 @@ export class QixScene extends Phaser.Scene {
     // Normalize for diagonal
     if (velocity.length() > 0) velocity.normalize().scale(CONFIG.playerSpeed);
 
+    const oldX = this.player.x;
+    const oldY = this.player.y;
     this.player.x += velocity.x * (delta / 1000);
     this.player.y += velocity.y * (delta / 1000);
 
@@ -142,40 +109,27 @@ export class QixScene extends Phaser.Scene {
     this.player.x = Phaser.Math.Clamp(this.player.x, 0, CONFIG.playfieldWidth);
     this.player.y = Phaser.Math.Clamp(this.player.y, 0, CONFIG.playfieldHeight);
 
-    // Keyboard toggle drawing with space
-    if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
-      if (this.isDrawing) {
-        this.stopDrawing();
-      } else {
-        this.startDrawing();
-      }
+    const isMoving = oldX !== this.player.x || oldY !== this.player.y;
+    const isOnBorder = this.onBorder(this.player.x, this.player.y);
+    const wasOnBorder = this.onBorder(oldX, oldY);
+
+    // Automatic drawing logic: start when leaving border, add points while off, complete when back on border
+    if (isMoving && !this.isDrawing && wasOnBorder && !isOnBorder) {
+      this.startDrawing();
     }
 
-    // Drawing logic (add point every frame if drawing)
-    if (this.isDrawing) {
+    if (this.isDrawing && isMoving) {
       const newPoint = new Phaser.Math.Vector2(this.player.x, this.player.y);
-      // Only add point if it differs significantly from the last to avoid duplicates
-      if (this.pathPoints.length === 0 || this.pathPoints[this.pathPoints.length - 1].distance(newPoint) > 2) {
-        this.pathPoints.push(newPoint);
-      }
+      this.pathPoints.push(newPoint);
       this.pathGraphics.clear();
-      this.pathGraphics.strokePoints(this.pathPoints);
-
-      console.log('Drawing: points length', this.pathPoints.length, 'player pos', this.player.x, this.player.y); // Debug
+      this.pathGraphics.lineStyle(4, 0x00ff00, 1); // Reapply style to ensure visibility
+      this.pathGraphics.strokePoints(this.pathPoints, false, true); // Connect points with lines, no auto-close
 
       // Check for loop completion (back to border)
-      if (this.onBorder(this.player.x, this.player.y) && this.pathPoints.length > 5) { // Lower min points for testing
-        console.log('Attempting completeLoop'); // Debug
+      if (isOnBorder && this.pathPoints.length > 5) {
         this.completeLoop();
       }
-
-      // Check self-intersect or enemy hit (simplified)
-      // TODO: Add line intersection check for self-trail
     }
-
-    // Enemy updates
-    this.updateCoreEnemy(delta); // Pass delta to enemy updates
-    this.updateSparks(delta);
 
     // Custom enemies (extendable)
     // TODO: Implement custom like zigzag: use tweens or paths
@@ -198,9 +152,7 @@ export class QixScene extends Phaser.Scene {
       const nearest = new Phaser.Geom.Point();
       Phaser.Geom.Line.GetNearestPoint(border, point, nearest);
       const dist = Phaser.Math.Distance.BetweenPoints(nearest, point);
-      console.log('onBorder check: dist', dist, 'for border from', border.x1, border.y1, 'to', border.x2, border.y2); // Detailed debug
       if (dist < 10) { // Increased tolerance for easier detection
-        console.log('On border detected at', x, y); // Debug
         return true;
       }
     }
@@ -208,43 +160,15 @@ export class QixScene extends Phaser.Scene {
   }
 
   private startDrawing() {
-    console.log('startDrawing called, player at', this.player.x, this.player.y, 'is on border?', this.onBorder(this.player.x, this.player.y)); // Debug
-    if (this.onBorder(this.player.x, this.player.y)) {
-      this.isDrawing = true;
-      this.pathPoints = [new Phaser.Math.Vector2(this.player.x, this.player.y)];
-      console.log('Start drawing'); // Debug
-      // this.sound.play('move_sfx'); // Uncomment when audio ready
-    } else {
-      console.log('Not on border, cannot start drawing'); // Debug
-    }
-  }
-
-  private stopDrawing() {
-    console.log('Stop drawing, was drawing?', this.isDrawing); // Debug
-    this.isDrawing = false;
-    // If not completed, reset path (failure)
-    if (this.pathPoints.length > 0) {
-      this.pathPoints = [];
-      this.pathGraphics.clear();
-    }
+    this.isDrawing = true;
+    this.pathPoints = [new Phaser.Math.Vector2(this.player.x, this.player.y)];
+    // this.sound.play('move_sfx'); // Uncomment when audio ready
   }
 
   private completeLoop() {
     // Calculate enclosed area
     const polygon = new Phaser.Geom.Polygon(this.pathPoints);
     const area = calculatePolygonArea(polygon.points);
-    console.log('Loop completed with area:', area); // Debug
-
-    // Check if core enemy inside (optional rule)
-    const enemyPoint = new Phaser.Geom.Point(this.coreEnemy.x, this.coreEnemy.y);
-    const containsEnemy = Phaser.Geom.Polygon.ContainsPoint(polygon, enemyPoint);
-    console.log('Contains core enemy?', containsEnemy, 'enemy pos', this.coreEnemy.x, this.coreEnemy.y); // Debug
-    if (containsEnemy) {
-      console.log('Core enemy inside - loop failed'); // Debug
-      this.pathPoints = [];
-      this.pathGraphics.clear();
-      return;
-    }
 
     // Capture success
     this.fillGraphics.fillPoints(this.pathPoints, true, true); // Close path explicitly
@@ -261,34 +185,12 @@ export class QixScene extends Phaser.Scene {
     this.pathPoints = [];
     this.pathGraphics.clear();
     this.isDrawing = false;
-    console.log('Capture successful, new capturedArea', this.capturedArea); // Debug
-  }
-
-  private updateCoreEnemy(delta: number) {
-    // Random roam in open space (bounce on borders)
-    const body = this.coreEnemy.body as Phaser.Physics.Arcade.Body;
-    this.coreEnemy.x += body.velocity.x * (delta / 1000);
-    this.coreEnemy.y += body.velocity.y * (delta / 1000);
-    if (this.coreEnemy.x <= 0 || this.coreEnemy.x >= CONFIG.playfieldWidth) body.setVelocityX(-body.velocity.x);
-    if (this.coreEnemy.y <= 0 || this.coreEnemy.y >= CONFIG.playfieldHeight) body.setVelocityY(-body.velocity.y);
-    // TODO: Avoid captured areas (advanced)
-  }
-
-  private updateSparks(delta: number) {
-    this.sparks.forEach(spark => {
-      // Move along borders (simple top-bottom loop for demo)
-      spark.y += CONFIG.sparkSpeed * (delta / 1000); // Use delta passed from update
-      if (spark.y > CONFIG.playfieldHeight) spark.y = 0;
-      // TODO: Proper path following on borders/paths
-    });
   }
 
   private handleDeath(
     object1: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile,
     object2: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile
   ) {
-    console.log('Death: hit by', object2); // Debug
-    // this.sound.play('death_sfx'); // Uncomment when audio ready
     this.scene.pause();
     // Add visible feedback
     this.add.text(CONFIG.playfieldWidth / 2, CONFIG.playfieldHeight / 2, 'Game Over!', {
@@ -313,4 +215,3 @@ export class QixScene extends Phaser.Scene {
 // - Add animations back when atlases ready (fix undefined frames)
 // - For AudioContext: Ensure first interaction (e.g., start button) resumes it
 // - Iterate: Add particle effects for captures, improve enemy paths
-// - Debug: Check console for 'Input plugin ready?', 'startDrawing called', 'Start drawing', 'Drawing: points length', 'onBorder check: dist', 'Attempting completeLoop', 'Loop completed with area', 'Capture successful'
