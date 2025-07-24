@@ -106,7 +106,9 @@ export class QixScene extends Phaser.Scene {
 
     // Physics setup (simple arcade for collisions)
     this.physics.add.collider(this.player, this.coreEnemy, this.handleDeath, undefined, this);
-    this.sparks.forEach(spark => this.physics.add.collider(this.player, spark, this.handleDeath, undefined, this));
+    this.sparks.forEach(spark =>
+      this.physics.add.collider(this.player, spark, this.handleDeath, undefined, this)
+    );
 
     // UI: Score text (Bulma-inspired dark theme)
     const scoreText = this.add.text(10, 10, 'Captured: 0%', {
@@ -184,8 +186,11 @@ export class QixScene extends Phaser.Scene {
 
   private onBorder(x: number, y: number): boolean {
     // Improved check: near any border line (including new ones)
+    const point = new Phaser.Geom.Point(x, y);
     for (const border of this.borders) {
-      if (Phaser.Geom.Line.GetNearestPoint(border, new Phaser.Geom.Point(x, y), new Phaser.Geom.Point()).distance(new Phaser.Geom.Point(x, y)) < 5) {
+      const nearest = new Phaser.Geom.Point();
+      Phaser.Geom.Line.GetNearestPoint(border, point, nearest);
+      if (Phaser.Math.Distance.BetweenPoints(nearest, point) < 5) {
         return true;
       }
     }
@@ -257,8 +262,11 @@ export class QixScene extends Phaser.Scene {
     });
   }
 
-  private handleDeath(player: Phaser.GameObjects.GameObject, enemy: Phaser.GameObjects.GameObject) {
-    console.log('Death: hit by', enemy); // Debug
+  private handleDeath(
+    object1: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile,
+    object2: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile
+  ) {
+    console.log('Death: hit by', object2); // Debug
     // this.sound.play('death_sfx'); // Uncomment when audio ready
     this.scene.pause();
     // Add visible feedback
