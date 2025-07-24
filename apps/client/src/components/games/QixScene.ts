@@ -1,8 +1,6 @@
 // src/components/games/QixScene.ts
 import Phaser from 'phaser';
 
-//import type { GameType } from '@top-x/shared/types'; // Shared type for game data
-
 // Configurable game rules (adjust for levels)
 const CONFIG = {
   targetCapturePercent: 75, // % to win
@@ -15,6 +13,7 @@ const CONFIG = {
   // Custom enemies (extendable)
   customEnemies: [], // e.g., [{ type: 'zigzag', speed: 180 }]
 };
+
 function calculatePolygonArea(points: { x: number; y: number }[]): number {
   let area = 0;
   const n = points.length;
@@ -24,17 +23,17 @@ function calculatePolygonArea(points: { x: number; y: number }[]): number {
     area += points[i].x * points[j].y;
     area -= points[j].x * points[i].y;
   }
-  console.log('area: ',area);
-
+  console.log('Calculated area:', Math.abs(area / 2)); // Debug log
   return Math.abs(area / 2);
 }
+
 export class QixScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle; // Simple rect for player (can replace with sprite)
   private pathGraphics!: Phaser.GameObjects.Graphics; // For drawing player path
   private borderGraphics!: Phaser.GameObjects.Graphics; // For borders
   private fillGraphics!: Phaser.GameObjects.Graphics; // For captured areas
-  private coreEnemy!: Phaser.GameObjects.Sprite;
-  private sparks: Phaser.GameObjects.Sprite[] = [];
+  private coreEnemy!: Phaser.GameObjects.Rectangle; // Temp rect placeholder (replace with sprite once assets ready)
+  private sparks: Phaser.GameObjects.Rectangle[] = []; // Temp rect placeholders
   private isDrawing: boolean = false; // State: on border vs drawing path
   private pathPoints: Phaser.Math.Vector2[] = []; // Points in current path
   private capturedArea: number = 0; // Total captured pixels
@@ -42,25 +41,25 @@ export class QixScene extends Phaser.Scene {
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private touchInput!: Phaser.Input.Pointer; // For mobile touch
   private score: number = 0; // Score based on captured area
-  //private gameData: Partial<GameType> = {}; // For Firebase sync (e.g., { score: 0 })
+  private borders: Phaser.Geom.Line[] = []; // Track all border lines for better onBorder check
 
   constructor() {
     super('QixScene');
   }
 
   preload() {
-    // Load assets (paths from assets list)
-    this.load.image('player', 'assets/games/qix/player.png');
-    this.load.image('core_enemy', 'assets/games/qix/core_enemy.png');
-    this.load.image('spark_enemy', 'assets/games/qix/spark_enemy.png');
-    this.load.image('border_texture', 'assets/games/qix/border_texture.png');
-    this.load.image('fill_texture', 'assets/games/qix/fill_texture.png');
-    this.load.audio('bg_music', 'assets/games/qix/bg_music.mp3');
-    this.load.audio('claim_sfx', 'assets/games/qix/claim_sfx.mp3');
-    this.load.audio('death_sfx', 'assets/games/qix/death_sfx.mp3');
-    this.load.audio('move_sfx', 'assets/games/qix/move_sfx.mp3');
-    this.load.atlas('core_enemy_atlas', 'assets/games/qix/core_enemy_atlas.png', 'assets/games/qix/core_enemy_atlas.json');
-    this.load.atlas('spark_enemy_atlas', 'assets/games/qix/spark_enemy_atlas.png', 'assets/games/qix/spark_enemy_atlas.json');
+    // Comment out failing loads until assets created; use placeholders in create()
+    // this.load.image('player', 'assets/games/qix/player.png');
+    // this.load.image('core_enemy', 'assets/games/qix/core_enemy.png');
+    // this.load.image('spark_enemy', 'assets/games/qix/spark_enemy.png');
+    // this.load.image('border_texture', 'assets/games/qix/border_texture.png');
+    // this.load.image('fill_texture', 'assets/games/qix/fill_texture.png');
+    // this.load.audio('bg_music', 'assets/games/qix/bg_music.mp3');
+    // this.load.audio('claim_sfx', 'assets/games/qix/claim_sfx.mp3');
+    // this.load.audio('death_sfx', 'assets/games/qix/death_sfx.mp3');
+    // this.load.audio('move_sfx', 'assets/games/qix/move_sfx.mp3');
+    // this.load.atlas('core_enemy_atlas', 'assets/games/qix/core_enemy_atlas.png', 'assets/games/qix/core_enemy_atlas.json');
+    // this.load.atlas('spark_enemy_atlas', 'assets/games/qix/spark_enemy_atlas.png', 'assets/games/qix/spark_enemy_atlas.json');
   }
 
   create() {
@@ -77,37 +76,23 @@ export class QixScene extends Phaser.Scene {
     this.pathGraphics = this.add.graphics({ lineStyle: { width: 2, color: 0xff0000 } });
     this.fillGraphics = this.add.graphics({ fillStyle: { color: 0x1f6feb, alpha: 0.5 } });
 
-    // Draw initial borders
+    // Draw initial borders and track lines
     this.drawBorders();
 
     // Player (simple rect for now, can be sprite)
     this.player = this.add.rectangle(0, 0, 16, 16, 0xffffff).setOrigin(0.5);
     this.player.setPosition(400, 0); // Start on top border
 
-    // Core enemy
-    this.coreEnemy = this.add.sprite(400, 300, 'core_enemy_atlas');
-    this.anims.create({
-      key: 'core_pulse',
-      frames: this.anims.generateFrameNames('core_enemy_atlas'),
-      frameRate: 10,
-      repeat: -1
-    });
-    this.coreEnemy.play('core_pulse');
+    // Core enemy (placeholder rect; replace with sprite/anim once assets ready)
+    this.coreEnemy = this.add.rectangle(400, 300, 32, 32, 0xff0000).setOrigin(0.5);
     this.physics.add.existing(this.coreEnemy);
     (this.coreEnemy.body as Phaser.Physics.Arcade.Body).setVelocity(Phaser.Math.Between(-CONFIG.coreEnemySpeed, CONFIG.coreEnemySpeed), Phaser.Math.Between(-CONFIG.coreEnemySpeed, CONFIG.coreEnemySpeed));
 
-    // Sparks (border chasers)
+    // Sparks (placeholder rects; replace with sprites/anims)
     for (let i = 0; i < CONFIG.numSparks; i++) {
-      const spark = this.add.sprite(0, 0, 'spark_enemy_atlas');
-      this.anims.create({
-        key: 'spark_anim',
-        frames: this.anims.generateFrameNames('spark_enemy_atlas'),
-        frameRate: 15,
-        repeat: -1
-      });
-      spark.play('spark_anim');
-      spark.setPosition(Phaser.Math.Between(0, CONFIG.playfieldWidth), 0); // Start on top
+      const spark = this.add.rectangle(Phaser.Math.Between(0, CONFIG.playfieldWidth), 0, 16, 16, 0xffff00).setOrigin(0.5);
       this.sparks.push(spark);
+      this.physics.add.existing(spark);
     }
 
     // Input: Keyboard + Touch (mobile-first)
@@ -116,8 +101,8 @@ export class QixScene extends Phaser.Scene {
     this.input.on('pointerdown', this.startDrawing, this);
     this.input.on('pointerup', this.stopDrawing, this);
 
-    // Audio
-    this.sound.play('bg_music', { loop: true, volume: 0.5 });
+    // Audio (commented until assets; AudioContext needs user gesture anyway—Phaser resumes on interaction)
+    // this.sound.play('bg_music', { loop: true, volume: 0.5 });
 
     // Physics setup (simple arcade for collisions)
     this.physics.add.collider(this.player, this.coreEnemy, this.handleDeath, undefined, this);
@@ -180,8 +165,8 @@ export class QixScene extends Phaser.Scene {
     }
 
     // Enemy updates
-    this.updateCoreEnemy();
-    this.updateSparks();
+    this.updateCoreEnemy(delta); // Pass delta to enemy updates
+    this.updateSparks(delta);
 
     // Custom enemies (extendable)
     // TODO: Implement custom like zigzag: use tweens or paths
@@ -190,18 +175,28 @@ export class QixScene extends Phaser.Scene {
   private drawBorders() {
     // Initial borders (outer rect)
     this.borderGraphics.strokeRect(0, 0, CONFIG.playfieldWidth, CONFIG.playfieldHeight);
+    // Track initial border lines
+    this.borders.push(new Phaser.Geom.Line(0, 0, CONFIG.playfieldWidth, 0)); // Top
+    this.borders.push(new Phaser.Geom.Line(CONFIG.playfieldWidth, 0, CONFIG.playfieldWidth, CONFIG.playfieldHeight)); // Right
+    this.borders.push(new Phaser.Geom.Line(CONFIG.playfieldWidth, CONFIG.playfieldHeight, 0, CONFIG.playfieldHeight)); // Bottom
+    this.borders.push(new Phaser.Geom.Line(0, CONFIG.playfieldHeight, 0, 0)); // Left
   }
 
   private onBorder(x: number, y: number): boolean {
-    // Simple check: on edge or future captured borders
-    return x <= 0 || x >= CONFIG.playfieldWidth || y <= 0 || y >= CONFIG.playfieldHeight; // Extend for new borders
+    // Improved check: near any border line (including new ones)
+    for (const border of this.borders) {
+      if (Phaser.Geom.Line.GetNearestPoint(border, new Phaser.Geom.Point(x, y), new Phaser.Geom.Point()).distance(new Phaser.Geom.Point(x, y)) < 5) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private startDrawing() {
     if (this.onBorder(this.player.x, this.player.y)) {
       this.isDrawing = true;
       this.pathPoints = [new Phaser.Math.Vector2(this.player.x, this.player.y)];
-      this.sound.play('move_sfx');
+      // this.sound.play('move_sfx'); // Uncomment when audio ready
     }
   }
 
@@ -212,15 +207,15 @@ export class QixScene extends Phaser.Scene {
     this.pathGraphics.clear();
   }
 
-
   private completeLoop() {
-    // Calculate enclosed area (use Phaser geom for polygon area)
+    // Calculate enclosed area
     const polygon = new Phaser.Geom.Polygon(this.pathPoints);
     const area = calculatePolygonArea(polygon.points);
+    console.log('Loop completed with area:', area); // Debug
 
     // Check if core enemy inside (optional rule)
     if (Phaser.Geom.Polygon.ContainsPoint(polygon, new Phaser.Geom.Point(this.coreEnemy.x, this.coreEnemy.y))) {
-      // Collapse loop (failure)  
+      console.log('Core enemy inside - loop failed'); // Debug
       this.pathPoints = [];
       this.pathGraphics.clear();
       return;
@@ -230,9 +225,12 @@ export class QixScene extends Phaser.Scene {
     this.fillGraphics.fillPoints(this.pathPoints, true);
     this.capturedArea += area;
     this.events.emit('updateScore');
-    this.sound.play('claim_sfx');
+    // this.sound.play('claim_sfx'); // Uncomment when audio ready
 
-    // Add new border along path
+    // Add new border along path (track lines for onBorder)
+    for (let i = 0; i < this.pathPoints.length - 1; i++) {
+      this.borders.push(new Phaser.Geom.Line(this.pathPoints[i].x, this.pathPoints[i].y, this.pathPoints[i + 1].x, this.pathPoints[i + 1].y));
+    }
     this.borderGraphics.strokePoints(this.pathPoints);
 
     this.pathPoints = [];
@@ -240,39 +238,49 @@ export class QixScene extends Phaser.Scene {
     this.isDrawing = false;
   }
 
-  private updateCoreEnemy() {
+  private updateCoreEnemy(delta: number) {
     // Random roam in open space (bounce on borders)
     const body = this.coreEnemy.body as Phaser.Physics.Arcade.Body;
+    this.coreEnemy.x += body.velocity.x * (delta / 1000);
+    this.coreEnemy.y += body.velocity.y * (delta / 1000);
     if (this.coreEnemy.x <= 0 || this.coreEnemy.x >= CONFIG.playfieldWidth) body.setVelocityX(-body.velocity.x);
     if (this.coreEnemy.y <= 0 || this.coreEnemy.y >= CONFIG.playfieldHeight) body.setVelocityY(-body.velocity.y);
     // TODO: Avoid captured areas (advanced)
   }
 
-  private updateSparks() {
+  private updateSparks(delta: number) {
     this.sparks.forEach(spark => {
       // Move along borders (simple top-bottom loop for demo)
-      spark.y += CONFIG.sparkSpeed * (1 / 60); // Delta approx
+      spark.y += CONFIG.sparkSpeed * (delta / 1000); // Use delta passed from update
       if (spark.y > CONFIG.playfieldHeight) spark.y = 0;
       // TODO: Proper path following on borders/paths
     });
   }
 
-  private handleDeath() {
-    this.sound.play('death_sfx');
+  private handleDeath(player: Phaser.GameObjects.GameObject, enemy: Phaser.GameObjects.GameObject) {
+    console.log('Death: hit by', enemy); // Debug
+    // this.sound.play('death_sfx'); // Uncomment when audio ready
     this.scene.pause();
-    // TODO: Emit event to Vue for game over, sync score
-    //this.gameData.score = this.score;
-    // Firebase sync would be in Vue
+    // Add visible feedback
+    this.add.text(CONFIG.playfieldWidth / 2, CONFIG.playfieldHeight / 2, 'Game Over!', {
+      fontSize: '48px',
+      color: '#ff0000'
+    }).setOrigin(0.5);
+    // TODO: Emit event to Vue for restart/sync
   }
 
   private winGame() {
     this.scene.pause();
+    this.add.text(CONFIG.playfieldWidth / 2, CONFIG.playfieldHeight / 2, 'You Win!', {
+      fontSize: '48px',
+      color: '#00ff00'
+    }).setOrigin(0.5);
     // TODO: Emit win event
   }
 }
 
 // Extension points:
-// - Add level progression: Increase enemies/speed
-// - Custom enemies: Add classes for zigzag, etc.
-// - Particles: Use Phaser particles for claim effects
-// - Optimize: Use low-poly for mobile
+// - Re-enable asset loads once files created (fix 404/JSON errors)
+// - Add animations back when atlases ready (fix undefined frames)
+// - For AudioContext: Ensure first interaction (e.g., start button) resumes it
+// - Iterate: Add particle effects for captures, improve enemy paths
