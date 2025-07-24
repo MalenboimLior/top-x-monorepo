@@ -1,26 +1,20 @@
-<!-- src/views/games/Qix.vue (or components/games/QixGame.vue) -->
+<!-- src/views/games/Qix.vue -->
 <template>
   <div ref="gameContainer" class="game-container"></div>
-  <!-- <div v-if="!user" class="notification is-warning">
-    Please log in to play and save scores.
-  </div> -->
-  <button class="button is-primary" @click="startGame" >Start Game</button>
+  <button class="button is-primary" @click="startGame">Start Game</button>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import Phaser from 'phaser';
 import { QixScene } from '@/components/games/QixScene'; // Import scene
-import { useUserStore } from '@/stores/user'; // Pinia user store
-//import { useTriviaStore } from '@/stores/trivia'; // Example, adapt if needed
+import { useUserStore } from '@/stores/user'; // Pinia user store (optional, commented)
 import { db } from '@top-x/shared';
-
-import { doc, setDoc } from 'firebase/firestore'; // vuefire implied
-import {  Game } from '@top-x/shared/types'; // Shared types
+import { doc, setDoc } from 'firebase/firestore';
+import { Game } from '@top-x/shared/types';
 
 const gameContainer = ref<HTMLDivElement | null>(null);
-const userStore = useUserStore();
-//const user = ref<User | null>(userStore.user); // Auth check
+// const userStore = useUserStore(); // Uncomment for auth
 let game: Phaser.Game | null = null;
 
 const gameSlug = 'qix'; // For Firebase paths
@@ -56,8 +50,11 @@ const initPhaser = () => {
     audio: { disableWebAudio: false } // Mobile compat
   });
 
-  // Listen for game events (e.g., score sync)
-  game.scene.getScene('QixScene').events.on('updateScore', syncScore);
+  // Wait for game 'ready' event before accessing scenes (fixes null getScene)
+  game.events.on('ready', () => {
+    // Listen for game events (e.g., score sync); currently empty, but ready for use
+    game!.scene.getScene('QixScene').events.on('updateScore', syncScore);
+  });
 };
 
 const startGame = () => {
@@ -65,22 +62,18 @@ const startGame = () => {
 };
 
 const syncScore = async () => {
-  // if (!user.value) return;
+  // Uncomment for Firebase sync once user auth reinstated
+  // if (!userStore.user) return;
   // const scene = game?.scene.getScene('QixScene') as QixScene;
   // if (!scene) return;
-
   // const gameData: Partial<Game> = {
   //   score: scene.score,
-  //   completed: scene.capturedArea / scene.totalArea >= 0.75 // Win flag
+  //   completed: scene.capturedArea / scene.totalArea >= 0.75
   // };
-
-  // // Sync to Firebase (users/{userId}/games/qix)
-  // const userGameRef = doc(db, `users/${user.value.id}/games/${gameSlug}`);
+  // const userGameRef = doc(db, `users/${userStore.user.id}/games/${gameSlug}`);
   // await setDoc(userGameRef, gameData, { merge: true });
-
-  // // Leaderboards (separate collection)
-  // const leaderboardRef = doc(db, `leaderboards/${gameSlug}/scores/${user.value.id}`);
-  // await setDoc(leaderboardRef, { score: scene.score, userId: user.value.id }, { merge: true });
+  // const leaderboardRef = doc(db, `leaderboards/${gameSlug}/scores/${userStore.user.id}`);
+  // await setDoc(leaderboardRef, { score: scene.score, userId: userStore.user.id }, { merge: true });
 };
 </script>
 
@@ -97,8 +90,8 @@ const syncScore = async () => {
 </style>
 
 <!-- Comments for extensions:
-- Add auth guard in router: beforeEnter check userStore.isAuthenticated
-- Integrate Pinia for local state: e.g., useTriviaStore for game-specific if adapted
-- Mobile: Add touch controls overlay if needed
-- Vibe: Keep simple, iterate on enemy AI/capture logic
+- Create assets in src/assets/games/qix/ to fix load/404/JSON errors (use placeholders like 1x1 PNGs for testing)
+- Re-add user auth: Uncomment userStore, add v-if="!userStore.user" notification
+- Mobile: Audio resumes on first touch/click (e.g., startGame button)
+- Vibe: Now runs with placeholders; iterate on enemy AI, add particles for captures
 -->
