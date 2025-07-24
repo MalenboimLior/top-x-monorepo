@@ -39,9 +39,9 @@ export class QixScene extends Phaser.Scene {
   private capturedArea: number = 0; // Total captured pixels
   private totalArea: number = CONFIG.playfieldWidth * CONFIG.playfieldHeight;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private touchInput!: Phaser.Input.Pointer; // For mobile touch
   private score: number = 0; // Score based on captured area
   private borders: Phaser.Geom.Line[] = []; // Track all border lines for better onBorder check
+  private spaceKey!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super('QixScene');
@@ -71,10 +71,10 @@ export class QixScene extends Phaser.Scene {
     // Dark theme background
     this.cameras.main.setBackgroundColor('#0d1117');
 
-    // Setup graphics
+    // Setup graphics (ensure pathGraphics is on top)
     this.borderGraphics = this.add.graphics({ lineStyle: { width: 4, color: 0xffffff }, fillStyle: { color: 0x1f6feb } });
-    this.pathGraphics = this.add.graphics({ lineStyle: { width: 2, color: 0xff0000 } });
-    this.fillGraphics = this.add.graphics({ fillStyle: { color: 0x1f6feb, alpha: 0.5 } });
+    this.fillGraphics = this.add.graphics({ fillStyle: { color: 0x1f6feb, alpha: 0.7 } });
+    this.pathGraphics = this.add.graphics({ lineStyle: { width: 4, color: 0x00ff00 } }); // Thicker, green for visibility
 
     // Draw initial borders and track lines
     this.drawBorders();
@@ -95,20 +95,17 @@ export class QixScene extends Phaser.Scene {
       this.physics.add.existing(spark);
     }
 
-    // Input: Keyboard + Touch (mobile-first)
+    // Input: Keyboard only
     this.keys = this.input.keyboard!.createCursorKeys();
-    this.touchInput = this.input.pointer1;
-    this.input.on('pointerdown', this.startDrawing, this);
-    this.input.on('pointerup', this.stopDrawing, this);
+    this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    console.log('Input plugin ready?', this.input.enabled); // Debug if input enabled
 
     // Audio (commented until assets; AudioContext needs user gesture anyway—Phaser resumes on interaction)
     // this.sound.play('bg_music', { loop: true, volume: 0.5 });
 
     // Physics setup (simple arcade for collisions)
     this.physics.add.collider(this.player, this.coreEnemy, this.handleDeath, undefined, this);
-    this.sparks.forEach(spark =>
-      this.physics.add.collider(this.player, spark, this.handleDeath, undefined, this)
-    );
+    this.sparks.forEach(spark => this.physics.add.collider(this.player, spark, this.handleDeath, undefined, this));
 
     // UI: Score text (Bulma-inspired dark theme)
     const scoreText = this.add.text(10, 10, 'Captured: 0%', {
@@ -141,24 +138,34 @@ export class QixScene extends Phaser.Scene {
     this.player.x += velocity.x * (delta / 1000);
     this.player.y += velocity.y * (delta / 1000);
 
-    // Touch movement (mobile)
-    if (this.touchInput.isDown && this.isDrawing) {
-      // Move towards touch position, but snap to grid/borders for simplicity
-      this.physics.moveToObject(this.player, this.touchInput, CONFIG.playerSpeed);
-    }
-
     // Clamp to playfield
     this.player.x = Phaser.Math.Clamp(this.player.x, 0, CONFIG.playfieldWidth);
     this.player.y = Phaser.Math.Clamp(this.player.y, 0, CONFIG.playfieldHeight);
 
-    // Drawing logic
+    // Keyboard toggle drawing with space
+    if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+      if (this.isDrawing) {
+        this.stopDrawing();
+      } else {
+        this.startDrawing();
+      }
+    }
+
+    // Drawing logic (add point every frame if drawing)
     if (this.isDrawing) {
-      this.pathPoints.push(new Phaser.Math.Vector2(this.player.x, this.player.y));
+      const newPoint = new Phaser.Math.Vector2(this.player.x, this.player.y);
+      // Only add point if it differs significantly from the last to avoid duplicates
+      if (this.pathPoints.length === 0 || this.pathPoints[this.pathPoints.length - 1].distance(newPoint) > 2) {
+        this.pathPoints.push(newPoint);
+      }
       this.pathGraphics.clear();
       this.pathGraphics.strokePoints(this.pathPoints);
 
+      console.log('Drawing: points length', this.pathPoints.length, 'player pos', this.player.x, this.player.y); // Debug
+
       // Check for loop completion (back to border)
-      if (this.onBorder(this.player.x, this.player.y) && this.pathPoints.length > 10) { // Min points for loop
+      if (this.onBorder(this.player.x, this.player.y) && this.pathPoints.length > 5) { // Lower min points for testing
+        console.log('Attempting completeLoop'); // Debug
         this.completeLoop();
       }
 
@@ -190,7 +197,10 @@ export class QixScene extends Phaser.Scene {
     for (const border of this.borders) {
       const nearest = new Phaser.Geom.Point();
       Phaser.Geom.Line.GetNearestPoint(border, point, nearest);
-      if (Phaser.Math.Distance.BetweenPoints(nearest, point) < 5) {
+      const dist = Phaser.Math.Distance.BetweenPoints(nearest, point);
+      console.log('onBorder check: dist', dist, 'for border from', border.x1, border.y1, 'to', border.x2, border.y2); // Detailed debug
+      if (dist < 10) { // Increased tolerance for easier detection
+        console.log('On border detected at', x, y); // Debug
         return true;
       }
     }
@@ -198,18 +208,25 @@ export class QixScene extends Phaser.Scene {
   }
 
   private startDrawing() {
+    console.log('startDrawing called, player at', this.player.x, this.player.y, 'is on border?', this.onBorder(this.player.x, this.player.y)); // Debug
     if (this.onBorder(this.player.x, this.player.y)) {
       this.isDrawing = true;
       this.pathPoints = [new Phaser.Math.Vector2(this.player.x, this.player.y)];
+      console.log('Start drawing'); // Debug
       // this.sound.play('move_sfx'); // Uncomment when audio ready
+    } else {
+      console.log('Not on border, cannot start drawing'); // Debug
     }
   }
 
   private stopDrawing() {
+    console.log('Stop drawing, was drawing?', this.isDrawing); // Debug
     this.isDrawing = false;
     // If not completed, reset path (failure)
-    this.pathPoints = [];
-    this.pathGraphics.clear();
+    if (this.pathPoints.length > 0) {
+      this.pathPoints = [];
+      this.pathGraphics.clear();
+    }
   }
 
   private completeLoop() {
@@ -219,7 +236,10 @@ export class QixScene extends Phaser.Scene {
     console.log('Loop completed with area:', area); // Debug
 
     // Check if core enemy inside (optional rule)
-    if (Phaser.Geom.Polygon.ContainsPoint(polygon, new Phaser.Geom.Point(this.coreEnemy.x, this.coreEnemy.y))) {
+    const enemyPoint = new Phaser.Geom.Point(this.coreEnemy.x, this.coreEnemy.y);
+    const containsEnemy = Phaser.Geom.Polygon.ContainsPoint(polygon, enemyPoint);
+    console.log('Contains core enemy?', containsEnemy, 'enemy pos', this.coreEnemy.x, this.coreEnemy.y); // Debug
+    if (containsEnemy) {
       console.log('Core enemy inside - loop failed'); // Debug
       this.pathPoints = [];
       this.pathGraphics.clear();
@@ -227,7 +247,7 @@ export class QixScene extends Phaser.Scene {
     }
 
     // Capture success
-    this.fillGraphics.fillPoints(this.pathPoints, true);
+    this.fillGraphics.fillPoints(this.pathPoints, true, true); // Close path explicitly
     this.capturedArea += area;
     this.events.emit('updateScore');
     // this.sound.play('claim_sfx'); // Uncomment when audio ready
@@ -241,6 +261,7 @@ export class QixScene extends Phaser.Scene {
     this.pathPoints = [];
     this.pathGraphics.clear();
     this.isDrawing = false;
+    console.log('Capture successful, new capturedArea', this.capturedArea); // Debug
   }
 
   private updateCoreEnemy(delta: number) {
@@ -292,3 +313,4 @@ export class QixScene extends Phaser.Scene {
 // - Add animations back when atlases ready (fix undefined frames)
 // - For AudioContext: Ensure first interaction (e.g., start button) resumes it
 // - Iterate: Add particle effects for captures, improve enemy paths
+// - Debug: Check console for 'Input plugin ready?', 'startDrawing called', 'Start drawing', 'Drawing: points length', 'onBorder check: dist', 'Attempting completeLoop', 'Loop completed with area', 'Capture successful'
