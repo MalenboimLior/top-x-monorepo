@@ -9,61 +9,53 @@ const GRID_H = HEIGHT / TILE_SIZE;
 export default class VolfiedScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-private direction: 'up' | 'down' | 'left' | 'right' | null = null;
+  private direction: 'up' | 'down' | 'left' | 'right' | null = null;
   private trail: { x: number; y: number }[] = [];
   private fillMask: number[][] = [];
-  private fillGraphics!: Phaser.GameObjects.Graphics;
   private filledTiles = 0;
   private filledText!: Phaser.GameObjects.Text;
+  private revealMask!: Phaser.GameObjects.Graphics;
+  private trailGraphics!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super('GameScene');
   }
 
   preload() {
-  this.load.image('bg', '/assets/bg.png'); // ⬅️ טען את הרקע
-  this.load.image('hidden', '/assets/reveal.png');
+    this.load.image('bg', '/assets/bg.png');
+    this.load.image('hidden', '/assets/reveal.png');
+  }
 
-}
   create() {
+    // 🖼️ רקע
+    this.add.image(WIDTH / 2, HEIGHT / 2, 'bg')
+      .setDisplaySize(WIDTH, HEIGHT)
+      .setDepth(-2);
 
-     // 🖼️ הוסף את תמונת הרקע לפני הכול
-  this.add.image(WIDTH / 2, HEIGHT / 2, 'bg').setDisplaySize(WIDTH, HEIGHT).setDepth(-1);
+    // 🖼️ תמונה שתיחשף בהדרגה
+    const hiddenImage = this.add.image(WIDTH / 2, HEIGHT / 2, 'hidden')
+      .setDisplaySize(WIDTH, HEIGHT)
+      .setDepth(-1);
 
-  this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
-  
-  this.cursors = this.input.keyboard!.createCursorKeys();
-  this.input.keyboard?.addCapture(['LEFT', 'RIGHT', 'UP', 'DOWN']);
+    // 🕳️ מסכה לגילוי
+    this.revealMask = this.add.graphics().setDepth(2);
+    this.revealMask.setVisible(false);
+    const mask = this.revealMask.createGeometryMask();
+    hiddenImage.setMask(mask);
+
+    // 🟥 שובל אדום
+    this.trailGraphics = this.add.graphics();
 
     this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
-
     this.cursors = this.input.keyboard!.createCursorKeys();
-    this.input.keyboard?.addCapture(['LEFT', 'RIGHT', 'UP', 'DOWN']);
-
-
-
 
     this.player = this.add.rectangle(WIDTH / 2, HEIGHT - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE, 0x00ff00);
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
     this.player.setDepth(1);
 
+    // 🎯 מסכת מילוי
     this.fillMask = Array(GRID_H).fill(0).map(() => Array(GRID_W).fill(0));
-window.addEventListener('setDirection', (e: Event) => {
-  const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
-  this.setDirection(custom.detail);
-});
-window.addEventListener('togglePause', () => {
-  if (this.scene.isPaused()) {
-    this.scene.resume();
-  } else {
-    this.scene.pause();
-  }
-});
-
-window.addEventListener('restartGame', () => {
-  this.scene.restart();
-});
     for (let x = 0; x < GRID_W; x++) {
       this.fillMask[0][x] = 1;
       this.fillMask[GRID_H - 1][x] = 1;
@@ -73,35 +65,42 @@ window.addEventListener('restartGame', () => {
       this.fillMask[y][GRID_W - 1] = 1;
     }
 
-    this.fillGraphics = this.add.graphics().setDepth(0);
-
+    // 🧾 טקסט אחוז
     this.filledText = this.add.text(10, 10, 'Filled: 0%', {
       font: '14px Arial',
       color: '#ffffff'
     });
 
-    // 💡 תמיכה בהחלקת אצבע לטלפון
-    let swipeStart: Phaser.Math.Vector2 | null = null;
-
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      swipeStart = new Phaser.Math.Vector2(pointer.x, pointer.y);
+    // אירועים
+    window.addEventListener('setDirection', (e: Event) => {
+      const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
+      this.setDirection(custom.detail);
     });
 
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (!swipeStart) return;
-      const end = new Phaser.Math.Vector2(pointer.x, pointer.y);
-      const diff = end.subtract(swipeStart);
-      const absX = Math.abs(diff.x);
-      const absY = Math.abs(diff.y);
+    window.addEventListener('togglePause', () => {
+      if (this.scene.isPaused()) this.scene.resume();
+      else this.scene.pause();
+    });
 
-      if (absX > absY) {
+    window.addEventListener('restartGame', () => {
+      this.scene.restart();
+    });
+
+    // 💡 תמיכה בסווייפ למובייל
+    let swipeStart: Phaser.Math.Vector2 | null = null;
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      swipeStart = new Phaser.Math.Vector2(p.x, p.y);
+    });
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (!swipeStart) return;
+      const diff = new Phaser.Math.Vector2(p.x, p.y).subtract(swipeStart);
+      if (Math.abs(diff.x) > Math.abs(diff.y)) {
         if (diff.x > 20) this.setDirection('right');
         else if (diff.x < -20) this.setDirection('left');
       } else {
         if (diff.y > 20) this.setDirection('down');
         else if (diff.y < -20) this.setDirection('up');
       }
-
       swipeStart = null;
     });
   }
@@ -113,7 +112,6 @@ window.addEventListener('restartGame', () => {
   update() {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const speed = 100;
-
     body.setVelocity(0);
 
     if (this.cursors.left?.isDown) body.setVelocityX(-speed);
@@ -121,13 +119,8 @@ window.addEventListener('restartGame', () => {
     if (this.cursors.up?.isDown) body.setVelocityY(-speed);
     else if (this.cursors.down?.isDown) body.setVelocityY(speed);
 
-    // אם אין מקש לחוץ – נשתמש בכיוון מהסוויפ
-    if (
-      !this.cursors.left?.isDown &&
-      !this.cursors.right?.isDown &&
-      !this.cursors.up?.isDown &&
-      !this.cursors.down?.isDown
-    ) {
+    if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
+        !this.cursors.up?.isDown && !this.cursors.down?.isDown) {
       switch (this.direction) {
         case 'left': body.setVelocityX(-speed); break;
         case 'right': body.setVelocityX(speed); break;
@@ -149,12 +142,13 @@ window.addEventListener('restartGame', () => {
       this.trail = [];
     }
 
-    this.renderFillMask();
+    this.renderRevealMask();
+    this.renderTrail();
   }
 
   private floodFillAndUpdate() {
     const temp = this.fillMask.map(row => [...row]);
-    const regions: { size: number; points: { x: number; y: number }[]; id: number }[] = [];
+    const regions: { size: number; points: { x: number; y: number }[] }[] = [];
 
     const floodFill = (x: number, y: number, mark: number) => {
       const queue = [{ x, y }];
@@ -186,7 +180,7 @@ window.addEventListener('restartGame', () => {
         if (temp[y][x] === 0) {
           const region = floodFill(x, y, regionId);
           if (!region.touchesTrail) {
-            regions.push({ size: region.points.length, points: region.points, id: regionId });
+            regions.push({ size: region.points.length, points: region.points });
           }
           regionId++;
         }
@@ -196,54 +190,42 @@ window.addEventListener('restartGame', () => {
     if (regions.length === 0) return;
 
     const smallest = regions.reduce((a, b) => (a.size < b.size ? a : b));
+    for (const { x, y } of smallest.points) this.fillMask[y][x] = 1;
+    for (let y = 0; y < GRID_H; y++)
+      for (let x = 0; x < GRID_W; x++)
+        if (this.fillMask[y][x] === 2) this.fillMask[y][x] = 1;
 
-    for (const { x, y } of smallest.points) {
-      this.fillMask[y][x] = 1;
-    }
-
-    // גם השובל הופך לשטח מלא!
-    for (let y = 0; y < GRID_H; y++) {
-      for (let x = 0; x < GRID_W; x++) {
-        if (this.fillMask[y][x] === 2) {
-          this.fillMask[y][x] = 1;
-        }
-      }
-    }
-
-    this.filledTiles = this.fillMask.flat().filter((v) => v === 1).length;
+    this.filledTiles = this.fillMask.flat().filter(v => v === 1).length;
     const percent = Math.floor((this.filledTiles / (GRID_W * GRID_H)) * 100);
     this.filledText.setText(`Filled: ${percent}%`);
 
-   
     if (percent >= 75) {
-  this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'YOU WIN!', {
-    font: '24px Arial',
-    color: '#00ff00'
-  }).setDepth(2);
-
-  this.scene.pause();
-
-  // 🔄 התחלה מחדש אחרי 2.5 שניות
-  this.time.delayedCall(2500, () => {
-    this.scene.restart();
-  });
-}
-
+      this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'YOU WIN!', {
+        font: '24px Arial',
+        color: '#00ff00'
+      }).setDepth(3);
+      this.scene.pause();
+      this.time.delayedCall(2500, () => this.scene.restart());
+    }
   }
 
-  private renderFillMask() {
-    this.fillGraphics.clear();
+  private renderRevealMask() {
+    this.revealMask.clear();
+    this.revealMask.fillStyle(0xffffff, 1);
     for (let y = 0; y < GRID_H; y++) {
       for (let x = 0; x < GRID_W; x++) {
-        const value = this.fillMask[y][x];
-        if (value === 1) {
-          this.fillGraphics.fillStyle(0x4444ff, 1);
-          this.fillGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        } else if (value === 2) {
-          this.fillGraphics.fillStyle(0xff4444, 1);
-          this.fillGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        if (this.fillMask[y][x] === 1) {
+          this.revealMask.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
       }
+    }
+  }
+
+  private renderTrail() {
+    this.trailGraphics.clear();
+    this.trailGraphics.fillStyle(0xff0000, 1);
+    for (const { x, y } of this.trail) {
+      this.trailGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
   }
 }
