@@ -5,6 +5,7 @@ export const WIDTH = 400;
 export const HEIGHT = 480;
 const GRID_W = WIDTH / TILE_SIZE;
 const GRID_H = HEIGHT / TILE_SIZE;
+const PLAYER_VISUAL_SIZE = 30;
 
 export default class VolfiedScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Sprite;
@@ -51,21 +52,29 @@ export default class VolfiedScene extends Phaser.Scene {
       repeat: -1
     });
 
-    this.player = this.add.sprite(WIDTH / 2, HEIGHT - TILE_SIZE / 2, 'player')
-      .setScale(TILE_SIZE / 256)
+    // יצירת השחקן
+    this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
+      .setScale(PLAYER_VISUAL_SIZE / 256)
+      .setOrigin(0.5, 0.5)
       .setDepth(50);
     this.player.play('move');
+
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
 
+    // יצירת מסכה עם שוליים בעובי של גודל השחקן
+    const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE);
     this.fillMask = Array(GRID_H).fill(0).map(() => Array(GRID_W).fill(0));
-    for (let x = 0; x < GRID_W; x++) {
-      this.fillMask[0][x] = 1;
-      this.fillMask[GRID_H - 1][x] = 1;
-    }
+
     for (let y = 0; y < GRID_H; y++) {
-      this.fillMask[y][0] = 1;
-      this.fillMask[y][GRID_W - 1] = 1;
+      for (let x = 0; x < GRID_W; x++) {
+        if (
+          x < margin || x >= GRID_W - margin ||
+          y < margin || y >= GRID_H - margin
+        ) {
+          this.fillMask[y][x] = 1;
+        }
+      }
     }
 
     this.filledText = this.add.text(10, 10, 'Filled: 0%', {
@@ -73,6 +82,7 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
+    // תנועת מובייל
     window.addEventListener('setDirection', (e: Event) => {
       const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
       this.setDirection(custom.detail);
@@ -114,21 +124,25 @@ export default class VolfiedScene extends Phaser.Scene {
     const speed = 100;
     body.setVelocity(0);
 
-    if (this.cursors.left?.isDown) body.setVelocityX(-speed);
-    else if (this.cursors.right?.isDown) body.setVelocityX(speed);
-    if (this.cursors.up?.isDown) body.setVelocityY(-speed);
-    else if (this.cursors.down?.isDown) body.setVelocityY(speed);
+    // תנועה לפי מקשים
+    if (this.cursors.left?.isDown) { body.setVelocityX(-speed); this.direction = 'left'; }
+    else if (this.cursors.right?.isDown) { body.setVelocityX(speed); this.direction = 'right'; }
+    else if (this.cursors.up?.isDown) { body.setVelocityY(-speed); this.direction = 'up'; }
+    else if (this.cursors.down?.isDown) { body.setVelocityY(speed); this.direction = 'down'; }
 
+    // תנועה לפי כיוון אחרון שנשמר
     if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
-        !this.cursors.up?.isDown && !this.cursors.down?.isDown) {
+        !this.cursors.up?.isDown && !this.cursors.down?.isDown && this.direction) {
       switch (this.direction) {
-        case 'left': body.setVelocityX(-speed); break;
-        case 'right': body.setVelocityX(speed); break;
-        case 'up': body.setVelocityY(-speed); break;
-        case 'down': body.setVelocityY(speed); break;
-      }
+  case 'left': body.setVelocityX(-speed); this.player.setAngle(0); break;
+  case 'right': body.setVelocityX(speed); this.player.setAngle(180); break;
+  case 'up': body.setVelocityY(-speed); this.player.setAngle(90); break;
+  case 'down': body.setVelocityY(speed); this.player.setAngle(270); break;
+}
+
     }
 
+    // עדכון מיקום וגריד
     const gx = Math.floor(this.player.x / TILE_SIZE);
     const gy = Math.floor(this.player.y / TILE_SIZE);
 

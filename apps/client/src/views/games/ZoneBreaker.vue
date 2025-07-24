@@ -48,13 +48,11 @@ onBeforeUnmount(() => {
     game = null
   }
 })
-
 function setDirection(dir: 'up' | 'down' | 'left' | 'right') {
   window.dispatchEvent(new CustomEvent('setDirection', { detail: dir }));
-  setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('setDirection', { detail: null }));
-  }, 200); // מאפס את הכיוון אחרי 200ms
 }
+
+
 function togglePause() {
   window.dispatchEvent(new Event('togglePause'));
 }
