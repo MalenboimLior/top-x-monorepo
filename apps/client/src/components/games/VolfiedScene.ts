@@ -17,6 +17,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private filledText!: Phaser.GameObjects.Text;
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
+private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor() {
     super('GameScene');
@@ -29,6 +30,8 @@ export default class VolfiedScene extends Phaser.Scene {
       frameWidth: 256,
       frameHeight: 256
     });
+    this.load.image('smoke', '/assets/smoke.png');
+
   }
 
   create() {
@@ -61,7 +64,17 @@ export default class VolfiedScene extends Phaser.Scene {
 
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
-
+    
+    this.add.particles(0, 0, 'smoke', {
+    lifespan: 600,
+    speed: { min: 10, max: 30 },
+    scale: { start: 0.4, end: 0 },
+    alpha: { start: 0.6, end: 0 },
+    follow: this.player,
+    blendMode: 'ADD'
+    });
+    
+ 
     // יצירת מסכה עם שוליים בעובי של גודל השחקן
     const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE);
     this.fillMask = Array(GRID_H).fill(0).map(() => Array(GRID_W).fill(0));
