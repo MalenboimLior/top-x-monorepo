@@ -33,6 +33,10 @@ export default class VolfiedScene extends Phaser.Scene {
       frameHeight: 256
     });
     this.load.image('smoke', '/assets/smoke.png');
+    this.load.spritesheet('enemy', '/assets/player.png', {
+      frameWidth: 256,
+      frameHeight: 256
+    });
   }
 
   create() {
@@ -98,13 +102,16 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
-    // יצירת אויב - מעגל אדום
-    this.enemy = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'enemy_circle');
-    const enemyGraphics = this.add.graphics();
-    enemyGraphics.fillStyle(0xff0000, 1);
-    enemyGraphics.fillCircle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
-    enemyGraphics.generateTexture('enemy_circle', TILE_SIZE, TILE_SIZE);
-    this.enemy.setTexture('enemy_circle');
+    // יצירת אויב - spritesheet דומה לשחקן
+    this.anims.create({
+      key: 'enemy_move',
+      frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 3 }),
+      frameRate: 6,
+      repeat: -1
+    });
+
+    this.enemy = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'enemy');
+    this.enemy.play('enemy_move');
     this.enemy.setDepth(40);
     (this.enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
     (this.enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
