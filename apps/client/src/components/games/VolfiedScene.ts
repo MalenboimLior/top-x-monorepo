@@ -23,7 +23,7 @@ export default class VolfiedScene extends Phaser.Scene {
 
   // Config for enemies - can be passed as parameter in future from server
   private enemyConfig = [
-    { type: 'bouncing', count: 8 }
+    { type: 'bouncing', count: 2 }
   ];
 
   constructor(config?: any) {
@@ -219,18 +219,6 @@ export default class VolfiedScene extends Phaser.Scene {
     this.enemyGroup.children.entries.forEach((enemyObj: Phaser.GameObjects.GameObject) => {
       const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
       if (enemy.active) {
-        const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
-        // Debug log
-        if (enemyBody) {
-          console.log('Enemy update:', {
-            x: enemy.x,
-            y: enemy.y,
-            vx: enemyBody.velocity.x,
-            vy: enemyBody.velocity.y,
-            enabled: enemyBody.enable,
-            active: enemy.active
-          });
-        }
         this.updateEnemy(enemy, delta);
       }
     });
@@ -288,6 +276,18 @@ export default class VolfiedScene extends Phaser.Scene {
       // Small push away
       enemy.y += enemyBody.velocity.y > 0 ? -1 : 1;
     }
+
+    // Set angle based on velocity direction
+    let angle = 0;
+    if (enemyBody.velocity.x > 0 && enemyBody.velocity.y === 0) angle = 0; // right, but since sprite faces left at 0, perhaps 180 for right
+    else if (enemyBody.velocity.x < 0 && enemyBody.velocity.y === 0) angle = 0; // left
+    else if (enemyBody.velocity.y > 0 && enemyBody.velocity.x === 0) angle = 90; // down, but 270 in your player code
+    else if (enemyBody.velocity.y < 0 && enemyBody.velocity.x === 0) angle = 270; // up, but 90 in player
+    else {
+      // Diagonal, use atan2 for smooth rotation
+      angle = Math.atan2(enemyBody.velocity.y, enemyBody.velocity.x) * (180 / Math.PI);
+    }
+    enemy.setAngle(angle);
   }
 
   private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite) {
@@ -301,8 +301,6 @@ export default class VolfiedScene extends Phaser.Scene {
     ];
     const dir = Phaser.Math.RND.pick(directions);
     enemyBody.setVelocity(dir.vx, dir.vy);
-    // Debug log
-    console.log('Set enemy velocity:', dir, 'Body enabled:', enemyBody.enable, 'Immovable:', enemyBody.immovable);
   }
 
   private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
