@@ -19,10 +19,18 @@ export default class VolfiedScene extends Phaser.Scene {
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
   private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private enemy!: Phaser.Physics.Arcade.Sprite;
+  private enemyGroup!: Phaser.Physics.Arcade.Group;
 
-  constructor() {
+  // Config for enemies - can be passed as parameter in future from server
+  private enemyConfig = [
+    { type: 'bouncing', count: 8 }
+  ];
+
+  constructor(config?: any) {
     super('GameScene');
+    if (config?.enemyConfig) {
+      this.enemyConfig = config.enemyConfig;
+    }
   }
 
   preload() {
@@ -102,7 +110,7 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
-    // יצירת אויב - spritesheet דומה לשחקן
+    // יצירת קבוצת אויבים
     this.anims.create({
       key: 'enemy_move',
       frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 3 }),
@@ -110,20 +118,26 @@ export default class VolfiedScene extends Phaser.Scene {
       repeat: -1
     });
 
-    this.enemy = this.physics.add.sprite(0, 0, 'enemy')
-      .setScale(PLAYER_VISUAL_SIZE / 256)
-      .setOrigin(0.5, 0.5)
-      .setDepth(50);
-    this.enemy.play('enemy_move');
-    this.enemy.setDepth(40);
-    (this.enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8); // Smaller hitbox to reduce clipping
-    (this.enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(false);
-    (this.enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
-    this.setRandomUnfilledPosition(this.enemy);
-    this.setDiagonalEnemyVelocity();
+    this.enemyGroup = this.physics.add.group();
 
-    // התנגשות עם אויב
-    this.physics.add.collider(this.player, this.enemy, this.loseGame, undefined, this);
+    for (const conf of this.enemyConfig) {
+      for (let i = 0; i < conf.count; i++) {
+        const enemy = this.physics.add.sprite(0, 0, 'enemy')
+          .setScale(PLAYER_VISUAL_SIZE / 256)
+          .setOrigin(0.5, 0.5)
+          .setDepth(40);
+        enemy.play('enemy_move');
+        (enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8); // Smaller hitbox to reduce clipping
+        (enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(false);
+        (enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
+        this.setRandomUnfilledPosition(enemy);
+        this.enemyGroup.add(enemy);
+        this.setDiagonalEnemyVelocity(enemy);
+      }
+    }
+
+    // התנגשות עם אויבים
+    this.physics.add.collider(this.player, this.enemyGroup, this.loseGame, undefined, this);
 
     // תנועת מובייל
     window.addEventListener('setDirection', (e: Event) => {
@@ -201,17 +215,34 @@ export default class VolfiedScene extends Phaser.Scene {
     this.renderRevealMask();
     this.renderTrail();
 
-    // עדכון אויב
-    this.updateEnemy(delta);
+    // עדכון אויבים
+    this.enemyGroup.children.entries.forEach((enemyObj: Phaser.GameObjects.GameObject) => {
+      const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
+      if (enemy.active) {
+        const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
+        // Debug log
+        if (enemyBody) {
+          console.log('Enemy update:', {
+            x: enemy.x,
+            y: enemy.y,
+            vx: enemyBody.velocity.x,
+            vy: enemyBody.velocity.y,
+            enabled: enemyBody.enable,
+            active: enemy.active
+          });
+        }
+        this.updateEnemy(enemy, delta);
+      }
+    });
   }
 
-  private updateEnemy(delta: number) {
-    const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
+  private updateEnemy(enemy: Phaser.Physics.Arcade.Sprite, delta: number) {
+    const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
 
     // חישוב מיקום עתידי
     const deltaSeconds = delta / 1000;
-    const nextX = this.enemy.x + enemyBody.velocity.x * deltaSeconds;
-    const nextY = this.enemy.y + enemyBody.velocity.y * deltaSeconds;
+    const nextX = enemy.x + enemyBody.velocity.x * deltaSeconds;
+    const nextY = enemy.y + enemyBody.velocity.y * deltaSeconds;
     const nextGX = Math.floor(nextX / TILE_SIZE);
     const nextGY = Math.floor(nextY / TILE_SIZE);
 
@@ -238,25 +269,29 @@ export default class VolfiedScene extends Phaser.Scene {
       const pgy = Math.floor(point.y / TILE_SIZE);
       if (this.fillMask[pgy]?.[pgx] === 1) {
         // חישוב כיוון פגיעה
-        const currentGX = Math.floor(this.enemy.x / TILE_SIZE);
-        const currentGY = Math.floor(this.enemy.y / TILE_SIZE);
+        const currentGX = Math.floor(enemy.x / TILE_SIZE);
+        const currentGY = Math.floor(enemy.y / TILE_SIZE);
 
-        if (pgx !== currentGX) hitVertical = true;
-        if (pgy !== currentGY) hitHorizontal = true;
+        if (pgx !== currentGX && ((enemyBody.velocity.x > 0 && pgx > currentGX) || (enemyBody.velocity.x < 0 && pgx < currentGX))) hitVertical = true;
+        if (pgy !== currentGY && ((enemyBody.velocity.y > 0 && pgy > currentGY) || (enemyBody.velocity.y < 0 && pgy < currentGY))) hitHorizontal = true;
       }
     }
 
     if (hitVertical) {
       enemyBody.velocity.x = -enemyBody.velocity.x;
+      // Small push away
+      enemy.x += enemyBody.velocity.x > 0 ? -1 : 1;
     }
 
     if (hitHorizontal) {
       enemyBody.velocity.y = -enemyBody.velocity.y;
+      // Small push away
+      enemy.y += enemyBody.velocity.y > 0 ? -1 : 1;
     }
   }
 
-  private setDiagonalEnemyVelocity() {
-    const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
+  private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite) {
+    const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
     const speed = 100 / Math.sqrt(2); // כדי שהמהירות הכוללת תהיה 100
     const directions = [
       { vx: speed, vy: speed },   // down-right
@@ -266,6 +301,8 @@ export default class VolfiedScene extends Phaser.Scene {
     ];
     const dir = Phaser.Math.RND.pick(directions);
     enemyBody.setVelocity(dir.vx, dir.vy);
+    // Debug log
+    console.log('Set enemy velocity:', dir, 'Body enabled:', enemyBody.enable, 'Immovable:', enemyBody.immovable);
   }
 
   private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
@@ -342,14 +379,17 @@ export default class VolfiedScene extends Phaser.Scene {
       const largest = regions.reduce((a, b) => (a.size > b.size ? a : b));
       for (const region of regions) {
         if (region.size < largest.size) {
-          // בדוק אם האויב בתוך האזור שמתמלא
-          const egx = Math.floor(this.enemy.x / TILE_SIZE);
-          const egy = Math.floor(this.enemy.y / TILE_SIZE);
-          if (region.points.some(p => p.x === egx && p.y === egy)) {
-            this.enemy.setActive(false).setVisible(false);
-            (this.enemy.body as Phaser.Physics.Arcade.Body).enable = false;
-            this.enemy.setPosition(-100, -100); // Off-screen
-          }
+          // בדוק אם אויבים בתוך האזור שמתמלא
+          this.enemyGroup.children.entries.forEach((enemyObj) => {
+            const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
+            const egx = Math.floor(enemy.x / TILE_SIZE);
+            const egy = Math.floor(enemy.y / TILE_SIZE);
+            if (region.points.some(p => p.x === egx && p.y === egy)) {
+              enemy.setActive(false).setVisible(false);
+              (enemy.body as Phaser.Physics.Arcade.Body).enable = false;
+              enemy.setPosition(-100, -100); // Off-screen
+            }
+          });
 
           for (const { x, y } of region.points) {
             this.fillMask[y][x] = 1;

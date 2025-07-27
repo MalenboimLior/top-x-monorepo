@@ -35,7 +35,10 @@ onMounted(() => {
       backgroundColor: '#222',
       parent: phaserContainer.value,
       physics: {
-        default: 'arcade'
+        default: 'arcade',
+        arcade: {
+    //  debug: true  // Enable to see physics bodies
+    }
       },
       scene: VolfiedScene
     })
