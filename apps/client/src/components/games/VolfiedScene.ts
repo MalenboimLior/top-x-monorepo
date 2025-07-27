@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { BlendModes } from 'phaser';
 
 export const TILE_SIZE = 10;
 export const WIDTH = 400;
@@ -17,7 +18,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private filledText!: Phaser.GameObjects.Text;
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
-private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor() {
     super('GameScene');
@@ -31,7 +32,6 @@ private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
       frameHeight: 256
     });
     this.load.image('smoke', '/assets/smoke.png');
-
   }
 
   create() {
@@ -64,17 +64,19 @@ private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
 
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
-    
-    this.add.particles(0, 0, 'smoke', {
-    lifespan: 600,
-    speed: { min: 10, max: 30 },
-    scale: { start: 0.4, end: 0 },
-    alpha: { start: 0.6, end: 0 },
-    follow: this.player,
-    blendMode: 'ADD'
+
+    // יצירת אפקט עשן לשחקן, מתחיל במיקום התחלתי של השחקן
+    this.smokeEmitter = this.add.particles(0, 0, 'smoke', {
+      lifespan: 600,
+      speed: { min: 10, max: 30 },
+      scale: { start: 0.4, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      follow: this.player,
+      blendMode: BlendModes.ADD,
+      frequency: 50,
+      quantity: 1
     });
-    
- 
+
     // יצירת מסכה עם שוליים בעובי של גודל השחקן
     const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE);
     this.fillMask = Array(GRID_H).fill(0).map(() => Array(GRID_W).fill(0));
@@ -147,12 +149,11 @@ private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
     if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
         !this.cursors.up?.isDown && !this.cursors.down?.isDown && this.direction) {
       switch (this.direction) {
-  case 'left': body.setVelocityX(-speed); this.player.setAngle(0); break;
-  case 'right': body.setVelocityX(speed); this.player.setAngle(180); break;
-  case 'up': body.setVelocityY(-speed); this.player.setAngle(90); break;
-  case 'down': body.setVelocityY(speed); this.player.setAngle(270); break;
-}
-
+        case 'left': body.setVelocityX(-speed); this.player.setAngle(0); break;
+        case 'right': body.setVelocityX(speed); this.player.setAngle(180); break;
+        case 'up': body.setVelocityY(-speed); this.player.setAngle(90); break;
+        case 'down': body.setVelocityY(speed); this.player.setAngle(270); break;
+      }
     }
 
     // עדכון מיקום וגריד
@@ -225,6 +226,17 @@ private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
         if (region.size < largest.size) {
           for (const { x, y } of region.points) {
             this.fillMask[y][x] = 1;
+            const px = x * TILE_SIZE + TILE_SIZE / 2;
+            const py = y * TILE_SIZE + TILE_SIZE / 2;
+            const fillEmitter = this.add.particles(px, py, 'smoke', {
+              lifespan: 600,
+              speed: { min: 10, max: 30 },
+              scale: { start: 0.4, end: 0 },
+              alpha: { start: 0.6, end: 0 },
+              blendMode: BlendModes.ADD,
+              frequency: -1  // burst mode
+            });
+            fillEmitter.explode(2);  // פרץ של 2 חלקיקים
           }
         }
       }
