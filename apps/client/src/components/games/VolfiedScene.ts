@@ -19,6 +19,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
   private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private enemy!: Phaser.Physics.Arcade.Sprite;
 
   constructor() {
     super('GameScene');
@@ -97,6 +98,21 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
+    // יצירת אויב - מעגל אדום
+    this.enemy = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'enemy_circle');
+    const enemyGraphics = this.add.graphics();
+    enemyGraphics.fillStyle(0xff0000, 1);
+    enemyGraphics.fillCircle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
+    enemyGraphics.generateTexture('enemy_circle', TILE_SIZE, TILE_SIZE);
+    this.enemy.setTexture('enemy_circle');
+    this.enemy.setDepth(40);
+    (this.enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
+    (this.enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
+    this.setRandomEnemyVelocity();
+
+    // התנגשות עם אויב
+    this.physics.add.collider(this.player, this.enemy, this.loseGame, undefined, this);
+
     // תנועת מובייל
     window.addEventListener('setDirection', (e: Event) => {
       const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
@@ -172,6 +188,56 @@ export default class VolfiedScene extends Phaser.Scene {
 
     this.renderRevealMask();
     this.renderTrail();
+
+    // עדכון אויב
+    this.updateEnemy();
+  }
+
+  private updateEnemy() {
+    const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
+
+    // שנה כיוון אקראי כל כמה שניות
+    if (Phaser.Math.Between(0, 100) < 2) { // 2% סיכוי בכל פריים לשנות כיוון
+      this.setRandomEnemyVelocity();
+    }
+
+    // בדוק אם האויב באזור מלא, אם כן - שנה כיוון או העבר למקום אקראי
+    const egx = Math.floor(this.enemy.x / TILE_SIZE);
+    const egy = Math.floor(this.enemy.y / TILE_SIZE);
+    if (this.fillMask[egy]?.[egx] === 1) {
+      this.setRandomUnfilledPosition(this.enemy);
+      this.setRandomEnemyVelocity();
+    }
+  }
+
+  private setRandomEnemyVelocity() {
+    const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
+    const speed = 100;
+    enemyBody.setVelocity(Phaser.Math.Between(-speed, speed), Phaser.Math.Between(-speed, speed));
+  }
+
+  private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
+    const unfilled = [];
+    for (let y = 0; y < GRID_H; y++) {
+      for (let x = 0; x < GRID_W; x++) {
+        if (this.fillMask[y][x] === 0) {
+          unfilled.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
+        }
+      }
+    }
+    if (unfilled.length > 0) {
+      const pos = Phaser.Math.RND.pick(unfilled);
+      object.setPosition(pos.x, pos.y);
+    }
+  }
+
+  private loseGame() {
+    this.scene.pause();
+    this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
+      font: '24px Arial',
+      color: '#ff0000'
+    }).setDepth(3);
+    this.time.delayedCall(2500, () => this.scene.restart());
   }
 
   private floodFillAndUpdate() {
