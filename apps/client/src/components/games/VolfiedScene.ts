@@ -110,13 +110,14 @@ export default class VolfiedScene extends Phaser.Scene {
       repeat: -1
     });
 
-    this.enemy = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'enemy')
+    this.enemy = this.physics.add.sprite(0, 0, 'enemy')
       .setScale(PLAYER_VISUAL_SIZE / 256)
       .setOrigin(0.5, 0.5)
       .setDepth(50);
     this.enemy.play('enemy_move');
     this.enemy.setDepth(40);
-    (this.enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
+    (this.enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8); // Smaller hitbox to reduce clipping
+    (this.enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(false);
     (this.enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
     this.setRandomUnfilledPosition(this.enemy);
     this.setDiagonalEnemyVelocity();
@@ -220,37 +221,51 @@ export default class VolfiedScene extends Phaser.Scene {
       return;
     }
 
-    // בדיקת נגיעה באזור מלא (גבול)
-    if (this.fillMask[nextGY]?.[nextGX] === 1) {
-      // חישוב כיוון פגיעה
-      const currentGX = Math.floor(this.enemy.x / TILE_SIZE);
-      const currentGY = Math.floor(this.enemy.y / TILE_SIZE);
+    // בדיקת נגיעה באזור מלא (גבול) - שימוש במספר נקודות לבדיקה כדי למנוע חדירה
+    const checkPoints = [
+      { x: nextX, y: nextY }, // מרכז
+      { x: nextX - TILE_SIZE / 4, y: nextY }, // שמאל
+      { x: nextX + TILE_SIZE / 4, y: nextY }, // ימין
+      { x: nextX, y: nextY - TILE_SIZE / 4 }, // למעלה
+      { x: nextX, y: nextY + TILE_SIZE / 4 }  // למטה
+    ];
 
-      const nextGX_x = Math.floor(nextX / TILE_SIZE);
-      const nextGY_y = Math.floor(nextY / TILE_SIZE);
+    let hitVertical = false;
+    let hitHorizontal = false;
 
-      // פגיעה אופקית
-      if (nextGX_x !== currentGX && this.fillMask[currentGY]?.[nextGX_x] === 1) {
-        enemyBody.velocity.x = -enemyBody.velocity.x;
+    for (const point of checkPoints) {
+      const pgx = Math.floor(point.x / TILE_SIZE);
+      const pgy = Math.floor(point.y / TILE_SIZE);
+      if (this.fillMask[pgy]?.[pgx] === 1) {
+        // חישוב כיוון פגיעה
+        const currentGX = Math.floor(this.enemy.x / TILE_SIZE);
+        const currentGY = Math.floor(this.enemy.y / TILE_SIZE);
+
+        if (pgx !== currentGX) hitVertical = true;
+        if (pgy !== currentGY) hitHorizontal = true;
       }
+    }
 
-      // פגיעה אנכית
-      if (nextGY_y !== currentGY && this.fillMask[nextGY_y]?.[currentGX] === 1) {
-        enemyBody.velocity.y = -enemyBody.velocity.y;
-      }
+    if (hitVertical) {
+      enemyBody.velocity.x = -enemyBody.velocity.x;
+    }
 
-      // אם פגיעה בפינה, ייתכן שיש להפוך את שני הכיוונים, אבל זה יטופל בשני התנאים
+    if (hitHorizontal) {
+      enemyBody.velocity.y = -enemyBody.velocity.y;
     }
   }
 
   private setDiagonalEnemyVelocity() {
     const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
-    const speed = 100;
-    const angles = [45, 135, 225, 315]; // כיוונים אלכסוניים
-    const angle = Phaser.Math.DegToRad(Phaser.Math.RND.pick(angles));
-    const vec = new Phaser.Math.Vector2();
-    vec.setToPolar(angle, speed);
-    enemyBody.setVelocity(vec.x, vec.y);
+    const speed = 100 / Math.sqrt(2); // כדי שהמהירות הכוללת תהיה 100
+    const directions = [
+      { vx: speed, vy: speed },   // down-right
+      { vx: speed, vy: -speed },  // up-right
+      { vx: -speed, vy: speed },  // down-left
+      { vx: -speed, vy: -speed }  // up-left
+    ];
+    const dir = Phaser.Math.RND.pick(directions);
+    enemyBody.setVelocity(dir.vx, dir.vy);
   }
 
   private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
@@ -327,6 +342,15 @@ export default class VolfiedScene extends Phaser.Scene {
       const largest = regions.reduce((a, b) => (a.size > b.size ? a : b));
       for (const region of regions) {
         if (region.size < largest.size) {
+          // בדוק אם האויב בתוך האזור שמתמלא
+          const egx = Math.floor(this.enemy.x / TILE_SIZE);
+          const egy = Math.floor(this.enemy.y / TILE_SIZE);
+          if (region.points.some(p => p.x === egx && p.y === egy)) {
+            this.enemy.setActive(false).setVisible(false);
+            (this.enemy.body as Phaser.Physics.Arcade.Body).enable = false;
+            this.enemy.setPosition(-100, -100); // Off-screen
+          }
+
           for (const { x, y } of region.points) {
             this.fillMask[y][x] = 1;
             const px = x * TILE_SIZE + TILE_SIZE / 2;
