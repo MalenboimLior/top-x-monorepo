@@ -23,7 +23,7 @@ export default class VolfiedScene extends Phaser.Scene {
 
   // Config for enemies - can be passed as parameter in future from server
   private enemyConfig = [
-    { type: 'bouncing', count: 2 }
+    { type: 'bouncing', count: 1 }
   ];
 
   constructor(config?: any) {
@@ -277,15 +277,12 @@ export default class VolfiedScene extends Phaser.Scene {
       enemy.y += enemyBody.velocity.y > 0 ? -1 : 1;
     }
 
-    // Set angle based on velocity direction
+    // Set angle based on velocity
     let angle = 0;
-    if (enemyBody.velocity.x > 0 && enemyBody.velocity.y === 0) angle = 0; // right, but since sprite faces left at 0, perhaps 180 for right
-    else if (enemyBody.velocity.x < 0 && enemyBody.velocity.y === 0) angle = 0; // left
-    else if (enemyBody.velocity.y > 0 && enemyBody.velocity.x === 0) angle = 90; // down, but 270 in your player code
-    else if (enemyBody.velocity.y < 0 && enemyBody.velocity.x === 0) angle = 270; // up, but 90 in player
-    else {
-      // Diagonal, use atan2 for smooth rotation
-      angle = Math.atan2(enemyBody.velocity.y, enemyBody.velocity.x) * (180 / Math.PI);
+    if (Math.abs(enemyBody.velocity.x) > Math.abs(enemyBody.velocity.y)) {
+      angle = enemyBody.velocity.x > 0 ? 180 : 0;
+    } else {
+      angle = enemyBody.velocity.y > 0 ? 270 : 90;
     }
     enemy.setAngle(angle);
   }
@@ -321,7 +318,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private loseGame() {
     this.scene.pause();
     this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
-      font: '24px Arial',
+      font: '14px Arial',
       color: '#ff0000'
     }).setDepth(3);
     this.time.delayedCall(2500, () => this.scene.restart());
@@ -416,6 +413,14 @@ export default class VolfiedScene extends Phaser.Scene {
     this.filledText.setText(`Filled: ${percent}%`);
 
     if (percent >= 75) {
+      // Fully reveal the image
+      for (let y = 0; y < GRID_H; y++) {
+        for (let x = 0; x < GRID_W; x++) {
+          this.fillMask[y][x] = 1;
+        }
+      }
+      this.renderRevealMask();
+
       this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'YOU WIN!', {
         font: '24px Arial',
         color: '#00ff00'
