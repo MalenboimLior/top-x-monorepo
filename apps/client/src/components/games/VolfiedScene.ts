@@ -32,11 +32,11 @@ export default class VolfiedScene extends Phaser.Scene {
       frameWidth: 256,
       frameHeight: 256
     });
-    this.load.image('smoke', '/assets/smoke.png');
     this.load.spritesheet('enemy', '/assets/player.png', {
       frameWidth: 256,
       frameHeight: 256
     });
+    this.load.image('smoke', '/assets/smoke.png');
   }
 
   create() {
@@ -110,12 +110,16 @@ export default class VolfiedScene extends Phaser.Scene {
       repeat: -1
     });
 
-    this.enemy = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'enemy');
+    this.enemy = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'enemy')
+      .setScale(PLAYER_VISUAL_SIZE / 256)
+      .setOrigin(0.5, 0.5)
+      .setDepth(50);
     this.enemy.play('enemy_move');
     this.enemy.setDepth(40);
     (this.enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
     (this.enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
-    this.setRandomEnemyVelocity();
+    this.setRandomUnfilledPosition(this.enemy);
+    this.setDiagonalEnemyVelocity();
 
     // התנגשות עם אויב
     this.physics.add.collider(this.player, this.enemy, this.loseGame, undefined, this);
@@ -157,7 +161,7 @@ export default class VolfiedScene extends Phaser.Scene {
     this.direction = dir;
   }
 
-  update() {
+  update(time: number, delta: number) {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const speed = 100;
     body.setVelocity(0);
@@ -197,30 +201,56 @@ export default class VolfiedScene extends Phaser.Scene {
     this.renderTrail();
 
     // עדכון אויב
-    this.updateEnemy();
+    this.updateEnemy(delta);
   }
 
-  private updateEnemy() {
+  private updateEnemy(delta: number) {
     const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
 
-    // שנה כיוון אקראי כל כמה שניות
-    if (Phaser.Math.Between(0, 100) < 2) { // 2% סיכוי בכל פריים לשנות כיוון
-      this.setRandomEnemyVelocity();
+    // חישוב מיקום עתידי
+    const deltaSeconds = delta / 1000;
+    const nextX = this.enemy.x + enemyBody.velocity.x * deltaSeconds;
+    const nextY = this.enemy.y + enemyBody.velocity.y * deltaSeconds;
+    const nextGX = Math.floor(nextX / TILE_SIZE);
+    const nextGY = Math.floor(nextY / TILE_SIZE);
+
+    // בדיקת נגיעה בשובל
+    if (this.fillMask[nextGY]?.[nextGX] === 2) {
+      this.loseGame();
+      return;
     }
 
-    // בדוק אם האויב באזור מלא, אם כן - שנה כיוון או העבר למקום אקראי
-    const egx = Math.floor(this.enemy.x / TILE_SIZE);
-    const egy = Math.floor(this.enemy.y / TILE_SIZE);
-    if (this.fillMask[egy]?.[egx] === 1) {
-      this.setRandomUnfilledPosition(this.enemy);
-      this.setRandomEnemyVelocity();
+    // בדיקת נגיעה באזור מלא (גבול)
+    if (this.fillMask[nextGY]?.[nextGX] === 1) {
+      // חישוב כיוון פגיעה
+      const currentGX = Math.floor(this.enemy.x / TILE_SIZE);
+      const currentGY = Math.floor(this.enemy.y / TILE_SIZE);
+
+      const nextGX_x = Math.floor(nextX / TILE_SIZE);
+      const nextGY_y = Math.floor(nextY / TILE_SIZE);
+
+      // פגיעה אופקית
+      if (nextGX_x !== currentGX && this.fillMask[currentGY]?.[nextGX_x] === 1) {
+        enemyBody.velocity.x = -enemyBody.velocity.x;
+      }
+
+      // פגיעה אנכית
+      if (nextGY_y !== currentGY && this.fillMask[nextGY_y]?.[currentGX] === 1) {
+        enemyBody.velocity.y = -enemyBody.velocity.y;
+      }
+
+      // אם פגיעה בפינה, ייתכן שיש להפוך את שני הכיוונים, אבל זה יטופל בשני התנאים
     }
   }
 
-  private setRandomEnemyVelocity() {
+  private setDiagonalEnemyVelocity() {
     const enemyBody = this.enemy.body as Phaser.Physics.Arcade.Body;
     const speed = 100;
-    enemyBody.setVelocity(Phaser.Math.Between(-speed, speed), Phaser.Math.Between(-speed, speed));
+    const angles = [45, 135, 225, 315]; // כיוונים אלכסוניים
+    const angle = Phaser.Math.DegToRad(Phaser.Math.RND.pick(angles));
+    const vec = new Phaser.Math.Vector2();
+    vec.setToPolar(angle, speed);
+    enemyBody.setVelocity(vec.x, vec.y);
   }
 
   private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
