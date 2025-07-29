@@ -131,7 +131,7 @@ export default class VolfiedScene extends Phaser.Scene {
           .setOrigin(0.5, 0.5)
           .setDepth(40);
         enemy.play('enemy_move');
-        (enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8); // Smaller hitbox to reduce clipping
+        (enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
         (enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(false);
         (enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
         this.setRandomUnfilledPosition(enemy);
@@ -454,15 +454,33 @@ export default class VolfiedScene extends Phaser.Scene {
 
   private renderBorder() {
     this.borderGraphics.clear();
-    this.borderGraphics.fillStyle(0x000000, 1);
     const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE) * TILE_SIZE;
-    // Top border
-    this.borderGraphics.fillRect(0, 0, WIDTH, margin);
-    // Bottom border
-    this.borderGraphics.fillRect(0, HEIGHT - margin, WIDTH, margin);
-    // Left border (including corners)
-    this.borderGraphics.fillRect(0, 0, margin, HEIGHT);
-    // Right border (including corners)
-    this.borderGraphics.fillRect(WIDTH - margin, 0, margin, HEIGHT);
+    const borderWidth = 2; // 2px border
+    const borderRadius = 12;
+    const cyanColor = 0x00e8e0;
+    const glowAlpha = 0.3;
+
+    // Draw outer black frame
+    this.borderGraphics.fillStyle(0x000000, 1);
+    this.borderGraphics.fillRect(0, 0, WIDTH, margin); // Top
+    this.borderGraphics.fillRect(0, HEIGHT - margin, WIDTH, margin); // Bottom
+    this.borderGraphics.fillRect(0, 0, margin, HEIGHT); // Left
+    this.borderGraphics.fillRect(WIDTH - margin, 0, margin, HEIGHT); // Right
+
+    // Draw inner cyan border with rounded corners
+    const innerX = margin + borderWidth;
+    const innerY = margin + borderWidth;
+    const innerWidth = WIDTH - 2 * (margin + borderWidth);
+    const innerHeight = HEIGHT - 2 * (margin + borderWidth);
+
+    // Simulate glow with multiple semi-transparent strokes
+    this.borderGraphics.lineStyle(borderWidth * 3, cyanColor, glowAlpha);
+    this.borderGraphics.strokeRoundedRect(innerX - 1, innerY - 1, innerWidth + 2, innerHeight + 2, borderRadius + 2);
+    this.borderGraphics.lineStyle(borderWidth * 2, cyanColor, glowAlpha * 0.6);
+    this.borderGraphics.strokeRoundedRect(innerX - 0.5, innerY - 0.5, innerWidth + 1, innerHeight + 1, borderRadius + 1);
+
+    // Solid cyan border
+    this.borderGraphics.lineStyle(borderWidth, cyanColor, 1);
+    this.borderGraphics.strokeRoundedRect(innerX, innerY, innerWidth, innerHeight, borderRadius);
   }
 }
