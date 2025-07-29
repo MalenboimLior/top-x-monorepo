@@ -16,8 +16,15 @@ export default class VolfiedScene extends Phaser.Scene {
   private fillMask: number[][] = [];
   private filledTiles = 0;
   private lives = 3;
+  private score = 0;
+  private timeLimit = 60;
+  private remainingTime = 60;
+  private totalTime = 0;
   private filledText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
+  private scoreText!: Phaser.GameObjects.Text;
+  private remainingTimeText!: Phaser.GameObjects.Text;
+  private totalTimeText!: Phaser.GameObjects.Text;
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
   private borderGraphics!: Phaser.GameObjects.Graphics;
@@ -27,12 +34,14 @@ export default class VolfiedScene extends Phaser.Scene {
 
   // Config for enemies - can be passed as parameter in future from server
   private enemyConfig = [
-    { type: 'bouncing', count: 2 }
+    { type: 'bouncing', count: 2 },
+    { type: 'robot', count: 1 }
   ];
 
   // Config for powerups
   private powerupConfig = [
-    { type: 'extralive', count: 1 }
+    { type: 'extralive', count: 1 },
+    { type: 'extratime', count: 1 }
   ];
 
   constructor(config?: any) {
@@ -43,6 +52,10 @@ export default class VolfiedScene extends Phaser.Scene {
     if (config?.powerupConfig) {
       this.powerupConfig = config.powerupConfig;
     }
+    if (config?.timeLimit) {
+      this.timeLimit = config.timeLimit;
+    }
+    this.remainingTime = this.timeLimit;
   }
 
   preload() {
@@ -56,7 +69,15 @@ export default class VolfiedScene extends Phaser.Scene {
       frameWidth: 512,
       frameHeight: 512
     });
-    this.load.spritesheet('powerup', '/assets/heart_spritesheet.png', {
+    this.load.spritesheet('robot', '/assets/robot_spritesheet.png', {
+      frameWidth: 512,
+      frameHeight: 512
+    });
+    this.load.spritesheet('heart', '/assets/heart_spritesheet.png', {
+      frameWidth: 512,
+      frameHeight: 512
+    });
+    this.load.spritesheet('clock', '/assets/time_spritesheet.png', {
       frameWidth: 512,
       frameHeight: 512
     });
@@ -129,7 +150,22 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
-    this.livesText = this.add.text(150, 10, 'Lives: 3', {
+    this.livesText = this.add.text(100, 10, 'Lives: 3', {
+      font: '14px Arial',
+      color: '#ffffff'
+    });
+
+    this.scoreText = this.add.text(180, 10, 'Score: 0', {
+      font: '14px Arial',
+      color: '#ffffff'
+    });
+
+    this.totalTimeText = this.add.text(260, 10, 'Time: 0', {
+      font: '14px Arial',
+      color: '#ffffff'
+    });
+
+    this.remainingTimeText = this.add.text(330, 10, `Left: ${this.timeLimit}`, {
       font: '14px Arial',
       color: '#ffffff'
     });
@@ -142,30 +178,58 @@ export default class VolfiedScene extends Phaser.Scene {
       repeat: -1
     });
 
+    this.anims.create({
+      key: 'robot_move',
+      frames: this.anims.generateFrameNumbers('robot', { start: 0, end: 11 }),
+      frameRate: 6,
+      repeat: -1
+    });
+
     this.enemyGroup = this.physics.add.group();
 
     for (const conf of this.enemyConfig) {
       for (let i = 0; i < conf.count; i++) {
-        const enemy = this.physics.add.sprite(0, 0, 'enemy')
-          .setScale(PLAYER_VISUAL_SIZE / 512)
+        const texture = conf.type === 'robot' ? 'robot' : 'enemy';
+        const animKey = conf.type === 'robot' ? 'robot_move' : 'enemy_move';
+        const visualSize = conf.type === 'robot' ? 40 : PLAYER_VISUAL_SIZE;
+        const enemy = this.physics.add.sprite(0, 0, texture)
+          .setScale(visualSize / 512)
           .setOrigin(0.5, 0.5)
           .setDepth(40);
-        enemy.play('enemy_move');
+        enemy.play(animKey);
         (enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
         (enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(false);
         (enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
         this.setRandomUnfilledPosition(enemy);
         this.enemyGroup.add(enemy);
-        this.setDiagonalEnemyVelocity(enemy);
+        enemy.setData('type', conf.type);
+        if (conf.type === 'robot') {
+          this.setDiagonalEnemyVelocity(enemy, true);
+          this.time.addEvent({
+            delay: Phaser.Math.Between(3000, 6000),
+            callback: () => this.setDiagonalEnemyVelocity(enemy, true),
+            loop: true
+          });
+        } else {
+          this.setDiagonalEnemyVelocity(enemy);
+        }
       }
     }
 
     // Enemy collision
-this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined, this);
+    this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined, this);
+
     // Create powerup group
     this.anims.create({
-      key: 'powerup_anim',
-      frames: this.anims.generateFrameNumbers('powerup', { start: 0, end: 4 }),
+      key: 'heart_anim',
+      frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 4 }),
+      frameRate: 6,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'clock_anim',
+      frames: this.anims.generateFrameNumbers('clock', { start: 0, end: 4 }),
       frameRate: 6,
       repeat: -1
     });
@@ -174,7 +238,9 @@ this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined
 
     for (const conf of this.powerupConfig) {
       for (let i = 0; i < conf.count; i++) {
-        const powerup = this.physics.add.sprite(0, 0, 'powerup')
+        const texture = conf.type === 'extratime' ? 'clock' : 'heart';
+        const animKey = conf.type === 'extratime' ? 'clock_anim' : 'heart_anim';
+        const powerup = this.physics.add.sprite(0, 0, texture)
           .setScale(PLAYER_VISUAL_SIZE / 512)
           .setOrigin(0.5, 0.5)
           .setDepth(30);
@@ -183,7 +249,7 @@ this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined
         powerup.setActive(false).setVisible(false);
         this.powerupGroup.add(powerup);
         // Start timer for powerup spawn
-        this.time.delayedCall(Phaser.Math.Between(2000, 5000), this.spawnPowerup, [powerup], this);
+        this.time.delayedCall(Phaser.Math.Between(2000, 5000), this.spawnPowerup, [powerup, animKey], this);
       }
     }
 
@@ -267,6 +333,16 @@ this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined
       }
     }
 
+    // Update timers
+    this.totalTime += delta / 1000;
+    this.remainingTime -= delta / 1000;
+    this.totalTimeText.setText(`Time: ${Math.floor(this.totalTime)}`);
+    this.remainingTimeText.setText(`Left: ${Math.ceil(this.remainingTime)}`);
+
+    if (this.remainingTime <= 0) {
+      this.loseLife();
+    }
+
     // Update position and grid
     const gx = Math.floor(this.player.x / TILE_SIZE);
     const gy = Math.floor(this.player.y / TILE_SIZE);
@@ -293,12 +369,12 @@ this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined
     });
   }
 
- private spawnPowerup(powerup: Phaser.Physics.Arcade.Sprite) {
+ private spawnPowerup(powerup: Phaser.Physics.Arcade.Sprite, animKey: string) {
   if (powerup.getData('destroyed')) return;
   this.setRandomUnfilledPosition(powerup);
   powerup.setActive(true).setVisible(true);
   (powerup.body as Phaser.Physics.Arcade.Body).enable = true; // Ensure physics is enabled
-  powerup.play('powerup_anim');
+  powerup.play(animKey);
   const visibleTime = Phaser.Math.Between(6000, 9000);
   const blinkTimer = this.time.delayedCall(visibleTime - 2000, () => {
     this.tweens.add({
@@ -321,7 +397,7 @@ this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined
 
 private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, powerup: Phaser.Types.Physics.Arcade.GameObjectWithBody) {
   const powerupSprite = powerup as Phaser.Physics.Arcade.Sprite;
-  if (powerupSprite.getData('type') === 'extralive' && !powerupSprite.getData('destroyed')) {
+  if (!powerupSprite.getData('destroyed')) {
     (powerupSprite.body as Phaser.Physics.Arcade.Body).enable = false; // Disable physics immediately
     this.destroyPowerup(powerupSprite, true);
   }
@@ -337,11 +413,20 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
   powerup.setData('destroyed', true);
 
   let tint = 0xff0000; // red for destroy
+  const type = powerup.getData('type');
   if (collect) {
-    if (this.lives < 5) this.lives++; // Add only one life
-    this.livesText.setText(`Lives: ${this.lives}`);
+    this.score += 100;
+    if (type === 'extralive' && this.lives < 5) {
+      this.lives++;
+      this.livesText.setText(`Lives: ${this.lives}`);
+    } else if (type === 'extratime') {
+      this.remainingTime += 30;
+    }
     tint = 0xff0000; // Red for collect
+  } else {
+    this.score += 250;
   }
+  this.updateScore();
 
   const emitter = this.add.particles(powerup.x, powerup.y, 'smoke', {
     lifespan: 600,
@@ -409,16 +494,17 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
     // Set angle based on velocity
     let angle = 0;
     if (Math.abs(enemyBody.velocity.x) > Math.abs(enemyBody.velocity.y)) {
-      angle = enemyBody.velocity.x > 0 ? 180 : 0;
-    } else {
-      angle = enemyBody.velocity.y > 0 ? 270 : 90;
-    }
+  angle = enemyBody.velocity.x > 0 ? 90 : -90; // ימין/שמאל
+} else {
+  angle = enemyBody.velocity.y > 0 ? 180 : 0;  // למטה/למעלה
+}
     enemy.setAngle(angle);
   }
 
-  private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite) {
+  private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, isRobot = false) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
-    const speed = 100 / Math.sqrt(2); // Normalize speed to 100
+    const baseSpeed = isRobot ? 200 : 100;
+    const speed = baseSpeed / Math.sqrt(2);
     const directions = [
       { vx: speed, vy: speed },   // down-right
       { vx: speed, vy: -speed },  // up-right
@@ -456,6 +542,7 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
   this.renderTrail();
   this.player.setPosition(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2);
   this.direction = null;
+  this.remainingTime = this.timeLimit; // Reset time limit
   if (this.lives <= 0) {
     this.scene.pause();
     this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
@@ -522,6 +609,7 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
             const egx = Math.floor(enemy.x / TILE_SIZE);
             const egy = Math.floor(enemy.y / TILE_SIZE);
             if (region.points.some(p => p.x === egx && p.y === egy)) {
+              this.score += 250;
               enemy.setActive(false).setVisible(false);
               (enemy.body as Phaser.Physics.Arcade.Body).enable = false;
               enemy.setPosition(-100, -100); // Off-screen
@@ -535,10 +623,14 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
               const pugx = Math.floor(pu.x / TILE_SIZE);
               const pugy = Math.floor(pu.y / TILE_SIZE);
               if (region.points.some(p => p.x === pugx && p.y === pugy)) {
+                this.score += 250;
                 this.destroyPowerup(pu, false);
               }
             }
           });
+
+          this.score += region.points.length * 10;
+          this.updateScore();
 
           for (const { x, y } of region.points) {
             this.fillMask[y][x] = 1;
@@ -567,6 +659,8 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
     this.filledText.setText(`Filled: ${percent}%`);
 
     if (percent >= 75) {
+      this.score += 50;
+      this.updateScore();
       // Fully reveal the image
       for (let y = 0; y < GRID_H; y++) {
         for (let x = 0; x < GRID_W; x++) {
@@ -634,5 +728,9 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
     // Solid cyan border
     this.borderGraphics.lineStyle(borderWidth, cyanColor, 1);
     this.borderGraphics.strokeRoundedRect(innerX, innerY, innerWidth, innerHeight, borderRadius);
+  }
+
+  private updateScore() {
+    this.scoreText.setText(`Score: ${this.score}`);
   }
 }
