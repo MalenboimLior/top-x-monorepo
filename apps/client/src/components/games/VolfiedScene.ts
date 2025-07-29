@@ -15,22 +15,33 @@ export default class VolfiedScene extends Phaser.Scene {
   private trail: { x: number; y: number }[] = [];
   private fillMask: number[][] = [];
   private filledTiles = 0;
+  private lives = 3;
   private filledText!: Phaser.GameObjects.Text;
+  private livesText!: Phaser.GameObjects.Text;
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
   private borderGraphics!: Phaser.GameObjects.Graphics;
   private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
+  private powerupGroup!: Phaser.Physics.Arcade.Group;
 
   // Config for enemies - can be passed as parameter in future from server
   private enemyConfig = [
     { type: 'bouncing', count: 2 }
   ];
 
+  // Config for powerups
+  private powerupConfig = [
+    { type: 'extralive', count: 1 }
+  ];
+
   constructor(config?: any) {
     super('GameScene');
     if (config?.enemyConfig) {
       this.enemyConfig = config.enemyConfig;
+    }
+    if (config?.powerupConfig) {
+      this.powerupConfig = config.powerupConfig;
     }
   }
 
@@ -42,6 +53,10 @@ export default class VolfiedScene extends Phaser.Scene {
       frameHeight: 512
     });
     this.load.spritesheet('enemy', '/assets/monster_spritesheet.png', {
+      frameWidth: 512,
+      frameHeight: 512
+    });
+    this.load.spritesheet('powerup', '/assets/heart_spritesheet.png', {
       frameWidth: 512,
       frameHeight: 512
     });
@@ -70,7 +85,7 @@ export default class VolfiedScene extends Phaser.Scene {
       repeat: -1
     });
 
-    // יצירת השחקן
+    // Create player
     this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
       .setScale(PLAYER_VISUAL_SIZE / 512)
       .setOrigin(0.5, 0.5)
@@ -80,7 +95,7 @@ export default class VolfiedScene extends Phaser.Scene {
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
 
-    // יצירת אפקט עשן לשחקן, מתחיל במיקום התחלתי של השחקן
+    // Create smoke effect for player
     this.smokeEmitter = this.add.particles(0, 0, 'smoke', {
       lifespan: 600,
       speed: { min: 10, max: 30 },
@@ -92,7 +107,7 @@ export default class VolfiedScene extends Phaser.Scene {
       quantity: 1
     });
 
-    // יצירת מסכה עם שוליים בעובי של גודל השחקן
+    // Create mask with margins
     const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE);
     this.fillMask = Array(GRID_H).fill(0).map(() => Array(GRID_W).fill(0));
 
@@ -114,7 +129,12 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
-    // יצירת קבוצת אויבים
+    this.livesText = this.add.text(150, 10, 'Lives: 3', {
+      font: '14px Arial',
+      color: '#ffffff'
+    });
+
+    // Create enemy group
     this.anims.create({
       key: 'enemy_move',
       frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 5 }),
@@ -140,10 +160,55 @@ export default class VolfiedScene extends Phaser.Scene {
       }
     }
 
-    // התנגשות עם אויבים
-    this.physics.add.collider(this.player, this.enemyGroup, this.loseGame, undefined, this);
+    // Enemy collision
+this.physics.add.collider(this.player, this.enemyGroup, this.loseLife, undefined, this);
+    // Create powerup group
+    this.anims.create({
+      key: 'powerup_anim',
+      frames: this.anims.generateFrameNumbers('powerup', { start: 0, end: 4 }),
+      frameRate: 6,
+      repeat: -1
+    });
 
-    // תנועת מובייל
+    this.powerupGroup = this.physics.add.group();
+
+    for (const conf of this.powerupConfig) {
+      for (let i = 0; i < conf.count; i++) {
+        const powerup = this.physics.add.sprite(0, 0, 'powerup')
+          .setScale(PLAYER_VISUAL_SIZE / 512)
+          .setOrigin(0.5, 0.5)
+          .setDepth(30);
+        powerup.setData('type', conf.type);
+        powerup.setData('destroyed', false);
+        powerup.setActive(false).setVisible(false);
+        this.powerupGroup.add(powerup);
+        // Start timer for powerup spawn
+        this.time.delayedCall(Phaser.Math.Between(2000, 5000), this.spawnPowerup, [powerup], this);
+      }
+    }
+
+    // Powerup collision
+    this.physics.add.collider(
+      this.player,
+      this.powerupGroup,
+      (playerObj, powerupObj) => {
+        // Type guard to ensure both are GameObjects with body
+        if (
+          'body' in playerObj &&
+          'body' in powerupObj &&
+          typeof this.collectPowerup === 'function'
+        ) {
+          this.collectPowerup(
+            playerObj as Phaser.Types.Physics.Arcade.GameObjectWithBody,
+            powerupObj as Phaser.Types.Physics.Arcade.GameObjectWithBody
+          );
+        }
+      },
+      undefined,
+      this
+    );
+
+    // Mobile controls
     window.addEventListener('setDirection', (e: Event) => {
       const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
       this.setDirection(custom.detail);
@@ -185,13 +250,13 @@ export default class VolfiedScene extends Phaser.Scene {
     const speed = 100;
     body.setVelocity(0);
 
-    // תנועה לפי מקשים
+    // Keyboard movement
     if (this.cursors.left?.isDown) { body.setVelocityX(-speed); this.direction = 'left'; }
     else if (this.cursors.right?.isDown) { body.setVelocityX(speed); this.direction = 'right'; }
     else if (this.cursors.up?.isDown) { body.setVelocityY(-speed); this.direction = 'up'; }
     else if (this.cursors.down?.isDown) { body.setVelocityY(speed); this.direction = 'down'; }
 
-    // תנועה לפי כיוון אחרון שנשמר
+    // Continue movement based on last direction
     if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
         !this.cursors.up?.isDown && !this.cursors.down?.isDown && this.direction) {
       switch (this.direction) {
@@ -202,7 +267,7 @@ export default class VolfiedScene extends Phaser.Scene {
       }
     }
 
-    // עדכון מיקום וגריד
+    // Update position and grid
     const gx = Math.floor(this.player.x / TILE_SIZE);
     const gy = Math.floor(this.player.y / TILE_SIZE);
 
@@ -219,7 +284,7 @@ export default class VolfiedScene extends Phaser.Scene {
     this.renderRevealMask();
     this.renderTrail();
 
-    // עדכון אויבים
+    // Update enemies
     this.enemyGroup.children.entries.forEach((enemyObj: Phaser.GameObjects.GameObject) => {
       const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
       if (enemy.active) {
@@ -228,29 +293,91 @@ export default class VolfiedScene extends Phaser.Scene {
     });
   }
 
+ private spawnPowerup(powerup: Phaser.Physics.Arcade.Sprite) {
+  if (powerup.getData('destroyed')) return;
+  this.setRandomUnfilledPosition(powerup);
+  powerup.setActive(true).setVisible(true);
+  (powerup.body as Phaser.Physics.Arcade.Body).enable = true; // Ensure physics is enabled
+  powerup.play('powerup_anim');
+  const visibleTime = Phaser.Math.Between(6000, 9000);
+  const blinkTimer = this.time.delayedCall(visibleTime - 2000, () => {
+    this.tweens.add({
+      targets: powerup,
+      alpha: 0.2,
+      duration: 500,
+      yoyo: true,
+      repeat: -1
+    });
+  }, [], this);
+  powerup.setData('blinkTimer', blinkTimer);
+  const despawnTimer = this.time.delayedCall(visibleTime, () => {
+    powerup.setActive(false).setVisible(false);
+    powerup.alpha = 1;
+    this.tweens.killTweensOf(powerup);
+    powerup.setData('destroyed', true); // Mark as destroyed to prevent re-spawn
+  }, [], this);
+  powerup.setData('despawnTimer', despawnTimer);
+}
+
+private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, powerup: Phaser.Types.Physics.Arcade.GameObjectWithBody) {
+  const powerupSprite = powerup as Phaser.Physics.Arcade.Sprite;
+  if (powerupSprite.getData('type') === 'extralive' && !powerupSprite.getData('destroyed')) {
+    (powerupSprite.body as Phaser.Physics.Arcade.Body).enable = false; // Disable physics immediately
+    this.destroyPowerup(powerupSprite, true);
+  }
+}
+
+  private destroyPowerup(powerup: Phaser.Physics.Arcade.Sprite, collect: boolean) {
+  powerup.setActive(false).setVisible(false);
+  powerup.alpha = 1;
+  this.tweens.killTweensOf(powerup);
+  if (powerup.getData('despawnTimer')) powerup.getData('despawnTimer').remove();
+  if (powerup.getData('blinkTimer')) powerup.getData('blinkTimer').remove();
+  if (powerup.getData('spawnTimer')) powerup.getData('spawnTimer').remove();
+  powerup.setData('destroyed', true);
+
+  let tint = 0xff0000; // red for destroy
+  if (collect) {
+    if (this.lives < 5) this.lives++; // Add only one life
+    this.livesText.setText(`Lives: ${this.lives}`);
+    tint = 0xff0000; // Red for collect
+  }
+
+  const emitter = this.add.particles(powerup.x, powerup.y, 'smoke', {
+    lifespan: 600,
+    speed: 0, // Static particles
+    scale: { start: 0.4, end: 0 },
+    alpha: { start: 0.6, end: 0 },
+    blendMode: BlendModes.ADD,
+    frequency: -1,
+    tint: tint // Red for both collect and destroy
+  });
+  emitter.explode(10);
+}
+
   private updateEnemy(enemy: Phaser.Physics.Arcade.Sprite, delta: number) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
 
-    // חישוב מיקום עתידי
+    // Calculate future position
     const deltaSeconds = delta / 1000;
     const nextX = enemy.x + enemyBody.velocity.x * deltaSeconds;
     const nextY = enemy.y + enemyBody.velocity.y * deltaSeconds;
     const nextGX = Math.floor(nextX / TILE_SIZE);
     const nextGY = Math.floor(nextY / TILE_SIZE);
 
-    // בדיקת נגיעה בשובל
+    // Check collision with trail
     if (this.fillMask[nextGY]?.[nextGX] === 2) {
-      this.loseGame();
-      return;
-    }
+  this.loseLife();
+  return;
+}
 
-    // בדיקת נגיעה באזור מלא (גבול) - שימוש במספר נקודות לבדיקה כדי למנוע חדירה
+    // Check collision with filled area (border)
     const checkPoints = [
-      { x: nextX, y: nextY }, // מרכז
-      { x: nextX - TILE_SIZE / 4, y: nextY }, // שמאל
-      { x: nextX + TILE_SIZE / 4, y: nextY }, // ימין
-      { x: nextX, y: nextY - TILE_SIZE / 4 }, // למעלה
-      { x: nextX, y: nextY + TILE_SIZE / 4 }  // למטה
+      { x: nextX, y: nextY }, // center
+      { x: nextX - TILE_SIZE / 4, y: nextY }, // left
+      { x: nextX + TILE_SIZE / 4, y: nextY }, // right
+      { x: nextX, y: nextY - TILE_SIZE / 4 }, // top
+      { x: nextX, y: nextY + TILE_SIZE / 4 }  // bottom
     ];
 
     let hitVertical = false;
@@ -260,7 +387,7 @@ export default class VolfiedScene extends Phaser.Scene {
       const pgx = Math.floor(point.x / TILE_SIZE);
       const pgy = Math.floor(point.y / TILE_SIZE);
       if (this.fillMask[pgy]?.[pgx] === 1) {
-        // חישוב כיוון פגיעה
+        // Determine collision direction
         const currentGX = Math.floor(enemy.x / TILE_SIZE);
         const currentGY = Math.floor(enemy.y / TILE_SIZE);
 
@@ -291,7 +418,7 @@ export default class VolfiedScene extends Phaser.Scene {
 
   private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
-    const speed = 100 / Math.sqrt(2); // כדי שהמהירות הכוללת תהיה 100
+    const speed = 100 / Math.sqrt(2); // Normalize speed to 100
     const directions = [
       { vx: speed, vy: speed },   // down-right
       { vx: speed, vy: -speed },  // up-right
@@ -317,7 +444,19 @@ export default class VolfiedScene extends Phaser.Scene {
     }
   }
 
-  private loseGame() {
+  private loseLife() {
+  this.lives--;
+  this.livesText.setText(`Lives: ${this.lives}`);
+  this.trail = [];
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      if (this.fillMask[y][x] === 2) this.fillMask[y][x] = 0; // Reset trail tiles
+    }
+  }
+  this.renderTrail();
+  this.player.setPosition(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2);
+  this.direction = null;
+  if (this.lives <= 0) {
     this.scene.pause();
     this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
       font: '24px Arial',
@@ -325,6 +464,7 @@ export default class VolfiedScene extends Phaser.Scene {
     }).setDepth(3);
     this.time.delayedCall(2500, () => this.scene.restart());
   }
+}
 
   private floodFillAndUpdate() {
     const temp = this.fillMask.map(row => [...row]);
@@ -376,7 +516,7 @@ export default class VolfiedScene extends Phaser.Scene {
       const largest = regions.reduce((a, b) => (a.size > b.size ? a : b));
       for (const region of regions) {
         if (region.size < largest.size) {
-          // בדוק אם אויבים בתוך האזור שמתמלא
+          // Check enemies in filled area
           this.enemyGroup.children.entries.forEach((enemyObj) => {
             const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
             const egx = Math.floor(enemy.x / TILE_SIZE);
@@ -385,6 +525,18 @@ export default class VolfiedScene extends Phaser.Scene {
               enemy.setActive(false).setVisible(false);
               (enemy.body as Phaser.Physics.Arcade.Body).enable = false;
               enemy.setPosition(-100, -100); // Off-screen
+            }
+          });
+
+          // Check powerups in filled area
+          this.powerupGroup.children.entries.forEach((puObj) => {
+            const pu = puObj as Phaser.Physics.Arcade.Sprite;
+            if (pu.active) {
+              const pugx = Math.floor(pu.x / TILE_SIZE);
+              const pugy = Math.floor(pu.y / TILE_SIZE);
+              if (region.points.some(p => p.x === pugx && p.y === pugy)) {
+                this.destroyPowerup(pu, false);
+              }
             }
           });
 
@@ -400,7 +552,7 @@ export default class VolfiedScene extends Phaser.Scene {
               blendMode: BlendModes.ADD,
               frequency: -1  // burst mode
             });
-            fillEmitter.explode(2);  // פרץ של 2 חלקיקים
+            fillEmitter.explode(2);  // Burst of 2 particles
           }
         }
       }
