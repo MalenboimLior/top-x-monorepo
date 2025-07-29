@@ -18,12 +18,13 @@ export default class VolfiedScene extends Phaser.Scene {
   private filledText!: Phaser.GameObjects.Text;
   private revealMask!: Phaser.GameObjects.Graphics;
   private trailGraphics!: Phaser.GameObjects.Graphics;
+  private borderGraphics!: Phaser.GameObjects.Graphics;
   private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
 
   // Config for enemies - can be passed as parameter in future from server
   private enemyConfig = [
-    { type: 'bouncing', count: 1 }
+    { type: 'bouncing', count: 2 }
   ];
 
   constructor(config?: any) {
@@ -34,15 +35,15 @@ export default class VolfiedScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('bg', '/assets/bg.png');
-    this.load.image('hidden', '/assets/reveal.png');
-    this.load.spritesheet('player', '/assets/player.png', {
-      frameWidth: 256,
-      frameHeight: 256
+    this.load.image('bg', '/assets/anonymous.png');
+    this.load.image('hidden', '/assets/magal.png');
+    this.load.spritesheet('player', '/assets/Monocle_spritesheet.png', {
+      frameWidth: 512,
+      frameHeight: 512
     });
-    this.load.spritesheet('enemy', '/assets/player.png', {
-      frameWidth: 256,
-      frameHeight: 256
+    this.load.spritesheet('enemy', '/assets/monster_spritesheet.png', {
+      frameWidth: 512,
+      frameHeight: 512
     });
     this.load.image('smoke', '/assets/smoke.png');
   }
@@ -57,20 +58,21 @@ export default class VolfiedScene extends Phaser.Scene {
     hiddenImage.setMask(mask);
 
     this.trailGraphics = this.add.graphics();
+    this.borderGraphics = this.add.graphics().setDepth(0);
 
     this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
     this.cursors = this.input.keyboard!.createCursorKeys();
 
     this.anims.create({
       key: 'move',
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 5 }),
       frameRate: 6,
       repeat: -1
     });
 
     // יצירת השחקן
     this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
-      .setScale(PLAYER_VISUAL_SIZE / 256)
+      .setScale(PLAYER_VISUAL_SIZE / 512)
       .setOrigin(0.5, 0.5)
       .setDepth(50);
     this.player.play('move');
@@ -105,6 +107,8 @@ export default class VolfiedScene extends Phaser.Scene {
       }
     }
 
+    this.renderBorder();
+
     this.filledText = this.add.text(10, 10, 'Filled: 0%', {
       font: '14px Arial',
       color: '#ffffff'
@@ -113,7 +117,7 @@ export default class VolfiedScene extends Phaser.Scene {
     // יצירת קבוצת אויבים
     this.anims.create({
       key: 'enemy_move',
-      frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 3 }),
+      frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 5 }),
       frameRate: 6,
       repeat: -1
     });
@@ -123,7 +127,7 @@ export default class VolfiedScene extends Phaser.Scene {
     for (const conf of this.enemyConfig) {
       for (let i = 0; i < conf.count; i++) {
         const enemy = this.physics.add.sprite(0, 0, 'enemy')
-          .setScale(PLAYER_VISUAL_SIZE / 256)
+          .setScale(PLAYER_VISUAL_SIZE / 512)
           .setOrigin(0.5, 0.5)
           .setDepth(40);
         enemy.play('enemy_move');
@@ -267,13 +271,11 @@ export default class VolfiedScene extends Phaser.Scene {
 
     if (hitVertical) {
       enemyBody.velocity.x = -enemyBody.velocity.x;
-      // Small push away
       enemy.x += enemyBody.velocity.x > 0 ? -1 : 1;
     }
 
     if (hitHorizontal) {
       enemyBody.velocity.y = -enemyBody.velocity.y;
-      // Small push away
       enemy.y += enemyBody.velocity.y > 0 ? -1 : 1;
     }
 
@@ -318,7 +320,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private loseGame() {
     this.scene.pause();
     this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
-      font: '14px Arial',
+      font: '24px Arial',
       color: '#ff0000'
     }).setDepth(3);
     this.time.delayedCall(2500, () => this.scene.restart());
@@ -448,5 +450,19 @@ export default class VolfiedScene extends Phaser.Scene {
     for (const { x, y } of this.trail) {
       this.trailGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
+  }
+
+  private renderBorder() {
+    this.borderGraphics.clear();
+    this.borderGraphics.fillStyle(0x000000, 1);
+    const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE) * TILE_SIZE;
+    // Top border
+    this.borderGraphics.fillRect(0, 0, WIDTH, margin);
+    // Bottom border
+    this.borderGraphics.fillRect(0, HEIGHT - margin, WIDTH, margin);
+    // Left border (including corners)
+    this.borderGraphics.fillRect(0, 0, margin, HEIGHT);
+    // Right border (including corners)
+    this.borderGraphics.fillRect(WIDTH - margin, 0, margin, HEIGHT);
   }
 }
