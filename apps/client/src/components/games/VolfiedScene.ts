@@ -20,8 +20,9 @@ export default class VolfiedScene extends Phaser.Scene {
   private timeLimit = 60;
   private remainingTime = 60;
   private totalTime = 0;
+  private isLosingLife = false;
   private filledText!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
+  private livesIcons: Phaser.GameObjects.Image[] = [];
   private scoreText!: Phaser.GameObjects.Text;
   private remainingTimeText!: Phaser.GameObjects.Text;
   private totalTimeText!: Phaser.GameObjects.Text;
@@ -82,6 +83,7 @@ export default class VolfiedScene extends Phaser.Scene {
       frameHeight: 512
     });
     this.load.image('smoke', '/assets/smoke.png');
+    this.load.image('heart_icon', '/assets/heart_icon.png');
   }
 
   create() {
@@ -150,10 +152,13 @@ export default class VolfiedScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
-    this.livesText = this.add.text(100, 10, 'Lives: 3', {
-      font: '14px Arial',
-      color: '#ffffff'
-    });
+    // Hearts for lives
+    for (let i = 0; i < 5; i++) {
+      const heart = this.add.image(100 + i * 20, 15, 'heart_icon')
+        .setScale(0.05) // Adjust scale as needed
+        .setVisible(i < this.lives);
+      this.livesIcons.push(heart);
+    }
 
     this.scoreText = this.add.text(180, 10, 'Score: 0', {
       font: '14px Arial',
@@ -180,7 +185,7 @@ export default class VolfiedScene extends Phaser.Scene {
 
     this.anims.create({
       key: 'robot_move',
-      frames: this.anims.generateFrameNumbers('robot', { start: 0, end: 11 }),
+      frames: this.anims.generateFrameNumbers('robot', { start: 0, end: 5 }),
       frameRate: 6,
       repeat: -1
     });
@@ -313,49 +318,41 @@ export default class VolfiedScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const speed = 100;
-    body.setVelocity(0);
+const speed = 100;
+body.setVelocity(0);
 
-    // Keyboard movement
-    if (this.cursors.left?.isDown) { body.setVelocityX(-speed); this.direction = 'left'; }
-    else if (this.cursors.right?.isDown) { body.setVelocityX(speed); this.direction = 'right'; }
-    else if (this.cursors.up?.isDown) { body.setVelocityY(-speed); this.direction = 'up'; }
-    else if (this.cursors.down?.isDown) { body.setVelocityY(speed); this.direction = 'down'; }
+if (!this.isLosingLife) {
+  // Keyboard movement
+  if (this.cursors.left?.isDown) { body.setVelocityX(-speed); this.direction = 'left'; }
+  else if (this.cursors.right?.isDown) { body.setVelocityX(speed); this.direction = 'right'; }
+  else if (this.cursors.up?.isDown) { body.setVelocityY(-speed); this.direction = 'up'; }
+  else if (this.cursors.down?.isDown) { body.setVelocityY(speed); this.direction = 'down'; }
 
-    // Continue movement based on last direction
-    if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
-        !this.cursors.up?.isDown && !this.cursors.down?.isDown && this.direction) {
-      switch (this.direction) {
-        case 'left': body.setVelocityX(-speed); this.player.setAngle(0); break;
-        case 'right': body.setVelocityX(speed); this.player.setAngle(180); break;
-        case 'up': body.setVelocityY(-speed); this.player.setAngle(90); break;
-        case 'down': body.setVelocityY(speed); this.player.setAngle(270); break;
-      }
+  // Continue movement based on last direction
+  if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
+      !this.cursors.up?.isDown && !this.cursors.down?.isDown && this.direction) {
+    switch (this.direction) {
+      case 'left': body.setVelocityX(-speed); this.player.setAngle(0); break;
+      case 'right': body.setVelocityX(speed); this.player.setAngle(180); break;
+      case 'up': body.setVelocityY(-speed); this.player.setAngle(90); break;
+      case 'down': body.setVelocityY(speed); this.player.setAngle(270); break;
     }
+  }
 
-    // Update timers
-    this.totalTime += delta / 1000;
-    this.remainingTime -= delta / 1000;
-    this.totalTimeText.setText(`Time: ${Math.floor(this.totalTime)}`);
-    this.remainingTimeText.setText(`Left: ${Math.ceil(this.remainingTime)}`);
+  // Update position and grid
+  const gx = Math.floor(this.player.x / TILE_SIZE);
+  const gy = Math.floor(this.player.y / TILE_SIZE);
 
-    if (this.remainingTime <= 0) {
-      this.loseLife();
-    }
+  if (this.fillMask[gy]?.[gx] === 0) {
+    this.fillMask[gy][gx] = 2;
+    this.trail.push({ x: gx, y: gy });
+  }
 
-    // Update position and grid
-    const gx = Math.floor(this.player.x / TILE_SIZE);
-    const gy = Math.floor(this.player.y / TILE_SIZE);
-
-    if (this.fillMask[gy]?.[gx] === 0) {
-      this.fillMask[gy][gx] = 2;
-      this.trail.push({ x: gx, y: gy });
-    }
-
-    if (this.trail.length > 0 && this.fillMask[gy]?.[gx] === 1) {
-      this.floodFillAndUpdate();
-      this.trail = [];
-    }
+  if (this.trail.length > 0 && this.fillMask[gy]?.[gx] === 1) {
+    this.floodFillAndUpdate();
+    this.trail = [];
+  }
+}
 
     this.renderRevealMask();
     this.renderTrail();
@@ -390,7 +387,7 @@ export default class VolfiedScene extends Phaser.Scene {
     powerup.setActive(false).setVisible(false);
     powerup.alpha = 1;
     this.tweens.killTweensOf(powerup);
-    powerup.setData('destroyed', true); // Mark as destroyed to prevent re-spawn
+    this.time.delayedCall(Phaser.Math.Between(2000, 5000), this.spawnPowerup, [powerup, animKey], this);
   }, [], this);
   powerup.setData('despawnTimer', despawnTimer);
 }
@@ -418,7 +415,7 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
     this.score += 100;
     if (type === 'extralive' && this.lives < 5) {
       this.lives++;
-      this.livesText.setText(`Lives: ${this.lives}`);
+      this.updateLivesIcons();
     } else if (type === 'extratime') {
       this.remainingTime += 30;
     }
@@ -426,6 +423,7 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
   } else {
     this.score += 250;
   }
+  this.showPointsAnimation(powerup.x, powerup.y, collect ? 100 : 250);
   this.updateScore();
 
   const emitter = this.add.particles(powerup.x, powerup.y, 'smoke', {
@@ -531,8 +529,9 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
   }
 
   private loseLife() {
+  this.isLosingLife = true;
   this.lives--;
-  this.livesText.setText(`Lives: ${this.lives}`);
+  this.updateLivesIcons();
   this.trail = [];
   for (let y = 0; y < GRID_H; y++) {
     for (let x = 0; x < GRID_W; x++) {
@@ -540,9 +539,32 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
     }
   }
   this.renderTrail();
-  this.player.setPosition(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2);
-  this.direction = null;
-  this.remainingTime = this.timeLimit; // Reset time limit
+  const body = this.player.body as Phaser.Physics.Arcade.Body;
+  body.setVelocity(0); // Stop player movement
+  // Lose life animation
+  const loseEmitter = this.add.particles(this.player.x, this.player.y, 'smoke', {
+    lifespan: 600,
+    speed: { min: 20, max: 40 },
+    scale: { start: 0.3, end: 0 },
+    alpha: { start: 0.6, end: 0 },
+    blendMode: BlendModes.ADD,
+    frequency: -1,
+    tint: 0xff0000
+  });
+  loseEmitter.explode(10);
+  this.tweens.add({
+    targets: this.player,
+    alpha: 0,
+    duration: 200,
+    yoyo: true,
+    repeat: 2
+  });
+  this.time.delayedCall(1000, () => {
+    this.player.setPosition(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2);
+    this.direction = null;
+    this.remainingTime = this.timeLimit; // Reset time limit
+    this.isLosingLife = false; // Re-enable movement and trail
+  }, [], this);
   if (this.lives <= 0) {
     this.scene.pause();
     this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
@@ -552,7 +574,6 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
     this.time.delayedCall(2500, () => this.scene.restart());
   }
 }
-
   private floodFillAndUpdate() {
     const temp = this.fillMask.map(row => [...row]);
     const regions: { size: number; points: { x: number; y: number }[] }[] = [];
@@ -610,6 +631,7 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
             const egy = Math.floor(enemy.y / TILE_SIZE);
             if (region.points.some(p => p.x === egx && p.y === egy)) {
               this.score += 250;
+              this.showPointsAnimation(enemy.x, enemy.y, 250);
               enemy.setActive(false).setVisible(false);
               (enemy.body as Phaser.Physics.Arcade.Body).enable = false;
               enemy.setPosition(-100, -100); // Off-screen
@@ -624,12 +646,16 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
               const pugy = Math.floor(pu.y / TILE_SIZE);
               if (region.points.some(p => p.x === pugx && p.y === pugy)) {
                 this.score += 250;
+                this.showPointsAnimation(pu.x, pu.y, 250);
                 this.destroyPowerup(pu, false);
               }
             }
           });
 
           this.score += region.points.length * 10;
+          const centerX = region.points.reduce((sum, p) => sum + p.x, 0) / region.points.length * TILE_SIZE + TILE_SIZE / 2;
+          const centerY = region.points.reduce((sum, p) => sum + p.y, 0) / region.points.length * TILE_SIZE + TILE_SIZE / 2;
+          this.showPointsAnimation(centerX, centerY, region.points.length * 10);
           this.updateScore();
 
           for (const { x, y } of region.points) {
@@ -660,6 +686,7 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
 
     if (percent >= 75) {
       this.score += 50;
+      this.showPointsAnimation(WIDTH / 2, HEIGHT / 2, 50);
       this.updateScore();
       // Fully reveal the image
       for (let y = 0; y < GRID_H; y++) {
@@ -732,5 +759,25 @@ private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, p
 
   private updateScore() {
     this.scoreText.setText(`Score: ${this.score}`);
+  }
+
+  private showPointsAnimation(x: number, y: number, points: number) {
+    const text = this.add.text(x, y, `+${points}`, {
+      font: '20px Arial',
+      color: '#ffff00'
+    }).setOrigin(0.5, 0.5);
+    this.tweens.add({
+      targets: text,
+      y: y - 50,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => text.destroy()
+    });
+  }
+
+  private updateLivesIcons() {
+    this.livesIcons.forEach((heart, index) => {
+      heart.setVisible(index < this.lives);
+    });
   }
 }
