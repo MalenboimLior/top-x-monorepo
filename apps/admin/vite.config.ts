@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@top-x/shared': path.resolve(__dirname, '../../packages/shared/src'),
+      '@top-x/shared/types': path.resolve(__dirname, '../../packages/shared/src/types'),
     },
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },
