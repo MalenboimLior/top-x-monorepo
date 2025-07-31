@@ -5,3 +5,4 @@ export * from './trivia';
 export * from './game';
 export * from './territoryCapture';
 export * from './zoneBreaker';
+export * from './zoneReveal';
