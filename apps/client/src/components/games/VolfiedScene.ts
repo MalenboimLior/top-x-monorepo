@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BlendModes } from 'phaser';
+import type { ZoneRevealConfig, LevelConfig } from '@top-x/shared/types/zoneReveal';
 
 export const TILE_SIZE = 10;
 export const WIDTH = 400;
@@ -22,7 +23,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private totalTime = 0;
   private isLosingLife = false;
   private currentLevel = 0;
-  private levels: { enemyConfig: any[]; powerupConfig: any[]; timeLimit: number; hiddenImage: string; levelHeader: string }[] = [];
+  private levels: LevelConfig[] = [];
   private levelText!: Phaser.GameObjects.Text;
   private filledText!: Phaser.GameObjects.Text;
   private livesIcons: Phaser.GameObjects.Image[] = [];
@@ -38,12 +39,25 @@ export default class VolfiedScene extends Phaser.Scene {
   private hiddenImage!: Phaser.GameObjects.Image;
 
   // Config for levels
-  private levelsConfig = [
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
-      ],
+  private zoneRevealConfig: ZoneRevealConfig = {
+    backgroundImage: '/assets/anonymous.png',
+    spritesheets: {
+      player: '/assets/Monocle_spritesheet.png',
+      enemy: '/assets/monster_spritesheet.png',
+      robot: '/assets/robot_spritesheet.png',
+      heart: '/assets/heart_spritesheet.png',
+      clock: '/assets/time_spritesheet.png'
+    },
+    playerSpeed: 200,
+    enemiesSpeedArray: { bouncing: 100, robot: 80 },
+    finishPercent: 10,
+    heartIcon: '/assets/heart_icon.png',
+    levelsConfig: [
+      {
+        enemyConfig: [
+          { type: 'bouncing', count: 0 },
+          { type: 'robot', count: 0 }
+        ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
         { type: 'extratime', count: 3 }
@@ -169,41 +183,38 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/magal.png',
       levelHeader: 'Boss Level'
     }
-  ];
+    ]
+  };
 
   constructor() {
     super('GameScene');
-    this.levels = this.levelsConfig;
+    this.levels = this.zoneRevealConfig.levelsConfig;
     this.remainingTime = this.levels.length > 0 ? this.levels[0].timeLimit : 60;
   }
 
   preload() {
-    this.load.image('bg', '/assets/anonymous.png');
-    this.levelsConfig.forEach((level, index) => {
+    this.load.image('bg', this.zoneRevealConfig.backgroundImage ?? '/assets/anonymous.png');
+    this.zoneRevealConfig.levelsConfig.forEach((level, index) => {
       this.load.image(`hidden${index}`, level.hiddenImage);
     });
-    this.load.spritesheet('player', '/assets/Monocle_spritesheet.png', {
-      frameWidth: 512,
-      frameHeight: 512
+
+    const defaults = {
+      player: '/assets/Monocle_spritesheet.png',
+      enemy: '/assets/monster_spritesheet.png',
+      robot: '/assets/robot_spritesheet.png',
+      heart: '/assets/heart_spritesheet.png',
+      clock: '/assets/time_spritesheet.png'
+    };
+    const sheets = { ...defaults, ...(this.zoneRevealConfig.spritesheets || {}) };
+    Object.entries(sheets).forEach(([key, path]) => {
+      this.load.spritesheet(key, path, {
+        frameWidth: 512,
+        frameHeight: 512
+      });
     });
-    this.load.spritesheet('enemy', '/assets/monster_spritesheet.png', {
-      frameWidth: 512,
-      frameHeight: 512
-    });
-    this.load.spritesheet('robot', '/assets/robot_spritesheet.png', {
-      frameWidth: 512,
-      frameHeight: 512
-    });
-    this.load.spritesheet('heart', '/assets/heart_spritesheet.png', {
-      frameWidth: 512,
-      frameHeight: 512
-    });
-    this.load.spritesheet('clock', '/assets/time_spritesheet.png', {
-      frameWidth: 512,
-      frameHeight: 512
-    });
+
     this.load.image('smoke', '/assets/smoke.png');
-    this.load.image('heart_icon', '/assets/heart_icon.png');
+    this.load.image('heart_icon', this.zoneRevealConfig.heartIcon ?? '/assets/heart_icon.png');
   }
 
   create() {
@@ -286,18 +297,21 @@ export default class VolfiedScene extends Phaser.Scene {
     });
 
     // Create enemy group
-    this.anims.create({
-      key: 'enemy_move',
-      frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 5 }),
-      frameRate: 6,
-      repeat: -1
+    const enemyTypes = new Set<string>();
+    this.zoneRevealConfig.levelsConfig.forEach(level => {
+      level.enemyConfig.forEach(e => {
+        const key = this.zoneRevealConfig.spritesheets?.[e.type] ? e.type : 'enemy';
+        enemyTypes.add(key);
+      });
     });
-
-    this.anims.create({
-      key: 'robot_move',
-      frames: this.anims.generateFrameNumbers('robot', { start: 0, end: 11 }),
-      frameRate: 6,
-      repeat: -1
+    enemyTypes.forEach(type => {
+      const endFrame = type === 'robot' ? 11 : 5;
+      this.anims.create({
+        key: `${type}_move`,
+        frames: this.anims.generateFrameNumbers(type, { start: 0, end: endFrame }),
+        frameRate: 6,
+        repeat: -1
+      });
     });
 
     this.enemyGroup = this.physics.add.group();
@@ -425,8 +439,8 @@ export default class VolfiedScene extends Phaser.Scene {
     this.enemyGroup.clear(true, true);
     for (const conf of level.enemyConfig) {
       for (let i = 0; i < conf.count; i++) {
-        const texture = conf.type === 'robot' ? 'robot' : 'enemy';
-        const animKey = conf.type === 'robot' ? 'robot_move' : 'enemy_move';
+        const texture = this.zoneRevealConfig.spritesheets?.[conf.type] ? conf.type : 'enemy';
+        const animKey = `${texture}_move`;
         const visualSize = conf.type === 'robot' ? 40 : PLAYER_VISUAL_SIZE;
         const enemy = this.physics.add.sprite(0, 0, texture)
           .setScale(visualSize / 512)
@@ -439,17 +453,16 @@ export default class VolfiedScene extends Phaser.Scene {
         this.setRandomUnfilledPosition(enemy);
         this.enemyGroup.add(enemy);
         enemy.setData('type', conf.type);
+        this.setDiagonalEnemyVelocity(enemy, conf.type);
         if (conf.type === 'robot') {
-          this.setDiagonalEnemyVelocity(enemy, true);
           const timer = this.time.addEvent({
             delay: Phaser.Math.Between(3000, 6000),
-            callback: () => this.setDiagonalEnemyVelocity(enemy, true),
+            callback: () => this.setDiagonalEnemyVelocity(enemy, conf.type),
             loop: true
           });
           enemy.setData('timer', timer);
-        } else {
-          this.setDiagonalEnemyVelocity(enemy);
         }
+        
       }
     }
 
@@ -478,7 +491,7 @@ export default class VolfiedScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const speed = 200;
+    const speed = this.zoneRevealConfig.playerSpeed ?? 200;
     body.setVelocity(0);
 
     if (!this.isLosingLife) {
@@ -672,9 +685,9 @@ powerup.play(animKey);
     enemy.setAngle(angle);
   }
 
-  private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, isRobot = false) {
+  private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, type: string) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
-    const baseSpeed = isRobot ? 80 : 100;
+    const baseSpeed = this.zoneRevealConfig.enemiesSpeedArray?.[type] ?? 100;
     const speed = baseSpeed / Math.sqrt(2);
     const directions = [
       { vx: speed, vy: speed },
@@ -746,16 +759,15 @@ powerup.play(animKey);
         enemy.getData('timer').remove();
       }
       this.setRandomUnfilledPosition(enemy);
-      if (enemy.getData('type') === 'robot') {
-        this.setDiagonalEnemyVelocity(enemy, true);
+      const type = enemy.getData('type');
+      this.setDiagonalEnemyVelocity(enemy, type);
+      if (type === 'robot') {
         const timer = this.time.addEvent({
           delay: Phaser.Math.Between(3000, 6000),
-          callback: () => this.setDiagonalEnemyVelocity(enemy, true),
+          callback: () => this.setDiagonalEnemyVelocity(enemy, type),
           loop: true
         });
         enemy.setData('timer', timer);
-      } else {
-        this.setDiagonalEnemyVelocity(enemy);
       }
     });
 
@@ -902,7 +914,7 @@ powerup.play(animKey);
     const percent = Math.floor((this.filledTiles / (GRID_W * GRID_H)) * 100);
     this.filledText.setText(`Filled: ${percent}%`);
 
-    if (percent >= 10) {
+    if (percent >= (this.zoneRevealConfig.finishPercent ?? 10)) {
       console.log(`Level ${this.currentLevel + 1} completed! Score: ${this.score}, Remaining Time: ${this.remainingTime}`);
       this.score += 50 + Math.ceil(this.remainingTime) * 10;
       this.showPointsAnimation(WIDTH / 2, HEIGHT / 2, 50 + Math.ceil(this.remainingTime) * 10);
@@ -945,7 +957,7 @@ this.enemyGroup.clear(true, true);
             countdownText.destroy();
             winText.destroy();
             this.scene.resume();
-            if (this.currentLevel + 1 < this.levelsConfig.length) {
+            if (this.currentLevel + 1 < this.zoneRevealConfig.levelsConfig.length) {
               this.currentLevel++;
               console.log(`Transitioning to level ${this.currentLevel + 1}`);
               this.loadLevel(this.currentLevel);
