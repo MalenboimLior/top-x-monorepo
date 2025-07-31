@@ -151,11 +151,120 @@
     </div>
     <div v-if="gameTypeCustom === 'ZoneRevealConfig'">
       <h3 class="subtitle has-text-white">Zone Reveal Config</h3>
+
       <div class="field">
-        <label class="label has-text-white">Config JSON</label>
+        <label class="label has-text-white">Background Image (Optional)</label>
         <div class="control">
-          <textarea v-model="zoneRevealConfigText" class="textarea" rows="10" placeholder="{...}"></textarea>
+          <input v-model="zoneConfig.backgroundImage" class="input" type="text" />
         </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Heart Icon (Optional)</label>
+        <div class="control">
+          <input v-model="zoneConfig.heartIcon" class="input" type="text" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Player Speed (Optional)</label>
+        <div class="control">
+          <input v-model.number="zoneConfig.playerSpeed" class="input" type="number" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label has-text-white">Finish Percent (Optional)</label>
+        <div class="control">
+          <input v-model.number="zoneConfig.finishPercent" class="input" type="number" />
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <h4 class="subtitle has-text-white">Spritesheets</h4>
+        <div v-for="(entry, index) in spritesheetEntries" :key="index" class="field is-grouped">
+          <div class="control">
+            <input v-model="entry.key" class="input" type="text" placeholder="Key" />
+          </div>
+          <div class="control">
+            <input v-model="entry.value" class="input" type="text" placeholder="Path" />
+          </div>
+          <div class="control">
+            <CustomButton type="is-danger" label="Remove" @click="removeSpritesheet(index)" />
+          </div>
+        </div>
+        <CustomButton type="is-info" label="Add" @click="addSpritesheet" />
+      </div>
+
+      <div class="mt-3">
+        <h4 class="subtitle has-text-white">Enemy Speeds</h4>
+        <div v-for="(entry, index) in enemySpeedEntries" :key="index" class="field is-grouped">
+          <div class="control">
+            <input v-model="entry.key" class="input" type="text" placeholder="Enemy Type" />
+          </div>
+          <div class="control">
+            <input v-model.number="entry.value" class="input" type="number" placeholder="Speed" />
+          </div>
+          <div class="control">
+            <CustomButton type="is-danger" label="Remove" @click="removeEnemySpeed(index)" />
+          </div>
+        </div>
+        <CustomButton type="is-info" label="Add" @click="addEnemySpeed" />
+      </div>
+
+      <div class="mt-3">
+        <h4 class="subtitle has-text-white">Levels Config</h4>
+        <div v-for="(level, lIndex) in zoneConfig.levelsConfig" :key="lIndex" class="box">
+          <div class="field">
+            <label class="label has-text-white">Level Header</label>
+            <div class="control">
+              <input v-model="level.levelHeader" class="input" type="text" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="label has-text-white">Hidden Image</label>
+            <div class="control">
+              <input v-model="level.hiddenImage" class="input" type="text" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="label has-text-white">Time Limit</label>
+            <div class="control">
+              <input v-model.number="level.timeLimit" class="input" type="number" />
+            </div>
+          </div>
+          <div>
+            <h5 class="subtitle has-text-white">Enemies</h5>
+            <div v-for="(enemy, eIndex) in level.enemyConfig" :key="eIndex" class="field is-grouped">
+              <div class="control">
+                <input v-model="enemy.type" class="input" type="text" placeholder="Type" />
+              </div>
+              <div class="control">
+                <input v-model.number="enemy.count" class="input" type="number" placeholder="Count" />
+              </div>
+              <div class="control">
+                <CustomButton type="is-danger" label="Remove" @click="removeEnemy(lIndex, eIndex)" />
+              </div>
+            </div>
+            <CustomButton type="is-info" label="Add Enemy" @click="addEnemy(lIndex)" />
+          </div>
+          <div class="mt-3">
+            <h5 class="subtitle has-text-white">Powerups</h5>
+            <div v-for="(power, pIndex) in level.powerupConfig" :key="pIndex" class="field is-grouped">
+              <div class="control">
+                <input v-model="power.type" class="input" type="text" placeholder="Type" />
+              </div>
+              <div class="control">
+                <input v-model.number="power.count" class="input" type="number" placeholder="Count" />
+              </div>
+              <div class="control">
+                <CustomButton type="is-danger" label="Remove" @click="removePowerup(lIndex, pIndex)" />
+              </div>
+            </div>
+            <CustomButton type="is-info" label="Add Powerup" @click="addPowerup(lIndex)" />
+          </div>
+          <div class="field mt-3">
+            <CustomButton type="is-danger" label="Remove Level" @click="removeLevel(lIndex)" />
+          </div>
+        </div>
+        <CustomButton type="is-info" label="Add Level" @click="addLevel" />
       </div>
     </div>
 
@@ -181,7 +290,7 @@ import { useUserStore } from '@/stores/user';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { Game, ConfigType } from '@top-x/shared/types/game';
-import type { PyramidConfig,PyramidRow, ZoneRevealConfig } from '@top-x/shared/types';
+import type { PyramidConfig, ZoneRevealConfig } from '@top-x/shared/types';
 import type { TriviaConfig } from '@top-x/shared/types';
 
 const props = defineProps<{
@@ -198,12 +307,18 @@ const userStore = useUserStore();
 const localGame = ref<Game>({ ...props.game, vip: [], language: props.game.language || 'en' });
 const vipList = ref<string[]>([...(localGame.value.vip || [])]);
 const vipInput = ref('');
-const enemyAssetsText = ref('');
-const enemyMovementsText = ref('');
-const powerUpsText = ref('');
-const zoneLevelsText = ref('');
-const zonePowerUpsText = ref('');
-const zoneRevealConfigText = ref('');
+// Zone reveal config form state
+const zoneConfig = ref<ZoneRevealConfig>({
+  levelsConfig: [],
+  backgroundImage: '',
+  spritesheets: {},
+  playerSpeed: undefined,
+  enemiesSpeedArray: {},
+  finishPercent: undefined,
+  heartIcon: ''
+});
+const spritesheetEntries = ref<{ key: string; value: string }[]>([]);
+const enemySpeedEntries = ref<{ key: string; value: number }[]>([]);
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -303,6 +418,47 @@ const removeVip = (id: string) => {
   localGame.value.vip = vipList.value;
 };
 
+const addSpritesheet = () => {
+  spritesheetEntries.value.push({ key: '', value: '' });
+};
+const removeSpritesheet = (index: number) => {
+  spritesheetEntries.value.splice(index, 1);
+};
+
+const addEnemySpeed = () => {
+  enemySpeedEntries.value.push({ key: '', value: 0 });
+};
+const removeEnemySpeed = (index: number) => {
+  enemySpeedEntries.value.splice(index, 1);
+};
+
+const addLevel = () => {
+  zoneConfig.value.levelsConfig.push({
+    enemyConfig: [],
+    powerupConfig: [],
+    timeLimit: 60,
+    hiddenImage: '',
+    levelHeader: ''
+  });
+};
+const removeLevel = (index: number) => {
+  zoneConfig.value.levelsConfig.splice(index, 1);
+};
+
+const addEnemy = (levelIndex: number) => {
+  zoneConfig.value.levelsConfig[levelIndex].enemyConfig.push({ type: '', count: 0 });
+};
+const removeEnemy = (levelIndex: number, enemyIndex: number) => {
+  zoneConfig.value.levelsConfig[levelIndex].enemyConfig.splice(enemyIndex, 1);
+};
+
+const addPowerup = (levelIndex: number) => {
+  zoneConfig.value.levelsConfig[levelIndex].powerupConfig.push({ type: '', count: 0 });
+};
+const removePowerup = (levelIndex: number, powerIndex: number) => {
+  zoneConfig.value.levelsConfig[levelIndex].powerupConfig.splice(powerIndex, 1);
+};
+
 const fetchGameTypeCustom = async () => {
   console.log('fetchGameTypeCustom called with gameTypeId:', props.gameTypeId);
   if (props.gameTypeId) {
@@ -313,7 +469,18 @@ const fetchGameTypeCustom = async () => {
         gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
         console.log('gameTypeCustom set:', gameTypeCustom.value);
         if (gameTypeCustom.value === 'ZoneRevealConfig') {
-          zoneRevealConfigText.value = JSON.stringify(localGame.value.custom || {}, null, 2);
+          const cfg = (localGame.value.custom || { levelsConfig: [] }) as ZoneRevealConfig;
+          zoneConfig.value = {
+            levelsConfig: cfg.levelsConfig || [],
+            backgroundImage: cfg.backgroundImage || '',
+            spritesheets: cfg.spritesheets || {},
+            playerSpeed: cfg.playerSpeed,
+            enemiesSpeedArray: cfg.enemiesSpeedArray || {},
+            finishPercent: cfg.finishPercent,
+            heartIcon: cfg.heartIcon || ''
+          };
+          spritesheetEntries.value = Object.entries(zoneConfig.value.spritesheets || {}).map(([key, value]) => ({ key, value }));
+          enemySpeedEntries.value = Object.entries(zoneConfig.value.enemiesSpeedArray || {}).map(([key, value]) => ({ key, value }));
         }
       } else {
         error.value = 'Game Type not found';
@@ -393,14 +560,15 @@ const save = async () => {
     };
     console.log('TriviaConfig customData created:', customData);
   } else if (gameTypeCustom.value === 'ZoneRevealConfig') {
-    try {
-      customData = JSON.parse(zoneRevealConfigText.value || '{}') as ZoneRevealConfig;
-    } catch (err: any) {
-      customError.value = 'Invalid ZoneRevealConfig JSON';
-      console.error('ZoneRevealConfig parse error:', err);
-      isSaving.value = false;
-      return;
-    }
+    customData = {
+      levelsConfig: zoneConfig.value.levelsConfig,
+      backgroundImage: zoneConfig.value.backgroundImage || undefined,
+      spritesheets: Object.fromEntries(spritesheetEntries.value.filter(e => e.key).map(e => [e.key, e.value])),
+      playerSpeed: zoneConfig.value.playerSpeed,
+      enemiesSpeedArray: Object.fromEntries(enemySpeedEntries.value.filter(e => e.key).map(e => [e.key, e.value])),
+      finishPercent: zoneConfig.value.finishPercent,
+      heartIcon: zoneConfig.value.heartIcon || undefined
+    };
     console.log('ZoneRevealConfig customData created:', customData);
   } else {
     error.value = 'Invalid game type configuration';
@@ -446,4 +614,10 @@ fetchGameTypeCustom();
 <style scoped>
 .mt-3 {
   margin-top: 1rem;
-}</style>
+}
+.box {
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  padding: 1rem;
+}
+</style>
