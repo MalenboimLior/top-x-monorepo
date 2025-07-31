@@ -149,6 +149,15 @@
       <h3 class="subtitle has-text-white">Trivia Config</h3>
       <p class="has-text-grey-light">Questions will be managed separately.</p>
     </div>
+    <div v-if="gameTypeCustom === 'ZoneRevealConfig'">
+      <h3 class="subtitle has-text-white">Zone Reveal Config</h3>
+      <div class="field">
+        <label class="label has-text-white">Config JSON</label>
+        <div class="control">
+          <textarea v-model="zoneRevealConfigText" class="textarea" rows="10" placeholder="{...}"></textarea>
+        </div>
+      </div>
+    </div>
 
     <div class="field is-grouped">
       <div class="control">
@@ -194,6 +203,7 @@ const enemyMovementsText = ref('');
 const powerUpsText = ref('');
 const zoneLevelsText = ref('');
 const zonePowerUpsText = ref('');
+const zoneRevealConfigText = ref('');
 if (
   'custom' in localGame.value &&
   (localGame.value.custom as any) &&
@@ -302,6 +312,9 @@ const fetchGameTypeCustom = async () => {
       if (gameTypeDoc.exists()) {
         gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
         console.log('gameTypeCustom set:', gameTypeCustom.value);
+        if (gameTypeCustom.value === 'ZoneRevealConfig') {
+          zoneRevealConfigText.value = JSON.stringify(localGame.value.custom || {}, null, 2);
+        }
       } else {
         error.value = 'Game Type not found';
         console.log('GameType not found in Firestore:', props.gameTypeId);
@@ -379,6 +392,16 @@ const save = async () => {
       questions: 'questions' in (localGame.value.custom || {}) ? (localGame.value.custom as TriviaConfig).questions : [],
     };
     console.log('TriviaConfig customData created:', customData);
+  } else if (gameTypeCustom.value === 'ZoneRevealConfig') {
+    try {
+      customData = JSON.parse(zoneRevealConfigText.value || '{}') as ZoneRevealConfig;
+    } catch (err: any) {
+      customError.value = 'Invalid ZoneRevealConfig JSON';
+      console.error('ZoneRevealConfig parse error:', err);
+      isSaving.value = false;
+      return;
+    }
+    console.log('ZoneRevealConfig customData created:', customData);
   } else {
     error.value = 'Invalid game type configuration';
     console.log('save blocked: Invalid gameTypeCustom:', gameTypeCustom.value);
