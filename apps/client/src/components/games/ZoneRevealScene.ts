@@ -19,9 +19,9 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     heart: '/assets/heart_spritesheet.png',
     clock: '/assets/time_spritesheet.png'
   },
-  playerSpeed: 100,
+  playerSpeed: 200,
   enemiesSpeedArray: { bouncing: 100, robot: 80 },
-  finishPercent: 80,
+  finishPercent: 50,
   heartIcon: '/assets/heart_icon.png',
   levelsConfig: [
     {
