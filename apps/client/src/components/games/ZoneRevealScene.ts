@@ -10,55 +10,25 @@ const GRID_W = WIDTH / TILE_SIZE;
 const GRID_H = HEIGHT / TILE_SIZE;
 const PLAYER_VISUAL_SIZE = 30;
 
-export default class VolfiedScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Sprite;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private direction: 'up' | 'down' | 'left' | 'right' | null = null;
-  private trail: { x: number; y: number }[] = [];
-  private fillMask: number[][] = [];
-  private filledTiles = 0;
-  private lives = 3;
-  private score = 0;
-  private timeLimit = 60;
-  private remainingTime = 60;
-  private totalTime = 0;
-  private isLosingLife = false;
-  private currentLevel = 0;
-  private levels: LevelConfig[] = [];
-  private levelText!: Phaser.GameObjects.Text;
-  private filledText!: Phaser.GameObjects.Text;
-  private livesIcons: Phaser.GameObjects.Image[] = [];
-  private scoreText!: Phaser.GameObjects.Text;
-  private remainingTimeText!: Phaser.GameObjects.Text;
-  private totalTimeText!: Phaser.GameObjects.Text;
-  private revealMask!: Phaser.GameObjects.Graphics;
-  private trailGraphics!: Phaser.GameObjects.Graphics;
-  private borderGraphics!: Phaser.GameObjects.Graphics;
-  private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private enemyGroup!: Phaser.Physics.Arcade.Group;
-  private powerupGroup!: Phaser.Physics.Arcade.Group;
-  private hiddenImage!: Phaser.GameObjects.Image;
-
-  // Config for levels
-  private zoneRevealConfig: ZoneRevealConfig = {
-    backgroundImage: '/assets/anonymous.png',
-    spritesheets: {
-      player: '/assets/Monocle_spritesheet.png',
-      enemy: '/assets/monster_spritesheet.png',
-      robot: '/assets/robot_spritesheet.png',
-      heart: '/assets/heart_spritesheet.png',
-      clock: '/assets/time_spritesheet.png'
-    },
-    playerSpeed: 100,
-    enemiesSpeedArray: { bouncing: 100, robot: 80 },
-    finishPercent: 80,
-    heartIcon: '/assets/heart_icon.png',
-    levelsConfig: [
-      {
-        enemyConfig: [
-          { type: 'bouncing', count: 0 },
-          { type: 'robot', count: 0 }
-        ],
+const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
+  backgroundImage: '/assets/anonymous.png',
+  spritesheets: {
+    player: '/assets/Monocle_spritesheet.png',
+    enemy: '/assets/monster_spritesheet.png',
+    robot: '/assets/robot_spritesheet.png',
+    heart: '/assets/heart_spritesheet.png',
+    clock: '/assets/time_spritesheet.png'
+  },
+  playerSpeed: 100,
+  enemiesSpeedArray: { bouncing: 100, robot: 80 },
+  finishPercent: 80,
+  heartIcon: '/assets/heart_icon.png',
+  levelsConfig: [
+    {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
         { type: 'extratime', count: 3 }
@@ -67,7 +37,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level1.jpeg',
       levelHeader: 'Level 1'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -80,7 +50,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level2.jpeg',
       levelHeader: 'Level 2'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -93,7 +63,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level3.jpeg',
       levelHeader: 'Level 3'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -106,7 +76,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level4.jpeg',
       levelHeader: 'Level 4'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -119,7 +89,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level5.jpeg',
       levelHeader: 'Level 5'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -132,7 +102,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level6.jpeg',
       levelHeader: 'Level 6'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -145,7 +115,7 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/levels/level7.jpeg',
       levelHeader: 'Level 7'
     },
-     {
+    {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
@@ -184,11 +154,44 @@ export default class VolfiedScene extends Phaser.Scene {
       hiddenImage: '/assets/magal.png',
       levelHeader: 'Boss Level'
     }
-    ]
-  };
+  ]
+};
 
-  constructor() {
+export default class VolfiedScene extends Phaser.Scene {
+  private player!: Phaser.GameObjects.Sprite;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private direction: 'up' | 'down' | 'left' | 'right' | null = null;
+  private trail: { x: number; y: number }[] = [];
+  private fillMask: number[][] = [];
+  private filledTiles = 0;
+  private lives = 3;
+  private score = 0;
+  private timeLimit = 60;
+  private remainingTime = 60;
+  private totalTime = 0;
+  private isLosingLife = false;
+  private currentLevel = 0;
+  private levels: LevelConfig[] = [];
+  private levelText!: Phaser.GameObjects.Text;
+  private filledText!: Phaser.GameObjects.Text;
+  private livesIcons: Phaser.GameObjects.Image[] = [];
+  private scoreText!: Phaser.GameObjects.Text;
+  private remainingTimeText!: Phaser.GameObjects.Text;
+  private totalTimeText!: Phaser.GameObjects.Text;
+  private revealMask!: Phaser.GameObjects.Graphics;
+  private trailGraphics!: Phaser.GameObjects.Graphics;
+  private borderGraphics!: Phaser.GameObjects.Graphics;
+  private smokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private enemyGroup!: Phaser.Physics.Arcade.Group;
+  private powerupGroup!: Phaser.Physics.Arcade.Group;
+  private hiddenImage!: Phaser.GameObjects.Image;
+
+  // Config for levels
+  private zoneRevealConfig: ZoneRevealConfig;
+
+  constructor(config?: ZoneRevealConfig) {
     super('GameScene');
+    this.zoneRevealConfig = config || DEFAULT_ZONE_REVEAL_CONFIG;
     this.levels = this.zoneRevealConfig.levelsConfig;
     this.remainingTime = this.levels.length > 0 ? this.levels[0].timeLimit : 60;
   }
