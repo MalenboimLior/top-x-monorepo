@@ -41,13 +41,9 @@
       "types": "./src/types/game.ts",
       "default": "./src/types/game.ts"
     },
-    "./types/territoryCapture": {
-      "types": "./src/types/territoryCapture.ts",
-      "default": "./src/types/territoryCapture.ts"
-    },
-    "./types/zoneBreaker": {
-      "types": "./src/types/zoneBreaker.ts",
-      "default": "./src/types/zoneBreaker.ts"
+    "./types/pyramid": {
+      "types": "./src/types/pyramid.ts",
+      "default": "./src/types/pyramid.ts"
     },
     "./types/zoneReveal": {
       "types": "./src/types/zoneReveal.ts",

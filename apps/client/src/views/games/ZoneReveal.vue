@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import Phaser from 'phaser'
-import VolfiedScene, { WIDTH, HEIGHT } from '@/components/games/VolfiedScene'
+import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/ZoneRevealScene'
 
 const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: Phaser.Game | null = null
@@ -40,7 +40,7 @@ onMounted(() => {
     //  debug: true  // Enable to see physics bodies
     }
       },
-      scene: VolfiedScene
+      scene: ZoneRevealScene
     })
   }
 })

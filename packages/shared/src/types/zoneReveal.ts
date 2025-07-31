@@ -25,3 +25,15 @@ export interface ZoneRevealConfig {
   finishPercent?: number;
   heartIcon?: string;
 }
+
+// interface EnemyType {
+//   type: 'core' | 'chaser' | 'zigzag' | 'bouncer' | 'projectile' | 'bomb';
+//   asset: string;
+//   speed: number;
+//   behavior: 'roam' | 'borderChase' | 'zigzag' | 'bounce' | 'shoot' | 'explode';
+// }
+
+// interface PowerUp {
+//   type: 'speed' | 'shield' | 'freeze' | 'bomb';
+//   asset: string;
+// }

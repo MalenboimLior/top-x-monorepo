@@ -9,14 +9,11 @@ import ContactUs from '@/views/ContactUs.vue';
 import FAQ from '@/views/FAQ.vue';
 import Trivia from '@/views/games/Trivia.vue';
 import PyramidTier from '@/views/games/PyramidTier.vue';
-import TerritoryCapture from '@/views/games/TerritoryCapture.vue';
-import ZoneBreaker from '@/views/games/ZoneBreaker.vue';
-import Qix from '@/views/games/Qix.vue';
-import Snake from '@/views/games/Snake.vue';
 import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
+import ZoneReveal from '../views/games/ZoneReveal.vue';
 
 const routes = [
   // {
@@ -55,25 +52,9 @@ const routes = [
   { path: '/frenemies', name: 'FrenemySearch', component: FrenemySearch },
   { path: '/games/trivia', name: 'Trivia', component: Trivia },
   {
-    path: '/games/TerritoryCapture',
-    name: 'TerritoryCapture',
-    component: TerritoryCapture,
-  },
-  {
-    path: '/games/Qix',
-    name: 'Qix',
-    component: Qix,
-  },
-  {
-  path: '/games/snake',
-  name: 'Snake',
-  component: Snake,
-  meta: { requiresAuth: false } // Or true if you want Firebase auth guard
-},
-  {
-    path: '/games/ZoneBreaker',
-    name: 'ZoneBreaker',
-    component: ZoneBreaker,
+    path: '/games/ZoneReveal',
+    name: 'ZoneReveal',
+    component: ZoneReveal,
   },
   {
     path: '/games/PyramidTier',

@@ -149,196 +149,7 @@
       <h3 class="subtitle has-text-white">Trivia Config</h3>
       <p class="has-text-grey-light">Questions will be managed separately.</p>
     </div>
-    <div v-if="gameTypeCustom === 'TerritoryCaptureConfig'">
-      <h3 class="subtitle has-text-white">Territory Capture Config</h3>
-      <div class="field">
-        <label class="label has-text-white">Background Image URL</label>
-        <div class="control">
-          <input v-model="(localGame.custom as any).backgroundImage" class="input" type="text" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Player Asset URL</label>
-        <div class="control">
-          <input v-model="(localGame.custom as any).playerAsset" class="input" type="text" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Player Speed</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).playerSpeed" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Player Scale</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).playerScale" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Enemy Assets (comma separated)</label>
-        <div class="control">
-          <textarea v-model="enemyAssetsText" class="textarea"></textarea>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Enemy Speed</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).enemySpeed" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Enemy Count</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).enemyCount" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Enemy Movements (comma separated)</label>
-        <div class="control">
-          <input v-model="enemyMovementsText" class="input" type="text" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Screen Width</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).screenWidth" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Screen Height</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).screenHeight" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Win Percentage</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).winPercentage" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Lives</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).lives" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Brush Size</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).brushSize" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Power Ups JSON</label>
-        <div class="control">
-          <textarea v-model="powerUpsText" class="textarea"></textarea>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Power Up Count</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).powerUpCount" class="input" type="number" />
-        </div>
-      </div>
-    </div>
-      <div v-if="gameTypeCustom === 'ZoneBreakerConfig'">
-        <h3 class="subtitle has-text-white">ZoneBreaker Config</h3>
-        <div class="field">
-          <label class="label has-text-white">Levels JSON</label>
-          <div class="control">
-            <textarea v-model="zoneLevelsText" class="textarea"></textarea>
-          </div>
-        </div>
-        <div class="field">
-          <label class="label has-text-white">Player Asset URL</label>
-          <div class="control">
-            <input v-model="(localGame.custom as any).playerAsset" class="input" type="text" />
-          </div>
-        </div>
-        <div class="field">
-          <label class="label has-text-white">Player Scale</label>
-          <div class="control">
-            <input v-model.number="(localGame.custom as any).playerScale" class="input" type="number" />
-          </div>
-        </div>
-        <div class="field">
-          <label class="label has-text-white">Win Percentage</label>
-          <div class="control">
-            <input v-model.number="(localGame.custom as any).winPercentage" class="input" type="number" />
-          </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Player Speed</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).playerSpeed" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Enemy Speed</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).enemySpeed" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Enemy Count</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).enemyCount" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Power Ups JSON</label>
-        <div class="control">
-          <textarea v-model="zonePowerUpsText" class="textarea"></textarea>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Line Style</label>
-        <div class="control select">
-          <select v-model="(localGame.custom as any).lineStyle">
-            <option value="solid">solid</option>
-            <option value="dashed">dashed</option>
-            <option value="energy">energy</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Trail Decay</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).trailDecay" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Lives</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).lives" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Time Limit</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).timeLimit" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Screen Width</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).screenWidth" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Screen Height</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).screenHeight" class="input" type="number" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label has-text-white">Brush Size</label>
-        <div class="control">
-          <input v-model.number="(localGame.custom as any).brushSize" class="input" type="number" />
-        </div>
-      </div>
-    </div>
+
     <div class="field is-grouped">
       <div class="control">
         <CustomButton type="is-primary" label="Save" @click="save" :disabled="isSaving" />
@@ -361,10 +172,8 @@ import { useUserStore } from '@/stores/user';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { Game, ConfigType } from '@top-x/shared/types/game';
-import type { PyramidConfig,PyramidRow } from '@top-x/shared/types';
+import type { PyramidConfig,PyramidRow, ZoneRevealConfig } from '@top-x/shared/types';
 import type { TriviaConfig } from '@top-x/shared/types';
-import type { TerritoryCaptureConfig } from '@top-x/shared/types/territoryCapture';
-import type { ZoneBreakerConfig } from '@top-x/shared/types/zoneBreaker';
 
 const props = defineProps<{
   game: Game;
@@ -493,20 +302,6 @@ const fetchGameTypeCustom = async () => {
       if (gameTypeDoc.exists()) {
         gameTypeCustom.value = gameTypeDoc.data().custom as ConfigType;
         console.log('gameTypeCustom set:', gameTypeCustom.value);
-        if (gameTypeCustom.value === 'TerritoryCaptureConfig') {
-          const cfg = localGame.value.custom as Partial<TerritoryCaptureConfig>;
-          enemyAssetsText.value = Array.isArray(cfg.enemyAssets)
-            ? cfg.enemyAssets.join(', ')
-            : '';
-          enemyMovementsText.value = Array.isArray(cfg.enemyMovements)
-            ? cfg.enemyMovements.join(', ')
-            : '';
-          powerUpsText.value = cfg.powerUps ? JSON.stringify(cfg.powerUps) : '';
-        } else if (gameTypeCustom.value === 'ZoneBreakerConfig') {
-          const cfg = localGame.value.custom as Partial<ZoneBreakerConfig>;
-          zoneLevelsText.value = cfg.levels ? JSON.stringify(cfg.levels) : '';
-          zonePowerUpsText.value = cfg.powerUps ? JSON.stringify(cfg.powerUps) : '';
-        }
       } else {
         error.value = 'Game Type not found';
         console.log('GameType not found in Firestore:', props.gameTypeId);
@@ -543,7 +338,7 @@ const save = async () => {
   success.value = null;
   customError.value = null;
 
-  let customData: PyramidConfig | TriviaConfig | TerritoryCaptureConfig | ZoneBreakerConfig;
+  let customData: PyramidConfig | TriviaConfig | ZoneRevealConfig;
   if (gameTypeCustom.value === 'PyramidConfig') {
     console.log('Processing PyramidConfig');
       customData = {
@@ -584,103 +379,6 @@ const save = async () => {
       questions: 'questions' in (localGame.value.custom || {}) ? (localGame.value.custom as TriviaConfig).questions : [],
     };
     console.log('TriviaConfig customData created:', customData);
-  } else if (gameTypeCustom.value === 'TerritoryCaptureConfig') {
-    customData = {
-      backgroundImage: (localGame.value.custom as any).backgroundImage || '',
-      playerAsset: (localGame.value.custom as any).playerAsset || '',
-      playerSpeed: Number((localGame.value.custom as any).playerSpeed) || 0,
-      playerScale: (localGame.value.custom as any).playerScale !== undefined ? Number((localGame.value.custom as any).playerScale) : undefined,
-      enemyAssets: enemyAssetsText.value
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0),
-      enemySpeed: Number((localGame.value.custom as any).enemySpeed) || 0,
-      enemyCount: Number((localGame.value.custom as any).enemyCount) || 0,
-      enemyMovements: enemyMovementsText.value
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0) as ('horizontal' | 'vertical' | 'random')[],
-      screenWidth: Number((localGame.value.custom as any).screenWidth) || 0,
-      screenHeight: Number((localGame.value.custom as any).screenHeight) || 0,
-      winPercentage: Number((localGame.value.custom as any).winPercentage) || 0,
-      lives: Number((localGame.value.custom as any).lives) || 0,
-      brushSize:
-        (localGame.value.custom as any).brushSize !== undefined
-          ? Number((localGame.value.custom as any).brushSize)
-          : undefined,
-      powerUps:
-        powerUpsText.value.trim().length > 0
-          ? (() => {
-              try {
-                return JSON.parse(powerUpsText.value);
-              } catch {
-                customError.value = 'Invalid powerUps JSON';
-                return undefined;
-              }
-            })()
-          : undefined,
-      powerUpCount:
-        (localGame.value.custom as any).powerUpCount !== undefined
-          ? Number((localGame.value.custom as any).powerUpCount)
-          : undefined,
-    } as TerritoryCaptureConfig;
-    console.log('TerritoryCaptureConfig customData created:', customData);
-  } else if (gameTypeCustom.value === 'ZoneBreakerConfig') {
-    const levels = zoneLevelsText.value.trim().length > 0
-      ? (() => {
-          try {
-            return JSON.parse(zoneLevelsText.value);
-          } catch {
-            customError.value = 'Invalid levels JSON';
-            return [];
-          }
-        })()
-      : [];
-    const powerUps = zonePowerUpsText.value.trim().length > 0
-      ? (() => {
-          try {
-            return JSON.parse(zonePowerUpsText.value);
-          } catch {
-            customError.value = 'Invalid powerUps JSON';
-            return undefined;
-          }
-        })()
-      : undefined;
-    if (customError.value) {
-      isSaving.value = false;
-      return;
-    }
-    customData = {
-      levels,
-      playerAsset: (localGame.value.custom as any).playerAsset || '',
-      playerScale:
-        (localGame.value.custom as any).playerScale !== undefined
-          ? Number((localGame.value.custom as any).playerScale)
-          : undefined,
-      winPercentage: Number((localGame.value.custom as any).winPercentage) || 0,
-      playerSpeed: Number((localGame.value.custom as any).playerSpeed) || 0,
-      enemySpeed: Number((localGame.value.custom as any).enemySpeed) || 0,
-      enemyCount: Number((localGame.value.custom as any).enemyCount) || 0,
-      powerUps,
-      lineStyle: (localGame.value.custom as any).lineStyle || undefined,
-      trailDecay:
-        (localGame.value.custom as any).trailDecay !== undefined
-          ? Number((localGame.value.custom as any).trailDecay)
-          : undefined,
-      lives: Number((localGame.value.custom as any).lives) || 0,
-      timeLimit:
-        (localGame.value.custom as any).timeLimit !== undefined
-          ? Number((localGame.value.custom as any).timeLimit)
-          : undefined,
-      mode: 'arcade',
-      screenWidth: Number((localGame.value.custom as any).screenWidth) || 0,
-      screenHeight: Number((localGame.value.custom as any).screenHeight) || 0,
-      brushSize:
-        (localGame.value.custom as any).brushSize !== undefined
-          ? Number((localGame.value.custom as any).brushSize)
-          : undefined,
-    } as ZoneBreakerConfig;
-    console.log('ZoneBreakerConfig customData created:', customData);
   } else {
     error.value = 'Invalid game type configuration';
     console.log('save blocked: Invalid gameTypeCustom:', gameTypeCustom.value);

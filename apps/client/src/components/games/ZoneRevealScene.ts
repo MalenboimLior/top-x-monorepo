@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BlendModes } from 'phaser';
 import type { ZoneRevealConfig, LevelConfig } from '@top-x/shared/types/zoneReveal';
 
+
 export const TILE_SIZE = 10;
 export const WIDTH = 400;
 export const HEIGHT = 480;
@@ -48,9 +49,9 @@ export default class VolfiedScene extends Phaser.Scene {
       heart: '/assets/heart_spritesheet.png',
       clock: '/assets/time_spritesheet.png'
     },
-    playerSpeed: 200,
+    playerSpeed: 100,
     enemiesSpeedArray: { bouncing: 100, robot: 80 },
-    finishPercent: 10,
+    finishPercent: 80,
     heartIcon: '/assets/heart_icon.png',
     levelsConfig: [
       {

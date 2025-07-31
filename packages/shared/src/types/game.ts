@@ -1,14 +1,14 @@
 // Updated packages/shared/types/game.ts
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
-import { TerritoryCaptureConfig } from "./territoryCapture";
-import { ZoneBreakerConfig } from "./zoneBreaker";
+import { ZoneRevealConfig } from "./zoneReveal";
+
 
 export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig' |'ZoneBreakerConfig'; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'zoneReveal' ; // String to specify config type
 }
 
 export interface Game {
@@ -27,7 +27,7 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
-  custom: PyramidConfig | TriviaConfig | TerritoryCaptureConfig | ZoneBreakerConfig; // Union of possible config types
+  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig // Union of possible config types
 }
 
 export interface LeaderboardEntry {
@@ -40,5 +40,5 @@ export interface LeaderboardEntry {
   custom?: Record<string, any>;
 }
 
-export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'TerritoryCaptureConfig' |'ZoneBreakerConfig';
-export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'TerritoryCaptureConfig','ZoneBreakerConfig'];
+export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' ;
+export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'ZoneRevealConfig'];
