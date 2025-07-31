@@ -20,29 +20,48 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@top-x/shared'
 import Phaser from 'phaser'
 import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/ZoneRevealScene'
+import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
 
 const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: Phaser.Game | null = null
+const route = useRoute()
+const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
 
-onMounted(() => {
-  if (phaserContainer.value) {
-    game = new Phaser.Game({
-      type: Phaser.AUTO,
-      width: WIDTH,
-      height: HEIGHT,
-      backgroundColor: '#222',
-      parent: phaserContainer.value,
-      physics: {
-        default: 'arcade',
-        arcade: {
-    //  debug: true  // Enable to see physics bodies
+onMounted(async () => {
+  if (!phaserContainer.value) return
+
+  const gameId = (route.query.game as string)?.toLowerCase()
+  if (gameId) {
+    try {
+      const snap = await getDoc(doc(db, 'games', gameId))
+      if (snap.exists()) {
+        zoneRevealConfig.value = snap.data().custom as ZoneRevealConfig
+      }
+    } catch (err) {
+      console.error('Failed fetching zone reveal config:', err)
     }
-      },
-      scene: ZoneRevealScene
-    })
   }
+
+  const scene = new ZoneRevealScene(zoneRevealConfig.value || undefined)
+  game = new Phaser.Game({
+    type: Phaser.AUTO,
+    width: WIDTH,
+    height: HEIGHT,
+    backgroundColor: '#222',
+    parent: phaserContainer.value,
+    physics: {
+      default: 'arcade',
+      arcade: {
+        //  debug: true  // Enable to see physics bodies
+      }
+    },
+    scene
+  })
 })
 
 onBeforeUnmount(() => {
