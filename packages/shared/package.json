@@ -33,6 +33,7 @@
     },
     "./components/Card.vue": "./src/components/Card.vue",
     "./components/CustomButton.vue": "./src/components/CustomButton.vue",
+    "./components/ImageUploader.vue": "./src/components/ImageUploader.vue",
     "./types/user": {
       "types": "./src/types/user.ts",
       "default": "./src/types/user.ts"

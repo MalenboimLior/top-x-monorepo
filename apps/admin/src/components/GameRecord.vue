@@ -154,9 +154,12 @@
 
       <div class="field">
         <label class="label has-text-white">Background Image (Optional)</label>
-        <div class="control">
-          <input v-model="zoneConfig.backgroundImage" class="input" type="text" />
-        </div>
+        <ImageUploader
+          v-model="zoneConfig.backgroundImage"
+          uploadFolder="zone-backgrounds"
+          :cropWidth="800"
+          :cropHeight="600"
+        />
       </div>
       <div class="field">
         <label class="label has-text-white">Heart Icon (Optional)</label>
@@ -289,6 +292,7 @@ import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import type { Game, ConfigType } from '@top-x/shared/types/game';
 import type { PyramidConfig, ZoneRevealConfig } from '@top-x/shared/types';
 import type { TriviaConfig } from '@top-x/shared/types';
