@@ -41,16 +41,107 @@ export default class VolfiedScene extends Phaser.Scene {
   private levelsConfig = [
     {
       enemyConfig: [
-        { type: 'bouncing', count: 1 },
+        { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 }
       ],
       powerupConfig: [
-        { type: 'extralive', count: 1 },
-        { type: 'extratime', count: 0 }
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
       ],
       timeLimit: 60,
-      hiddenImage: '/assets/levels/level1.jpg',
+      hiddenImage: '/assets/levels/level1.jpeg',
       levelHeader: 'Level 1'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level2.jpeg',
+      levelHeader: 'Level 2'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level3.jpeg',
+      levelHeader: 'Level 3'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level4.jpeg',
+      levelHeader: 'Level 4'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level5.jpeg',
+      levelHeader: 'Level 5'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level6.jpeg',
+      levelHeader: 'Level 6'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level7.jpeg',
+      levelHeader: 'Level 7'
+    },
+     {
+      enemyConfig: [
+        { type: 'bouncing', count: 0 },
+        { type: 'robot', count: 0 }
+      ],
+      powerupConfig: [
+        { type: 'extralive', count: 3 },
+        { type: 'extratime', count: 3 }
+      ],
+      timeLimit: 60,
+      hiddenImage: '/assets/levels/level.jpeg',
+      levelHeader: 'Level 8'
     },
     {
       enemyConfig: [
@@ -387,7 +478,7 @@ export default class VolfiedScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const speed = 100;
+    const speed = 200;
     body.setVelocity(0);
 
     if (!this.isLosingLife) {
@@ -446,11 +537,16 @@ export default class VolfiedScene extends Phaser.Scene {
   }
 
   private spawnPowerup(powerup: Phaser.Physics.Arcade.Sprite, animKey: string) {
-    if (powerup.getData('destroyed')) return;
-    this.setRandomUnfilledPosition(powerup);
-    powerup.setActive(true).setVisible(true);
+  if (powerup.getData('destroyed')) return;
+
+  this.setRandomUnfilledPosition(powerup);
+  powerup.setActive(true).setVisible(true);
+  powerup.play(animKey);
+
+  if (powerup.body) {
     (powerup.body as Phaser.Physics.Arcade.Body).enable = true;
-    powerup.play(animKey);
+  } 
+powerup.play(animKey);
     const visibleTime = Phaser.Math.Between(6000, 9000);
     const blinkTimer = this.time.delayedCall(visibleTime - 2000, () => {
       this.tweens.add({
@@ -806,7 +902,7 @@ export default class VolfiedScene extends Phaser.Scene {
     const percent = Math.floor((this.filledTiles / (GRID_W * GRID_H)) * 100);
     this.filledText.setText(`Filled: ${percent}%`);
 
-    if (percent >= 85) {
+    if (percent >= 10) {
       console.log(`Level ${this.currentLevel + 1} completed! Score: ${this.score}, Remaining Time: ${this.remainingTime}`);
       this.score += 50 + Math.ceil(this.remainingTime) * 10;
       this.showPointsAnimation(WIDTH / 2, HEIGHT / 2, 50 + Math.ceil(this.remainingTime) * 10);
