@@ -11,7 +11,7 @@ const GRID_H = HEIGHT / TILE_SIZE;
 const PLAYER_VISUAL_SIZE = 30;
 
 const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
-  backgroundImage: '/assets/anonymous.png',
+  backgroundImage: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2F1753992798351_level2.jpeg?alt=media&token=cc65eb9e-13de-486b-b4b4-bfe2eec2a73b',
   spritesheets: {
     player: '/assets/Monocle_spritesheet.png',
     enemy: '/assets/monster_spritesheet.png',
@@ -223,8 +223,16 @@ export default class VolfiedScene extends Phaser.Scene {
 
   create() {
     this.add.image(WIDTH / 2, HEIGHT / 2, 'bg').setDisplaySize(WIDTH, HEIGHT).setDepth(-2);
-    this.hiddenImage = this.add.image(WIDTH / 2, HEIGHT / 2, `hidden0`).setDisplaySize(WIDTH, HEIGHT).setDepth(-1);
+const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE) * TILE_SIZE;
+const innerX = margin + (WIDTH - 2 * margin) / 2;
+const innerY = margin + (HEIGHT - 2 * margin) / 2;
+const innerWidth = WIDTH - 2 * margin;
+const innerHeight = HEIGHT - 2 * margin;
 
+this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
+  .setDisplaySize(innerWidth, innerHeight)
+  .setDepth(-1);
+  
     this.revealMask = this.add.graphics().setDepth(2);
     this.revealMask.setVisible(false);
     const mask = this.revealMask.createGeometryMask();

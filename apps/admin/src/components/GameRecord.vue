@@ -155,11 +155,11 @@
       <div class="field">
         <label class="label has-text-white">Background Image (Optional)</label>
         <ImageUploader
-          v-model="zoneConfig.backgroundImage"
-          uploadFolder="zone-backgrounds"
-          :cropWidth="800"
-          :cropHeight="600"
-        />
+  v-model="zoneConfig.backgroundImage"
+  uploadFolder="zonereveal"
+  :cropWidth="400"
+  :cropHeight="480"
+/>
       </div>
       <div class="field">
         <label class="label has-text-white">Heart Icon (Optional)</label>
@@ -314,7 +314,7 @@ const vipInput = ref('');
 // Zone reveal config form state
 const zoneConfig = ref<ZoneRevealConfig>({
   levelsConfig: [],
-  backgroundImage: '',
+  backgroundImage: '', // Changed from undefined to empty string
   spritesheets: {},
   playerSpeed: undefined,
   enemiesSpeedArray: {},
@@ -476,7 +476,7 @@ const fetchGameTypeCustom = async () => {
           const cfg = (localGame.value.custom || { levelsConfig: [] }) as ZoneRevealConfig;
           zoneConfig.value = {
             levelsConfig: cfg.levelsConfig || [],
-            backgroundImage: cfg.backgroundImage || '',
+backgroundImage: cfg.backgroundImage ?? '',
             spritesheets: cfg.spritesheets || {},
             playerSpeed: cfg.playerSpeed,
             enemiesSpeedArray: cfg.enemiesSpeedArray || {},
@@ -566,7 +566,7 @@ const save = async () => {
   } else if (gameTypeCustom.value === 'ZoneRevealConfig') {
     customData = {
       levelsConfig: zoneConfig.value.levelsConfig,
-      backgroundImage: zoneConfig.value.backgroundImage || undefined,
+      backgroundImage: zoneConfig.value.backgroundImage || '',
       spritesheets: Object.fromEntries(spritesheetEntries.value.filter(e => e.key).map(e => [e.key, e.value])),
       playerSpeed: zoneConfig.value.playerSpeed,
       enemiesSpeedArray: Object.fromEntries(enemySpeedEntries.value.filter(e => e.key).map(e => [e.key, e.value])),
