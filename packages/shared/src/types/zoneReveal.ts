@@ -18,7 +18,7 @@ export interface LevelConfig {
 
 export interface ZoneRevealConfig {
   levelsConfig: LevelConfig[];
-  backgroundImage?: string;
+  backgroundImage: string;
   spritesheets?: Record<string, string>;
   playerSpeed?: number;
   enemiesSpeedArray?: Record<string, number>;
