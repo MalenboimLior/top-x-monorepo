@@ -90,8 +90,8 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import AddPyramid from './build/AddPyramid.vue';
-import AddZoneReveal from './build/AddZoneReveal.vue';
+import AddPyramid from './buildcustom/AddPyramid.vue';
+import AddZoneReveal from './buildcustom/AddZoneReveal.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
 
 const props = defineProps<{ gameType: GameType }>();
