@@ -20,6 +20,12 @@
       </div>
     </div>
     <div class="field">
+      <label class="checkbox has-text-white">
+        <input type="checkbox" v-model="localGameType.availableToBuild" />
+        Available for users to build
+      </label>
+    </div>
+    <div class="field">
       <label class="label has-text-white">Config Type</label>
       <div class="control">
         <div class="select">
@@ -62,7 +68,7 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGameType = ref<GameType>({ ...props.gameType });
+const localGameType = ref<GameType>({ availableToBuild: false, ...props.gameType });
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
@@ -87,6 +93,7 @@ const save = async () => {
       name: localGameType.value.name,
       description: localGameType.value.description,
       custom: localGameType.value.custom,
+      availableToBuild: localGameType.value.availableToBuild || false,
     });
     success.value = `Game Type '${localGameType.value.name}' saved successfully`;
     emit('save');

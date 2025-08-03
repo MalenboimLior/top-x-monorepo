@@ -6,6 +6,8 @@ yarn-error.log
 # Build
 dist/
 build/
+!apps/client/src/components/build/
+!apps/client/src/components/build/**
 
 # IDE
 .vscode/

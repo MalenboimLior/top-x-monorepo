@@ -14,6 +14,7 @@ import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import ZoneReveal from '../views/games/ZoneReveal.vue';
+import Build from '@/views/Build.vue';
 
 const routes = [
   // {
@@ -38,6 +39,7 @@ const routes = [
     name: 'Home',
     component: Home,
   },
+  { path: '/build', name: 'Build', component: Build },
   {
     path: '/profile',
     name: 'Profile',

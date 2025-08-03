@@ -8,7 +8,9 @@ export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig' | 'zoneReveal' ; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig'; // String to specify config type
+  /** Indicates if users can build their own games from this type */
+  availableToBuild: boolean;
 }
 
 export interface Game {
@@ -27,7 +29,14 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
-  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig // Union of possible config types
+  /** Marks community created games */
+  community?: boolean;
+  /** Creator information for community games */
+  creator?: {
+    uid: string;
+    username: string;
+  };
+  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig; // Union of possible config types
 }
 
 export interface LeaderboardEntry {

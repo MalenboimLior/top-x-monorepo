@@ -38,6 +38,7 @@ const fetchGameTypes = () => {
   onSnapshot(q, (snapshot) => {
     gameTypes.value = snapshot.docs.map((doc) => ({
       id: doc.id,
+      availableToBuild: false,
       ...doc.data(),
     } as GameType));
   }, (err) => {
@@ -58,7 +59,7 @@ const deleteGameType = async (id: string) => {
 };
 
 const createNew = () => {
-  emit('edit', { id: '', name: '', description: '', custom: 'PyramidConfig' });
+  emit('edit', { id: '', name: '', description: '', custom: 'PyramidConfig', availableToBuild: false });
 };
 
 const emit = defineEmits<{

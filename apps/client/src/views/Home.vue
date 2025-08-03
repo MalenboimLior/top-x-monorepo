@@ -9,8 +9,19 @@
       style="max-width: 200px; height: auto;"
     >
     <p class="subtitle has-text-grey-light">Play, compete, and share with friends!</p>
+    <div class="field mt-4">
+      <div class="control select">
+        <select v-model="selectedLanguage">
+          <option value="all">All Languages</option>
+          <option value="en">English</option>
+          <option value="il">Hebrew</option>
+        </select>
+      </div>
+    </div>
+
+    <h3 class="title is-5 has-text-white mt-4">TOP-X Games</h3>
     <div class="columns is-multiline is-mobile">
-      <div v-for="game in games" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
+      <div v-for="game in adminGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
         <Card>
           <div class="card-image">
             <figure class="image is-4by3">
@@ -20,17 +31,27 @@
           <div class="card-content">
             <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
             <p class="has-text-grey-light">{{ game.description }}</p>
-            <CustomButton
-              v-if="!game.isComingSoon"
-              type="is-primary mt-4"
-              :label="'Play Now'"
-            />
-            <CustomButton
-              v-else
-              type="is-disabled mt-4"
-              label="Coming Soon"
-              :disabled="true"
-            />
+            <CustomButton v-if="!game.isComingSoon" type="is-primary mt-4" :label="'Play Now'" />
+            <CustomButton v-else type="is-disabled mt-4" label="Coming Soon" :disabled="true" />
+          </div>
+        </Card>
+      </div>
+    </div>
+
+    <h3 class="title is-5 has-text-white mt-4">Community Games</h3>
+    <div class="columns is-multiline is-mobile">
+      <div v-for="game in userGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
+        <Card>
+          <div class="card-image">
+            <figure class="image is-4by3">
+              <img :src="game.image" :alt="`${game.name} image`" />
+            </figure>
+          </div>
+          <div class="card-content">
+            <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
+            <p class="has-text-grey-light">{{ game.description }}</p>
+            <CustomButton v-if="!game.isComingSoon" type="is-primary mt-4" :label="'Play Now'" />
+            <CustomButton v-else type="is-disabled mt-4" label="Coming Soon" :disabled="true" />
           </div>
         </Card>
       </div>
@@ -39,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -62,9 +83,18 @@ interface Game {
   language: 'en' | 'il';
   shareLink?: string;
   route: string;
+  community: boolean;
 }
 
 const games = ref<Game[]>([]);
+const selectedLanguage = ref<'all' | 'en' | 'il'>('all');
+
+const adminGames = computed(() =>
+  games.value.filter((g) => !g.community && (selectedLanguage.value === 'all' || g.language === selectedLanguage.value))
+);
+const userGames = computed(() =>
+  games.value.filter((g) => g.community && (selectedLanguage.value === 'all' || g.language === selectedLanguage.value))
+);
 
 useHead({
   title: 'TOP-X',
@@ -95,8 +125,9 @@ onMounted(() => {
         language: data.language || 'en',
         shareLink: data.shareLink || '',
         route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
+        community: data.community || false,
       } as Game;
-    }).filter(g => g.active);
+    }).filter((g) => g.active);
     console.log('Home: Games updated:', games.value);
   }, (err) => {
     console.error('Home: Error fetching games:', err.message, err);

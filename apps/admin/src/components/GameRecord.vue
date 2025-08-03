@@ -308,7 +308,13 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const localGame = ref<Game>({ ...props.game, vip: [], language: props.game.language || 'en' });
+const localGame = ref<Game>({
+  ...props.game,
+  vip: [],
+  language: props.game.language || 'en',
+  creator: props.game.creator || { uid: '', username: '' },
+  community: props.game.community || false,
+});
 const vipList = ref<string[]>([...(localGame.value.vip || [])]);
 const vipInput = ref('');
 // Zone reveal config form state
@@ -595,6 +601,8 @@ const save = async () => {
       image: localGame.value.image || '',
       active: localGame.value.active || false,
       vip: vipList.value,
+      community: localGame.value.community || false,
+      creator: localGame.value.creator || { uid: '', username: '' },
     };
     if ((localGame.value as any).communityItems !== undefined) {
       gameData.communityItems = (localGame.value as any).communityItems;
