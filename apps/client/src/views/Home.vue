@@ -1,4 +1,3 @@
-
 <!-- Landing page listing available games -->
 <template>
   <div class="home-container">
@@ -9,8 +8,23 @@
       style="max-width: 200px; height: auto;"
     >
     <p class="subtitle has-text-grey-light">Play, compete, and share with friends!</p>
+
+    <div class="field">
+      <label class="label has-text-white">Filter by Language</label>
+      <div class="control">
+        <div class="select">
+          <select v-model="selectedLanguage">
+            <option value="">All</option>
+            <option value="en">English</option>
+            <option value="il">Hebrew</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="title is-3 has-text-white">TOP-X Games</h2>
     <div class="columns is-multiline is-mobile">
-      <div v-for="game in games" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
+      <div v-for="game in filteredAdminGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
         <Card>
           <div class="card-image">
             <figure class="image is-4by3">
@@ -35,11 +49,40 @@
         </Card>
       </div>
     </div>
+
+    <h2 class="title is-3 has-text-white mt-6">Community Games</h2>
+    <div class="columns is-multiline is-mobile">
+      <div v-for="game in filteredCommunityGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
+        <Card>
+          <div class="card-image">
+            <figure class="image is-4by3">
+              <img :src="game.image" :alt="`${game.name} image`" />
+            </figure>
+          </div>
+          <div class="card-content">
+            <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
+            <p class="has-text-grey-light">{{ game.description }}</p>
+            <p class="has-text-grey-light">Created by: {{ game.creator?.username || 'Unknown' }}</p>
+            <CustomButton
+              v-if="!game.isComingSoon"
+              type="is-primary mt-4"
+              :label="'Play Now'"
+            />
+            <CustomButton
+              v-else
+              type="is-disabled mt-4"
+              label="Coming Soon"
+              :disabled="true"
+            />
+          </div>
+        </Card>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -62,9 +105,12 @@ interface Game {
   language: 'en' | 'il';
   shareLink?: string;
   route: string;
+  community?: boolean;
+  creator?: { userid: string; username: string };
 }
 
 const games = ref<Game[]>([]);
+const selectedLanguage = ref('');
 
 useHead({
   title: 'TOP-X',
@@ -95,12 +141,22 @@ onMounted(() => {
         language: data.language || 'en',
         shareLink: data.shareLink || '',
         route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
+        community: data.community ?? false,
+        creator: data.creator,
       } as Game;
     }).filter(g => g.active);
     console.log('Home: Games updated:', games.value);
   }, (err) => {
     console.error('Home: Error fetching games:', err.message, err);
   });
+});
+
+const filteredAdminGames = computed(() => {
+  return games.value.filter(g => !g.community && (!selectedLanguage.value || g.language === selectedLanguage.value));
+});
+
+const filteredCommunityGames = computed(() => {
+  return games.value.filter(g => g.community && (!selectedLanguage.value || g.language === selectedLanguage.value));
 });
 
 function navigateToGame(route: string) {

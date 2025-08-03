@@ -30,7 +30,10 @@
         <router-link class="navbar-item" to="/about" @click="closeMenu">About</router-link>
         <router-link class="navbar-item" to="/faq" @click="closeMenu">FAQ</router-link>
         <router-link  class="navbar-item" to="/profile" @click="closeMenu">Profile</router-link>
+                <router-link  class="navbar-item" to="/build" @click="closeMenu">Build</router-link>
+
       </div>
+
 
       <div class="navbar-end">
         <div class="navbar-item profile-div">

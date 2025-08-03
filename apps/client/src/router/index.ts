@@ -1,4 +1,3 @@
-
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/views/Home.vue';
 import Profile from '@/views/Profile.vue';
@@ -14,6 +13,7 @@ import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import ZoneReveal from '../views/games/ZoneReveal.vue';
+import Build from '@/views/Build.vue';
 
 const routes = [
   // {
@@ -75,7 +75,11 @@ const routes = [
       query: { game: 'FootballStarsIL' },
     },
   },
-
+  {
+    path: '/build',
+    name: 'Build',
+    component: Build,
+  },
 ];
 
 const router = createRouter({
