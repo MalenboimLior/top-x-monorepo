@@ -18,21 +18,24 @@
           <button class="delete" aria-label="close" @click="closeCrop"></button>
         </header>
         <section class="modal-card-body">
-          <div
-            class="crop-area"
-            :style="{ width: cropWidth + 'px', height: cropHeight + 'px' }"
-            @mousedown="startDrag"
-            @mousemove="duringDrag"
-            @mouseup="endDrag"
-            @mouseleave="endDrag"
-            @wheel.prevent="onWheel"
-          >
-            <img
-              ref="imageRef"
-              :src="selectedImage"
-              draggable="false"
-              :style="{ transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})` }"
-            />
+          <div class="crop-wrapper" :style="{ width: cropWidth + 'px' }">
+            <div
+              class="crop-area"
+              :style="{ width: cropWidth + 'px', height: cropHeight + 'px' }"
+              @mousedown="startDrag"
+              @mousemove="duringDrag"
+              @mouseup="endDrag"
+              @mouseleave="endDrag"
+              @wheel.prevent="onWheel"
+            >
+              <img
+                ref="imageRef"
+                :src="selectedImage"
+                draggable="false"
+                :style="{ transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})` }"
+              />
+            </div>
+            <div class="crop-dimensions">{{ cropWidth }} x {{ cropHeight }}</div>
           </div>
           <input type="range" min="0.5" max="3" step="0.01" v-model.number="scale" class="mt-2" />
         </section>
@@ -147,15 +150,27 @@ async function cropAndUpload() {
 </script>
 
 <style scoped>
+.crop-wrapper {
+  margin: 0 auto;
+  text-align: center;
+}
+
 .crop-area {
   overflow: hidden;
   position: relative;
-  margin: 0 auto;
+  border: 2px dashed #4a4a4a;
+  box-sizing: content-box;
 }
 .crop-area img {
   cursor: move;
   user-select: none;
   pointer-events: none;
+}
+
+.crop-dimensions {
+  margin-top: 0.5rem;
+  color: #4a4a4a;
+  font-size: 0.9rem;
 }
 .modal-card-foot {
   justify-content: flex-end;
