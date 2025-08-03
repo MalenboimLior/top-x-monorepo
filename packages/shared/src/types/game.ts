@@ -8,7 +8,8 @@ export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig' | 'zoneReveal' ; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' ; // String to specify config type
+  availableToBuild: boolean;
 }
 
 export interface Game {
@@ -28,6 +29,8 @@ export interface Game {
   image: string;
   vip: string[];
   custom: PyramidConfig | TriviaConfig | ZoneRevealConfig // Union of possible config types
+  creator?: { userid: string; username: string };
+  community?: boolean;
 }
 
 export interface LeaderboardEntry {
