@@ -12,6 +12,7 @@
     </div>
 
     <div v-else>
+      <h2 class="title is-3 has-text-white">Available Game Types</h2>
       <div class="columns is-multiline is-mobile">
         <div v-for="gameType in availableGameTypes" :key="gameType.id" class="column is-half-desktop is-half-tablet is-full-mobile">
           <Card class="is-clickable" @click="selectGameType(gameType)">
@@ -23,9 +24,35 @@
         </div>
       </div>
 
+      <h2 class="title is-3 has-text-white mt-5">My Games</h2>
+      <div class="columns is-multiline is-mobile">
+        <div v-for="game in myGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile">
+          <Card>
+            <div class="card-content">
+              <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
+              <p class="has-text-grey-light">{{ game.description }}</p>
+              <p class="has-text-grey-light">Status: {{ game.active ? 'Published' : 'Draft' }}</p>
+              <div class="buttons">
+                <CustomButton type="is-primary" label="Edit" @click="editGame(game)" />
+                <CustomButton
+                  :type="game.active ? 'is-warning' : 'is-success'"
+                  :label="game.active ? 'Unpublish' : 'Publish'"
+                  @click="togglePublish(game)"
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
       <div v-if="selectedGameType">
-        <h2 class="title is-3 has-text-white mt-5">Create {{ selectedGameType.name }} Game</h2>
-        <BuildAddNewGame :gameType="selectedGameType" @save="handleSave" @cancel="selectedGameType = null" />
+        <h2 class="title is-3 has-text-white mt-5">{{ selectedGame ? 'Edit' : 'Create' }} {{ selectedGameType.name }} Game</h2>
+        <BuildAddNewGame
+          :gameType="selectedGameType"
+          :existingGame="selectedGame"
+          @save="handleSave"
+          @cancel="handleCancel"
+        />
       </div>
     </div>
   </div>
@@ -34,21 +61,24 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import BuildAddNewGame from '@/components/BuildAddNewGame.vue';
-import type { GameType } from '@top-x/shared/types/game';
+import type { GameType, Game } from '@top-x/shared/types/game';
 
 const userStore = useUserStore();
 const user = ref(userStore.user);
 const availableGameTypes = ref<GameType[]>([]);
+const myGames = ref<Game[]>([]);
 const selectedGameType = ref<GameType | null>(null);
+const selectedGame = ref<Game | null>(null);
 
 onMounted(() => {
   if (user.value) {
     fetchAvailableGameTypes();
+    fetchMyGames();
   }
 });
 
@@ -61,13 +91,49 @@ function fetchAvailableGameTypes() {
   });
 }
 
-function selectGameType(gameType: GameType) {
-  selectedGameType.value = gameType;
+function fetchMyGames() {
+  if (!user.value?.uid) return;
+  const q = query(collection(db, 'games'), where('creator.userid', '==', user.value.uid));
+  onSnapshot(q, (snapshot) => {
+    myGames.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
+  }, (err) => {
+    console.error('Error fetching my games:', err);
+  });
 }
 
-function handleSave(newGame: any) {
-  // Handle save logic if needed, but it's in the component
+function selectGameType(gameType: GameType) {
+  selectedGameType.value = gameType;
+  selectedGame.value = null;
+}
+
+function editGame(game: Game) {
+  const gameType = availableGameTypes.value.find(t => t.id === game.gameTypeId);
+  if (gameType) {
+    selectedGameType.value = gameType;
+    selectedGame.value = game;
+  } else {
+    console.error('Game type not found for editing');
+  }
+}
+
+async function togglePublish(game: Game) {
+  try {
+    const gameRef = doc(db, 'games', game.id);
+    await updateDoc(gameRef, { active: !game.active });
+    // myGames will update via snapshot
+  } catch (err) {
+    console.error('Error toggling publish:', err);
+  }
+}
+
+function handleSave() {
   selectedGameType.value = null;
+  selectedGame.value = null;
+}
+
+function handleCancel() {
+  selectedGameType.value = null;
+  selectedGame.value = null;
 }
 
 async function login() {
@@ -76,6 +142,7 @@ async function login() {
     user.value = userStore.user;
     if (user.value) {
       fetchAvailableGameTypes();
+      fetchMyGames();
     }
   } catch (err) {
     console.error('Login error:', err);
