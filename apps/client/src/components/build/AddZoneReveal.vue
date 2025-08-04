@@ -187,8 +187,21 @@ const newSpriteValue = ref('');
 const newEnemyKey = ref('');
 const newEnemyValue = ref(0);
 
-watch(() => props.modelValue, (val) => { config.value = val; }, { deep: true });
-watch(config, (val) => { emit('update:modelValue', val); }, { deep: true });
+watch(
+  () => props.modelValue,
+  (val) => {
+    // Clone to avoid keeping Vue proxies in the parent
+    config.value = JSON.parse(JSON.stringify(val));
+  },
+  { deep: true, immediate: true }
+);
+watch(
+  config,
+  (val) => {
+    emit('update:modelValue', JSON.parse(JSON.stringify(val)));
+  },
+  { deep: true }
+);
 
 function addLevel() {
   config.value.levelsConfig.push({
