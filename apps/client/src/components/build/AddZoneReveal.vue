@@ -1,3 +1,4 @@
+
 <!-- Component for editing ZoneRevealConfig -->
 <template>
   <div class="add-zone-reveal">
@@ -15,7 +16,7 @@
           </div>
           <div class="field">
             <label class="label has-text-white">Hidden Image</label>
-            <input class="input" v-model="level.hiddenImage" placeholder="Hidden Image URL" />
+            <ImageUploader v-model="level.hiddenImage" uploadFolder="zonereveal" :cropWidth="400" :cropHeight="400" />
           </div>
           <div class="field">
             <label class="label has-text-white">Level Header</label>
@@ -27,7 +28,12 @@
             <label class="label has-text-grey-light">Enemies</label>
             <div v-for="(enemy, enemyIndex) in level.enemyConfig" :key="enemyIndex" class="columns mb-1">
               <div class="column">
-                <input class="input" v-model="enemy.type" placeholder="Type" />
+                <div class="select">
+                  <select v-model="enemy.type">
+                    <option value="">Select Type</option>
+                    <option v-for="t in enemyTypes" :key="t" :value="t">{{ t }}</option>
+                  </select>
+                </div>
               </div>
               <div class="column">
                 <input class="input" type="number" v-model="enemy.count" placeholder="Count" />
@@ -44,7 +50,12 @@
             <label class="label has-text-grey-light">Powerups</label>
             <div v-for="(powerup, powerupIndex) in level.powerupConfig" :key="powerupIndex" class="columns mb-1">
               <div class="column">
-                <input class="input" v-model="powerup.type" placeholder="Type" />
+                <div class="select">
+                  <select v-model="powerup.type">
+                    <option value="">Select Type</option>
+                    <option v-for="t in powerupTypes" :key="t" :value="t">{{ t }}</option>
+                  </select>
+                </div>
               </div>
               <div class="column">
                 <input class="input" type="number" v-model="powerup.count" placeholder="Count" />
@@ -64,7 +75,7 @@
 
     <div class="field">
       <label class="label has-text-white">Background Image</label>
-      <input class="input" v-model="config.backgroundImage" placeholder="Background Image URL" />
+      <ImageUploader v-model="config.backgroundImage" uploadFolder="zonereveal/" :cropWidth="800" :cropHeight="600" />
     </div>
 
     <!-- Spritesheets -->
@@ -75,7 +86,7 @@
           <input class="input" :value="key" disabled />
         </div>
         <div class="column">
-          <input class="input" v-model="config.spritesheets[key]" placeholder="URL" />
+          <ImageUploader v-model="config.spritesheets[key]" uploadFolder="zonereveal/" :cropWidth="100" :cropHeight="100" />
         </div>
         <div class="column is-narrow">
           <button class="button is-danger is-small" @click="removeSpritesheet(key)">Remove</button>
@@ -83,10 +94,15 @@
       </div>
       <div class="columns">
         <div class="column">
-          <input class="input" v-model="newSpriteKey" placeholder="Key" />
+          <div class="select">
+            <select v-model="newSpriteKey">
+              <option value="">Select Key</option>
+              <option v-for="k in spriteKeys" :key="k" :value="k">{{ k }}</option>
+            </select>
+          </div>
         </div>
         <div class="column">
-          <input class="input" v-model="newSpriteValue" placeholder="URL" />
+          <ImageUploader v-model="newSpriteValue" uploadFolder="zonereveal/" :cropWidth="100" :cropHeight="100" />
         </div>
         <div class="column is-narrow">
           <CustomButton type="is-success is-small" label="Add" @click="addSpritesheet" :disabled="!newSpriteKey || !newSpriteValue" />
@@ -115,7 +131,12 @@
       </div>
       <div class="columns">
         <div class="column">
-          <input class="input" v-model="newEnemyKey" placeholder="Key" />
+          <div class="select">
+            <select v-model="newEnemyKey">
+              <option value="">Select Key</option>
+              <option v-for="t in enemyTypes" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
         </div>
         <div class="column">
           <input class="input" type="number" v-model="newEnemyValue" placeholder="Speed" />
@@ -141,6 +162,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import type { ZoneRevealConfig, LevelConfig, EnemyConfig, PowerupConfig } from '@top-x/shared/types/zoneReveal';
 
 const props = defineProps<{ modelValue: ZoneRevealConfig }>();
@@ -155,6 +177,10 @@ const config = ref<ZoneRevealConfig>({
   finishPercent: 0,
   heartIcon: '',
 });
+
+const enemyTypes = ['bouncing', 'robot'];
+const powerupTypes = ['extralive', 'extratime'];
+const spriteKeys = ['player', 'enemy', 'robot', 'heart', 'clock'];
 
 const newSpriteKey = ref('');
 const newSpriteValue = ref('');
