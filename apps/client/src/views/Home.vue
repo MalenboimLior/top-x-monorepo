@@ -1,3 +1,4 @@
+
 <!-- Landing page listing available games -->
 <template>
   <div class="home-container">
@@ -140,7 +141,7 @@ onMounted(() => {
         active: data.active ?? false,
         language: data.language || 'en',
         shareLink: data.shareLink || '',
-        route: data.gameTypeId === 'PyramidTier' ? `/games/PyramidTier?game=${doc.id}` : `/games/${data.gameTypeId}`,
+        route: `/games/${data.gameTypeId}?game=${doc.id}`,
         community: data.community ?? false,
         creator: data.creator,
       } as Game;

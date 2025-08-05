@@ -16,7 +16,7 @@
           </div>
           <div class="field">
             <label class="label has-text-white">Hidden Image</label>
-            <ImageUploader v-model="level.hiddenImage" uploadFolder="zonereveal" :cropWidth="400" :cropHeight="400" />
+            <ImageUploader v-model="level.hiddenImage" uploadFolder="zonereveal" :cropWidth="400" :cropHeight="480" />
           </div>
           <div class="field">
             <label class="label has-text-white">Level Header</label>
