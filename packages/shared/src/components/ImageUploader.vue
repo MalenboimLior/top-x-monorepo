@@ -23,23 +23,17 @@
             <div
               class="crop-area"
               :style="{ width: cropWidth + 'px', height: cropHeight + 'px' }"
-              @mousedown="startDrag"
-              @mousemove="duringDrag"
-              @mouseup="endDrag"
-              @mouseleave="endDrag"
-              @wheel.prevent="onWheel"
             >
               <img
                 ref="imageRef"
                 :src="selectedImage"
                 draggable="false"
-                :style="{ transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})` }"
+                :style="{ transform: `scale(${scale}) translate(${offsetX}px, ${offsetY}px)` }"
                 @load="onImageLoad"
               />
             </div>
             <div class="crop-dimensions">{{ cropWidth }} x {{ cropHeight }}</div>
           </div>
-          <input type="range" min="0.5" max="3" step="0.01" v-model.number="scale" class="mt-2" />
         </section>
         <footer class="modal-card-foot">
           <CustomButton type="is-primary" label="Crop & Upload" @click="cropAndUpload" />
@@ -83,9 +77,6 @@ const imageRef = ref<HTMLImageElement | null>(null);
 const offsetX = ref(0);
 const offsetY = ref(0);
 const scale = ref(1);
-let dragging = false;
-let startX = 0;
-let startY = 0;
 
 function openFileDialog() {
   fileInput.value?.click();
@@ -112,28 +103,24 @@ function onImageLoad() {
   const cropW = props.cropWidth;
   const cropH = props.cropHeight;
 
-  // Use cover mode: scale to fill the crop area, center and clip
   scale.value = Math.max(cropW / imgW, cropH / imgH);
   offsetX.value = (cropW - imgW * scale.value) / 2;
   offsetY.value = (cropH - imgH * scale.value) / 2;
+  clampOffset();
 }
 
-function startDrag(e: MouseEvent) {
-  dragging = true;
-  startX = e.clientX - offsetX.value;
-  startY = e.clientY - offsetY.value;
-}
-function duringDrag(e: MouseEvent) {
-  if (!dragging) return;
-  offsetX.value = e.clientX - startX;
-  offsetY.value = e.clientY - startY;
-}
-function endDrag() {
-  dragging = false;
-}
-function onWheel(e: WheelEvent) {
-  const delta = e.deltaY < 0 ? 0.05 : -0.05;
-  scale.value = Math.min(3, Math.max(0.5, scale.value + delta));
+function clampOffset() {
+  if (!imageRef.value) return;
+  const imgW = imageRef.value.naturalWidth;
+  const imgH = imageRef.value.naturalHeight;
+  const scaledW = imgW * scale.value;
+  const scaledH = imgH * scale.value;
+
+  const lowerX = cropWidth - scaledW;
+  const lowerY = cropHeight - scaledH;
+
+  offsetX.value = Math.max(lowerX, Math.min(0, offsetX.value));
+  offsetY.value = Math.max(lowerY, Math.min(0, offsetY.value));
 }
 
 function closeCrop() {
@@ -149,11 +136,15 @@ async function cropAndUpload() {
   canvas.height = props.cropHeight;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  const sx = (-offsetX.value) / scale.value;
-  const sy = (-offsetY.value) / scale.value;
+  let sx = -offsetX.value / scale.value;
+  let sy = -offsetY.value / scale.value;
   const sWidth = props.cropWidth / scale.value;
   const sHeight = props.cropHeight / scale.value;
+
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, props.cropWidth, props.cropHeight);
   ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, props.cropWidth, props.cropHeight);
+
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(b => resolve(b), 'image/png'));
   if (!blob) return;
   const path = `${props.uploadFolder}/${Date.now()}_${file.name}`;
@@ -175,9 +166,13 @@ async function cropAndUpload() {
   position: relative;
   border: 2px dashed #4a4a4a;
   box-sizing: content-box;
+  background-color: white;
 }
 .crop-area img {
-  cursor: move;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
   user-select: none;
   pointer-events: none;
 }
@@ -189,8 +184,5 @@ async function cropAndUpload() {
 }
 .modal-card-foot {
   justify-content: flex-end;
-}
-.mt-2 {
-  margin-top: 0.5rem;
 }
 </style>
