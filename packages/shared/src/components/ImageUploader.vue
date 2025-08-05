@@ -1,3 +1,4 @@
+
 <template>
   <div>
     <div class="field has-addons">
@@ -33,6 +34,7 @@
                 :src="selectedImage"
                 draggable="false"
                 :style="{ transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})` }"
+                @load="onImageLoad"
               />
             </div>
             <div class="crop-dimensions">{{ cropWidth }} x {{ cropHeight }}</div>
@@ -101,6 +103,19 @@ function onFileSelected(e: Event) {
   offsetX.value = 0;
   offsetY.value = 0;
   scale.value = 1;
+}
+
+function onImageLoad() {
+  if (!imageRef.value) return;
+  const imgW = imageRef.value.naturalWidth;
+  const imgH = imageRef.value.naturalHeight;
+  const cropW = props.cropWidth;
+  const cropH = props.cropHeight;
+
+  // Use cover mode: scale to fill the crop area, center and clip
+  scale.value = Math.max(cropW / imgW, cropH / imgH);
+  offsetX.value = (cropW - imgW * scale.value) / 2;
+  offsetY.value = (cropH - imgH * scale.value) / 2;
 }
 
 function startDrag(e: MouseEvent) {

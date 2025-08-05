@@ -1,3 +1,4 @@
+
 <template>
   <div class="game-wrapper">
     <div ref="phaserContainer" class="phaser-container" />
@@ -26,21 +27,50 @@ import { db } from '@top-x/shared'
 import Phaser from 'phaser'
 import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/ZoneRevealScene'
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
+import { useHead } from '@vueuse/head'
+import { logEvent } from 'firebase/analytics'
+import { analytics } from '@top-x/shared'
 
 const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: Phaser.Game | null = null
 const route = useRoute()
 const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
+const gameId = ref((route.query.game as string))
+const gameTitle = ref('')
+const gameDescription = ref('')
+
+useHead({
+  title: `TOP-X: ${gameTitle.value || 'Zone Reveal Game'}`,
+  meta: [
+    { name: 'description', content: gameDescription.value || "Play Zone Reveal on TOP-X: Navigate, avoid enemies, reveal the hidden image! Powered by Phaser and Firebase." },
+  ],
+})
 
 onMounted(async () => {
   if (!phaserContainer.value) return
 
-  const gameId = (route.query.game as string)?.toLowerCase()
-  if (gameId) {
+  if (analytics) {
+    logEvent(analytics, 'game_view', { game_name: gameId.value, view_type: 'play' })
+  }
+
+  if (gameId.value) {
     try {
-      const snap = await getDoc(doc(db, 'games', gameId))
-      if (snap.exists()) {
-        zoneRevealConfig.value = snap.data().custom as ZoneRevealConfig
+      const gameDocRef = doc(db, 'games', gameId.value)
+      const gameDoc = await getDoc(gameDocRef)
+
+      if (gameDoc.exists()) {
+        const gameData = gameDoc.data()
+        gameTitle.value = gameData.name || ''
+        gameDescription.value = gameData.description || ''
+        zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
+
+        console.log('ZoneReveal: Game data fetched:', {
+          gameTitle: gameTitle.value,
+          gameDescription: gameDescription.value,
+          custom: zoneRevealConfig.value
+        })
+      } else {
+        console.error('ZoneReveal: Game document not found for ID:', gameId.value)
       }
     } catch (err) {
       console.error('Failed fetching zone reveal config:', err)
