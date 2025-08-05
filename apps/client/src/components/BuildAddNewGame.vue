@@ -139,7 +139,7 @@ const game = ref<Game>(props.existingGame ? { ...props.existingGame } : {
   shareLink: '',
 });
 
-function getDefaultCustom(customType: string): PyramidConfig  | ZoneRevealConfig {
+function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -154,7 +154,7 @@ function getDefaultCustom(customType: string): PyramidConfig  | ZoneRevealConfig
       communityItems: [],
       communityHeader: '',
     };
-  } else if (customType === 'zoneRevealConfig') {
+  } else if (customType === 'ZoneRevealConfig') {
     return {
       levelsConfig: [],
       backgroundImage: '',
@@ -164,7 +164,6 @@ function getDefaultCustom(customType: string): PyramidConfig  | ZoneRevealConfig
       finishPercent: 0,
       heartIcon: '',
     };
-  
   } else {
     throw new Error('Unknown custom type');
   }
@@ -172,7 +171,7 @@ function getDefaultCustom(customType: string): PyramidConfig  | ZoneRevealConfig
 
 async function saveGame() {
   try {
-    const data = { ...game.value };
+    const data = JSON.parse(JSON.stringify(game.value));
     delete data.id;
     if (props.existingGame && props.existingGame.id) {
       const gameRef = doc(db, 'games', props.existingGame.id);
