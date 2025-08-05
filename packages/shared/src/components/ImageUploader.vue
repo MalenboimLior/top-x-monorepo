@@ -1,54 +1,49 @@
 
 <template>
-  <div>
-    <div class="field has-addons">
-      <div class="control is-expanded">
-        <input v-model="internalValue" class="input" type="text" />
-      </div>
-      <div class="control">
-        <CustomButton type="is-info" label="Upload" @click="openFileDialog" />
-        <input ref="fileInput" type="file" accept="image/*" class="is-hidden" @change="onFileSelected" />
-      </div>
+  <div class="image-uploader">
+    <div v-if="modelValue">
+      <img :src="modelValue" alt="Current image" style="max-width: 200px; height: auto;" />
+      <button class="button is-primary" @click="selectImage">Change Image</button>
     </div>
+    <button v-else class="button is-primary" @click="selectImage">Upload Image</button>
 
-    <div v-if="selectedImage" class="modal is-active">
-      <div class="modal-background" @click="closeCrop"></div>
-      <div class="modal-card">
-        <header class="modal-card-head">
-          <p class="modal-card-title">Crop Image</p>
-          <button class="delete" aria-label="close" @click="closeCrop"></button>
-        </header>
-        <section class="modal-card-body">
-          <div class="crop-wrapper" :style="{ width: cropWidth + 'px' }">
-            <div
-              class="crop-area"
-              :style="{ width: cropWidth + 'px', height: cropHeight + 'px' }"
-            >
-              <img
-                ref="imageRef"
-                :src="selectedImage"
-                draggable="false"
-                :style="{ transform: `scale(${scale}) translate(${offsetX}px, ${offsetY}px)` }"
-                @load="onImageLoad"
-              />
-            </div>
-            <div class="crop-dimensions">{{ cropWidth }} x {{ cropHeight }}</div>
+    <input
+      type="file"
+      ref="fileInput"
+      @change="onFileChange"
+      accept="image/*"
+      style="display: none"
+    />
+
+    <div class="modal" :class="{ 'is-active': showModal }">
+      <div class="modal-background" @click="cancel"></div>
+      <div class="modal-content">
+        <div class="box">
+          <div
+            class="crop-container"
+            :style="{ width: cropWidth + 'px', height: cropHeight + 'px' }"
+          >
+            <img
+              ref="image"
+              :src="selectedImage ?? undefined"
+              alt="Image to crop"
+            />
           </div>
-        </section>
-        <footer class="modal-card-foot">
-          <CustomButton type="is-primary" label="Crop & Upload" @click="cropAndUpload" />
-          <CustomButton type="is-light" label="Cancel" @click="closeCrop" />
-        </footer>
+          <div class="controls mt-4 has-text-centered">
+            <button class="button is-success" @click="cropAndUpload">Upload</button>
+            <button class="button is-danger ml-2" @click="cancel">Cancel</button>
+          </div>
+        </div>
       </div>
+      <button class="modal-close is-large" aria-label="close" @click="cancel"></button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { storage } from '@top-x/shared/';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@top-x/shared';
-import CustomButton from './CustomButton.vue';
 
 interface Props {
   modelValue: string;
@@ -60,129 +55,102 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['update:modelValue']);
 
-const internalValue = ref(props.modelValue);
-watch(
-  () => props.modelValue,
-  val => {
-    internalValue.value = val;
-  }
-);
-watch(internalValue, val => emit('update:modelValue', val));
-
 const fileInput = ref<HTMLInputElement | null>(null);
+const showModal = ref(false);
 const selectedImage = ref<string | null>(null);
-const imageFile = ref<File | null>(null);
-const imageRef = ref<HTMLImageElement | null>(null);
+const originalFile = ref<File | null>(null);
+const image = ref<HTMLImageElement | null>(null);
 
-const offsetX = ref(0);
-const offsetY = ref(0);
-const scale = ref(1);
-
-function openFileDialog() {
+const selectImage = () => {
   fileInput.value?.click();
-}
+};
 
-function onFileSelected(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = event => {
-    selectedImage.value = event.target?.result as string;
-  };
-  reader.readAsDataURL(file);
-  imageFile.value = file;
-  offsetX.value = 0;
-  offsetY.value = 0;
-  scale.value = 1;
-}
+const onFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    originalFile.value = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      selectedImage.value = ev.target?.result as string;
+      showModal.value = true;
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
-function onImageLoad() {
-  if (!imageRef.value) return;
-  const imgW = imageRef.value.naturalWidth;
-  const imgH = imageRef.value.naturalHeight;
-  const cropW = props.cropWidth;
-  const cropH = props.cropHeight;
+const cropAndUpload = async () => {
+  if (!image.value || !originalFile.value) return;
 
-  scale.value = Math.max(cropW / imgW, cropH / imgH);
-  offsetX.value = (cropW - imgW * scale.value) / 2;
-  offsetY.value = (cropH - imgH * scale.value) / 2;
-  clampOffset();
-}
+  const imgWidth = image.value.naturalWidth;
+  const imgHeight = image.value.naturalHeight;
 
-function clampOffset() {
-  if (!imageRef.value) return;
-  const imgW = imageRef.value.naturalWidth;
-  const imgH = imageRef.value.naturalHeight;
-  const scaledW = imgW * scale.value;
-  const scaledH = imgH * scale.value;
+  const scale = Math.max(props.cropWidth / imgWidth, props.cropHeight / imgHeight);
+  const sourceWidth = props.cropWidth / scale;
+  const sourceHeight = props.cropHeight / scale;
+  const sourceX = (imgWidth - sourceWidth) / 2;
+  const sourceY = (imgHeight - sourceHeight) / 2;
 
-  const lowerX = cropWidth - scaledW;
-  const lowerY = cropHeight - scaledH;
-
-  offsetX.value = Math.max(lowerX, Math.min(0, offsetX.value));
-  offsetY.value = Math.max(lowerY, Math.min(0, offsetY.value));
-}
-
-function closeCrop() {
-  selectedImage.value = null;
-}
-
-async function cropAndUpload() {
-  const img = imageRef.value;
-  const file = imageFile.value;
-  if (!img || !file) return;
   const canvas = document.createElement('canvas');
   canvas.width = props.cropWidth;
   canvas.height = props.cropHeight;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  let sx = -offsetX.value / scale.value;
-  let sy = -offsetY.value / scale.value;
-  const sWidth = props.cropWidth / scale.value;
-  const sHeight = props.cropHeight / scale.value;
 
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, props.cropWidth, props.cropHeight);
-  ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, props.cropWidth, props.cropHeight);
+  ctx.drawImage(
+    image.value,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    0,
+    0,
+    props.cropWidth,
+    props.cropHeight
+  );
 
-  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(b => resolve(b), 'image/png'));
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((b) => resolve(b), 'image/png')
+  );
   if (!blob) return;
-  const path = `${props.uploadFolder}/${Date.now()}_${file.name}`;
+
+  const path = `${props.uploadFolder}/${Date.now()}_${originalFile.value.name}`;
   const sRef = storageRef(storage, path);
   await uploadBytes(sRef, blob);
-  internalValue.value = await getDownloadURL(sRef);
+  const url = await getDownloadURL(sRef);
+
+  emit('update:modelValue', url);
+  showModal.value = false;
   selectedImage.value = null;
-}
+};
+
+const cancel = () => {
+  showModal.value = false;
+  selectedImage.value = null;
+};
 </script>
 
 <style scoped>
-.crop-wrapper {
-  margin: 0 auto;
-  text-align: center;
+.image-uploader {
+  margin-bottom: 1rem;
 }
 
-.crop-area {
-  overflow: hidden;
+.crop-container {
   position: relative;
-  border: 2px dashed #4a4a4a;
-  box-sizing: content-box;
-  background-color: white;
-}
-.crop-area img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: 0 0;
-  user-select: none;
-  pointer-events: none;
+  overflow: hidden;
+  margin: 0 auto;
+  border: 1px solid #dbdbdb;
 }
 
-.crop-dimensions {
-  margin-top: 0.5rem;
-  color: #4a4a4a;
-  font-size: 0.9rem;
+.crop-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
-.modal-card-foot {
-  justify-content: flex-end;
+
+.controls {
+  display: flex;
+  justify-content: center;
 }
 </style>
