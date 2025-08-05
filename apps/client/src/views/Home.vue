@@ -1,4 +1,4 @@
-
+  
 <!-- Landing page listing available games -->
 <template>
   <div class="home-container">
