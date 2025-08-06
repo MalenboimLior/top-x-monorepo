@@ -49,6 +49,10 @@
     "./types/zoneReveal": {
       "types": "./src/types/zoneReveal.ts",
       "default": "./src/types/zoneReveal.ts"
+    },
+    "./types/dailyChallenge": {
+      "types": "./src/types/dailyChallenge.ts",
+      "default": "./src/types/dailyChallenge.ts"
     }
   }
 }
