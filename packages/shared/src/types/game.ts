@@ -31,6 +31,7 @@ export interface Game {
   custom: PyramidConfig | TriviaConfig | ZoneRevealConfig // Union of possible config types
   creator?: { userid: string; username: string };
   community?: boolean;
+  dailyChallengeActive?: boolean;
 }
 
 export interface LeaderboardEntry {

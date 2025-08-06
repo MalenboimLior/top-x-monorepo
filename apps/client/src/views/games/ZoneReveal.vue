@@ -38,6 +38,7 @@ import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
 import { useHead } from '@vueuse/head'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
+import { DateTime } from 'luxon'
 
 const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: Phaser.Game | null = null
@@ -73,13 +74,38 @@ onMounted(async () => {
         const gameData = gameDoc.data()
         gameTitle.value = gameData.name || ''
         gameDescription.value = gameData.description || ''
-        zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
-        
-        console.log('ZoneReveal: Game data fetched:', {
-          gameTitle: gameTitle.value,
-          gameDescription: gameDescription.value,
-          custom: zoneRevealConfig.value
-        })
+
+        if (gameData.dailyChallengeActive) {
+          try {
+            const challengeDate = DateTime.utc().toFormat('yyyy-MM-dd')
+            const challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeDate)
+            const snapshot = await getDoc(challengeDocRef)
+            if (snapshot.exists()) {
+              const dailyChallenge = snapshot.data()
+              const nowUTC = DateTime.utc()
+              const unlockTime = DateTime.fromISO(dailyChallenge.challengeAvailableUTC)
+              if (nowUTC < unlockTime) {
+                console.log('Challenge is not yet available.')
+              } else {
+                zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
+                answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
+                console.log("Today's challenge:", dailyChallenge)
+              }
+            } else {
+              console.error('No challenge found for', challengeDate)
+            }
+          } catch (err) {
+            console.error('Failed fetching daily challenge:', err)
+          }
+        } else {
+          zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
+
+          console.log('ZoneReveal: Game data fetched:', {
+            gameTitle: gameTitle.value,
+            gameDescription: gameDescription.value,
+            custom: zoneRevealConfig.value
+          })
+        }
 
         //game challance specific settings
         //TODO answerRevealUTC.value = gameData.answerRevealUTC || ''
