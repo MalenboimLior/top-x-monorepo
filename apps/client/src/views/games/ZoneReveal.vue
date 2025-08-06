@@ -78,19 +78,23 @@ onMounted(async () => {
         if (gameData.dailyChallengeActive) {
           try {
             const challengeDate = DateTime.utc().toFormat('yyyy-MM-dd')
+                            console.log('challengeDate:', challengeDate)
+
             const challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeDate)
             const snapshot = await getDoc(challengeDocRef)
             if (snapshot.exists()) {
               const dailyChallenge = snapshot.data()
               const nowUTC = DateTime.utc()
               const unlockTime = DateTime.fromISO(dailyChallenge.challengeAvailableUTC)
-              if (nowUTC < unlockTime) {
-                console.log('Challenge is not yet available.')
-              } else {
+              console.log('unlockTime:', unlockTime)
+      console.log('nowUTC:', nowUTC)
+              // if (nowUTC < unlockTime) {
+              //   console.log('Challenge is not yet available.')
+              // } else {
                 zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
                 answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
                 console.log("Today's challenge:", dailyChallenge)
-              }
+            //  }
             } else {
               console.error('No challenge found for', challengeDate)
             }
