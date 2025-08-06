@@ -16,10 +16,18 @@
   <button @click="restartGame">🔄 Restart</button>
 </div>
     </div>
+    <ZoneRevealEndScreen
+      v-if="showEndScreen"
+      :score="endScreenScore"
+      :game-id="gameId"
+      :answer-reveal-u-t-c="answerRevealUTC"
+      @close="showEndScreen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import ZoneRevealEndScreen from '@/components/games/ZoneRevealEndScreen.vue'
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
@@ -38,6 +46,9 @@ const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
 const gameId = ref((route.query.game as string))
 const gameTitle = ref('')
 const gameDescription = ref('')
+const showEndScreen = ref(false)
+const endScreenScore = ref(0)
+const answerRevealUTC = ref('')
 
 useHead({
   title: `TOP-X: ${gameTitle.value || 'Zone Reveal Game'}`,
@@ -63,12 +74,15 @@ onMounted(async () => {
         gameTitle.value = gameData.name || ''
         gameDescription.value = gameData.description || ''
         zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
-
+        
         console.log('ZoneReveal: Game data fetched:', {
           gameTitle: gameTitle.value,
           gameDescription: gameDescription.value,
           custom: zoneRevealConfig.value
         })
+
+        //game challance specific settings
+        //TODO answerRevealUTC.value = gameData.answerRevealUTC || ''
       } else {
         console.error('ZoneReveal: Game document not found for ID:', gameId.value)
       }
@@ -92,6 +106,7 @@ onMounted(async () => {
     },
     scene
   })
+  window.addEventListener('gameOver', handleGameOver)
 })
 
 onBeforeUnmount(() => {
@@ -99,7 +114,15 @@ onBeforeUnmount(() => {
     game.destroy(true)
     game = null
   }
+  window.removeEventListener('gameOver', handleGameOver)
 })
+function handleGameOver(e: Event) {
+  const customEvent = e as CustomEvent<{ score: number; totalTime: number }>
+  endScreenScore.value = customEvent.detail.score
+  showEndScreen.value = true
+  if (game) game.scene.pause('GameScene') // Ensure paused
+}
+
 function setDirection(dir: 'up' | 'down' | 'left' | 'right') {
   window.dispatchEvent(new CustomEvent('setDirection', { detail: dir }));
 }

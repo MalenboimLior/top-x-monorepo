@@ -799,22 +799,23 @@ powerup.play(animKey);
 
     if (this.lives <= 0) {
       this.scene.pause();
-      this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
-        font: '24px Arial',
-        color: '#ff0000'
-      }).setDepth(3);
-      this.time.delayedCall(2500, () => {
-        console.log('Game Over: Resetting to Level 1');
-        this.currentLevel = 0;
-        this.lives = 3;
-        this.score = 0;
-        this.totalTime = 0;
-        this.updateLivesIcons();
-        this.updateScore();
-        this.totalTimeText.setText('Time: 0');
-        this.loadLevel(this.currentLevel);
-        this.scene.resume();
-      });
+      // this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'GAME OVER', {
+      //   font: '24px Arial',
+      //   color: '#ff0000'
+      // }).setDepth(3);
+      // this.time.delayedCall(2500, () => {
+      //   console.log('Game Over: Resetting to Level 1');
+      //   this.currentLevel = 0;
+      //   this.lives = 3;
+      //   this.score = 0;
+      //   this.totalTime = 0;
+      //   this.updateLivesIcons();
+      //   this.updateScore();
+      //   this.totalTimeText.setText('Time: 0');
+      //   this.loadLevel(this.currentLevel);
+      //   this.scene.resume();
+      // });
+      window.dispatchEvent(new CustomEvent('gameOver', { detail: { score: this.score, totalTime: this.totalTime } }))
     }
   }
 
