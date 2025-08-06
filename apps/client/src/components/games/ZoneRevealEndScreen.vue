@@ -15,17 +15,43 @@
       <p>Follow <a href="https://x.com/Topxapp" target="_blank">@Topxapp</a> to see the answer and the winners!</p>
     </div>
     <button @click="$emit('close')">Close</button>
+
+    <div class="leaderboard-section">
+      <h3>Top Players</h3>
+      <table v-if="leaderboard.length" class="table is-fullwidth is-striped">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(entry, index) in leaderboard" :key="entry.uid">
+            <td>{{ index + 1 }}</td>
+            <td>
+              <figure class="image is-32x32 is-inline-block">
+                <img :src="entry.photoURL" alt="Profile" class="is-rounded" />
+              </figure>
+              @{{ entry.username }} <!-- {{ entry.displayName }} ( -->
+            </td>
+            <td>{{ entry.score }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else>No leaderboard data available yet.</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { doc, updateDoc } from 'firebase/firestore' // If direct update; else use userStore method
-import { db } from '@top-x/shared'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import type { LeaderboardEntry } from '@top-x/shared/types'
 
 const props = defineProps<{
   score: number
@@ -39,8 +65,22 @@ const userStore = useUserStore()
 const router = useRouter()
 const answer = ref('')
 const hasSubmitted = ref(false)
+const leaderboard = ref<LeaderboardEntry[]>([])
 
 const formattedRevealDate = computed(() => new Date(props.answerRevealUTC).toLocaleString())
+
+onMounted(() => {
+  fetchLeaderboard()
+})
+
+async function fetchLeaderboard() {
+  try {
+    const response = await axios.get(`https://us-central1-top-x-co.cloudfunctions.net/getTopLeaderboard?gameId=${props.gameId}&limit=10`)
+    leaderboard.value = response.data
+  } catch (err) {
+    console.error('Failed to fetch leaderboard:', err)
+  }
+}
 
 async function handleSubmit() {
   if (!props.gameId) {
@@ -95,6 +135,10 @@ function handleLogin() {
   text-align: center;
   color: white;
   z-index: 100;
+  width: 100%;
+  max-width: 400px; /* Matches game canvas width for full coverage */
+  overflow-y: auto;
+  max-height: 80vh;
 }
 input {
   padding: 8px;
@@ -114,5 +158,20 @@ button:hover {
 }
 a {
   color: #00ff00;
+}
+.leaderboard-section {
+  margin-top: 20px;
+  text-align: left;
+}
+.image.is-32x32 {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.table {
+  background-color: #333;
+  color: white;
+}
+.table th {
+  color: #ddd;
 }
 </style>
