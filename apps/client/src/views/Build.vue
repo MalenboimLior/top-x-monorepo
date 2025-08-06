@@ -39,6 +39,11 @@
                   :label="game.active ? 'Unpublish' : 'Publish'"
                   @click="togglePublish(game)"
                 />
+                <CustomButton
+                  type="is-info"
+                  label="Edit Daily Challenges"
+                  @click="openDailyChallenges(game)"
+                />
               </div>
             </div>
           </Card>
@@ -54,6 +59,11 @@
           @cancel="handleCancel"
         />
       </div>
+      <DailyChallengesList
+        v-if="selectedDailyChallengesGame"
+        :game="selectedDailyChallengesGame"
+        @close="selectedDailyChallengesGame = null"
+      />
     </div>
   </div>
 </template>
@@ -66,6 +76,7 @@ import { db } from '@top-x/shared';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import BuildAddNewGame from '@/components/BuildAddNewGame.vue';
+import DailyChallengesList from '@/components/build/DailyChallengesList.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
 
 const userStore = useUserStore();
@@ -74,6 +85,7 @@ const availableGameTypes = ref<GameType[]>([]);
 const myGames = ref<Game[]>([]);
 const selectedGameType = ref<GameType | null>(null);
 const selectedGame = ref<Game | null>(null);
+const selectedDailyChallengesGame = ref<Game | null>(null);
 
 onMounted(() => {
   if (user.value) {
@@ -114,6 +126,10 @@ function editGame(game: Game) {
   } else {
     console.error('Game type not found for editing');
   }
+}
+
+function openDailyChallenges(game: Game) {
+  selectedDailyChallengesGame.value = game;
 }
 
 async function togglePublish(game: Game) {
