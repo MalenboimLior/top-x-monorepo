@@ -20,9 +20,15 @@
         <div class="box">
           <div
             class="image-crop-frame"
-            :style="{ width: props.cropWidth + 'px', height: props.cropHeight + 'px' }"
-            @mousedown="onMouseDown"
-            @wheel.prevent="onWheel"
+            :style="{
+              width: props.cropWidth + 'px',
+              height: props.cropHeight + 'px',
+              transform: `scale(${previewScale})`,
+              transformOrigin: 'top left',
+              boxShadow: previewScale < 1 ? '0 0 0 2px #00d1b2' : undefined
+            }"
+            @mousedown="onMouseDownPreview"
+            @wheel.prevent="onWheelPreview"
           >
             <img
               v-if="selectedImage"
@@ -60,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { storage } from '@top-x/shared/';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -86,6 +92,50 @@ const dragging = ref(false);
 const imgNatural = ref({ width: 1, height: 1 });
 const scale = ref(1);
 const minScale = ref(1);
+
+// Responsive preview scaling
+const maxPreviewWidth = 0.9 * window.innerWidth;
+const maxPreviewHeight = 0.7 * window.innerHeight;
+const previewScale = computed(() => {
+  const scaleW = maxPreviewWidth / props.cropWidth;
+  const scaleH = maxPreviewHeight / props.cropHeight;
+  return Math.min(1, scaleW, scaleH);
+});
+
+// Helper to get coordinates in crop area space
+const getPreviewCoords = (e: MouseEvent | WheelEvent) => {
+  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  const px = (e.clientX - rect.left) / previewScale.value;
+  const py = (e.clientY - rect.top) / previewScale.value;
+  return { x: px, y: py };
+};
+
+// Mouse events for scaled preview
+const onMouseDownPreview = (e: MouseEvent) => {
+  dragging.value = true;
+  const { x, y } = getPreviewCoords(e);
+  startDrag.value = { x: x - offset.value.x, y: y - offset.value.y };
+  window.addEventListener('mousemove', onMouseMovePreview);
+  window.addEventListener('mouseup', onMouseUpPreview);
+};
+const onMouseMovePreview = (e: MouseEvent) => {
+  if (!dragging.value) return;
+  const { x, y } = getPreviewCoords(e);
+  offset.value.x = x - startDrag.value.x;
+  offset.value.y = y - startDrag.value.y;
+  clampOffset();
+};
+const onMouseUpPreview = () => {
+  dragging.value = false;
+  window.removeEventListener('mousemove', onMouseMovePreview);
+  window.removeEventListener('mouseup', onMouseUpPreview);
+};
+
+const onWheelPreview = (e: WheelEvent) => {
+  if (!image.value) return;
+  const { x, y } = getPreviewCoords(e);
+  setZoom(scale.value + (e.deltaY < 0 ? 0.05 : -0.05), x, y);
+};
 
 const selectImage = () => {
   fileInput.value?.click();
@@ -131,48 +181,24 @@ const clampOffset = () => {
   offset.value.y = Math.min(0, Math.max(offset.value.y, props.cropHeight - imgH));
 };
 
-const onMouseDown = (e: MouseEvent) => {
-  dragging.value = true;
-  startDrag.value = { x: e.clientX - offset.value.x, y: e.clientY - offset.value.y };
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
-};
-const onMouseMove = (e: MouseEvent) => {
-  if (!dragging.value) return;
-  offset.value.x = e.clientX - startDrag.value.x;
-  offset.value.y = e.clientY - startDrag.value.y;
-  clampOffset();
-};
-const onMouseUp = () => {
-  dragging.value = false;
-  window.removeEventListener('mousemove', onMouseMove);
-  window.removeEventListener('mouseup', onMouseUp);
-};
-
-
 const setZoom = (newScale: number, centerX?: number, centerY?: number) => {
   if (!image.value) return;
   const prevScale = scale.value;
   scale.value = Math.max(minScale.value, Math.min(3, newScale));
-  // Zoom to center or mouse position
-  let mx = centerX, my = centerY;
-  if (mx === undefined || my === undefined) {
-    // Default to center of crop area
-    mx = props.cropWidth / 2;
-    my = props.cropHeight / 2;
-  }
-  offset.value.x = mx - ((mx - offset.value.x) * (scale.value / prevScale));
-  offset.value.y = my - ((my - offset.value.y) * (scale.value / prevScale));
+
+  // Calculate zoom center
+  const mx = centerX ?? props.cropWidth / 2;
+  const my = centerY ?? props.cropHeight / 2;
+
+  // Adjust offsets to zoom toward the center
+  offset.value.x = mx - ((mx - offset.value.x) * (prevScale / scale.value));
+  offset.value.y = my - ((my - offset.value.y) * (prevScale / scale.value));
+
   clampOffset();
 };
 
 const zoomIn = () => setZoom(scale.value + 0.1);
 const zoomOut = () => setZoom(scale.value - 0.1);
-
-const onWheel = (e: WheelEvent) => {
-  if (!image.value) return;
-  setZoom(scale.value + (e.deltaY < 0 ? 0.05 : -0.05), e.offsetX, e.offsetY);
-};
 
 watch(scale, clampOffset);
 
