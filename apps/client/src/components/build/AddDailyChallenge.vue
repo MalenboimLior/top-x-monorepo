@@ -50,6 +50,15 @@
       <label class="label has-text-white">Discussion URL</label>
       <input class="input" v-model="localChallenge.discussionUrl" />
     </div>
+
+    <!-- Custom config based on type -->
+    <div v-if="customType === 'PyramidConfig'">
+      <AddPyramid v-model="localChallenge.custom as PyramidConfig" />
+    </div>
+    <div v-else-if="customType === 'ZoneRevealConfig'">
+      <AddZoneReveal v-model="localChallenge.custom as ZoneRevealConfig" />
+    </div>
+
     <div class="buttons mt-3">
       <CustomButton type="is-success" label="Save" @click="save" />
       <CustomButton type="is-light" label="Cancel" @click="emit('cancel')" />
@@ -58,26 +67,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { Game } from '@top-x/shared/types/game';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
+import AddPyramid from './AddPyramid.vue';
+import AddZoneReveal from './AddZoneReveal.vue';
+import type { PyramidConfig } from '@top-x/shared/types/pyramid';
+import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 
 const props = defineProps<{ game: Game; challenge: DailyChallenge }>();
 const emit = defineEmits<{ (e: 'saved'): void; (e: 'cancel'): void }>();
 
-const localChallenge = ref<DailyChallenge>({ ...props.challenge });
+const customType = computed(() => {
+  const custom = props.game.custom;
+  if ('levelsConfig' in custom) return 'ZoneRevealConfig';
+  if ('items' in custom) return 'PyramidConfig';
+  return '';
+});
+
+const localChallenge = ref<DailyChallenge>({
+  ...props.challenge,
+  custom: props.challenge.custom || getDefaultCustom(customType.value),
+});
 
 async function save() {
   const challengeRef = doc(db, 'games', props.game.id, 'daily_challenges', localChallenge.value.date);
   await setDoc(challengeRef, {
     ...localChallenge.value,
-    custom: props.game.custom,
+    custom: localChallenge.value.custom,
     createdAt: localChallenge.value.createdAt || new Date().toISOString(),
   });
   emit('saved');
+}
+
+function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig {
+  if (customType === 'PyramidConfig') {
+    return {
+      items: [],
+      rows: [],
+      sortItems: { orderBy: 'id', order: 'asc' },
+      HideRowLabel: false,
+      shareImageTitle: '',
+      poolHeader: '',
+      worstHeader: '',
+      worstPoints: 0,
+      worstShow: false,
+      communityItems: [],
+      communityHeader: '',
+    };
+  } else if (customType === 'ZoneRevealConfig') {
+    return {
+      levelsConfig: [],
+      backgroundImage: '',
+      spritesheets: {},
+      playerSpeed: 0,
+      enemiesSpeedArray: {},
+      finishPercent: 0,
+      heartIcon: '',
+    };
+  } else {
+    throw new Error('Unknown custom type');
+  }
 }
 </script>
 
