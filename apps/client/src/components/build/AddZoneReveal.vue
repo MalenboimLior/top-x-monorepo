@@ -187,10 +187,14 @@ const newSpriteValue = ref('');
 const newEnemyKey = ref('');
 const newEnemyValue = ref(0);
 
+// avoid infinite update loop between parent and child
+const isUpdatingFromParent = ref(false);
+
 watch(
   () => props.modelValue,
   (val) => {
     // Clone to avoid keeping Vue proxies in the parent
+    isUpdatingFromParent.value = true;
     config.value = JSON.parse(JSON.stringify(val));
   },
   { deep: true, immediate: true }
@@ -198,6 +202,11 @@ watch(
 watch(
   config,
   (val) => {
+    if (isUpdatingFromParent.value) {
+      // reset flag without emitting to prevent recursive updates
+      isUpdatingFromParent.value = false;
+      return;
+    }
     emit('update:modelValue', JSON.parse(JSON.stringify(val)));
   },
   { deep: true }
