@@ -12,8 +12,8 @@
         <button @click="setDirection('right')">➡️</button>
       </div>
       <div class="actions">
-  <button @click="togglePause">⏸️ Pause / ▶️ Resume</button>
-  <button @click="restartGame">🔄 Restart</button>
+  <!-- <button @click="togglePause">⏸️ Pause / ▶️ Resume</button>
+  <button @click="restartGame">🔄 Restart</button> -->
 </div>
     </div>
     <ZoneRevealEndScreen
