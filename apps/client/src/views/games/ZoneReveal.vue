@@ -150,7 +150,9 @@ function handleGameOver(e: Event) {
   const customEvent = e as CustomEvent<{ score: number; totalTime: number }>
   endScreenScore.value = customEvent.detail.score
   showEndScreen.value = true
-  if (game) game.scene.pause('GameScene') // Ensure paused
+  if (game && game.scene.isActive('GameScene')) {
+    game.scene.pause('GameScene') // Ensure paused
+  }
 }
 
 function setDirection(dir: 'up' | 'down' | 'left' | 'right') {
