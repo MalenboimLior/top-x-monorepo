@@ -300,12 +300,14 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     });
 
     // Hearts for lives
-    for (let i = 0; i < 5; i++) {
-      const heart = this.add.image(100 + i * 20, 15, 'heart_icon')
-        .setScale(0.05)
-        .setVisible(i < this.lives);
-      this.livesIcons.push(heart);
-    }
+    this.livesIcons.forEach(icon => icon.destroy());
+this.livesIcons = [];
+for (let i = 0; i < 5; i++) {
+  const heart = this.add.image(100 + i * 20, 15, 'heart_icon')
+    .setScale(0.05)
+    .setVisible(i < this.lives);
+  this.livesIcons.push(heart);
+}
 
     this.scoreText = this.add.text(180, 10, 'Score: 0', {
       font: '14px Arial',
@@ -401,6 +403,15 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
       else this.scene.pause();
     };
     const handleRestart = () => {
+      this.currentLevel = 0;
+      this.lives = 3;
+      this.score = 0;
+      this.totalTime = 0;
+      this.isLosingLife = false;
+      this.remainingTime = this.levels[0].timeLimit;
+      this.updateLivesIcons();
+      this.updateScore();
+      this.totalTimeText.setText('Time: 0');
       this.scene.restart();
     };
 
@@ -576,6 +587,7 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
 
     if (this.remainingTime <= 0) {
       this.loseLife();
+      this.remainingTime = this.timeLimit;
     }
 
     this.renderRevealMask();
