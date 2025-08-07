@@ -256,12 +256,14 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
     this.cursors = this.input.keyboard!.createCursorKeys();
 
-    this.anims.create({
-      key: 'move',
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 5 }),
-      frameRate: 6,
-      repeat: -1
-    });
+    if (!this.anims.exists('move')) {
+      this.anims.create({
+        key: 'move',
+        frames: this.anims.generateFrameNumbers('player', { start: 0, end: 5 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
 
     // Create player
     this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
@@ -330,30 +332,37 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     });
     enemyTypes.forEach(type => {
       const endFrame = type === 'robot' ? 3 : 5;
-      this.anims.create({
-        key: `${type}_move`,
-        frames: this.anims.generateFrameNumbers(type, { start: 0, end: endFrame }),
-        frameRate: 6,
-        repeat: -1
-      });
+      const key = `${type}_move`;
+      if (!this.anims.exists(key)) {
+        this.anims.create({
+          key,
+          frames: this.anims.generateFrameNumbers(type, { start: 0, end: endFrame }),
+          frameRate: 6,
+          repeat: -1
+        });
+      }
     });
 
     this.enemyGroup = this.physics.add.group();
 
     // Create powerup group
-    this.anims.create({
-      key: 'heart_anim',
-      frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 4 }),
-      frameRate: 6,
-      repeat: -1
-    });
+    if (!this.anims.exists('heart_anim')) {
+      this.anims.create({
+        key: 'heart_anim',
+        frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 4 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
 
-    this.anims.create({
-      key: 'clock_anim',
-      frames: this.anims.generateFrameNumbers('clock', { start: 0, end: 4 }),
-      frameRate: 6,
-      repeat: -1
-    });
+    if (!this.anims.exists('clock_anim')) {
+      this.anims.create({
+        key: 'clock_anim',
+        frames: this.anims.generateFrameNumbers('clock', { start: 0, end: 4 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
 
     this.powerupGroup = this.physics.add.group();
 
@@ -383,18 +392,26 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     );
 
     // Mobile controls
-    window.addEventListener('setDirection', (e: Event) => {
+    const handleSetDirection = (e: Event) => {
       const custom = e as CustomEvent<'up' | 'down' | 'left' | 'right'>;
       this.setDirection(custom.detail);
-    });
-
-    window.addEventListener('togglePause', () => {
+    };
+    const handleTogglePause = () => {
       if (this.scene.isPaused()) this.scene.resume();
       else this.scene.pause();
-    });
-
-    window.addEventListener('restartGame', () => {
+    };
+    const handleRestart = () => {
       this.scene.restart();
+    };
+
+    window.addEventListener('setDirection', handleSetDirection);
+    window.addEventListener('togglePause', handleTogglePause);
+    window.addEventListener('restartGame', handleRestart);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('setDirection', handleSetDirection);
+      window.removeEventListener('togglePause', handleTogglePause);
+      window.removeEventListener('restartGame', handleRestart);
     });
 
     let swipeStart: Phaser.Math.Vector2 | null = null;
