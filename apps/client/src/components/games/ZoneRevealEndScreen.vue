@@ -7,14 +7,14 @@
       <button @click="handleLogin">Login</button>
     </div>
     <div v-else-if="!hasSubmitted">
-      <input v-model="answer" placeholder="Your guess..." />
+      <input v-model="answer" placeholder="Your guess..." @keydown.stop />
       <button @click="handleSubmit">Submit Answer</button>
     </div>
     <div v-if="hasSubmitted">
       <p>Good luck! We will reveal the answer on {{ formattedRevealDate }}</p>
       <p>Follow <a href="https://x.com/Topxapp" target="_blank">@Topxapp</a> to see the answer and the winners!</p>
     </div>
-    <button @click="$emit('close')">Close</button>
+<button @click="handleTryAgain">🔁 Try Again</button>
 
     <div class="leaderboard-section">
       <h3>Top Players</h3>
@@ -110,7 +110,20 @@ async function handleSubmit() {
     alert('Failed to submit. Try again.')
   }
 }
+function handleTryAgain() {
+  // Blur any focused input
+  const active = document.activeElement as HTMLElement | null
+  if (active && typeof active.blur === 'function') {
+    active.blur()
+  }
 
+  emit('close')
+
+  // Slight delay to allow modal to unmount smoothly before restarting
+  setTimeout(() => {
+    window.dispatchEvent(new Event('restartGame'))
+  }, 100)
+}
 function handleLogin() {
   // Store pending data
   localStorage.setItem(`zonereveal_${props.gameId}`, JSON.stringify({
