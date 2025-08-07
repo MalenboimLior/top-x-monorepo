@@ -190,15 +190,14 @@ const newEnemyValue = ref(0);
 watch(
   () => props.modelValue,
   (val) => {
-    // Clone to avoid keeping Vue proxies in the parent
-    config.value = JSON.parse(JSON.stringify(val));
+    config.value = val;  // Remove clone; use direct assignment
   },
   { deep: true, immediate: true }
 );
 watch(
   config,
   (val) => {
-    emit('update:modelValue', JSON.parse(JSON.stringify(val)));
+    emit('update:modelValue', val);  // Remove clone; emit direct reference
   },
   { deep: true }
 );
