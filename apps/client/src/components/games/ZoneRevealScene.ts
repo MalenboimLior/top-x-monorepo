@@ -205,7 +205,7 @@ export default class VolfiedScene extends Phaser.Scene {
     const defaults = {
       player: '/assets/Monocle_spritesheet.png',
       enemy: '/assets/monster_spritesheet.png',
-      robot: '/assets/robot_spritesheet.png',
+      robot: '/assets/Alien_spritesheet.png',
       heart: '/assets/heart_spritesheet.png',
       clock: '/assets/time_spritesheet.png'
     };
@@ -317,7 +317,7 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
       });
     });
     enemyTypes.forEach(type => {
-      const endFrame = type === 'robot' ? 11 : 5;
+      const endFrame = type === 'robot' ? 3 : 5;
       this.anims.create({
         key: `${type}_move`,
         frames: this.anims.generateFrameNumbers(type, { start: 0, end: endFrame }),
@@ -562,35 +562,50 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
   }
 
   private spawnPowerup(powerup: Phaser.Physics.Arcade.Sprite, animKey: string) {
-  if (powerup.getData('destroyed')) return;
+  if (!powerup || !powerup.scene || powerup.getData('destroyed')) return;
+  if (!this.anims.exists(animKey)) return;
 
   this.setRandomUnfilledPosition(powerup);
   powerup.setActive(true).setVisible(true);
-  powerup.play(animKey);
+
+  try {
+    powerup.play(animKey);
+  } catch (err) {
+    console.warn(`Failed to play animation '${animKey}'`, err);
+    return;
+  }
 
   if (powerup.body) {
     (powerup.body as Phaser.Physics.Arcade.Body).enable = true;
-  } 
-powerup.play(animKey);
-    const visibleTime = Phaser.Math.Between(6000, 9000);
-    const blinkTimer = this.time.delayedCall(visibleTime - 2000, () => {
-      this.tweens.add({
-        targets: powerup,
-        alpha: 0.2,
-        duration: 500,
-        yoyo: true,
-        repeat: -1
-      });
-    }, [], this);
-    powerup.setData('blinkTimer', blinkTimer);
-    const despawnTimer = this.time.delayedCall(visibleTime, () => {
-      powerup.setActive(false).setVisible(false);
-      powerup.alpha = 1;
-      this.tweens.killTweensOf(powerup);
-      this.time.delayedCall(Phaser.Math.Between(2000, 5000), this.spawnPowerup, [powerup, animKey], this);
-    }, [], this);
-    powerup.setData('despawnTimer', despawnTimer);
   }
+
+  const visibleTime = Phaser.Math.Between(6000, 9000);
+  const blinkTimer = this.time.delayedCall(visibleTime - 2000, () => {
+    if (!powerup.active || !powerup.visible) return;
+    this.tweens.add({
+      targets: powerup,
+      alpha: 0.2,
+      duration: 500,
+      yoyo: true,
+      repeat: -1
+    });
+  }, [], this);
+  powerup.setData('blinkTimer', blinkTimer);
+
+  const despawnTimer = this.time.delayedCall(visibleTime, () => {
+    powerup.setActive(false).setVisible(false);
+    powerup.alpha = 1;
+    this.tweens.killTweensOf(powerup);
+
+    // Schedule next spawn
+    const delay = Phaser.Math.Between(2000, 5000);
+    const spawnTimer = this.time.delayedCall(delay, this.spawnPowerup, [powerup, animKey], this);
+    powerup.setData('spawnTimer', spawnTimer);
+  }, [], this);
+
+  powerup.setData('despawnTimer', despawnTimer);
+}
+
 
   private collectPowerup(player: Phaser.Types.Physics.Arcade.GameObjectWithBody, powerup: Phaser.Types.Physics.Arcade.GameObjectWithBody) {
     const powerupSprite = powerup as Phaser.Physics.Arcade.Sprite;
@@ -604,9 +619,14 @@ powerup.play(animKey);
     powerup.setActive(false).setVisible(false);
     powerup.alpha = 1;
     this.tweens.killTweensOf(powerup);
-    if (powerup.getData('despawnTimer')) powerup.getData('despawnTimer').remove();
-    if (powerup.getData('blinkTimer')) powerup.getData('blinkTimer').remove();
-    if (powerup.getData('spawnTimer')) powerup.getData('spawnTimer').remove();
+   ['despawnTimer', 'blinkTimer', 'spawnTimer'].forEach(timerKey => {
+  const timer: Phaser.Time.TimerEvent | null = powerup.getData(timerKey);
+  if (timer && !timer.hasDispatched) {
+    timer.remove();
+  }
+  powerup.setData(timerKey, null);
+});
+
     powerup.setData('destroyed', true);
 
     let tint = 0xff0000;
@@ -711,20 +731,24 @@ powerup.play(animKey);
     enemyBody.setVelocity(dir.vx, dir.vy);
   }
 
-  private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
-    const unfilled = [];
-    for (let y = 0; y < GRID_H; y++) {
-      for (let x = 0; x < GRID_W; x++) {
-        if (this.fillMask[y][x] === 0) {
-          unfilled.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
-        }
+ private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
+  const unfilled: { x: number; y: number }[] = [];
+  const margin = Math.floor(PLAYER_VISUAL_SIZE / TILE_SIZE);
+
+  for (let y = margin; y < GRID_H - margin; y++) {
+    for (let x = margin; x < GRID_W - margin; x++) {
+      if (this.fillMask[y][x] === 0) {
+        unfilled.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
       }
     }
-    if (unfilled.length > 0) {
-      const pos = Phaser.Math.RND.pick(unfilled);
-      object.setPosition(pos.x, pos.y);
-    }
   }
+
+  if (unfilled.length > 0) {
+    const pos = Phaser.Math.RND.pick(unfilled);
+    object.setPosition(pos.x, pos.y);
+  }
+}
+
 
   private loseLife() {
     if (this.isLosingLife) return;
