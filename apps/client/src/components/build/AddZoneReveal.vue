@@ -178,9 +178,9 @@ const config = ref<ZoneRevealConfig>({
   heartIcon: '',
 });
 
-const enemyTypes = ['bouncing', 'robot'];
+const enemyTypes = ['bouncing', 'robot', 'microbe'];
 const powerupTypes = ['extralive', 'extratime'];
-const spriteKeys = ['player', 'enemy', 'robot', 'heart', 'clock'];
+const spriteKeys = ['player', 'enemy', 'robot', 'microbe', 'heart', 'clock'];
 
 const newSpriteKey = ref('');
 const newSpriteValue = ref('');

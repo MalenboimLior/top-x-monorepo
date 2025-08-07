@@ -16,18 +16,20 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     player: '/assets/Monocle_spritesheet.png',
     enemy: '/assets/monster_spritesheet.png',
     robot: '/assets/robot_spritesheet.png',
+    microbe: '/assets/microbe_spritesheet.png',
     heart: '/assets/heart_spritesheet.png',
     clock: '/assets/time_spritesheet.png'
   },
   playerSpeed: 200,
-  enemiesSpeedArray: { bouncing: 100, robot: 80 },
+  enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90 },
   finishPercent: 50,
   heartIcon: '/assets/heart_icon.png',
   levelsConfig: [
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -40,7 +42,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -53,7 +56,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -66,7 +70,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -79,7 +84,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -92,7 +98,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -105,7 +112,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -118,7 +126,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 }
+        { type: 'robot', count: 0 },
+        { type: 'microbe', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
@@ -131,7 +140,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 1 },
-        { type: 'robot', count: 1 }
+        { type: 'robot', count: 1 },
+        { type: 'microbe', count: 1 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 1 },
@@ -144,7 +154,8 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     {
       enemyConfig: [
         { type: 'bouncing', count: 2 },
-        { type: 'robot', count: 2 }
+        { type: 'robot', count: 2 },
+        { type: 'microbe', count: 2 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 2 },
@@ -206,6 +217,7 @@ export default class VolfiedScene extends Phaser.Scene {
       player: '/assets/Monocle_spritesheet.png',
       enemy: '/assets/monster_spritesheet.png',
       robot: '/assets/Alien_spritesheet.png',
+      microbe: '/assets/microbe_spritesheet.png',
       heart: '/assets/heart_spritesheet.png',
       clock: '/assets/time_spritesheet.png'
     };
