@@ -403,6 +403,7 @@ for (let i = 0; i < 5; i++) {
       else this.scene.pause();
     };
     const handleRestart = () => {
+      if (this.scene.isPaused()) this.scene.resume();
       this.currentLevel = 0;
       this.lives = 3;
       this.score = 0;
