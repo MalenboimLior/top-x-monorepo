@@ -32,6 +32,8 @@ export interface Game {
   creator?: { userid: string; username: string };
   community?: boolean;
   dailyChallengeActive?: boolean;
+  /** Date identifier for the challenge shown when today's is missing */
+  dailyChallengeCurrent?: string;
 }
 
 export interface LeaderboardEntry {

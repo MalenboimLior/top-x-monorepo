@@ -78,16 +78,22 @@ onMounted(async () => {
         if (gameData.dailyChallengeActive) {
           try {
             const challengeDate = DateTime.utc().toFormat('yyyy-MM-dd')
-                            console.log('challengeDate:', challengeDate)
+            console.log('challengeDate:', challengeDate)
 
-            const challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeDate)
-            const snapshot = await getDoc(challengeDocRef)
+            let challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeDate)
+            let snapshot = await getDoc(challengeDocRef)
+
+            if (!snapshot.exists() && gameData.dailyChallengeCurrent) {
+              challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', gameData.dailyChallengeCurrent)
+              snapshot = await getDoc(challengeDocRef)
+            }
+
             if (snapshot.exists()) {
               const dailyChallenge = snapshot.data()
               const nowUTC = DateTime.utc()
               const unlockTime = DateTime.fromISO(dailyChallenge.challengeAvailableUTC)
               console.log('unlockTime:', unlockTime)
-      console.log('nowUTC:', nowUTC)
+              console.log('nowUTC:', nowUTC)
               // if (nowUTC < unlockTime) {
               //   console.log('Challenge is not yet available.')
               // } else {
@@ -96,7 +102,7 @@ onMounted(async () => {
                 console.log("Today's challenge:", dailyChallenge)
             //  }
             } else {
-              console.error('No challenge found for', challengeDate)
+              console.error('No challenge found for', challengeDate, 'or', gameData.dailyChallengeCurrent)
             }
           } catch (err) {
             console.error('Failed fetching daily challenge:', err)

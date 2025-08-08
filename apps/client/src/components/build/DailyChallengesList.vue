@@ -1,6 +1,7 @@
 <template>
   <div class="daily-challenges-list">
     <h3 class="title is-4 has-text-white">Daily Challenges for {{ game.name }}</h3>
+    <p v-if="currentChallenge" class="has-text-white">current default Challenge: {{ currentChallenge }}</p>
     <CustomButton type="is-success" label="Add Challenge" @click="addChallenge" />
     <table class="table is-fullwidth has-text-white mt-3">
       <thead>
@@ -16,6 +17,11 @@
           <td>{{ challenge.number }}</td>
           <td>
             <CustomButton type="is-small is-info" label="Edit" @click="editChallenge(challenge)" />
+            <CustomButton
+              type="is-small is-warning ml-1"
+              label="Set Current"
+              @click="setCurrent(challenge)"
+            />
           </td>
         </tr>
       </tbody>
@@ -35,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import AddDailyChallenge from './AddDailyChallenge.vue';
@@ -47,6 +53,7 @@ const emit = defineEmits<{ (e: 'close'): void }>();
 
 const challenges = ref<(DailyChallenge & { id: string })[]>([]);
 const editingChallenge = ref<DailyChallenge | null>(null);
+const currentChallenge = ref(props.game.dailyChallengeCurrent || '');
 let unsubscribe: (() => void) | null = null;
 
 onMounted(() => {
@@ -78,6 +85,17 @@ function editChallenge(ch: DailyChallenge & { id: string }) {
 
 function closeEditor() {
   editingChallenge.value = null;
+}
+
+async function setCurrent(ch: DailyChallenge & { id: string }) {
+  try {
+    await updateDoc(doc(db, 'games', props.game.id), {
+      dailyChallengeCurrent: ch.id,
+    });
+    currentChallenge.value = ch.id;
+  } catch (err) {
+    console.error('Failed to set current challenge:', err);
+  }
 }
 </script>
 
