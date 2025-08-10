@@ -1,6 +1,8 @@
 
 <template>
   <div class="game-wrapper">
+    <h2 class="subtitle has-text-success" v-html="gameTitle"></h2>
+
     <div ref="phaserContainer" class="phaser-container" />
     <div class="controls">
       <div class="row">

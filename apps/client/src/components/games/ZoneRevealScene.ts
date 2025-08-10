@@ -1013,7 +1013,7 @@ this.enemyGroup.children.entries.forEach((enemyObj) => {
 });
 this.enemyGroup.clear(true, true);
 
-      const winText = this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'YOU WIN!', {
+      const winText = this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'Clue Unlocked! 🎉🔍', {
         font: '24px Arial',
         color: '#00ff00'
       }).setDepth(3);

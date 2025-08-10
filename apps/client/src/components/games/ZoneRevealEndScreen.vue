@@ -1,7 +1,7 @@
 <template>
   <div class="end-screen-modal">
     <h2>Game Over</h2>
-    <p>Can you guess?</p>
+    <p>Take your Guess-</p>
     <div v-if="!userStore.user">
       <p>Login to submit your answer and save your score</p>
       <button @click="handleLogin">Login</button>
@@ -11,8 +11,11 @@
       <button @click="handleSubmit">Submit Answer</button>
     </div>
     <div v-if="hasSubmitted">
-      <p>Good luck! We will reveal the answer on {{ formattedRevealDate }}</p>
-      <p>Follow <a href="https://x.com/Topxapp" target="_blank">@Topxapp</a> to see the answer and the winners!</p>
+      <p>Wonder if you got it right? 🤔</p>
+<p>The answer will be announced at  {{ formattedRevealDate }}</p>
+      <p>Follow <a href="https://x.com/Topxisrael" target="_blank">@Topxisrael</a> to see the answer and the winners!</p>
+          <p>Good luck! 🤞🏻 </p>
+
     </div>
 <button @click="handleTryAgain">🔁 Try Again</button>
 
