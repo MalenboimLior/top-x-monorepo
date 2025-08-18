@@ -46,7 +46,8 @@ const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: Phaser.Game | null = null
 const route = useRoute()
 const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
-const gameId = ref((route.query.game as string))
+const gameId = ref(route.query.game as string)
+const challengeId = route.query.challenge as string | undefined
 const gameTitle = ref('')
 const gameDescription = ref('')
 const showEndScreen = ref(false)
@@ -77,7 +78,23 @@ onMounted(async () => {
         gameTitle.value = gameData.name || ''
         gameDescription.value = gameData.description || ''
 
-        if (gameData.dailyChallengeActive) {
+        if (challengeId) {
+          try {
+            const challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeId)
+            const snapshot = await getDoc(challengeDocRef)
+
+            if (snapshot.exists()) {
+              const dailyChallenge = snapshot.data()
+              zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
+              answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
+              console.log('Challenge loaded:', dailyChallenge)
+            } else {
+              console.error('No challenge found for', challengeId)
+            }
+          } catch (err) {
+            console.error('Failed fetching daily challenge:', err)
+          }
+        } else if (gameData.dailyChallengeActive) {
           try {
             const challengeDate = DateTime.utc().toFormat('yyyy-MM-dd')
             console.log('challengeDate:', challengeDate)
