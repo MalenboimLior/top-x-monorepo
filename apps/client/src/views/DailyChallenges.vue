@@ -6,7 +6,7 @@
         v-for="challenge in challenges"
         :key="challenge.id"
         class="column is-half-desktop is-half-tablet is-full-mobile is-clickable"
-        @click="openChallenge(challenge.id)"
+        @click="openChallenge(challenge.route)"
       >
         <Card>
           <div class="card-content">
@@ -22,8 +22,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '@top-x/shared'
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore'
+import { db, analytics, trackEvent } from '@top-x/shared'
 import Card from '@top-x/shared/components/Card.vue'
 import CustomButton from '@top-x/shared/components/CustomButton.vue'
 import { useHead } from '@vueuse/head'
@@ -38,15 +38,24 @@ useHead({ title: 'Daily Challenges' })
 onMounted(async () => {
   if (!gameId.value) return
   try {
+    const gameDoc = await getDoc(doc(db, 'games', gameId.value))
+    const gameTypeId = gameDoc.exists() ? (gameDoc.data() as any).gameTypeId || '' : ''
     const snapshot = await getDocs(collection(db, 'games', gameId.value, 'daily_challenges'))
-    challenges.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    challenges.value = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+      route: `/games/${gameTypeId}?game=${gameId.value}&challenge=${d.id}`,
+    }))
   } catch (err) {
     console.error('Failed fetching challenges:', err)
   }
 })
 
-function openChallenge(id: string) {
-  router.push(`/games/PyramidTier?game=${gameId.value}&challenge=${id}`)
+function openChallenge(route: string) {
+  const idMatch = route.match(/game=([^&]+)/)
+  const selectedGameId = idMatch ? idMatch[1] : 'unknown'
+  trackEvent(analytics, 'select_game', { game_id: selectedGameId })
+  router.push(route)
 }
 </script>
 
