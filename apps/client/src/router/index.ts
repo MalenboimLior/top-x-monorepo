@@ -14,6 +14,7 @@ import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import ZoneReveal from '../views/games/ZoneReveal.vue';
 import Build from '@/views/Build.vue';
+import DailyChallenges from '@/views/DailyChallenges.vue';
 
 const routes = [
   // {
@@ -48,6 +49,7 @@ const routes = [
   { path: '/privacy', name: 'PrivacyPolicy', component: PrivacyPolicy },
   { path: '/contact', name: 'ContactUs', component: ContactUs },
   { path: '/faq', name: 'FAQ', component: FAQ },
+  { path: '/DailyChallenges', name: 'DailyChallenges', component: DailyChallenges },
 
   { path: '/frenemies', name: 'FrenemySearch', component: FrenemySearch },
   { path: '/games/trivia', name: 'Trivia', component: Trivia },
