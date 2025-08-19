@@ -1,7 +1,10 @@
 
 <template>
   <div class="game-wrapper">
-    <h2 class="subtitle has-text-success" v-html="gameTitle"></h2>
+    <div class="game-header">
+      <button class="back-button" @click="goBack">⬅️</button>
+      <h2 class="subtitle has-text-success" v-html="gameTitle"></h2>
+    </div>
 
     <div ref="phaserContainer" class="phaser-container" />
     <div class="controls">
@@ -31,7 +34,7 @@
 <script setup lang="ts">
 import ZoneRevealEndScreen from '@/components/games/ZoneRevealEndScreen.vue'
 import { onMounted, onBeforeUnmount, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@top-x/shared'
 import Phaser from 'phaser'
@@ -45,6 +48,7 @@ import { DateTime } from 'luxon'
 const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: Phaser.Game | null = null
 const route = useRoute()
+const router = useRouter()
 const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
 const gameId = ref(route.query.game as string)
 const challengeId = route.query.challenge as string | undefined
@@ -57,11 +61,18 @@ const answerRevealUTC = ref('')
 function hideChrome() {
   document.querySelector('.navbar')?.classList.add('is-hidden')
   document.querySelector('footer.footer')?.classList.add('is-hidden')
+  document.body.style.overflow = 'hidden'
 }
 
 function showChrome() {
   document.querySelector('.navbar')?.classList.remove('is-hidden')
   document.querySelector('footer.footer')?.classList.remove('is-hidden')
+  document.body.style.overflow = ''
+}
+
+function goBack() {
+  showChrome()
+  router.back()
 }
 
 useHead({
@@ -212,10 +223,29 @@ function restartGame() {
 <style scoped>
 .game-wrapper {
   max-width: 100vw;
-  padding: 10px;
+  padding: 10px 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.game-header h2 {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+}
+
+.back-button {
+  margin-left: 10px;
 }
 
 .phaser-container {
