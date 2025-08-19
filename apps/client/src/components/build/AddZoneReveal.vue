@@ -1,5 +1,3 @@
-
-<!-- Component for editing ZoneRevealConfig -->
 <template>
   <div class="add-zone-reveal">
     <h3 class="title is-4 has-text-white">Zone Reveal Configuration</h3>
@@ -68,6 +66,7 @@
           </div>
 
           <button class="button is-danger mt-2" @click="removeLevel(levelIndex)">Remove Level</button>
+          <button class="button is-primary mt-2 ml-2" @click="duplicateLevel(levelIndex)">Duplicate Level</button>
         </div>
       </div>
       <CustomButton type="is-success" label="Add Level" @click="addLevel" />
@@ -86,7 +85,7 @@
           <input class="input" :value="key" disabled />
         </div>
         <div class="column">
-          <ImageUploader v-model="config.spritesheets[key]" uploadFolder="zonereveal/" :cropWidth="100" :cropHeight="100" />
+          <ImageUploaderCircleSprite v-model="config.spritesheets[key]" uploadFolder="zonereveal/" :cropSize="512" />
         </div>
         <div class="column is-narrow">
           <button class="button is-danger is-small" @click="removeSpritesheet(key)">Remove</button>
@@ -102,7 +101,7 @@
           </div>
         </div>
         <div class="column">
-          <ImageUploader v-model="newSpriteValue" uploadFolder="zonereveal/" :cropWidth="100" :cropHeight="100" />
+          <ImageUploaderCircleSprite v-model="newSpriteValue" uploadFolder="zonereveal/" :cropSize="512" />
         </div>
         <div class="column is-narrow">
           <CustomButton type="is-success is-small" label="Add" @click="addSpritesheet" :disabled="!newSpriteKey || !newSpriteValue" />
@@ -163,6 +162,7 @@
 import { ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
+import ImageUploaderCircleSprite from '@top-x/shared/components/ImageUploaderCircleSprite.vue';
 import type { ZoneRevealConfig, LevelConfig, EnemyConfig, PowerupConfig } from '@top-x/shared/types/zoneReveal';
 
 const props = defineProps<{ modelValue: ZoneRevealConfig }>();
@@ -214,6 +214,12 @@ function addLevel() {
 
 function removeLevel(index: number) {
   config.value.levelsConfig.splice(index, 1);
+}
+
+function duplicateLevel(index: number) {
+  const level = config.value.levelsConfig[index];
+  const dup = JSON.parse(JSON.stringify(level)); // Deep copy
+  config.value.levelsConfig.splice(index + 1, 0, dup);
 }
 
 function addEnemy(levelIndex: number) {

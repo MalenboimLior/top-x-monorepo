@@ -1,40 +1,49 @@
 <template>
   <div class="daily-challenges-list">
-    <h3 class="title is-4 has-text-white">Daily Challenges for {{ game.name }}</h3>
-    <p v-if="currentChallenge" class="has-text-white">current default Challenge: {{ currentChallenge }}</p>
-    <CustomButton type="is-success" label="Add Challenge" @click="addChallenge" />
-    <table class="table is-fullwidth has-text-white mt-3">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Number</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="challenge in challenges" :key="challenge.id">
-          <td>{{ challenge.date }}</td>
-          <td>{{ challenge.number }}</td>
-          <td>
-            <CustomButton type="is-small is-info" label="Edit" @click="editChallenge(challenge)" />
-            <CustomButton
-              type="is-small is-warning ml-1"
-              label="Set Current"
-              @click="setCurrent(challenge)"
-            />
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <AddDailyChallenge
-      v-if="editingChallenge"
-      :game="game"
-      :challenge="editingChallenge"
-      @saved="closeEditor"
-      @cancel="closeEditor"
-    />
-    <div class="mt-3">
-      <CustomButton type="is-light" label="Close" @click="emit('close')" />
+    <div v-if="!editingChallenge">
+      <h3 class="title is-4 has-text-white">Daily Challenges for {{ game.name }}</h3>
+      <p v-if="currentChallenge" class="has-text-white">Current Default Challenge: {{ currentChallenge }}</p>
+      <CustomButton type="is-success" label="Add Challenge" @click="addChallenge" />
+      <table class="table is-fullwidth has-text-white mt-3">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Number</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="challenge in challenges" :key="challenge.id">
+            <td>{{ challenge.date }}</td>
+            <td>{{ challenge.number }}</td>
+            <td>
+              <CustomButton type="is-small is-info" label="Edit" @click="editChallenge(challenge)" />
+              <CustomButton
+                type="is-small is-warning ml-1"
+                label="Set Current"
+                @click="setCurrent(challenge)"
+              />
+              <CustomButton
+                type="is-small is-primary ml-1"
+                label="Duplicate"
+                @click="duplicateChallenge(challenge)"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="mt-3">
+        <CustomButton type="is-light" label="Close" @click="emit('close')" />
+      </div>
+    </div>
+    <div v-else>
+      <button class="button is-light mb-3" @click="closeEditor">Back to Challenges List</button>
+      <AddDailyChallenge
+        :game="game"
+        :challenge="editingChallenge"
+        @saved="closeEditor"
+        @cancel="closeEditor"
+      />
     </div>
   </div>
 </template>
@@ -81,6 +90,15 @@ function addChallenge() {
 
 function editChallenge(ch: DailyChallenge & { id: string }) {
   editingChallenge.value = { ...ch };
+}
+
+function duplicateChallenge(ch: DailyChallenge & { id: string }) {
+  const dup = JSON.parse(JSON.stringify(ch)); // Deep copy
+  dup.date = '';
+  dup.createdAt = new Date().toISOString();
+  dup.number = challenges.value.length + 1;
+  delete dup.id;
+  editingChallenge.value = dup;
 }
 
 function closeEditor() {

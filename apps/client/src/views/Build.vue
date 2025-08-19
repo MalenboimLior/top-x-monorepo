@@ -1,4 +1,3 @@
-<!-- Page for building new games -->
 <template>
   <div class="build-container">
     <h1 class="title has-text-white">Build Your Own Game</h1>
@@ -12,46 +11,58 @@
     </div>
 
     <div v-else>
-      <h2 class="title is-3 has-text-white">Available Game Types</h2>
-      <div class="columns is-multiline is-mobile">
-        <div v-for="gameType in availableGameTypes" :key="gameType.id" class="column is-half-desktop is-half-tablet is-full-mobile">
-          <Card class="is-clickable" @click="selectGameType(gameType)">
-            <div class="card-content">
-              <h2 class="title is-4 has-text-white">{{ gameType.name }}</h2>
-              <p class="has-text-grey-light">{{ gameType.description }}</p>
-            </div>
-          </Card>
+      <div v-if="!selectedGameType && !selectedDailyChallengesGame">
+        <h2 class="title is-3 has-text-white">Available Game Types</h2>
+        <div class="buttons">
+          <button
+            v-for="gameType in availableGameTypes"
+            :key="gameType.id"
+            class="button is-small is-dark"
+            @click="selectGameType(gameType)"
+          >
+            {{ gameType.name }} <span > + </span>
+          </button>
+          
         </div>
-      </div>
 
-      <h2 class="title is-3 has-text-white mt-5">My Games</h2>
-      <div class="columns is-multiline is-mobile">
-        <div v-for="game in myGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile">
-          <Card>
-            <div class="card-content">
-              <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
-              <p class="has-text-grey-light">{{ game.description }}</p>
-              <p class="has-text-grey-light">Status: {{ game.active ? 'Published' : 'Draft' }}</p>
-              <div class="buttons">
-                <CustomButton type="is-primary" label="Edit" @click="editGame(game)" />
-                <CustomButton
-                  :type="game.active ? 'is-warning' : 'is-success'"
-                  :label="game.active ? 'Unpublish' : 'Publish'"
-                  @click="togglePublish(game)"
-                />
-                <CustomButton
-                  type="is-info"
-                  label="Edit Daily Challenges"
-                  @click="openDailyChallenges(game)"
-                />
-              </div>
-            </div>
-          </Card>
-        </div>
+        <h2 class="title is-3 has-text-white mt-5">My Games</h2>
+        <table class="table is-fullwidth has-text-white">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="game in myGames" :key="game.id">
+              <td>{{ game.name }}</td>
+              <td>{{ game.description }}</td>
+              <td>{{ game.active ? 'Published' : 'Draft' }}</td>
+              <td>
+                <div class="buttons">
+                  <CustomButton type="is-primary is-small" label="Edit" @click="editGame(game)" />
+                  <CustomButton
+                    :type="game.active ? 'is-warning is-small' : 'is-success is-small'"
+                    :label="game.active ? 'Unpublish' : 'Publish'"
+                    @click="togglePublish(game)"
+                  />
+                  <CustomButton
+                    type="is-info is-small"
+                    label="Edit Daily Challenges"
+                    @click="openDailyChallenges(game)"
+                  />
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <div v-if="selectedGameType">
-        <h2 class="title is-3 has-text-white mt-5">{{ selectedGame ? 'Edit' : 'Create' }} {{ selectedGameType.name }} Game</h2>
+        <button class="button is-light mb-3" @click="handleCancel">Back to List</button>
+        <h2 class="title is-3 has-text-white">{{ selectedGame ? 'Edit' : 'Create' }} {{ selectedGameType.name }} Game</h2>
         <BuildAddNewGame
           :gameType="selectedGameType"
           :existingGame="selectedGame"
@@ -59,11 +70,14 @@
           @cancel="handleCancel"
         />
       </div>
-      <DailyChallengesList
-        v-if="selectedDailyChallengesGame"
-        :game="selectedDailyChallengesGame"
-        @close="selectedDailyChallengesGame = null"
-      />
+
+      <div v-if="selectedDailyChallengesGame">
+        <button class="button is-light mb-3" @click="selectedDailyChallengesGame = null">Back to List</button>
+        <DailyChallengesList
+          :game="selectedDailyChallengesGame"
+          @close="selectedDailyChallengesGame = null"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -169,8 +183,5 @@ async function login() {
 <style scoped>
 .build-container {
   padding: 2rem;
-}
-.is-clickable {
-  cursor: pointer;
 }
 </style>
