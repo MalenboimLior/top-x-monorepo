@@ -442,6 +442,8 @@ for (let i = 0; i < 5; i++) {
       }
       swipeStart = null;
     });
+
+    window.dispatchEvent(new Event('gameStart'));
   }
 
   private loadLevel(levelIndex: number) {

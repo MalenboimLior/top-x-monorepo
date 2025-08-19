@@ -54,6 +54,16 @@ const showEndScreen = ref(false)
 const endScreenScore = ref(0)
 const answerRevealUTC = ref('')
 
+function hideChrome() {
+  document.querySelector('.navbar')?.classList.add('is-hidden')
+  document.querySelector('footer.footer')?.classList.add('is-hidden')
+}
+
+function showChrome() {
+  document.querySelector('.navbar')?.classList.remove('is-hidden')
+  document.querySelector('footer.footer')?.classList.remove('is-hidden')
+}
+
 useHead({
   title: `TOP-X: ${gameTitle.value || 'Zone Reveal Game'}`,
   meta: [
@@ -62,6 +72,8 @@ useHead({
 })
 
 onMounted(async () => {
+  hideChrome()
+  window.addEventListener('gameStart', hideChrome)
   if (!phaserContainer.value) return
 
   if (analytics) {
@@ -170,11 +182,14 @@ onBeforeUnmount(() => {
     game = null
   }
   window.removeEventListener('gameOver', handleGameOver)
+  window.removeEventListener('gameStart', hideChrome)
+  showChrome()
 })
 function handleGameOver(e: Event) {
   const customEvent = e as CustomEvent<{ score: number; totalTime: number }>
   endScreenScore.value = customEvent.detail.score
   showEndScreen.value = true
+  showChrome()
   if (game && game.scene.isActive('GameScene')) {
     game.scene.pause('GameScene') // Ensure paused
   }
