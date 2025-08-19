@@ -1,26 +1,81 @@
-
 <template>
   <div class="game-wrapper">
+    <!-- SVG sprite for icons -->
+    <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+      <defs>
+        <symbol id="ic-chevron-left" viewBox="0 0 24 24" fill="none">
+          <path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="ic-arrow-up" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4l-7 7M12 4l7 7M12 4v16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="ic-arrow-down" viewBox="0 0 24 24" fill="none">
+          <path d="M12 20l7-7M12 20l-7-7M12 20V4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="ic-arrow-left" viewBox="0 0 24 24" fill="none">
+          <path d="M4 12l7-7M4 12l7 7M4 12h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="ic-arrow-right" viewBox="0 0 24 24" fill="none">
+          <path d="M20 12l-7-7M20 12l-7 7M20 12H4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+      </defs>
+    </svg>
+
     <div class="game-header">
-      <button class="back-button" @click="goBack">⬅️</button>
+      <!-- X‑style back button -->
+      <button class="x-btn x-back" @click="goBack" aria-label="Back">
+        <svg class="icon"><use href="#ic-chevron-left" xlink:href="#ic-chevron-left"/></svg>
+        <span class="label">Back</span>
+      </button>
       <h2 class="subtitle has-text-success" v-html="gameTitle"></h2>
+      <div class="header-spacer" aria-hidden="true"></div>
     </div>
 
     <div ref="phaserContainer" class="phaser-container" />
+
+    <!-- X‑style D‑Pad -->
     <div class="controls">
-      <div class="row">
-        <button @click="setDirection('up')">⬆️</button>
+      <div class="pad">
+        <span class="spacer" />
+        <button class="x-btn md" aria-label="Up" @click="setDirection('up')">
+          <svg class="icon"><use href="#ic-arrow-up" xlink:href="#ic-arrow-up"/></svg>
+        </button>
+        <span class="spacer" />
+
+        <button class="x-btn md" aria-label="Left" @click="setDirection('left')">
+          <svg class="icon"><use href="#ic-arrow-left" xlink:href="#ic-arrow-left"/></svg>
+        </button>
+        <button class="x-btn md" aria-label="Down" @click="setDirection('down')">
+          <svg class="icon"><use href="#ic-arrow-down" xlink:href="#ic-arrow-down"/></svg>
+        </button>
+        <button class="x-btn md" aria-label="Right" @click="setDirection('right')">
+          <svg class="icon"><use href="#ic-arrow-right" xlink:href="#ic-arrow-right"/></svg>
+        </button>
       </div>
+
+      <!-- Optional compact row (uncomment if you prefer) -->
+      <!--
       <div class="row">
-        <button @click="setDirection('left')">⬅️</button>
-        <button @click="setDirection('down')">⬇️</button>
-        <button @click="setDirection('right')">➡️</button>
+        <button class="x-btn sm round" aria-label="Left" @click="setDirection('left')">
+          <svg class="icon"><use href="#ic-arrow-left"/></svg>
+        </button>
+        <button class="x-btn sm round" aria-label="Up" @click="setDirection('up')">
+          <svg class="icon"><use href="#ic-arrow-up"/></svg>
+        </button>
+        <button class="x-btn sm round" aria-label="Right" @click="setDirection('right')">
+          <svg class="icon"><use href="#ic-arrow-right"/></svg>
+        </button>
       </div>
+      -->
+
       <div class="actions">
-  <!-- <button @click="togglePause">⏸️ Pause / ▶️ Resume</button>
-  <button @click="restartGame">🔄 Restart</button> -->
-</div>
+        <!--
+        <button class="x-btn sm ghost" @click="togglePause">Pause / Resume</button>
+        <button class="x-btn sm ghost" @click="restartGame">Restart</button>
+        -->
+      </div>
     </div>
+
     <ZoneRevealEndScreen
       v-if="showEndScreen"
       :score="endScreenScore"
@@ -58,6 +113,26 @@ const showEndScreen = ref(false)
 const endScreenScore = ref(0)
 const answerRevealUTC = ref('')
 
+function hideChrome() {
+  document.querySelector('.navbar')?.classList.add('is-hidden')
+  document.querySelector('footer.footer')?.classList.add('is-hidden')
+  document.body.style.overflow = 'hidden'
+      enableScroll()
+
+}
+
+function showChrome() {
+  document.querySelector('.navbar')?.classList.remove('is-hidden')
+  document.querySelector('footer.footer')?.classList.remove('is-hidden')
+  document.body.style.overflow = ''
+    enableScroll()
+
+}
+
+function goBack() {
+  showChrome()
+  router.back()
+}
 function preventScroll(e: Event) {
   e.preventDefault()
 }
@@ -69,26 +144,6 @@ function disableScroll() {
 function enableScroll() {
   document.removeEventListener('touchmove', preventScroll)
 }
-
-function hideChrome() {
-  document.querySelector('.navbar')?.classList.add('is-hidden')
-  document.querySelector('footer.footer')?.classList.add('is-hidden')
-  document.body.style.overflow = 'hidden'
-  disableScroll()
-}
-
-function showChrome() {
-  document.querySelector('.navbar')?.classList.remove('is-hidden')
-  document.querySelector('footer.footer')?.classList.remove('is-hidden')
-  document.body.style.overflow = ''
-  enableScroll()
-}
-
-function goBack() {
-  showChrome()
-  router.back()
-}
-
 useHead({
   title: `TOP-X: ${gameTitle.value || 'Zone Reveal Game'}`,
   meta: [
@@ -124,7 +179,6 @@ onMounted(async () => {
               const dailyChallenge = snapshot.data()
               zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
               answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
-              console.log('Challenge loaded:', dailyChallenge)
             } else {
               console.error('No challenge found for', challengeId)
             }
@@ -134,8 +188,6 @@ onMounted(async () => {
         } else if (gameData.dailyChallengeActive) {
           try {
             const challengeDate = DateTime.utc().toFormat('yyyy-MM-dd')
-            console.log('challengeDate:', challengeDate)
-
             let challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeDate)
             let snapshot = await getDoc(challengeDocRef)
 
@@ -146,17 +198,8 @@ onMounted(async () => {
 
             if (snapshot.exists()) {
               const dailyChallenge = snapshot.data()
-              const nowUTC = DateTime.utc()
-              const unlockTime = DateTime.fromISO(dailyChallenge.challengeAvailableUTC)
-              console.log('unlockTime:', unlockTime)
-              console.log('nowUTC:', nowUTC)
-              // if (nowUTC < unlockTime) {
-              //   console.log('Challenge is not yet available.')
-              // } else {
-                zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
-                answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
-                console.log("Today's challenge:", dailyChallenge)
-            //  }
+              zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
+              answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
             } else {
               console.error('No challenge found for', challengeDate, 'or', gameData.dailyChallengeCurrent)
             }
@@ -165,16 +208,7 @@ onMounted(async () => {
           }
         } else {
           zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
-
-          console.log('ZoneReveal: Game data fetched:', {
-            gameTitle: gameTitle.value,
-            gameDescription: gameDescription.value,
-            custom: zoneRevealConfig.value
-          })
         }
-
-        //game challance specific settings
-        //TODO answerRevealUTC.value = gameData.answerRevealUTC || ''
       } else {
         console.error('ZoneReveal: Game document not found for ID:', gameId.value)
       }
@@ -190,15 +224,14 @@ onMounted(async () => {
     height: HEIGHT,
     backgroundColor: '#222',
     parent: phaserContainer.value,
-    physics: {
-      default: 'arcade',
-      arcade: {
-        //  debug: true  // Enable to see physics bodies
-      }
-    },
+    physics: { default: 'arcade', arcade: {} },
     scene
   })
+
   window.addEventListener('gameOver', handleGameOver)
+
+  // Optional keyboard support for the UI buttons
+  window.addEventListener('keydown', onKeyDown)
 })
 
 onBeforeUnmount(() => {
@@ -208,33 +241,56 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('gameOver', handleGameOver)
   window.removeEventListener('gameStart', hideChrome)
+  window.removeEventListener('keydown', onKeyDown)
   showChrome()
 })
+
 function handleGameOver(e: Event) {
   const customEvent = e as CustomEvent<{ score: number; totalTime: number }>
   endScreenScore.value = customEvent.detail.score
   showEndScreen.value = true
   showChrome()
   if (game && game.scene.isActive('GameScene')) {
-    game.scene.pause('GameScene') // Ensure paused
+    game.scene.pause('GameScene')
   }
 }
 
 function setDirection(dir: 'up' | 'down' | 'left' | 'right') {
-  window.dispatchEvent(new CustomEvent('setDirection', { detail: dir }));
+  window.dispatchEvent(new CustomEvent('setDirection', { detail: dir }))
 }
 
-
-function togglePause() {
-  window.dispatchEvent(new Event('togglePause'));
+function onKeyDown(e: KeyboardEvent) {
+  const m: Record<string, 'up' | 'down' | 'left' | 'right' | undefined> = {
+    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+    w: 'up', a: 'left', s: 'down', d: 'right', W: 'up', A: 'left', S: 'down', D: 'right'
+  }
+  const dir = m[e.key]
+  if (dir) setDirection(dir)
 }
 
-function restartGame() {
-  window.dispatchEvent(new Event('restartGame'));
-}
+function togglePause() { window.dispatchEvent(new Event('togglePause')) }
+function restartGame() { window.dispatchEvent(new Event('restartGame')) }
 </script>
 
 <style scoped>
+/* X theme tokens local to this component */
+.game-wrapper {
+  --x-bg: #000000;
+  --x-surface: #0b0d10;
+  --x-elev: #0f1216;
+  --x-border: #21262d;
+  --x-border-strong: #2e3440;
+  --x-text: #f5f7fa;
+  --x-muted: #a5acb8;
+  --x-accent: #1d9bf0;
+
+  --size: 60px; /* D‑pad button size */
+  --radius: 16px;
+  --icon: 24px;
+    touch-action: none;
+
+}
+
 .game-wrapper {
   max-width: 100vw;
   padding: 10px 0;
@@ -244,38 +300,83 @@ function restartGame() {
   align-items: center;
   height: 100vh;
   overflow: hidden;
-  touch-action: none;
+  background: var(--x-bg);
+  color: var(--x-text);
 }
 
 .game-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* symmetrical sides, title in the middle */
   align-items: center;
   width: 100%;
+  gap: 8px;
 }
-
 .game-header h2 {
-  flex: 1;
+  grid-column: 2;
+  justify-self: center;
   text-align: center;
   margin: 0;
 }
+.x-back { grid-column: 1; justify-self: start; } 
+.header-spacer { grid-column: 3; }
 
-.back-button {
-  margin-left: 10px;
+/* Back button styled like X */
+.x-back {
+  padding: 8px 12px;
+  gap: 8px;
+  border-radius: 999px;
 }
+.x-back .label { font-weight: 600; font-size: 14px; }
+
+/* Button base */
+.x-btn {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size);
+  height: var(--size);
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--x-border);
+  background: linear-gradient(180deg, var(--x-elev), var(--x-surface));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.55);
+  color: var(--x-text);
+  transition: transform .08s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, filter .18s ease;
+}
+.x-btn .icon { width: var(--icon); height: var(--icon); display: block; }
+.x-btn:hover { border-color: var(--x-border-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(0,0,0,.6); }
+.x-btn:active { transform: translateY(1px) scale(.985); filter: brightness(.98); }
+.x-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--x-accent) 55%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(0,0,0,.6);
+}
+.x-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Variants / sizes */
+.x-btn.ghost { background: transparent; box-shadow: none; }
+.x-btn.round { border-radius: 999px; }
+.x-btn.sm { --size: 48px; --radius: 14px; --icon: 20px; min-width: var(--size); }
+.x-btn.md { --size: 60px; --radius: 16px; --icon: 24px; min-width: var(--size); }
+.x-btn.lg { --size: 72px; --radius: 18px; --icon: 28px; min-width: var(--size); }
 
 .phaser-container {
   width: 100%;
   max-width: 500px;
-  border: 2px solid #333;
+  border: 1px solid var(--x-border);
+  border-radius: 16px;
   box-sizing: border-box;
-  touch-action: none;
+  background: #111;
+    touch-action: none;
+
 }
-.actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+
 .controls {
   margin-top: 12px;
   display: flex;
@@ -283,21 +384,15 @@ function restartGame() {
   align-items: center;
 }
 
-.row {
-  display: flex;
-  gap: 10px;
-  margin: 5px 0;
-}
+.pad { touch-action: none; display: grid; gap: 10px; grid-template-columns: repeat(3, var(--size)); grid-auto-rows: var(--size); }
+.pad .spacer { visibility: hidden; }
+.row { display: flex; gap: 10px; margin: 8px 0; }
+.actions { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
 
-button {
-  font-size: 24px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: none;
-  background-color: #555;
-  color: white;
-}
-button:active {
-  background-color: #888;
+/* Remove old generic button styling */
+/* The new styles are class-based and scoped. */
+
+@media (prefers-reduced-motion: reduce) {
+  .x-btn { transition: none; }
 }
 </style>
