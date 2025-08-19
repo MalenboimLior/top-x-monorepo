@@ -7,7 +7,8 @@ import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
-import { UserGameData,LeaderboardEntry } from '@top-x/shared/types';
+import { UserGameData } from '@top-x/shared/types';
+import type { LeaderboardEntry } from '@top-x/shared/types/game'
 
 // -------------------------------------------------------------
 // Cloud Functions used by the TOP-X backend
