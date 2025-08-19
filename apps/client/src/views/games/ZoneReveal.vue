@@ -32,6 +32,9 @@
     </div>
 
     <div ref="phaserContainer" class="phaser-container" />
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
 
     <!-- X‑style D‑Pad -->
     <div class="controls">
@@ -112,6 +115,7 @@ const gameDescription = ref('')
 const showEndScreen = ref(false)
 const endScreenScore = ref(0)
 const answerRevealUTC = ref('')
+const isLoading = ref(true)
 
 function hideChrome() {
   document.querySelector('.navbar')?.classList.add('is-hidden')
@@ -228,6 +232,9 @@ onMounted(async () => {
   }
 
   const scene = new ZoneRevealScene(zoneRevealConfig.value || undefined)
+  scene.events.once('ready', () => {
+    isLoading.value = false
+  })
   game = new Phaser.Game({
     type: Phaser.AUTO,
     width: WIDTH,
@@ -312,6 +319,7 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
   overflow: hidden;
   background: var(--x-bg);
   color: var(--x-text);
+  position: relative;
 }
 
 .game-header {
@@ -398,6 +406,37 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
 .pad { touch-action: none; display: grid; gap: 10px; grid-template-columns: repeat(3, var(--size)); grid-auto-rows: var(--size); }
 .pad .spacer { visibility: hidden; }
 .row { display: flex; gap: 10px; margin: 8px 0; }
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--x-accent);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 .actions { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* Remove old generic button styling */
