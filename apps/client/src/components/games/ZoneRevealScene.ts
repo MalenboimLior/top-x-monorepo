@@ -212,27 +212,6 @@ export default class VolfiedScene extends Phaser.Scene {
   }
 
   preload() {
-    const loadingText = this.add
-      .text(WIDTH / 2, HEIGHT / 2 - 25, 'Loading...', {
-        font: '20px Arial',
-        color: '#ffffff'
-      })
-      .setOrigin(0.5);
-    const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(WIDTH / 2 - 160, HEIGHT / 2 - 10, 320, 20);
-    const progressBar = this.add.graphics();
-    this.load.on('progress', value => {
-      progressBar.clear();
-      progressBar.fillStyle(0xffffff, 1);
-      progressBar.fillRect(WIDTH / 2 - 150, HEIGHT / 2 - 8, 300 * value, 16);
-    });
-    this.load.on('complete', () => {
-      progressBar.destroy();
-      progressBox.destroy();
-      loadingText.destroy();
-    });
-
     this.load.image('bg', this.zoneRevealConfig.backgroundImage ?? '/assets/anonymous.png');
     this.zoneRevealConfig.levelsConfig.forEach((level, index) => {
       this.load.image(`hidden${index}`, level.hiddenImage);
@@ -478,7 +457,6 @@ for (let i = 0; i < 5; i++) {
       }
       swipeStart = null;
     });
-    this.events.emit('ready');
   }
 
   private loadLevel(levelIndex: number) {
@@ -1050,27 +1028,16 @@ this.enemyGroup.children.entries.forEach((enemyObj) => {
 });
 this.enemyGroup.clear(true, true);
 
-      const winText = this.add
-        .text(WIDTH / 2, HEIGHT / 2, 'Clue Unlocked! 🎉🔍', {
-          font: '24px Arial',
-          color: '#00ff00',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          padding: { x: 10, y: 5 },
-          align: 'center'
-        })
-        .setOrigin(0.5)
-        .setDepth(3);
+      const winText = this.add.text(WIDTH / 2 - 60, HEIGHT / 2, 'Clue Unlocked! 🎉🔍', {
+        font: '24px Arial',
+        color: '#00ff00'
+      }).setDepth(3);
 
       let countdown = 5;
-      const countdownText = this.add
-        .text(WIDTH / 2, HEIGHT / 2 + 40, `${countdown}`, {
-          font: '24px Arial',
-          color: '#ffffff',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          padding: { x: 8, y: 4 }
-        })
-        .setOrigin(0.5)
-        .setDepth(3);
+      const countdownText = this.add.text(WIDTH / 2, HEIGHT / 2 + 40, `${countdown}`, {
+        font: '24px Arial',
+        color: '#ffffff'
+      }).setOrigin(0.5).setDepth(3);
       console.log('Starting countdown timer for level transition');
       this.time.addEvent({
         delay: 1000,
