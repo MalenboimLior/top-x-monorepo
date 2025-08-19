@@ -310,6 +310,7 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
   align-items: center;
   width: 100%;
   gap: 8px;
+  margin-bottom: 10px;
 }
 .game-header h2 {
   grid-column: 2;
