@@ -117,16 +117,26 @@ function hideChrome() {
   document.querySelector('.navbar')?.classList.add('is-hidden')
   document.querySelector('footer.footer')?.classList.add('is-hidden')
   document.body.style.overflow = 'hidden'
-      enableScroll()
-
+  // try to enter fullscreen so mobile browsers hide their UI chrome
+  const docEl: any = document.documentElement
+  const requestFull = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen
+  try {
+    requestFull?.call(docEl)
+  } catch (err) {
+    console.warn('Fullscreen request failed', err)
+  }
+  enableScroll()
 }
 
 function showChrome() {
   document.querySelector('.navbar')?.classList.remove('is-hidden')
   document.querySelector('footer.footer')?.classList.remove('is-hidden')
   document.body.style.overflow = ''
-    enableScroll()
-
+  // exit fullscreen if we previously entered it
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {})
+  }
+  enableScroll()
 }
 
 function goBack() {
