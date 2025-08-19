@@ -4,8 +4,12 @@ import type { ZoneRevealConfig, LevelConfig } from '@top-x/shared/types/zoneReve
 
 
 export const TILE_SIZE = 10;
-export const WIDTH = 400;
-export const HEIGHT = 480;
+const DEFAULT_WIDTH = 400;
+const DEFAULT_HEIGHT = 480;
+const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : DEFAULT_WIDTH;
+const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_HEIGHT;
+export const WIDTH = Math.floor(Math.min(viewportWidth, DEFAULT_WIDTH) / TILE_SIZE) * TILE_SIZE;
+export const HEIGHT = Math.floor(Math.min(viewportHeight, DEFAULT_HEIGHT) / TILE_SIZE) * TILE_SIZE;
 const GRID_W = WIDTH / TILE_SIZE;
 const GRID_H = HEIGHT / TILE_SIZE;
 const PLAYER_VISUAL_SIZE = 30;
