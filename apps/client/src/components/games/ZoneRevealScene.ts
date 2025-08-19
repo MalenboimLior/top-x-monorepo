@@ -259,6 +259,12 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
 
     this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
     this.cursors = this.input.keyboard!.createCursorKeys();
+    this.input.keyboard!.addCapture([
+      Phaser.Input.Keyboard.KeyCodes.UP,
+      Phaser.Input.Keyboard.KeyCodes.DOWN,
+      Phaser.Input.Keyboard.KeyCodes.LEFT,
+      Phaser.Input.Keyboard.KeyCodes.RIGHT
+    ]);
 
     if (!this.anims.exists('move')) {
       this.anims.create({

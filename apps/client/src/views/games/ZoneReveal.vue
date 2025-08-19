@@ -58,16 +58,30 @@ const showEndScreen = ref(false)
 const endScreenScore = ref(0)
 const answerRevealUTC = ref('')
 
+function preventScroll(e: Event) {
+  e.preventDefault()
+}
+
+function disableScroll() {
+  document.addEventListener('touchmove', preventScroll, { passive: false })
+}
+
+function enableScroll() {
+  document.removeEventListener('touchmove', preventScroll)
+}
+
 function hideChrome() {
   document.querySelector('.navbar')?.classList.add('is-hidden')
   document.querySelector('footer.footer')?.classList.add('is-hidden')
   document.body.style.overflow = 'hidden'
+  disableScroll()
 }
 
 function showChrome() {
   document.querySelector('.navbar')?.classList.remove('is-hidden')
   document.querySelector('footer.footer')?.classList.remove('is-hidden')
   document.body.style.overflow = ''
+  enableScroll()
 }
 
 function goBack() {
@@ -230,6 +244,7 @@ function restartGame() {
   align-items: center;
   height: 100vh;
   overflow: hidden;
+  touch-action: none;
 }
 
 .game-header {
@@ -253,6 +268,7 @@ function restartGame() {
   max-width: 500px;
   border: 2px solid #333;
   box-sizing: border-box;
+  touch-action: none;
 }
 .actions {
   margin-top: 10px;
