@@ -222,7 +222,7 @@ export default class VolfiedScene extends Phaser.Scene {
     progressBox.fillStyle(0x222222, 0.8);
     progressBox.fillRect(WIDTH / 2 - 160, HEIGHT / 2 - 10, 320, 20);
     const progressBar = this.add.graphics();
-    this.load.on('progress', value => {
+    this.load.on('progress', (value: number) => {
       progressBar.clear();
       progressBar.fillStyle(0xffffff, 1);
       progressBar.fillRect(WIDTH / 2 - 150, HEIGHT / 2 - 8, 300 * value, 16);
