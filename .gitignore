@@ -18,3 +18,5 @@ dist/
 .firebase
 content.html
 /.firebase
+functions/tsconfig.build.tsbuildinfo
+packages/shared/tsconfig.tsbuildinfo
