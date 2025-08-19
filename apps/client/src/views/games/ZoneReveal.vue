@@ -25,7 +25,7 @@
       <!-- X‑style back button -->
       <button class="x-btn x-back" @click="goBack" aria-label="Back">
         <svg class="icon"><use href="#ic-chevron-left" xlink:href="#ic-chevron-left"/></svg>
-        <span class="label">Back</span>
+        <span class="label"></span>
       </button>
       <h2 class="subtitle has-text-success" v-html="gameTitle"></h2>
       <div class="header-spacer" aria-hidden="true"></div>
@@ -349,7 +349,7 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
   color: var(--x-text);
   transition: transform .08s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, filter .18s ease;
 }
-.x-btn .icon { width: var(--icon); height: var(--icon); display: block; }
+.x-btn .icon { width: var(--icon); height: var(--icon); display: block; color:#00e8e0}
 .x-btn:hover { border-color: var(--x-border-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(0,0,0,.6); }
 .x-btn:active { transform: translateY(1px) scale(.985); filter: brightness(.98); }
 .x-btn:focus-visible {

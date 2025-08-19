@@ -1,10 +1,11 @@
 <template>
-  <div class="modal is-active">
+  <div class="modal is-active" @click.self="handleTryAgain">
     <div class="modal-background"></div>
     <div class="modal-content box has-background-dark has-text-white">
+      <button class="delete is-large" aria-label="retry" @click="handleTryAgain"></button>
       <template v-if="!userStore.user">
         <h2 class="title has-text-white">{{ score }}</h2>
-        <h2 class="title has-text-white">Great Score! </h2>
+        <h2 class="title has-text-white">Great Score!</h2>
         <p class="mb-4">
           Log in with X to:<br />
           save your score to leaderboard:<br />
@@ -31,7 +32,7 @@
             <a href="https://x.com/Topxisrael" target="_blank">@Topxisrael</a>
             to see the answer and the winners!
           </p>
-          <p>Good luck! 🤞🏻 </p>
+          <p>Good luck! 🤞🏻</p>
         </div>
         <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
         <div class="leaderboard-section">
@@ -87,8 +88,11 @@ const leaderboard = ref<LeaderboardEntry[]>([])
 
 const formattedRevealDate = computed(() => new Date(props.answerRevealUTC).toLocaleString())
 
-onMounted(() => {
-  fetchLeaderboard()
+onMounted(async () => {
+  if (userStore.user) {
+    await saveScore()
+    await fetchLeaderboard()
+  }
 })
 
 async function fetchLeaderboard() {
@@ -100,17 +104,15 @@ async function fetchLeaderboard() {
   }
 }
 
-async function handleSubmit() {
+async function saveScore(custom = {}) {
   if (!props.gameId) {
     console.error('No gameId provided')
-    alert('Error: No game ID')
     return
   }
 
   if (!userStore.user) return // Safety
 
   const gameTypeId = 'ZoneReveal'
-  const custom = { answer: answer.value }
 
   try {
     await userStore.updateGameProgress(gameTypeId, props.gameId, {
@@ -119,15 +121,21 @@ async function handleSubmit() {
       lastPlayed: new Date().toISOString(),
       custom
     })
-    hasSubmitted.value = true
-    if (analytics) {
-      logEvent(analytics, 'user_action', { action: 'submit_answer', game_id: props.gameId, answer: answer.value })
-    }
   } catch (err) {
-    console.error('Submit error:', err)
-    alert('Failed to submit. Try again.')
+    console.error('Save score error:', err)
   }
 }
+
+async function handleSubmit() {
+  const custom = { answer: answer.value }
+  await saveScore(custom)
+  hasSubmitted.value = true
+  await fetchLeaderboard()
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'submit_answer', game_id: props.gameId, answer: answer.value })
+  }
+}
+
 function handleTryAgain() {
   // Blur any focused input
   const active = document.activeElement as HTMLElement | null
@@ -151,12 +159,15 @@ async function handleLogin() {
   try {
     const success = await userStore.loginWithX()
     if (success && userStore.user) {
-      await saveCachedProgress()
       const pending = JSON.parse(
         localStorage.getItem(`zonereveal_${props.gameId}`) || '{}'
       )
       if (pending.answer) {
         answer.value = pending.answer
+        await saveScore({ answer: pending.answer })
+        hasSubmitted.value = true
+      } else {
+        await saveScore()
       }
       localStorage.removeItem(`zonereveal_${props.gameId}`)
       await fetchLeaderboard()
@@ -174,24 +185,6 @@ async function handleLogin() {
     alert('Failed to login. Please try again.')
   }
 }
-
-async function saveCachedProgress() {
-  const data = JSON.parse(
-    localStorage.getItem(`zonereveal_${props.gameId}`) || '{}'
-  )
-  const gameTypeId = 'ZoneReveal'
-  const custom = data.answer ? { answer: data.answer } : {}
-  try {
-    await userStore.updateGameProgress(gameTypeId, props.gameId, {
-      score: data.score ?? props.score,
-      streak: 0,
-      lastPlayed: new Date().toISOString(),
-      custom
-    })
-  } catch (err) {
-    console.error('Failed to save score:', err)
-  }
-}
 </script>
 
 <style scoped>
@@ -199,6 +192,13 @@ async function saveCachedProgress() {
   max-width: 400px;
   padding: 2rem !important;
   text-align: center;
+  position: relative;
+}
+
+.delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
 }
 
 input {
