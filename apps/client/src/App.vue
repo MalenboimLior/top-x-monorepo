@@ -48,7 +48,7 @@ const route = useRoute();
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 120vh;
+  /* min-height: 120vh; */
  /* min-height: -webkit-fill-available; /* Fix for iOS Safari viewport issues */
   /* background: #121212; Matches TOP-X dark theme */
 }

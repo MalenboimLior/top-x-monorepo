@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.17.16",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^22.14.1",
     "@types/vue": "^2.0.0",
     "@vitejs/plugin-vue": "^5.2.3",
