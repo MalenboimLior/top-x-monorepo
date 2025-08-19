@@ -437,8 +437,13 @@ for (let i = 0; i < 5; i++) {
     });
 
     let swipeStart: Phaser.Math.Vector2 | null = null;
+    let started = false;
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       swipeStart = new Phaser.Math.Vector2(p.x, p.y);
+      if (!started) {
+        window.dispatchEvent(new Event('gameStart'));
+        started = true;
+      }
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (!swipeStart) return;
@@ -452,8 +457,6 @@ for (let i = 0; i < 5; i++) {
       }
       swipeStart = null;
     });
-
-    window.dispatchEvent(new Event('gameStart'));
   }
 
   private loadLevel(levelIndex: number) {
