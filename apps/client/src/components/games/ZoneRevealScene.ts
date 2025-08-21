@@ -22,10 +22,12 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
     robot: '/assets/robot_spritesheet.png',
     microbe: '/assets/microbe_spritesheet.png',
     heart: '/assets/heart_spritesheet.png',
-    clock: '/assets/time_spritesheet.png'
+    clock: '/assets/time_spritesheet.png',
+    speed: '/assets/speed_spritesheet.png',
+    freeze: '/assets/freeze_spritesheet.png'
   },
   playerSpeed: 200,
-  enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90 },
+  enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90, straightUp: 150, straightleft: 150 },
   finishPercent: 50,
   heartIcon: '/assets/heart_icon.png',
   levelsConfig: [
@@ -33,11 +35,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level1.jpeg',
@@ -47,11 +53,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level2.jpeg',
@@ -61,11 +71,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level3.jpeg',
@@ -75,11 +89,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level4.jpeg',
@@ -89,11 +107,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level5.jpeg',
@@ -103,11 +125,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level6.jpeg',
@@ -117,11 +143,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level7.jpeg',
@@ -131,11 +161,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 0 },
         { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 }
+        { type: 'microbe', count: 0 },
+        { type: 'straightUp', count: 0 },
+        { type: 'straightleft', count: 0 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 }
+        { type: 'extratime', count: 3 },
+        { type: 'extraspeed', count: 0 },
+        { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
       hiddenImage: '/assets/levels/level.jpeg',
@@ -145,11 +179,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 1 },
         { type: 'robot', count: 1 },
-        { type: 'microbe', count: 1 }
+        { type: 'microbe', count: 1 },
+        { type: 'straightUp', count: 1 },
+        { type: 'straightleft', count: 1 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 1 },
-        { type: 'extratime', count: 0 }
+        { type: 'extratime', count: 0 },
+        { type: 'extraspeed', count: 1 },
+        { type: 'extrafreeze', count: 1 }
       ],
       timeLimit: 50,
       hiddenImage: '/assets/levels/level2.jpg',
@@ -159,11 +197,15 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       enemyConfig: [
         { type: 'bouncing', count: 2 },
         { type: 'robot', count: 2 },
-        { type: 'microbe', count: 2 }
+        { type: 'microbe', count: 2 },
+        { type: 'straightUp', count: 2 },
+        { type: 'straightleft', count: 2 }
       ],
       powerupConfig: [
         { type: 'extralive', count: 2 },
-        { type: 'extratime', count: 1 }
+        { type: 'extratime', count: 1 },
+        { type: 'extraspeed', count: 2 },
+        { type: 'extrafreeze', count: 2 }
       ],
       timeLimit: 45,
       hiddenImage: '/assets/magal.png',
@@ -200,6 +242,7 @@ export default class VolfiedScene extends Phaser.Scene {
   private enemyGroup!: Phaser.Physics.Arcade.Group;
   private powerupGroup!: Phaser.Physics.Arcade.Group;
   private hiddenImage!: Phaser.GameObjects.Image;
+  private playerSpeed: number;
 
   // Config for levels
   private zoneRevealConfig: ZoneRevealConfig;
@@ -209,6 +252,7 @@ export default class VolfiedScene extends Phaser.Scene {
     this.zoneRevealConfig = config || DEFAULT_ZONE_REVEAL_CONFIG;
     this.levels = this.zoneRevealConfig.levelsConfig;
     this.remainingTime = this.levels.length > 0 ? this.levels[0].timeLimit : 60;
+    this.playerSpeed = this.zoneRevealConfig.playerSpeed ?? 200;
   }
 
   preload() {
@@ -244,7 +288,9 @@ export default class VolfiedScene extends Phaser.Scene {
       robot: '/assets/Alien_spritesheet.png',
       microbe: '/assets/microbe_spritesheet.png',
       heart: '/assets/heart_spritesheet.png',
-      clock: '/assets/time_spritesheet.png'
+      clock: '/assets/time_spritesheet.png',
+      speed: '/assets/speed_spritesheet.png',
+      freeze: '/assets/freeze_spritesheet.png'
     };
     const sheets = { ...defaults, ...(this.zoneRevealConfig.spritesheets || {}) };
     Object.entries(sheets).forEach(([key, path]) => {
@@ -300,7 +346,8 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
       .setScale(PLAYER_VISUAL_SIZE / 512)
       .setOrigin(0.5, 0.5)
-      .setDepth(50);
+      .setDepth(50)
+      .setDisplaySize(PLAYER_VISUAL_SIZE, PLAYER_VISUAL_SIZE);
     this.player.play('move');
 
     this.physics.add.existing(this.player);
@@ -392,6 +439,24 @@ for (let i = 0; i < 5; i++) {
       this.anims.create({
         key: 'clock_anim',
         frames: this.anims.generateFrameNumbers('clock', { start: 0, end: 4 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
+
+    if (!this.anims.exists('speed_anim')) {
+      this.anims.create({
+        key: 'speed_anim',
+        frames: this.anims.generateFrameNumbers('speed', { start: 0, end: 4 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
+
+    if (!this.anims.exists('freeze_anim')) {
+      this.anims.create({
+        key: 'freeze_anim',
+        frames: this.anims.generateFrameNumbers('freeze', { start: 0, end: 4 }),
         frameRate: 6,
         repeat: -1
       });
@@ -544,11 +609,11 @@ for (let i = 0; i < 5; i++) {
         this.setRandomUnfilledPosition(enemy);
         this.enemyGroup.add(enemy);
         enemy.setData('type', conf.type);
-        this.setDiagonalEnemyVelocity(enemy, conf.type);
+        this.setEnemyVelocity(enemy, conf.type);
         if (conf.type === 'robot') {
           const timer = this.time.addEvent({
             delay: Phaser.Math.Between(3000, 6000),
-            callback: () => this.setDiagonalEnemyVelocity(enemy, conf.type),
+            callback: () => this.setEnemyVelocity(enemy, conf.type),
             loop: true
           });
           enemy.setData('timer', timer);
@@ -561,8 +626,21 @@ for (let i = 0; i < 5; i++) {
     this.powerupGroup.clear(true, true);
     for (const conf of level.powerupConfig) {
       for (let i = 0; i < conf.count; i++) {
-        const texture = conf.type === 'extratime' ? 'clock' : 'heart';
-        const animKey = conf.type === 'extratime' ? 'clock_anim' : 'heart_anim';
+        let texture: string;
+        let animKey: string;
+        if (conf.type === 'extralive') {
+          texture = 'heart';
+          animKey = 'heart_anim';
+        } else if (conf.type === 'extratime') {
+          texture = 'clock';
+          animKey = 'clock_anim';
+        } else if (conf.type === 'extraspeed') {
+          texture = 'speed';
+          animKey = 'speed_anim';
+        } else {
+          texture = 'freeze';
+          animKey = 'freeze_anim';
+        }
         const powerup = this.physics.add.sprite(0, 0, texture)
           .setScale(PLAYER_VISUAL_SIZE / 512)
           .setOrigin(0.5, 0.5)
@@ -582,24 +660,23 @@ for (let i = 0; i < 5; i++) {
 
   update(time: number, delta: number) {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const speed = this.zoneRevealConfig.playerSpeed ?? 200;
     body.setVelocity(0);
 
     if (!this.isLosingLife) {
       // Keyboard movement
-      if (this.cursors.left?.isDown) { body.setVelocityX(-speed); this.direction = 'left'; }
-      else if (this.cursors.right?.isDown) { body.setVelocityX(speed); this.direction = 'right'; }
-      else if (this.cursors.up?.isDown) { body.setVelocityY(-speed); this.direction = 'up'; }
-      else if (this.cursors.down?.isDown) { body.setVelocityY(speed); this.direction = 'down'; }
+      if (this.cursors.left?.isDown) { body.setVelocityX(-this.playerSpeed); this.direction = 'left'; }
+      else if (this.cursors.right?.isDown) { body.setVelocityX(this.playerSpeed); this.direction = 'right'; }
+      else if (this.cursors.up?.isDown) { body.setVelocityY(-this.playerSpeed); this.direction = 'up'; }
+      else if (this.cursors.down?.isDown) { body.setVelocityY(this.playerSpeed); this.direction = 'down'; }
 
       // Continue movement based on last direction
       if (!this.cursors.left?.isDown && !this.cursors.right?.isDown &&
           !this.cursors.up?.isDown && !this.cursors.down?.isDown && this.direction) {
         switch (this.direction) {
-          case 'left': body.setVelocityX(-speed); this.player.setAngle(0); break;
-          case 'right': body.setVelocityX(speed); this.player.setAngle(180); break;
-          case 'up': body.setVelocityY(-speed); this.player.setAngle(90); break;
-          case 'down': body.setVelocityY(speed); this.player.setAngle(270); break;
+          case 'left': body.setVelocityX(-this.playerSpeed); this.player.setAngle(0); break;
+          case 'right': body.setVelocityX(this.playerSpeed); this.player.setAngle(180); break;
+          case 'up': body.setVelocityY(-this.playerSpeed); this.player.setAngle(90); break;
+          case 'down': body.setVelocityY(this.playerSpeed); this.player.setAngle(270); break;
         }
       }
 
@@ -718,6 +795,34 @@ for (let i = 0; i < 5; i++) {
         this.updateLivesIcons();
       } else if (type === 'extratime') {
         this.remainingTime += 30;
+      } else if (type === 'extraspeed') {
+        const originalSpeed = this.playerSpeed;
+        this.playerSpeed = originalSpeed * 1.3;
+        this.time.delayedCall(5000, () => {
+          this.playerSpeed = originalSpeed;
+        });
+      } else if (type === 'extrafreeze') {
+        const savedVelocities = new Map<Phaser.Physics.Arcade.Sprite, { x: number; y: number }>();
+        this.enemyGroup.children.entries.forEach((enemyObj) => {
+          const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
+          if (enemy.body) {
+            savedVelocities.set(enemy, { x: enemy.body.velocity.x, y: enemy.body.velocity.y });
+            (enemy.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+          }
+          const timer = enemy.getData('timer') as Phaser.Time.TimerEvent | undefined;
+          if (timer) timer.paused = true;
+        });
+        this.time.delayedCall(3000, () => {
+          this.enemyGroup.children.entries.forEach((enemyObj) => {
+            const enemy = enemyObj as Phaser.Physics.Arcade.Sprite;
+            const sv = savedVelocities.get(enemy);
+            if (sv) {
+              (enemy.body as Phaser.Physics.Arcade.Body).setVelocity(sv.x, sv.y);
+            }
+            const timer = enemy.getData('timer') as Phaser.Time.TimerEvent | undefined;
+            if (timer) timer.paused = false;
+          });
+        });
       }
       tint = 0xff0000;
     } else {
@@ -797,18 +902,29 @@ for (let i = 0; i < 5; i++) {
     enemy.setAngle(angle);
   }
 
-  private setDiagonalEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, type: string) {
+  private setEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, type: string) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
     const baseSpeed = this.zoneRevealConfig.enemiesSpeedArray?.[type] ?? 100;
-    const speed = baseSpeed / Math.sqrt(2);
-    const directions = [
-      { vx: speed, vy: speed },
-      { vx: speed, vy: -speed },
-      { vx: -speed, vy: speed },
-      { vx: -speed, vy: -speed }
-    ];
-    const dir = Phaser.Math.RND.pick(directions);
-    enemyBody.setVelocity(dir.vx, dir.vy);
+    let vx = 0;
+    let vy = 0;
+
+    if (type === 'straightUp') {
+      vy = Phaser.Math.RND.sign() * baseSpeed;
+    } else if (type === 'straightleft') {
+      vx = Phaser.Math.RND.sign() * baseSpeed;
+    } else {
+      const speed = baseSpeed / Math.sqrt(2);
+      const directions = [
+        { vx: speed, vy: speed },
+        { vx: speed, vy: -speed },
+        { vx: -speed, vy: speed },
+        { vx: -speed, vy: -speed }
+      ];
+      const dir = Phaser.Math.RND.pick(directions);
+      vx = dir.vx;
+      vy = dir.vy;
+    }
+    enemyBody.setVelocity(vx, vy);
   }
 
  private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
@@ -876,11 +992,11 @@ for (let i = 0; i < 5; i++) {
       }
       this.setRandomUnfilledPosition(enemy);
       const type = enemy.getData('type');
-      this.setDiagonalEnemyVelocity(enemy, type);
+      this.setEnemyVelocity(enemy, type);
       if (type === 'robot') {
         const timer = this.time.addEvent({
           delay: Phaser.Math.Between(3000, 6000),
-          callback: () => this.setDiagonalEnemyVelocity(enemy, type),
+          callback: () => this.setEnemyVelocity(enemy, type),
           loop: true
         });
         enemy.setData('timer', timer);

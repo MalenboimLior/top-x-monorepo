@@ -179,7 +179,7 @@ const config = ref<ZoneRevealConfig>({
 });
 
 const enemyTypes = ['bouncing', 'robot', 'microbe', 'straightUp', 'straightLeft'];
-const powerupTypes = ['extralive', 'extratime', 'speed', 'freeze'];
+const powerupTypes = ['extralive', 'extratime', 'extraspeed', 'extrafreeze'];
 const spriteKeys = ['player', 'enemy', 'robot', 'microbe', 'straightUp', 'straightLeft', 'heart', 'clock', 'speed', 'freeze'];
 
 const newSpriteKey = ref('');
