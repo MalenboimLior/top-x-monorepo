@@ -114,6 +114,15 @@ async function saveScore(custom = {}) {
 
   const gameTypeId = 'ZoneReveal'
 
+  // Only save if this score is better than the previously stored one
+  const previousScore =
+    userStore.profile?.games?.[gameTypeId]?.[props.gameId]?.score ?? null
+
+  if (previousScore !== null && props.score <= previousScore) {
+    console.log('New score is not higher than existing score. Skipping save.')
+    return
+  }
+
   try {
     await userStore.updateGameProgress(gameTypeId, props.gameId, {
       score: props.score,
