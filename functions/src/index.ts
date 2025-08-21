@@ -122,6 +122,19 @@ export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{u
       const gameDataBefore = gamesBefore?.[gameTypeId]?.[gameId] as UserGameData | undefined;
 
       if (JSON.stringify(gameDataAfter) !== JSON.stringify(gameDataBefore)) {
+        const previousScore = gameDataBefore?.score ?? null;
+        const newScore = gameDataAfter.score;
+
+        if (previousScore !== null && newScore <= previousScore) {
+          console.log(`New score ${newScore} is not higher than existing score ${previousScore} for user ${uid} in game ${gameId}. Skipping update.`);
+          // Revert the user document to the previous score to maintain best score
+          await db
+            .collection('users')
+            .doc(uid)
+            .update({ [`games.${gameTypeId}.${gameId}`]: gameDataBefore });
+          continue;
+        }
+
         console.log(`Updating leaderboard and stats for gameType ${gameTypeId} game ${gameId} for user ${uid}`);
 
         await db.runTransaction(async (tx) => {
