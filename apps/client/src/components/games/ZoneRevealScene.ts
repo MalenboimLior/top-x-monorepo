@@ -48,168 +48,6 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
       timeLimit: 60,
       hiddenImage: '/assets/levels/level1.jpeg',
       levelHeader: 'Level 1'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level2.jpeg',
-      levelHeader: 'Level 2'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level3.jpeg',
-      levelHeader: 'Level 3'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level4.jpeg',
-      levelHeader: 'Level 4'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level5.jpeg',
-      levelHeader: 'Level 5'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level6.jpeg',
-      levelHeader: 'Level 6'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level7.jpeg',
-      levelHeader: 'Level 7'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 0 },
-        { type: 'robot', count: 0 },
-        { type: 'microbe', count: 0 },
-        { type: 'straightUp', count: 0 },
-        { type: 'straightleft', count: 0 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 3 },
-        { type: 'extratime', count: 3 },
-        { type: 'extraspeed', count: 0 },
-        { type: 'extrafreeze', count: 0 }
-      ],
-      timeLimit: 60,
-      hiddenImage: '/assets/levels/level.jpeg',
-      levelHeader: 'Level 8'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 1 },
-        { type: 'robot', count: 1 },
-        { type: 'microbe', count: 1 },
-        { type: 'straightUp', count: 1 },
-        { type: 'straightleft', count: 1 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 1 },
-        { type: 'extratime', count: 0 },
-        { type: 'extraspeed', count: 1 },
-        { type: 'extrafreeze', count: 1 }
-      ],
-      timeLimit: 50,
-      hiddenImage: '/assets/levels/level2.jpg',
-      levelHeader: 'Level 2'
-    },
-    {
-      enemyConfig: [
-        { type: 'bouncing', count: 2 },
-        { type: 'robot', count: 2 },
-        { type: 'microbe', count: 2 },
-        { type: 'straightUp', count: 2 },
-        { type: 'straightleft', count: 2 }
-      ],
-      powerupConfig: [
-        { type: 'extralive', count: 2 },
-        { type: 'extratime', count: 1 },
-        { type: 'extraspeed', count: 2 },
-        { type: 'extrafreeze', count: 2 }
-      ],
-      timeLimit: 45,
-      hiddenImage: '/assets/magal.png',
-      levelHeader: 'Boss Level'
     }
   ]
 };
@@ -885,17 +723,23 @@ for (let i = 0; i < 5; i++) {
 
     if (hitVertical) {
       enemyBody.velocity.x = -enemyBody.velocity.x;
-      enemy.x += enemyBody.velocity.x > 0 ? -1 : 1;
+      enemy.x += enemyBody.velocity.x > 0 ? 1 : -1;
     }
 
     if (hitHorizontal) {
       enemyBody.velocity.y = -enemyBody.velocity.y;
-      enemy.y += enemyBody.velocity.y > 0 ? -1 : 1;
+      enemy.y += enemyBody.velocity.y > 0 ? 1 : -1;
     }
 
-    const angle = Math.atan2(enemyBody.velocity.y, enemyBody.velocity.x) * (180 / Math.PI);
+    let angle = 0;
+    if (Math.abs(enemyBody.velocity.x) > Math.abs(enemyBody.velocity.y)) {
+      angle = enemyBody.velocity.x > 0 ? 90 : -90;
+    } else {
+      angle = enemyBody.velocity.y > 0 ? 180 : 0;
+    }
     enemy.setAngle(angle);
   }
+
   private setEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, type: string) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
     const baseSpeed = this.zoneRevealConfig.enemiesSpeedArray?.[type] ?? 100;
