@@ -9,6 +9,8 @@ import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
 import { UserGameData } from '@top-x/shared/types';
 import type { LeaderboardEntry } from '@top-x/shared/types/game'
+import { postOnX } from './external/xApi';
+import './utils/firebaseAdmin'; // Triggers centralized init (no re-init needed)
 
 // -------------------------------------------------------------
 // Cloud Functions used by the TOP-X backend
@@ -19,7 +21,6 @@ import type { LeaderboardEntry } from '@top-x/shared/types/game'
 // statistics for each game as users play.
 // -------------------------------------------------------------
 
-admin.initializeApp();
 const db = admin.firestore();
 
 const corsHandler = cors({ origin: true });
@@ -515,3 +516,4 @@ export const getVipLeaderboard = functions.https.onRequest((req, res) => {
     }
   });
 });
+export { postOnX }; // Add other exports as needed

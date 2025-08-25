@@ -1,0 +1,11 @@
+import * as functions from 'firebase-functions/v2';
+import { postOnX } from './external/xApi';
+import './utils/firebaseAdmin';
+export declare const syncXUserData: functions.https.CallableFunction<any, Promise<void>, unknown>;
+export declare const syncScoresAndVots: functions.CloudFunction<functions.firestore.FirestoreEvent<functions.firestore.Change<functions.firestore.DocumentSnapshot>, Record<string, string>>>;
+export declare const getTopLeaderboard: functions.https.HttpsFunction;
+export declare const getAroundLeaderboard: functions.https.HttpsFunction;
+export declare const getFriendsLeaderboard: functions.https.HttpsFunction;
+export declare const getPercentileRank: functions.https.HttpsFunction;
+export declare const getVipLeaderboard: functions.https.HttpsFunction;
+export { postOnX };
