@@ -1,14 +1,15 @@
-// Vue Router configuration for admin pages
 import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '../stores/user';
 import Home from '@/views/Home.vue';
 import Login from '@/views/Login.vue';
 import GameManagement from '@/views/GameManagement.vue';
+import SendMessage from '@/views/SendMessage.vue';  // New import
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Home, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false } },
   { path: '/game-management', name: 'GameManagement', component: GameManagement, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/send-message', name: 'SendMessage', component: SendMessage, meta: { requiresAuth: true, requiresAdmin: true } },  // New route
 ];
 
 const router = createRouter({
