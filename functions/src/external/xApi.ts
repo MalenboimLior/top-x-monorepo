@@ -38,8 +38,8 @@ export const postOnX = onCall<{ text: string; media?: { data: string; mimeType: 
 
     console.log('Initializing Twitter client');
     const twitterClient = new TwitterApi({
-      appKey: process.env.X_API_KEY!,
-      appSecret: process.env.X_API_SECRET!,
+      appKey: process.env.XAPI_KEY_WRITE!,
+      appSecret: process.env.XAPI_SECRET_WRITE!,
       accessToken: xAccessToken,
       accessSecret: xAccessSecret,
     }).readWrite;

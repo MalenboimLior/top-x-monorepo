@@ -77,8 +77,8 @@ export const useUserStore = defineStore(
           throw new Error('No credential from X login');
         }
         const xAccessToken = credential.accessToken;
-        const xSecret = credential.secret;
-        console.log('Extracted X credentials:', { hasToken: !!xAccessToken, hasSecret: !!xSecret });
+        const xAccessSecret = credential.secret;
+        console.log('Extracted X credentials:', { hasToken: !!xAccessToken, hasSecret: !!xAccessSecret });
 
         const userDocRef = doc(db, 'users', result.user.uid);
         const userDoc = await getDoc(userDocRef);
@@ -86,9 +86,9 @@ export const useUserStore = defineStore(
           // Update existing doc with tokens if missing
           await updateDoc(userDocRef, {
             xAccessToken,
-            xSecret,
+            xAccessSecret,
           });
-          user.value = { ...(userDoc.data() as User), xAccessToken, xSecret };
+          user.value = { ...(userDoc.data() as User), xAccessToken, xAccessSecret };
           // Add null checks for user.value
           if (user.value) {
             console.log('User data updated with tokens:', {
@@ -113,7 +113,7 @@ export const useUserStore = defineStore(
             games: {},
             badges: [],
             xAccessToken,  // Add here
-            xSecret,  // Add here
+            xAccessSecret,  // Add here
           };
           await setDoc(userDocRef, newUser);
           user.value = newUser;

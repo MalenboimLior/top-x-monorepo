@@ -17,7 +17,7 @@ export interface User {
   followersCount: number;
   followingCount: number;
   xAccessToken?: string;
-  xSecret?: string;
+  xAccessSecret?: string;
   frenemies: string[];
   addedBy: string[];
   games: Record<string, Record<string, UserGameData>>;
