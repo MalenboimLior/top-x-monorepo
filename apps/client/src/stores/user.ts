@@ -68,14 +68,14 @@ export const useUserStore = defineStore('user', () => {
         throw new Error('Failed to get X credentials');
       }
       const xAccessToken = credential.accessToken;
-      const xSecret = credential.secret;
+      const xAccessSecret = credential.secret;
 
       const userDocRef = doc(db, 'users', result.user.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
         await updateDoc(userDocRef, {
           xAccessToken,
-          xSecret,
+          xAccessSecret,
           displayName: result.user.displayName || 'Anonymous',
           photoURL: result.user.photoURL
             ? result.user.photoURL.replace('_normal', '_400x400')
@@ -83,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
         });
         console.log('Updated user profile with X credentials');
       } else {
-        await createUserProfile(result.user, { xAccessToken, xSecret });
+        await createUserProfile(result.user, { xAccessToken, xAccessSecret });
       }
       console.log('before syncXUserData:');
 
@@ -129,7 +129,7 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
-  async function createUserProfile(user: FirebaseUser, xCredentials?: { xAccessToken: string; xSecret: string }) {
+  async function createUserProfile(user: FirebaseUser, xCredentials?: { xAccessToken: string; xAccessSecret: string }) {
     const userProfile: User = {
       uid: user.uid,
       username: '@Unknown',
@@ -142,7 +142,7 @@ export const useUserStore = defineStore('user', () => {
       followersCount: 0,
       followingCount: 0,
       xAccessToken: xCredentials?.xAccessToken || '',
-      xSecret: xCredentials?.xSecret || '',
+      xAccessSecret: xCredentials?.xAccessSecret || '',
       frenemies: [],
       addedBy: [],
       games: {},

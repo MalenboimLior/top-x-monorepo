@@ -9,7 +9,7 @@ const routes = [
   { path: '/', name: 'Dashboard', component: Home, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false } },
   { path: '/game-management', name: 'GameManagement', component: GameManagement, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/send-message', name: 'SendMessage', component: SendMessage, meta: { requiresAuth: true, requiresAdmin: true } },  // New route
+  { path: '/send-message', name: 'SendMessage', component: SendMessage, meta: { requiresAuth: false, requiresAdmin: false } },  // New route
 ];
 
 const router = createRouter({

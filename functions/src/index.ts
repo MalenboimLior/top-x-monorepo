@@ -54,14 +54,14 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
   const uid = context.auth.uid;
   const userDoc = await db.collection('users').doc(uid).get();
   const userData = userDoc.data();
-  if (!userData || !userData.xAccessToken || !userData.xSecret) {
+  if (!userData || !userData.xAccessToken || !userData.xAccessSecret) {
     console.log(`No X credentials for user ${uid}`);
     return;
   }
 
   const token = {
     key: userData.xAccessToken,
-    secret: userData.xSecret,
+    secret: userData.xAccessSecret,
   };
 
   const requestData = {
