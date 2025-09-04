@@ -15,6 +15,7 @@ import { analytics } from '@top-x/shared';
 import ZoneReveal from '../views/games/ZoneReveal.vue';
 import Build from '@/views/Build.vue';
 import DailyChallenges from '@/views/DailyChallenges.vue';
+import GameInfo from '@/views/GameInfo.vue';
 
 const routes = [
   // {
@@ -38,6 +39,11 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home,
+  },
+  {
+    path: '/games/info',
+    name: 'GameInfo',
+    component: GameInfo,
   },
   {
     path: '/profile',
