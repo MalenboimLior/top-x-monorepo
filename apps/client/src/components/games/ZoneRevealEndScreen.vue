@@ -1,3 +1,4 @@
+<!-- Updated ZoneRevealEndScreen.vue -->
 <template>
   <div class="modal is-active" @click.self="handleTryAgain">
     <div class="modal-background"></div>
@@ -35,31 +36,7 @@
           <p>Good luck! 🤞🏻</p>
         </div>
         <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
-        <div class="leaderboard-section">
-          <h3>Top Players</h3>
-          <table v-if="leaderboard.length" class="table is-fullwidth is-striped">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(entry, index) in leaderboard" :key="entry.uid">
-                <td>{{ index + 1 }}</td>
-                <td>
-                  <figure class="image is-32x32 is-inline-block">
-                    <img :src="entry.photoURL" alt="Profile" class="is-rounded" />
-                  </figure>
-                  @{{ entry.username }}
-                </td>
-                <td>{{ entry.score }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p v-else>No leaderboard data available yet.</p>
-        </div>
+        <Leaderboard :game-id="gameId" />
       </template>
     </div>
   </div>
@@ -71,7 +48,7 @@ import { useUserStore } from '@/stores/user'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
 import axios from 'axios'
-import type { LeaderboardEntry } from '@top-x/shared/types'
+import Leaderboard from '@/components/Leaderboard.vue'
 
 const props = defineProps<{
   score: number
@@ -84,25 +61,14 @@ const emit = defineEmits(['close'])
 const userStore = useUserStore()
 const answer = ref('')
 const hasSubmitted = ref(false)
-const leaderboard = ref<LeaderboardEntry[]>([])
 
 const formattedRevealDate = computed(() => new Date(props.answerRevealUTC).toLocaleString())
 
 onMounted(async () => {
   if (userStore.user) {
     await saveScore()
-    await fetchLeaderboard()
   }
 })
-
-async function fetchLeaderboard() {
-  try {
-    const response = await axios.get(`https://us-central1-top-x-co.cloudfunctions.net/getTopLeaderboard?gameId=${props.gameId}&limit=10`)
-    leaderboard.value = response.data
-  } catch (err) {
-    console.error('Failed to fetch leaderboard:', err)
-  }
-}
 
 async function saveScore(custom = {}) {
   if (!props.gameId) {
@@ -139,7 +105,6 @@ async function handleSubmit() {
   const custom = { answer: answer.value }
   await saveScore(custom)
   hasSubmitted.value = true
-  await fetchLeaderboard()
   if (analytics) {
     logEvent(analytics, 'user_action', { action: 'submit_answer', game_id: props.gameId, answer: answer.value })
   }
@@ -179,7 +144,6 @@ async function handleLogin() {
         await saveScore()
       }
       localStorage.removeItem(`zonereveal_${props.gameId}`)
-      await fetchLeaderboard()
       if (analytics) {
         logEvent(analytics, 'user_action', {
           action: 'login',
@@ -223,24 +187,5 @@ input {
 
 .button.is-text {
   text-decoration: underline;
-}
-
-.leaderboard-section {
-  margin-top: 20px;
-  text-align: left;
-}
-
-.image.is-32x32 {
-  vertical-align: middle;
-  margin-right: 8px;
-}
-
-.table {
-  background-color: #333;
-  color: white;
-}
-
-.table th {
-  color: #ddd;
 }
 </style>

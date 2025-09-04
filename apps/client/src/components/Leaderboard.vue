@@ -1,74 +1,71 @@
-<!-- Table display for leaderboard entries -->
+<!-- New Leaderboard.vue in src/components/Leaderboard.vue -->
 <template>
-  <div class="leaderboard-container">
-    <h2 class="title is-3 has-text-white animate-item" style="--animation-delay: 0s;">{{ title }}</h2>
-    <div class="card animate-item" style="--animation-delay: 0.2s;">
-      <div class="card-content">
-        <div v-if="!entries.length" class="empty-state has-text-white">
-          <p>No leaderboard entries yet. Play to climb the ranks!</p>
-        </div>
-        <table v-else class="table is-striped is-fullwidth">
-          <thead>
-            <tr>
-              <th class="has-text-white">Rank</th>
-              <th class="has-text-white">Player</th>
-              <th class="has-text-white">Score</th>
-              <th class="has-text-white">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(entry, index) in entries"
-              :key="entry.uid"
-              :class="{ 'is-current-user': entry.uid === currentUserId }"
-              class="animate-item"
-              :style="{ '--animation-delay': `${0.4 + index * 0.1}s` }"
-            >
-              <td>{{ index + 1 }}</td>
-              <td>
-                <div class="media">
-                  <div class="media-left">
-                    <figure class="image is-32x32">
-                      <img :src="entry.photoURL" alt="Profile" class="is-rounded avatar" />
-                    </figure>
-                  </div>
-                  <div class="media-content">
-                    <p class="is-size-6 has-text-weight-bold">{{ entry.username }}</p>
-                  </div>
-                </div>
-              </td>
-              <td>{{ entry.score }}</td>
-              <td>
-                <CustomButton
-                  v-if="entry.uid !== currentUserId && !frenemies.includes(entry.uid)"
-                  type="is-link is-small"
-                  label="Add Frenemy"
-                  :icon="['fas', 'user-plus']"
-                  @click="$emit('add-frenemy', entry.uid)"
-                  class="animate-item"
-                  :style="{ '--animation-delay': `${0.4 + index * 0.1}s` }"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <div class="leaderboard-section">
+    <h3>Top Players</h3>
+    <table v-if="leaderboard.length" class="table is-fullwidth is-striped">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Player</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(entry, index) in leaderboard" :key="entry.uid">
+          <td>{{ index + 1 }}</td>
+          <td>
+            <figure class="image is-32x32 is-inline-block">
+              <img :src="entry.photoURL" alt="Profile" class="is-rounded" />
+            </figure>
+            @{{ entry.username }}
+          </td>
+          <td>{{ entry.score }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p v-else>No leaderboard data available yet.</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import { LeaderboardEntry } from '@top-x/shared/types/game';
 
-defineProps<{
-  title: string;
-  entries: LeaderboardEntry[];
-  frenemies: string[];
-  currentUserId?: string;
+const props = defineProps<{
+  gameId: string;
+  limit?: number;
 }>();
+
+const leaderboard = ref<LeaderboardEntry[]>([]);
+
+onMounted(async () => {
+  try {
+    const response = await axios.get(`https://us-central1-top-x-co.cloudfunctions.net/getTopLeaderboard?gameId=${props.gameId}&limit=${props.limit || 10}`);
+    leaderboard.value = response.data;
+  } catch (err) {
+    console.error('Failed to fetch leaderboard:', err);
+  }
+});
 </script>
 
 <style scoped>
-@import '../styles/Leaderboard.css';
+.leaderboard-section {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.image.is-32x32 {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.table {
+  background-color: #333;
+  color: white;
+}
+
+.table th {
+  color: #ddd;
+}
 </style>

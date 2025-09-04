@@ -1,5 +1,4 @@
-  
-<!-- Landing page listing available games -->
+<!-- Home.vue -->
 <template>
   <div class="home-container">
     <img
@@ -25,7 +24,7 @@
 
     <h2 class="title is-3 has-text-white">TOP-X Games</h2>
     <div class="columns is-multiline is-mobile">
-      <div v-for="game in filteredAdminGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
+      <div v-for="game in filteredAdminGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile is-clickable" @click="navigateToGame(game.id, game.gameTypeId)">
         <Card>
           <div class="card-image">
             <figure class="image is-4by3">
@@ -36,15 +35,8 @@
             <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
             <p class="has-text-grey-light">{{ game.description }}</p>
             <CustomButton
-              v-if="!game.isComingSoon"
               type="is-primary mt-4"
               :label="'Play Now'"
-            />
-            <CustomButton
-              v-else
-              type="is-disabled mt-4"
-              label="Coming Soon"
-              :disabled="true"
             />
           </div>
         </Card>
@@ -53,7 +45,7 @@
 
     <h2 class="title is-3 has-text-white mt-6">Community Games</h2>
     <div class="columns is-multiline is-mobile">
-      <div v-for="game in filteredCommunityGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile" :class="{ 'is-clickable': !game.isComingSoon }" @click="!game.isComingSoon ? navigateToGame(game.route) : null">
+      <div v-for="game in filteredCommunityGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile is-clickable" @click="navigateToGame(game.id, game.gameTypeId)">
         <Card>
           <div class="card-image">
             <figure class="image is-4by3">
@@ -65,15 +57,8 @@
             <p class="has-text-grey-light">{{ game.description }}</p>
             <p class="has-text-grey-light">Created by: {{ game.creator?.username || 'Unknown' }}</p>
             <CustomButton
-              v-if="!game.isComingSoon"
               type="is-primary mt-4"
               :label="'Play Now'"
-            />
-            <CustomButton
-              v-else
-              type="is-disabled mt-4"
-              label="Coming Soon"
-              :disabled="true"
             />
           </div>
         </Card>
@@ -92,23 +77,9 @@ import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import fallbackImg from '@/assets/images/fallback.png';
 import { analytics, trackEvent } from '@top-x/shared';
+import { Game } from '@top-x/shared/types/game';
 
 const router = useRouter();
-
-interface Game {
-  id: string;
-  name: string;
-  description: string;
-  gameTypeId: string;
-  image: string;
-  isComingSoon: boolean;
-  active: boolean;
-  language: 'en' | 'il';
-  shareLink?: string;
-  route: string;
-  community?: boolean;
-  creator?: { userid: string; username: string };
-}
 
 const games = ref<Game[]>([]);
 const selectedLanguage = ref('');
@@ -137,13 +108,15 @@ onMounted(() => {
         description: data.description || 'No description available',
         gameTypeId: data.gameTypeId || '',
         image: data.image || fallbackImg,
-        isComingSoon: data.custom?.isComingSoon || false,
         active: data.active ?? false,
         language: data.language || 'en',
         shareLink: data.shareLink || '',
-        route: `/games/${data.gameTypeId}?game=${doc.id}`,
         community: data.community ?? false,
         creator: data.creator,
+        gameHeader: data.gameHeader,
+        gameInstruction: data.gameInstruction,
+        vip: data.vip || [],
+        custom: data.custom || {},
       } as Game;
     }).filter(g => g.active);
     console.log('Home: Games updated:', games.value);
@@ -160,11 +133,9 @@ const filteredCommunityGames = computed(() => {
   return games.value.filter(g => g.community && (!selectedLanguage.value || g.language === selectedLanguage.value));
 });
 
-function navigateToGame(route: string) {
-  const idMatch = route.match(/game=([^&]+)/);
-  const gameId = idMatch ? idMatch[1] : 'unknown';
+function navigateToGame(gameId: string, gameTypeId: string) {
   trackEvent(analytics, 'select_game', { game_id: gameId });
-  router.push(route);
+  router.push(`/games/info?game=${gameId}`);
 }
 </script>
 
