@@ -62,7 +62,7 @@ useHead({
     { name: 'description', content: "Join TOP-X for exciting viral challenges, pyramid rankings, trivia games, and competitions on X. Build your top lists, challenge friends, and rise to the challenge! 99% Grok-powered. Who's on top? 🎯" },
   ],
 });
-const gameId = ref((route.query.game as string).toLowerCase());const gameTitle = ref('');
+const gameId = ref((route.query.game as string));const gameTitle = ref('');
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
 const communityItems = ref<PyramidItem[]>([]);

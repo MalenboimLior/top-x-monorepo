@@ -1,4 +1,3 @@
-<!-- Component for editing PyramidConfig -->
 <template>
   <div class="add-pyramid">
     <h3 class="title is-4 has-text-white">Pyramid Configuration</h3>
@@ -19,7 +18,12 @@
               <input class="input" v-model="item.name" placeholder="Name" />
             </div>
             <div class="column">
-              <input class="input" v-model="item.src" placeholder="Image URL" />
+              <ImageUploader
+                v-model="item.src"
+                uploadFolder="pyramid"
+                :cropWidth="200"
+                :cropHeight="200"
+              />
             </div>
             <div class="column is-narrow">
               <button class="button is-danger" @click="removeItem(index)">Remove</button>
@@ -116,7 +120,7 @@
       </label>
     </div>
 
-    <!-- Community Items similar to Items -->
+    <!-- Community Items -->
     <div class="field">
       <label class="label has-text-white">Community Items</label>
       <div v-for="(item, index) in config.communityItems" :key="index" class="box mb-2">
@@ -132,7 +136,12 @@
               <input class="input" v-model="item.name" placeholder="Name" />
             </div>
             <div class="column">
-              <input class="input" v-model="item.src" placeholder="Image URL" />
+              <ImageUploader
+                v-model="item.src"
+                uploadFolder="pyramid"
+                :cropWidth="200"
+                :cropHeight="200"
+              />
             </div>
             <div class="column is-narrow">
               <button class="button is-danger" @click="removeCommunityItem(index)">Remove</button>
@@ -153,6 +162,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import type { PyramidConfig, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 
 const props = defineProps<{ modelValue: PyramidConfig }>();
