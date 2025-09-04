@@ -62,9 +62,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import PyramidMyVote from '@/components/PyramidMyVote.vue';
-import PyramidStats from '@/components/PyramidStats.vue';
-import PyramidResults from '@/components/PyramidResults.vue';
+import PyramidMyVote from '@/components/games/pyramid/PyramidMyVote.vue';
+import PyramidStats from '@/components/games/pyramid/PyramidStats.vue';
+import PyramidResults from '@/components/games/pyramid/PyramidResults.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 
 const route = useRoute();

@@ -203,7 +203,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCircleInfo, faSearch, faEraser, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import PyramidAddItemPopup from '@/components/PyramidAddItemPopup.vue';
+import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.vue';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 // declare global {

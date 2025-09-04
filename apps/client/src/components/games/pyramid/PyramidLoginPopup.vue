@@ -20,10 +20,8 @@ We grab just your username + pic - promise, no funny business. 🔒:<br>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useUserStore } from '../stores/user';
+import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData } from '@top-x/shared/types/pyramid';
-import { UserGameData } from '@top-x/shared/types/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 

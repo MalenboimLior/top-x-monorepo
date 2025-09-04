@@ -76,7 +76,7 @@ Username + pic - we promise, we stay out of your posts! 🔒<br>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import PyramidView from '@/components/PyramidView.vue';
+import PyramidView from '@/components/games/pyramid/PyramidView.vue';
 import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
