@@ -18,6 +18,9 @@
       <div class="modal-background" @click="cancel"></div>
       <div class="modal-content">
         <div class="box">
+          <div v-if="uploadError" class="notification is-danger">
+            {{ uploadError }}
+          </div>
           <div
             class="image-crop-frame"
             :style="{
@@ -85,6 +88,7 @@ const showModal = ref(false);
 const selectedImage = ref<string | null>(null);
 const originalFile = ref<File | null>(null);
 const image = ref<HTMLImageElement | null>(null);
+const uploadError = ref<string | null>(null);
 
 const offset = ref({ x: 0, y: 0 });
 const startDrag = ref({ x: 0, y: 0 });
@@ -100,6 +104,14 @@ const previewScale = computed(() => {
   const scaleW = maxPreviewWidth / props.cropWidth;
   const scaleH = maxPreviewHeight / props.cropHeight;
   return Math.min(1, scaleW, scaleH);
+});
+
+// Validate uploadFolder
+const validatedUploadFolder = computed(() => {
+  if (!props.uploadFolder || props.uploadFolder.includes('//') || props.uploadFolder.startsWith('/') || props.uploadFolder.endsWith('/')) {
+    return 'pyramid/default';
+  }
+  return props.uploadFolder;
 });
 
 // Helper to get coordinates in crop area space
@@ -138,6 +150,7 @@ const onWheelPreview = (e: WheelEvent) => {
 };
 
 const selectImage = () => {
+  uploadError.value = null;
   fileInput.value?.click();
 };
 
@@ -161,13 +174,11 @@ const onImageLoad = () => {
     width: image.value.naturalWidth,
     height: image.value.naturalHeight,
   };
-  // Calculate min scale so image always covers crop area
   minScale.value = Math.max(
     props.cropWidth / imgNatural.value.width,
     props.cropHeight / imgNatural.value.height
   );
   scale.value = minScale.value;
-  // Center image
   offset.value = {
     x: (props.cropWidth - imgNatural.value.width * scale.value) / 2,
     y: (props.cropHeight - imgNatural.value.height * scale.value) / 2,
@@ -186,11 +197,9 @@ const setZoom = (newScale: number, centerX?: number, centerY?: number) => {
   const prevScale = scale.value;
   scale.value = Math.max(minScale.value, Math.min(3, newScale));
 
-  // Calculate zoom center
   const mx = centerX ?? props.cropWidth / 2;
   const my = centerY ?? props.cropHeight / 2;
 
-  // Adjust offsets to zoom toward the center
   offset.value.x = mx - ((mx - offset.value.x) * (prevScale / scale.value));
   offset.value.y = my - ((my - offset.value.y) * (prevScale / scale.value));
 
@@ -205,6 +214,7 @@ watch(scale, clampOffset);
 const cropAndUpload = async () => {
   if (!image.value || !originalFile.value) return;
 
+  uploadError.value = null;
   const sx = (-offset.value.x) / scale.value;
   const sy = (-offset.value.y) / scale.value;
   const sWidth = props.cropWidth / scale.value;
@@ -214,7 +224,10 @@ const cropAndUpload = async () => {
   canvas.width = props.cropWidth;
   canvas.height = props.cropHeight;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    uploadError.value = 'Failed to create canvas context';
+    return;
+  }
 
   ctx.drawImage(
     image.value,
@@ -231,19 +244,27 @@ const cropAndUpload = async () => {
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob((b) => resolve(b), 'image/png')
   );
-  if (!blob) return;
+  if (!blob) {
+    uploadError.value = 'Failed to create image blob';
+    return;
+  }
 
-  const path = `${props.uploadFolder}/${Date.now()}_${originalFile.value.name}`;
-  const sRef = storageRef(storage, path);
-  await uploadBytes(sRef, blob);
-  const url = await getDownloadURL(sRef);
-
-  emit('update:modelValue', url);
-  showModal.value = false;
-  selectedImage.value = null;
+  try {
+    const path = `${validatedUploadFolder.value}/${Date.now()}_${originalFile.value.name}`;
+    const sRef = storageRef(storage, path);
+    await uploadBytes(sRef, blob);
+    const url = await getDownloadURL(sRef);
+    emit('update:modelValue', url);
+    showModal.value = false;
+    selectedImage.value = null;
+  } catch (error: any) {
+    uploadError.value = `Upload failed: ${error.message}`;
+    console.error('Upload error:', error);
+  }
 };
 
 const cancel = () => {
+  uploadError.value = null;
   showModal.value = false;
   selectedImage.value = null;
 };
@@ -271,7 +292,6 @@ const cancel = () => {
   height: unset !important;
   max-width: none !important;
   max-height: 100% !important;
-  /* Prevent any inherited stretching */
 }
 
 .zoom-controls {

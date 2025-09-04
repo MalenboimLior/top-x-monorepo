@@ -1,4 +1,3 @@
-<!-- Component for adding new game -->
 <template>
   <div class="build-form">
     <div class="tabs">
@@ -28,9 +27,14 @@
       </div>
 
       <div class="field">
-        <label class="label has-text-white">Image URL</label>
+        <label class="label has-text-white">Game Image</label>
         <div class="control">
-          <input class="input" type="text" v-model="game.image" placeholder="Enter image URL" />
+          <ImageUploader
+            v-model="game.image"
+            :uploadFolder="`images/games/${validatedGameId}`"
+            :cropWidth="300"
+            :cropHeight="200"
+          />
         </div>
       </div>
 
@@ -78,12 +82,14 @@
     <div v-else>
       <!-- Custom config based on type -->
       <div v-if="gameType.custom === 'PyramidConfig'">
-        <AddPyramid v-model="game.custom as PyramidConfig" />
+        <AddPyramid
+          v-model="game.custom as PyramidConfig"
+          :gameId="props.existingGame?.id || 'temp-' + Date.now()"
+        />
       </div>
       <div v-else-if="gameType.custom === 'ZoneRevealConfig'">
         <AddZoneReveal v-model="game.custom as ZoneRevealConfig" />
       </div>
-      
     </div>
 
     <div class="field is-grouped">
@@ -98,13 +104,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import AddPyramid from './build/AddPyramid.vue';
 import AddZoneReveal from './build/AddZoneReveal.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
@@ -117,6 +124,12 @@ const emit = defineEmits(['save', 'cancel']);
 
 const userStore = useUserStore();
 const activeTab = ref('general');
+
+// Validate gameId to ensure safe uploadFolder path
+const validatedGameId = computed(() => {
+  const id = props.existingGame?.id || `temp-${Date.now()}`;
+  return id.replace(/[\/\\]/g, '');
+});
 
 const game = ref<Game>(props.existingGame ? { ...props.existingGame } : {
   id: '',
@@ -184,6 +197,12 @@ async function saveGame() {
     console.error('Error saving game:', err);
   }
 }
+
+// Debug initial game data
+onMounted(() => {
+  console.log('BuildAddNewGame: Mounted with game.custom:', game.value.custom);
+  console.log('BuildAddNewGame: Existing game ID:', props.existingGame?.id);
+});
 </script>
 
 <style scoped>

@@ -20,7 +20,7 @@
             <div class="column">
               <ImageUploader
                 v-model="item.src"
-                uploadFolder="pyramid"
+                :uploadFolder="`pyramid/${validatedGameId}`"
                 :cropWidth="200"
                 :cropHeight="200"
               />
@@ -138,7 +138,7 @@
             <div class="column">
               <ImageUploader
                 v-model="item.src"
-                uploadFolder="pyramid"
+                :uploadFolder="`pyramid/${validatedGameId}`"
                 :cropWidth="200"
                 :cropHeight="200"
               />
@@ -160,15 +160,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import type { PyramidConfig, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 
-const props = defineProps<{ modelValue: PyramidConfig }>();
+// Deep equality check to avoid unnecessary emissions
+function isEqual(a: any, b: any): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+const props = defineProps<{
+  modelValue: PyramidConfig;
+  gameId?: string;
+}>();
 const emit = defineEmits(['update:modelValue']);
 
-const config = ref<PyramidConfig>({
+// Initialize config with a deep clone of modelValue
+const config = ref<PyramidConfig>(JSON.parse(JSON.stringify(props.modelValue || {
   items: [],
   rows: [],
   sortItems: { orderBy: 'id', order: 'asc' },
@@ -180,10 +189,35 @@ const config = ref<PyramidConfig>({
   worstShow: false,
   communityItems: [],
   communityHeader: '',
+})));
+
+// Validate gameId to ensure safe uploadFolder path
+const validatedGameId = computed(() => {
+  const id = props.gameId || `temp-${Date.now()}`;
+  return id.replace(/[\/\\]/g, '');
 });
 
-watch(() => props.modelValue, (val) => { config.value = val; }, { deep: true });
-watch(config, (val) => { emit('update:modelValue', val); }, { deep: true });
+// Watch modelValue for changes and update config
+watch(() => props.modelValue, (newVal) => {
+  if (newVal && !isEqual(newVal, config.value)) {
+    console.log('AddPyramid: modelValue changed, updating config', newVal);
+    config.value = JSON.parse(JSON.stringify(newVal));
+  }
+}, { deep: true });
+
+// Watch config for changes and emit update:modelValue only if different
+watch(config, (newVal) => {
+  if (!isEqual(newVal, props.modelValue)) {
+    console.log('AddPyramid: config changed, emitting update:modelValue', newVal);
+    emit('update:modelValue', JSON.parse(JSON.stringify(newVal)));
+  }
+}, { deep: true });
+
+// Debug initial load
+onMounted(() => {
+  console.log('AddPyramid: Mounted with modelValue:', props.modelValue);
+  console.log('AddPyramid: Initial config:', config.value);
+});
 
 function addItem() {
   config.value.items.push({ id: '', label: '', name: '', src: '', active: true, source: '' });
