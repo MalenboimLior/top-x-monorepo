@@ -192,7 +192,7 @@ import { db } from '@top-x/shared';
 
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import PyramidView from '@/components/PyramidView.vue';
+import PyramidView from '@/components/games/pyramid/PyramidView.vue';
 import type { User } from '@top-x/shared/types/user';
 import type { PyramidSlot, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 import { analytics, trackEvent } from '@top-x/shared';

@@ -87,13 +87,13 @@
 </template>
 
 <script setup lang="ts">
-import ZoneRevealEndScreen from '@/components/games/ZoneRevealEndScreen.vue'
+import ZoneRevealEndScreen from '@/components/games/zonereveal/ZoneRevealEndScreen.vue'
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@top-x/shared'
 import Phaser from 'phaser'
-import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/ZoneRevealScene'
+import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/zonereveal/ZoneRevealScene'
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
 import { useHead } from '@vueuse/head'
 import { logEvent } from 'firebase/analytics'

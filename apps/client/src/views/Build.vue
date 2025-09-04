@@ -87,9 +87,8 @@ import { ref, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import BuildAddNewGame from '@/components/BuildAddNewGame.vue';
+import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
 import DailyChallengesList from '@/components/build/DailyChallengesList.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
 

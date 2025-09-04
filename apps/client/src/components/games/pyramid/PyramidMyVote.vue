@@ -42,8 +42,8 @@
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
-import PyramidImage from '@/components/PyramidImage.vue';
-import PyramidLoginPopup from '@/components/PyramidLoginPopup.vue';
+import PyramidImage from '@/components/games/pyramid/PyramidImage.vue';
+import PyramidLoginPopup from '@/components/games/pyramid/PyramidLoginPopup.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
