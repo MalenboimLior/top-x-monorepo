@@ -1,10 +1,10 @@
 <template>
   <div class="image-uploader">
     <div v-if="modelValue">
-      <img :src="modelValue" alt="Current image" style="max-width: 200px; height: auto;" />
-      <button class="button is-primary" @click="selectImage">Change Image</button>
+      <img :src="modelValue" alt="Current image" class="uploader-current-image" />
+      <button class="uploader-button uploader-button-primary" @click="selectImage">Change Image</button>
     </div>
-    <button v-else class="button is-primary" @click="selectImage">Upload Image</button>
+    <button v-else class="uploader-button uploader-button-primary" @click="selectImage">Upload Image</button>
 
     <input
       type="file"
@@ -14,21 +14,22 @@
       style="display: none"
     />
 
-    <div class="modal" :class="{ 'is-active': showModal }">
-      <div class="modal-background" @click="cancel"></div>
-      <div class="modal-content">
-        <div class="box">
-          <div v-if="uploadError" class="notification is-danger">
+    <div class="uploader-modal" :class="{ 'uploader-modal-active': showModal }">
+      <div class="uploader-modal-background" @click="cancel"></div>
+      <div class="uploader-modal-content">
+        <div class="uploader-box">
+          <div v-if="uploadError" class="uploader-error">
             {{ uploadError }}
           </div>
           <div
-            class="image-crop-frame"
+            ref="cropFrame"
+            class="uploader-crop-frame"
             :style="{
               width: props.cropWidth + 'px',
               height: props.cropHeight + 'px',
               transform: `scale(${previewScale})`,
               transformOrigin: 'top left',
-              boxShadow: previewScale < 1 ? '0 0 0 2px #00d1b2' : undefined
+              boxShadow: previewScale < 1 ? '0 0 0 2px #00d1b2' : 'none'
             }"
             @mousedown="onMouseDownPreview"
             @wheel.prevent="onWheelPreview"
@@ -36,7 +37,7 @@
             <img
               v-if="selectedImage"
               ref="image"
-              class="image-crop-img"
+              class="uploader-crop-image"
               :src="selectedImage"
               alt="Image to crop"
               @load="onImageLoad"
@@ -52,18 +53,18 @@
               draggable="false"
             />
           </div>
-          <div class="zoom-controls mt-2 has-text-centered">
-            <button class="button is-small mr-2" @click="zoomOut" :disabled="scale <= minScale">-</button>
-            <span style="min-width: 60px; display: inline-block;">Zoom: {{ scale.toFixed(2) }}</span>
-            <button class="button is-small ml-2" @click="zoomIn" :disabled="scale >= 3">+</button>
+          <div class="uploader-zoom-controls">
+            <button class="uploader-button uploader-button-small" @click="zoomOut" :disabled="scale <= minScale">-</button>
+            <span class="uploader-zoom-label">Zoom: {{ scale.toFixed(2) }}</span>
+            <button class="uploader-button uploader-button-small" @click="zoomIn" :disabled="scale >= 3">+</button>
           </div>
-          <div class="controls mt-4 has-text-centered">
-            <button class="button is-success" @click="cropAndUpload">Upload</button>
-            <button class="button is-danger ml-2" @click="cancel">Cancel</button>
+          <div class="uploader-controls">
+            <button class="uploader-button uploader-button-success" @click="cropAndUpload" :disabled="!image || !originalFile">Upload</button>
+            <button class="uploader-button uploader-button-cancel" @click="cancel" :disabled="!image || !originalFile">Cancel</button>
           </div>
         </div>
+        <button class="uploader-modal-close" aria-label="close" @click="cancel"></button>
       </div>
-      <button class="modal-close is-large" aria-label="close" @click="cancel"></button>
     </div>
   </div>
 </template>
@@ -88,6 +89,7 @@ const showModal = ref(false);
 const selectedImage = ref<string | null>(null);
 const originalFile = ref<File | null>(null);
 const image = ref<HTMLImageElement | null>(null);
+const cropFrame = ref<HTMLDivElement | null>(null);
 const uploadError = ref<string | null>(null);
 
 const offset = ref({ x: 0, y: 0 });
@@ -116,7 +118,8 @@ const validatedUploadFolder = computed(() => {
 
 // Helper to get coordinates in crop area space
 const getPreviewCoords = (e: MouseEvent | WheelEvent) => {
-  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  if (!cropFrame.value) return { x: 0, y: 0 };
+  const rect = cropFrame.value.getBoundingClientRect();
   const px = (e.clientX - rect.left) / previewScale.value;
   const py = (e.clientY - rect.top) / previewScale.value;
   return { x: px, y: py };
@@ -178,7 +181,11 @@ const onImageLoad = () => {
     props.cropWidth / imgNatural.value.width,
     props.cropHeight / imgNatural.value.height
   );
-  scale.value = minScale.value;
+  if (minScale.value > 1) {
+    scale.value = 1; // Allow zooming in if image is smaller than crop frame
+  } else {
+    scale.value = minScale.value; // Fit image to frame if larger
+  }
   offset.value = {
     x: (props.cropWidth - imgNatural.value.width * scale.value) / 2,
     y: (props.cropHeight - imgNatural.value.height * scale.value) / 2,
@@ -271,38 +278,193 @@ const cancel = () => {
 </script>
 
 <style scoped>
+/* Targeted reset for isolation without breaking layout */
+.image-uploader,
+.uploader-modal,
+.uploader-modal-content,
+.uploader-box,
+.uploader-crop-frame,
+.uploader-crop-image {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Container */
 .image-uploader {
+  display: block;
   margin-bottom: 1rem;
 }
 
-.image-crop-frame {
+/* Current image */
+.uploader-current-image {
+  max-width: 200px;
+  height: auto;
+  display: block;
+}
+
+/* Modal */
+.uploader-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+.uploader-modal-active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploader-modal-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.uploader-modal-content {
+  display: block;
+  max-width: 90vw;
+  max-height: 90vh;
+  position: relative;
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+/* Box */
+.uploader-box {
+  display: block;
+  background: #1a1a1a; /* TOP-X dark theme */
+  padding: 1.5rem;
+  border-radius: 8px;
+  color: #ffffff;
+  z-index: 1002;
+  pointer-events: auto;
+}
+
+/* Error */
+.uploader-error {
+  display: block;
+  background: #ff4d4f;
+  color: #ffffff;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* Crop frame */
+.uploader-crop-frame {
   position: relative;
   overflow: hidden;
   margin: 0 auto;
   border: 2px solid #00d1b2;
-  background: #222;
+  background: #222222;
   cursor: grab;
   user-select: none;
-  box-sizing: border-box;
 }
 
-.image-crop-img {
+/* Crop image */
+.uploader-crop-image {
+  position: absolute;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
   will-change: transform;
-  width: unset !important;
-  height: unset !important;
-  max-width: none !important;
-  max-height: 100% !important;
 }
 
-.zoom-controls {
+/* Zoom controls */
+
+.uploader-zoom-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin: 0.5rem 0;
+  gap: 0.5rem;
+  pointer-events: auto;
 }
 
-.controls {
+.uploader-zoom-label {
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+/* Controls */
+
+.uploader-controls {
   display: flex;
   justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  pointer-events: auto;
+}
+
+/* Buttons */
+.uploader-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 1rem;
+  background: #00d1b2; /* Default */
+  transition: background 0.2s;
+}
+
+.uploader-button-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.uploader-button-primary {
+  background: #00d1b2;
+}
+
+.uploader-button-success {
+  background: #48c774;
+}
+
+.uploader-button-cancel {
+  background: #ff4d4f;
+}
+
+.uploader-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uploader-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* Modal close button */
+.uploader-modal-close {
+  display: block;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: #ff4d4f;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 1.25rem;
+  line-height: 2.5rem;
+  text-align: center;
 }
 </style>

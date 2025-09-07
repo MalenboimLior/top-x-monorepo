@@ -21,8 +21,8 @@
               <ImageUploader
                 v-model="item.src"
                 :uploadFolder="`pyramid/${validatedGameId}`"
-                :cropWidth="200"
-                :cropHeight="200"
+                :cropWidth="250"
+                :cropHeight="250"
               />
             </div>
             <div class="column is-narrow">
