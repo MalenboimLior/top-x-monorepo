@@ -365,8 +365,9 @@ function searchMoreFrenemies() {
   router.push('/frenemies');
 }
 
+
 watch(
-  [() => route.query.user, () => userStore.profile],
+  [() => route.query.user, () => userStore.user?.uid],
   async () => {
     await loadProfile();
     await loadPyramid();
@@ -380,6 +381,15 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => userStore.profile,
+  (newProfile) => {
+    if (isOwnProfile.value) {
+      profile.value = newProfile;
+    }
+  }
 );
 
 watch(activeTab, (newTab) => {

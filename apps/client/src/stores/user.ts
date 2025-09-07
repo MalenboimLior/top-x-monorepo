@@ -17,9 +17,16 @@ export const useUserStore = defineStore('user', () => {
   const user = ref<SanitizedUser | null>(null);
   const profile = ref<User | null>(null);
   const error = ref<string | null>(null);
+  let unsubscribeProfile: (() => void) | null = null;
 
   onAuthStateChanged(auth, (currentUser) => {
     console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
+
+    if (unsubscribeProfile) {
+      unsubscribeProfile();
+      unsubscribeProfile = null;
+    }
+
     if (currentUser) {
       // Sanitize Firebase User object to avoid unsafe properties
       user.value = {
@@ -29,18 +36,22 @@ export const useUserStore = defineStore('user', () => {
             : 'https://www.top-x.co/assets/profile.png',
       };
       const userDoc = doc(db, 'users', currentUser.uid);
-      onSnapshot(userDoc, (snapshot) => {
-        if (snapshot.exists()) {
-          profile.value = snapshot.data() as User;
-          console.log('Profile loaded:', profile.value);
-        } else {
-          console.log('No profile found, creating new one');
-          createUserProfile(currentUser);
-        }
-      }, (err) => {
-        console.error('Firestore error:', err);
-        error.value = err.message;
-      });
+      unsubscribeProfile = onSnapshot(
+        userDoc,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            profile.value = snapshot.data() as User;
+            console.log('Profile loaded:', profile.value);
+          } else {
+            console.log('No profile found, creating new one');
+            createUserProfile(currentUser);
+          }
+        },
+        (err) => {
+          console.error('Firestore error:', err);
+          error.value = err.message;
+        },
+      );
     } else {
       user.value = null;
       profile.value = null;
