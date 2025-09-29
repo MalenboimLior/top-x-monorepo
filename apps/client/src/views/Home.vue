@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -83,6 +83,7 @@ const router = useRouter();
 
 const games = ref<Game[]>([]);
 const selectedLanguage = ref('');
+const previousDirection = ref<string | null>(null);
 
 function changeLayout(language: string) {
   const direction = language === 'il' ? 'rtl' : 'ltr';
@@ -101,6 +102,7 @@ useHead({
 });
 
 onMounted(() => {
+  previousDirection.value = document.documentElement.getAttribute('dir');
   console.log('Home: Fetching games from Firestore...');
   trackEvent(analytics, 'page_view', { page_name: 'home' });
   const q = query(collection(db, 'games'));
@@ -134,6 +136,16 @@ onMounted(() => {
 
 watch(selectedLanguage, (language) => {
   changeLayout(language);
+});
+
+onBeforeUnmount(() => {
+  if (previousDirection.value) {
+    document.documentElement.setAttribute('dir', previousDirection.value);
+    document.body.setAttribute('dir', previousDirection.value);
+  } else {
+    document.documentElement.removeAttribute('dir');
+    document.body.removeAttribute('dir');
+  }
 });
 
 const filteredAdminGames = computed(() => {
