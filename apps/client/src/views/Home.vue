@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -83,6 +83,12 @@ const router = useRouter();
 
 const games = ref<Game[]>([]);
 const selectedLanguage = ref('');
+
+function changeLayout(language: string) {
+  const direction = language === 'il' ? 'rtl' : 'ltr';
+  document.documentElement.setAttribute('dir', direction);
+  document.body.setAttribute('dir', direction);
+}
 
 useHead({
   title: 'TOP-X',
@@ -123,6 +129,11 @@ onMounted(() => {
   }, (err) => {
     console.error('Home: Error fetching games:', err.message, err);
   });
+  changeLayout(selectedLanguage.value);
+});
+
+watch(selectedLanguage, (language) => {
+  changeLayout(language);
 });
 
 const filteredAdminGames = computed(() => {
