@@ -7,22 +7,22 @@
       class="title has-text-white"
       style="max-width: 200px; height: auto;"
     >
-    <p class="subtitle has-text-grey-light">Play, compete, and share with friends!</p>
+    <p class="subtitle has-text-grey-light">{{ t('home.subtitle') }}</p>
 
     <div class="field">
-      <label class="label has-text-white">Filter by Language</label>
+      <label class="label has-text-white">{{ t('home.filterLabel') }}</label>
       <div class="control">
         <div class="select">
           <select v-model="selectedLanguage">
-            <option value="">All</option>
-            <option value="en">English</option>
-            <option value="il">Hebrew</option>
+            <option value="">{{ t('home.filter.all') }}</option>
+            <option value="en">{{ t('home.filter.english') }}</option>
+            <option value="il">{{ t('home.filter.hebrew') }}</option>
           </select>
         </div>
       </div>
     </div>
 
-    <h2 class="title is-3 has-text-white">TOP-X Games</h2>
+    <h2 class="title is-3 has-text-white">{{ t('home.topGames') }}</h2>
     <div class="columns is-multiline is-mobile">
       <div v-for="game in filteredAdminGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile is-clickable" @click="navigateToGame(game.id, game.gameTypeId)">
         <Card>
@@ -36,14 +36,14 @@
             <p class="has-text-grey-light">{{ game.description }}</p>
             <CustomButton
               type="is-primary mt-4"
-              :label="'Play Now'"
+              :label="t('home.playNow')"
             />
           </div>
         </Card>
       </div>
     </div>
 
-    <h2 class="title is-3 has-text-white mt-6">Community Games</h2>
+    <h2 class="title is-3 has-text-white mt-6">{{ t('home.communityGames') }}</h2>
     <div class="columns is-multiline is-mobile">
       <div v-for="game in filteredCommunityGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile is-clickable" @click="navigateToGame(game.id, game.gameTypeId)">
         <Card>
@@ -55,10 +55,10 @@
           <div class="card-content">
             <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
             <p class="has-text-grey-light">{{ game.description }}</p>
-            <p class="has-text-grey-light">Created by: {{ game.creator?.username || 'Unknown' }}</p>
+            <p class="has-text-grey-light">{{ t('home.createdBy') }}: {{ game.creator?.username || t('home.unknownCreator') }}</p>
             <CustomButton
               type="is-primary mt-4"
-              :label="'Play Now'"
+              :label="t('home.playNow')"
             />
           </div>
         </Card>
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -78,18 +78,14 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import fallbackImg from '@/assets/images/fallback.png';
 import { analytics, trackEvent } from '@top-x/shared';
 import { Game } from '@top-x/shared/types/game';
+import { useLocaleStore } from '@/stores/locale';
 
 const router = useRouter();
 
 const games = ref<Game[]>([]);
 const selectedLanguage = ref('');
-const previousDirection = ref<string | null>(null);
-
-function changeLayout(language: string) {
-  const direction = language === 'il' ? 'rtl' : 'ltr';
-  document.documentElement.setAttribute('dir', direction);
-  document.body.setAttribute('dir', direction);
-}
+const localeStore = useLocaleStore();
+const t = (key: string) => localeStore.translate(key);
 
 useHead({
   title: 'TOP-X',
@@ -102,7 +98,6 @@ useHead({
 });
 
 onMounted(() => {
-  previousDirection.value = document.documentElement.getAttribute('dir');
   console.log('Home: Fetching games from Firestore...');
   trackEvent(analytics, 'page_view', { page_name: 'home' });
   const q = query(collection(db, 'games'));
@@ -131,20 +126,11 @@ onMounted(() => {
   }, (err) => {
     console.error('Home: Error fetching games:', err.message, err);
   });
-  changeLayout(selectedLanguage.value);
 });
 
 watch(selectedLanguage, (language) => {
-  changeLayout(language);
-});
-
-onBeforeUnmount(() => {
-  if (previousDirection.value) {
-    document.documentElement.setAttribute('dir', previousDirection.value);
-    document.body.setAttribute('dir', previousDirection.value);
-  } else {
-    document.documentElement.removeAttribute('dir');
-    document.body.removeAttribute('dir');
+  if (language === 'il' || language === 'en') {
+    void localeStore.setLanguage(language);
   }
 });
 
