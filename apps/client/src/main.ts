@@ -17,25 +17,31 @@ import './styles/dark-theme.css'; // Import custom dark theme overrides
 
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
-
+import { useLocaleStore } from './stores/locale';
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 
 const head = createHead();
 
-createApp(App)
+const app = createApp(App);
+app
   .use(router)
   .use(pinia)
   .use(head)
-  .component('font-awesome-icon', FontAwesomeIcon)
-  .mount('#app');
+  .component('font-awesome-icon', FontAwesomeIcon);
 
-window.addEventListener('click', (e) => {
-  const target = e.target as HTMLElement;
-  const name = target.getAttribute('data-analytics-name') || target.tagName;
-  logEvent(analytics, 'click', {
-    element: name,
-    page_path: window.location.pathname,
+const localeStore = useLocaleStore(pinia);
+
+localeStore.initialize().finally(() => {
+  app.mount('#app');
+
+  window.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const name = target.getAttribute('data-analytics-name') || target.tagName;
+    logEvent(analytics, 'click', {
+      element: name,
+      page_path: window.location.pathname,
+    });
   });
 });
