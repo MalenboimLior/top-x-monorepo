@@ -1,30 +1,28 @@
-
 <template>
   <div class="faq-page">
-    <section class="hero is-medium is-dark">
-      <div class="hero-body">
-        <div class="container has-text-centered">
-          <h1 class="title is-1 has-text-white">{{ t('faq.title') }}</h1>
-          <p class="subtitle is-4 has-text-light">
-            {{ t('faq.subtitle') }}
-          </p>
-        </div>
+    <section class="faq-hero">
+      <div class="faq-hero__glow"></div>
+      <div class="faq-hero__content">
+        <p class="faq-hero__pill">FAQ</p>
+        <h1 class="faq-hero__title">{{ t('faq.title') }}</h1>
+        <p class="faq-hero__subtitle">{{ t('faq.subtitle') }}</p>
       </div>
     </section>
 
-    <section class="section fade-in">
-      <div class="container">
-        <div class="content">
-          <p class="is-size-5 has-text-light has-text-centered mb-6" v-html="t('faq.intro')"></p>
-          <div v-for="(faq, index) in faqs" :key="index" class="faq-item mb-5 box dark-box">
-            <h2 class="title is-4 has-text-white">{{ faq.question }}</h2>
-            <p class="is-size-5 has-text-light" v-html="faq.answer"></p>
-          </div>
-          <CustomButton
-            :label="t('faq.cta')"
-            type="is-primary is-large mt-5"
-            @click="$router.push('/')"
-          />
+    <section class="faq-body">
+      <div class="faq-surface">
+        <p class="faq-intro" v-html="t('faq.intro')"></p>
+        <div class="faq-list">
+          <details v-for="(faq, index) in faqs" :key="index" class="faq-item">
+            <summary>
+              <h2>{{ faq.question }}</h2>
+              <span class="faq-icon" aria-hidden="true">＋</span>
+            </summary>
+            <p v-html="faq.answer"></p>
+          </details>
+        </div>
+        <div class="faq-cta">
+          <CustomButton :label="t('faq.cta')" type="is-primary is-medium" @click="$router.push('/')" />
         </div>
       </div>
     </section>
@@ -60,10 +58,12 @@ const faqKeys = [
   { question: 'faq.items.whyReading.question', answer: 'faq.items.whyReading.answer' },
 ];
 
-const faqs = computed(() => faqKeys.map((item) => ({
-  question: t(item.question),
-  answer: t(item.answer),
-})));
+const faqs = computed(() =>
+  faqKeys.map((item) => ({
+    question: t(item.question),
+    answer: t(item.answer),
+  })),
+);
 
 useHead(() => ({
   title: t('faq.metaTitle'),
@@ -78,77 +78,153 @@ useHead(() => ({
 
 <style scoped>
 .faq-page {
-  background-color: #000000;
   min-height: 100vh;
-  color: #ffffff;
+  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.16), transparent 55%),
+    #030303;
+  color: #f8f8fc;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
 }
 
-.hero.is-dark {
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('@/assets/background-pattern.png');
-  background-size: cover;
+.faq-hero {
+  position: relative;
+  padding: clamp(3rem, 8vw, 6rem) 1.5rem 2.5rem;
+  display: flex;
+  justify-content: center;
 }
 
-.section {
-  padding: 3rem 1.5rem;
+.faq-hero__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(0, 232, 224, 0.25), transparent 60%),
+    radial-gradient(circle at 70% 30%, rgba(196, 255, 0, 0.18), transparent 60%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.faq-hero__content {
+  position: relative;
+  width: min(780px, 100%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.faq-hero__pill {
+  display: inline-flex;
+  padding: 0.35rem 1.25rem;
+  border-radius: 999px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(0, 232, 224, 0.18);
+  color: var(--bulma-primary);
+  font-weight: 600;
+}
+
+.faq-hero__title {
+  margin: 0;
+  font-size: clamp(2.5rem, 2vw + 2rem, 3.5rem);
+}
+
+.faq-hero__subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.1rem;
+}
+
+.faq-body {
+  display: flex;
+  justify-content: center;
+  padding: 0 1.5rem 4rem;
+}
+
+.faq-surface {
+  width: min(960px, 100%);
+  background: rgba(12, 12, 12, 0.78);
+  border-radius: 32px;
+  border: 1px solid rgba(0, 232, 224, 0.15);
+  padding: clamp(2rem, 4vw, 3rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.faq-intro {
+  margin: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .faq-item {
-  border-radius: 8px;
-  padding: 1.5rem;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.25rem 1.5rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.faq-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 12px rgba(0, 232, 224, 0.1);
+.faq-item[open] {
+  border-color: rgba(0, 232, 224, 0.4);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.dark-box {
-  background-color: #121212;
-  border: 1px solid #333;
+.faq-item summary {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
 }
 
-.content p {
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.faq-item p {
+  margin: 1rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
   line-height: 1.6;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
-.content a {
-  color: #00e8e0;
-  text-decoration: underline;
-  transition: color 0.3s ease;
+.faq-icon {
+  font-size: 1.5rem;
+  color: rgba(0, 232, 224, 0.8);
+  transition: transform 0.3s ease;
 }
 
-.content a:hover {
-  color: #ffffff;
+.faq-item[open] .faq-icon {
+  transform: rotate(45deg);
 }
 
-.fade-in {
-  animation: fadeIn 1s ease-in-out;
+.faq-cta {
+  display: flex;
+  justify-content: center;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-  .hero-body {
-    padding: 2rem 1rem;
-  }
-  .title.is-1 {
-    font-size: 2.5rem !important;
-  }
-  .subtitle.is-4 {
-    font-size: 1.25rem !important;
-  }
-  .title.is-4 {
-    font-size: 1.5rem !important;
-  }
+@media (max-width: 640px) {
   .faq-item {
-    padding: 1rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .faq-item h2 {
+    font-size: 1.05rem;
   }
 }
 </style>
