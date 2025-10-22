@@ -1,26 +1,22 @@
 <template>
   <footer class="footer has-background-dark has-text-white">
-    <div class="container">
-      <div class="content has-text-centered">
-        <p>
-           <router-link to="/about" class="grok-badge"> {{ t('footer.powered') }}</router-link>
-
-        </p>
-        <div class="footer-links">
-          <router-link to="/contact" class="footer-link">{{ t('footer.terms') }}</router-link>
-          <router-link to="/contact" class="footer-link">{{ t('footer.privacy') }}</router-link>
-          <router-link to="/contact" class="footer-link">{{ t('footer.contact') }}</router-link>
-          <a href="https://x.com/Topxapp" target="_blank" class="footer-link">
-            <font-awesome-icon :icon="['fab', 'x-twitter']"  /> {{ t('footer.follow') }}
-          </a>
-          <!-- <a @click.prevent="manageCookies" class="footer-link" style="cursor: pointer;">
-            Manage Cookie Preferences
-          </a> -->
-        </div>
-        <p class="is-size-7 mt-2">
-          {{ t('footer.copyright') }}
-        </p>
+    <div class="footer-glow"></div>
+    <div class="footer-content">
+      <div class="footer-branding">
+        <router-link to="/about" class="grok-badge">{{ t('footer.powered') }}</router-link>
+        <p class="footer-tagline">Play together. Compete everywhere.</p>
       </div>
+      <div class="footer-links">
+        <router-link to="/contact" class="footer-link">{{ t('footer.terms') }}</router-link>
+        <router-link to="/contact" class="footer-link">{{ t('footer.privacy') }}</router-link>
+        <router-link to="/contact" class="footer-link">{{ t('footer.contact') }}</router-link>
+        <a href="https://x.com/Topxapp" target="_blank" rel="noopener" class="footer-link">
+          <font-awesome-icon :icon="['fab', 'x-twitter']"  /> {{ t('footer.follow') }}
+        </a>
+      </div>
+      <p class="footer-copy">
+        {{ t('footer.copyright') }}
+      </p>
     </div>
   </footer>
 </template>
@@ -49,8 +45,38 @@ export default defineComponent({
 
 <style scoped>
 .footer {
-  background-color: var(--bulma-scheme-main); /* #121212 from dark-theme.css */
-  padding: 2rem 1.5rem;
+  position: relative;
+  background: #000;
+  padding: 3rem 1.5rem 2.5rem;
+  overflow: hidden;
+  border-top: 1px solid rgba(0, 232, 224, 0.12);
+}
+
+.footer-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(0, 232, 224, 0.22), transparent 55%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.footer-content {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  align-items: center;
+  text-align: center;
+}
+
+.footer-branding {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .grok-badge {
@@ -60,8 +86,16 @@ export default defineComponent({
   transition: color 0.3s ease;
 }
 
+.footer-tagline {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .grok-badge:hover {
-  color: #0a85c2; /* Darker blue on hover */
+  color: #66fff6;
   text-decoration: none;
 }
 
@@ -73,14 +107,22 @@ export default defineComponent({
 }
 
 .footer-link {
-  color: #bbb;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 1rem;
   transition: color 0.3s ease;
 }
 
 .footer-link:hover {
-  color: #00e8e0; /* TOP-X accent color */
+  color: var(--bulma-primary); /* TOP-X accent color */
   text-decoration: none;
+}
+
+.footer-copy {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 768px) {
