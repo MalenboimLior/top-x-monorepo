@@ -4,6 +4,22 @@ type Direction = 'ltr' | 'rtl';
 
 type LocaleMessages = Record<string, string>;
 
+const localeModules = import.meta.glob<{ default: LocaleMessages }>(
+  '../locales/*.json',
+  { eager: true },
+);
+
+const staticLocaleMessages = Object.entries(localeModules).reduce(
+  (acc, [path, module]) => {
+    const match = path.match(/([^/]+)\.json$/);
+    if (match && module?.default) {
+      acc[match[1]] = module.default;
+    }
+    return acc;
+  },
+  {} as Record<string, LocaleMessages>,
+);
+
 interface LocaleState {
   language: string;
   direction: Direction;
@@ -39,12 +55,18 @@ async function detectPreferredLanguage(): Promise<string> {
 async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
   const normalized = language.toLowerCase();
   const localeId = normalized === 'il' ? 'il' : 'en';
+
+  if (staticLocaleMessages[localeId]) {
+    return staticLocaleMessages[localeId];
+  }
+
   try {
     const response = await fetch(`/locales/${localeId}.json?_=${Date.now()}`);
     if (!response.ok) {
       throw new Error(`Unable to load locale file for ${localeId}`);
     }
     const data = await response.json() as LocaleMessages;
+    staticLocaleMessages[localeId] = data;
     return data;
   } catch (error) {
     console.error('Failed to load locale messages:', error);
