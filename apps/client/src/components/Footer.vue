@@ -3,22 +3,22 @@
     <div class="container">
       <div class="content has-text-centered">
         <p>
-           <router-link to="/about" class="grok-badge"> Powered by Grok with 💖</router-link>
-        
+           <router-link to="/about" class="grok-badge"> {{ t('footer.powered') }}</router-link>
+
         </p>
         <div class="footer-links">
-          <router-link to="/contact" class="footer-link">Terms of Use</router-link>
-          <router-link to="/contact" class="footer-link">Privacy Policy</router-link> 
-          <router-link to="/contact" class="footer-link">Contact Us</router-link>
+          <router-link to="/contact" class="footer-link">{{ t('footer.terms') }}</router-link>
+          <router-link to="/contact" class="footer-link">{{ t('footer.privacy') }}</router-link>
+          <router-link to="/contact" class="footer-link">{{ t('footer.contact') }}</router-link>
           <a href="https://x.com/Topxapp" target="_blank" class="footer-link">
-            <font-awesome-icon :icon="['fab', 'x-twitter']"  /> @Topxapp
+            <font-awesome-icon :icon="['fab', 'x-twitter']"  /> {{ t('footer.follow') }}
           </a>
           <!-- <a @click.prevent="manageCookies" class="footer-link" style="cursor: pointer;">
             Manage Cookie Preferences
           </a> -->
         </div>
         <p class="is-size-7 mt-2">
-          © 2025 TOP-X. All rights reserved.
+          {{ t('footer.copyright') }}
         </p>
       </div>
     </div>
@@ -27,9 +27,16 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { useLocaleStore } from '@/stores/locale';
 
 export default defineComponent({
   name: 'Footer',
+  setup() {
+    const localeStore = useLocaleStore();
+    const t = (key: string) => localeStore.translate(key);
+
+    return { t };
+  },
   methods: {
     manageCookies() {
       localStorage.removeItem('cookieConsent'); // Reset to show banner again
