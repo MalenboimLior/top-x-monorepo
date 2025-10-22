@@ -169,12 +169,6 @@
           />
         </div>
       </div>
-<!-- <ins class="adsbygoogle"
-           style="display:block"
-           :data-ad-client="adClient"
-           :data-ad-slot="adSlot"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins> -->
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content" @click.stop>
@@ -206,19 +200,12 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.vue';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
-// declare global {
-//   interface Window {
-//     adsbygoogle: unknown[];
-//   }
-// }
-
-const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
-const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 
 library.add(faCircleInfo, faSearch, faEraser, faPlus);
 
 const route = useRoute();
-const gameId = ref((route.query.game as string).toLowerCase());const gameTitle = ref('');
+const gameId = ref((route.query.game as string).toLowerCase());
+const gameTitle = ref('');
 
 const props = defineProps<{
   items: PyramidItem[];
@@ -271,14 +258,6 @@ const isTouchDevice = ref(false);
 const isSubmitting = ref(false);
 
 onMounted(() => {
-  // try {
-  //   if (typeof window !== 'undefined') {
-  //     (window.adsbygoogle = window.adsbygoogle || []).push({});
-  //   }
-  // } catch (e) {
-  //   console.error('Adsense error:', e);
-  // }
-
   if (analytics) {
     logEvent(analytics, 'game_view', { game_name: gameId.value || 'unknown', view_type: 'edit' });
   }
