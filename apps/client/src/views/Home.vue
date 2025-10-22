@@ -1,45 +1,100 @@
 <!-- Home.vue -->
 <template>
-  <div class="home-container">
-    <img
-      src="../assets/topx-logo.png"
-      alt="TOP-X"
-      class="title has-text-white"
-      style="max-width: 200px; height: auto;"
-    >
-    <p class="subtitle has-text-grey-light">{{ t('home.subtitle') }}</p>
+  <div class="home-page">
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <span class="hero-pill">TOP-X</span>
+          <span class="hero-eyebrow-text">{{ t('home.topGames') }}</span>
+        </div>
+        <h1 class="hero-title">Play, compete & celebrate together.</h1>
+        <p class="hero-subtitle">{{ t('home.subtitle') }}</p>
+        <div class="hero-actions">
+          <CustomButton
+            type="is-primary is-medium hero-button"
+            :label="t('home.playNow')"
+            @click="scrollToGames"
+          />
+          <button class="hero-link" type="button" @click="scrollToGames">
+            Explore the collection
+          </button>
+        </div>
+        <dl class="hero-stats">
+          <div class="hero-stat">
+            <dt>{{ activeGamesCount }}</dt>
+            <dd>Active games</dd>
+          </div>
+          <div class="hero-stat">
+            <dt>{{ filteredCommunityGames.length }}</dt>
+            <dd>Community picks</dd>
+          </div>
+          <div class="hero-stat">
+            <dt>{{ filteredAdminGames.length }}</dt>
+            <dd>Featured titles</dd>
+          </div>
+        </dl>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-glow" />
+        <img
+          src="../assets/topx-logo.png"
+          alt="TOP-X"
+          class="hero-logo"
+        >
+      </div>
+    </section>
 
-    <div class="field">
-      <label class="label has-text-white">{{ t('home.filterLabel') }}</label>
-      <div class="control">
-        <div class="select">
-          <select v-model="selectedLanguage">
-            <option value="">{{ t('home.filter.all') }}</option>
-            <option value="en">{{ t('home.filter.english') }}</option>
-            <option value="il">{{ t('home.filter.hebrew') }}</option>
-          </select>
+    <section class="filter-panel">
+      <div class="filter-card">
+        <p class="filter-label">{{ t('home.filterLabel') }}</p>
+        <div class="language-toggle" role="tablist" aria-label="Language filter">
+          <button
+            v-for="option in languageOptions"
+            :key="option.value"
+            type="button"
+            class="language-chip"
+            :class="{ active: selectedLanguage === option.value }"
+            :aria-pressed="selectedLanguage === option.value"
+            @click="selectLanguage(option.value)"
+          >
+            {{ option.label }}
+          </button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <h2 class="title is-3 has-text-white">{{ t('home.topGames') }}</h2>
-    <div class="columns is-multiline is-mobile">
-      <div v-for="game in filteredAdminGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile is-clickable" @click="navigateToGame(game.id, game.gameTypeId)">
-        <Card>
-          <div class="card-image">
-            <figure class="image is-4by3">
-              <img :src="game.image" :alt="`${game.name} image`" />
-            </figure>
+    <section ref="gamesSection" class="game-section">
+      <header class="section-header">
+        <div>
+          <h2 class="section-title">{{ t('home.topGames') }}</h2>
+          <p class="section-subtitle">Curated experiences from the TOP-X team.</p>
+        </div>
+      </header>
+      <div class="game-grid">
+        <article
+          v-for="game in filteredAdminGames"
+          :key="game.id"
+          class="game-card"
+          @click="navigateToGame(game.id, game.gameTypeId)"
+        >
+          <div class="game-card__media">
+            <img :src="game.image" :alt="`${game.name} image`" loading="lazy">
           </div>
-          <div class="card-content">
-            <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
-            <p class="has-text-grey-light">{{ game.description }}</p>
-            <CustomButton
-              type="is-primary mt-4"
-              :label="t('home.playNow')"
-            />
+          <div class="game-card__content">
+            <div class="game-card__meta">
+              <span class="game-card__badge">Featured</span>
+            </div>
+            <h3 class="game-card__title">{{ game.name }}</h3>
+            <p class="game-card__description">{{ game.description }}</p>
+            <div class="game-card__footer">
+              <CustomButton
+                type="is-primary is-small"
+                :label="t('home.playNow')"
+                @click.stop="navigateToGame(game.id, game.gameTypeId)"
+              />
+            </div>
           </div>
-        </Card>
+        </article>
       </div>
     </div>
 
@@ -61,19 +116,45 @@
             <figure class="image is-4by3">
               <img :src="game.image" :alt="`${game.name} image`" />
             </figure>
+      <p v-if="!filteredAdminGames.length" class="empty-state">No featured games yet — check back soon!</p>
+    </section>
+
+    <section class="game-section">
+      <header class="section-header">
+        <div>
+          <h2 class="section-title">{{ t('home.communityGames') }}</h2>
+          <p class="section-subtitle">Built by players and shared with the community.</p>
+        </div>
+      </header>
+      <div class="game-grid">
+        <article
+          v-for="game in filteredCommunityGames"
+          :key="game.id"
+          class="game-card"
+          @click="navigateToGame(game.id, game.gameTypeId)"
+        >
+          <div class="game-card__media">
+            <img :src="game.image" :alt="`${game.name} image`" loading="lazy">
           </div>
-          <div class="card-content">
-            <h2 class="title is-4 has-text-white">{{ game.name }}</h2>
-            <p class="has-text-grey-light">{{ game.description }}</p>
-            <p class="has-text-grey-light">{{ t('home.createdBy') }}: {{ game.creator?.username || t('home.unknownCreator') }}</p>
-            <CustomButton
-              type="is-primary mt-4"
-              :label="t('home.playNow')"
-            />
+          <div class="game-card__content">
+            <div class="game-card__meta">
+              <span class="game-card__badge game-card__badge--alt">Community</span>
+              <span class="game-card__creator">{{ t('home.createdBy') }}: {{ game.creator?.username || t('home.unknownCreator') }}</span>
+            </div>
+            <h3 class="game-card__title">{{ game.name }}</h3>
+            <p class="game-card__description">{{ game.description }}</p>
+            <div class="game-card__footer">
+              <CustomButton
+                type="is-primary is-small"
+                :label="t('home.playNow')"
+                @click.stop="navigateToGame(game.id, game.gameTypeId)"
+              />
+            </div>
           </div>
-        </Card>
+        </article>
       </div>
-    </div>
+      <p v-if="!filteredCommunityGames.length" class="empty-state">Community games will appear here once published.</p>
+    </section>
   </div>
 </template>
 
@@ -83,7 +164,6 @@ import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import fallbackImg from '@/assets/images/fallback.png';
 import { analytics, trackEvent } from '@top-x/shared';
@@ -95,12 +175,18 @@ const router = useRouter();
 
 const games = ref<Game[]>([]);
 const selectedLanguage = ref('');
+const gamesSection = ref<HTMLElement | null>(null);
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
 
 const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
 const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 const shouldDisplayAds = computed(() => Boolean(adClient && adSlot));
+const languageOptions = computed(() => [
+  { label: t('home.filter.all'), value: '' },
+  { label: t('home.filter.english'), value: 'en' },
+  { label: t('home.filter.hebrew'), value: 'il' },
+]);
 
 useHead({
   title: 'TOP-X',
@@ -147,6 +233,37 @@ onMounted(() => {
       pushAdSenseSlot();
     });
   }
+  onSnapshot(
+    q,
+    (snapshot) => {
+      games.value = snapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          console.log('Home: Game fetched:', { id: doc.id, data });
+          return {
+            id: doc.id,
+            name: data.name || 'Unnamed Game',
+            description: data.description || 'No description available',
+            gameTypeId: data.gameTypeId || '',
+            image: data.image || fallbackImg,
+            active: data.active ?? false,
+            language: data.language || 'en',
+            shareLink: data.shareLink || '',
+            community: data.community ?? false,
+            creator: data.creator,
+            gameHeader: data.gameHeader,
+            gameInstruction: data.gameInstruction,
+            vip: data.vip || [],
+            custom: data.custom || {},
+          } as Game;
+        })
+        .filter((g) => g.active);
+      console.log('Home: Games updated:', games.value);
+    },
+    (err) => {
+      console.error('Home: Error fetching games:', err.message, err);
+    },
+  );
 });
 
 watch(selectedLanguage, (language) => {
@@ -156,22 +273,33 @@ watch(selectedLanguage, (language) => {
 });
 
 const filteredAdminGames = computed(() => {
-  return games.value.filter(g => !g.community && (!selectedLanguage.value || g.language === selectedLanguage.value));
+  return games.value.filter(
+    (g) => !g.community && (!selectedLanguage.value || g.language === selectedLanguage.value),
+  );
 });
 
 const filteredCommunityGames = computed(() => {
-  return games.value.filter(g => g.community && (!selectedLanguage.value || g.language === selectedLanguage.value));
+  return games.value.filter(
+    (g) => g.community && (!selectedLanguage.value || g.language === selectedLanguage.value),
+  );
 });
+
+const activeGamesCount = computed(() => games.value.length);
 
 function navigateToGame(gameId: string, gameTypeId: string) {
   trackEvent(analytics, 'select_game', { game_id: gameId });
   router.push(`/games/info?game=${gameId}`);
 }
+
+function selectLanguage(language: string) {
+  selectedLanguage.value = language;
+}
+
+function scrollToGames() {
+  gamesSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 </script>
 
 <style scoped>
 @import '../styles/Home.css';
-.is-clickable {
-  cursor: pointer;
-}
 </style>
