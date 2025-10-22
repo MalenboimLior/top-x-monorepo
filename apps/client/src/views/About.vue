@@ -3,9 +3,9 @@
     <section class="hero is-medium is-dark">
       <div class="hero-body">
         <div class="container has-text-centered">
-          <h1 class="title is-1 has-text-white">About TOP-X</h1>
+          <h1 class="title is-1 has-text-white">{{ t('about.title') }}</h1>
           <p class="subtitle is-4 has-text-light">
-            Rise to the Challenge! ⚔️
+            {{ t('about.subtitle') }}
           </p>
         </div>
       </div>
@@ -14,21 +14,13 @@
     <section class="section fade-in">
       <div class="container">
         <div class="content has-text-centered">
-          <p class="is-size-5">
-            TOP-X is your ultimate arena for ego-bruising games, rankings, and viral showdowns. Think pyramids of glory (who's on top?), trivia takedowns, quizzes that test your vibe, and custom challenges where U vs X in real-time rivalries. Build, compete, rank, share - and trash-talk your way to the feed's throne. 📈🚀
-          </p>
-          <p class="is-size-5">
-            Crafted 99% by Grok's genius 🤖 (yep, that xAI powerhouse), with human vibe-coding for that extra spark 💖. We're all about trends, tech, and turning scrolls into battles - weekly drops to keep you hooked.
-          </p>
-          <p class="is-size-5">
-            Ready to rise? Sign in with X for full unlocks: save your wins, spy on friends' picks, climb leaderboards, and join our VIP crew for early access & input. Follow <a href="https://x.com/topxapp" target="_blank" rel="noopener noreferrer" class="has-text-primary">@topxapp</a> for drops, RTs, and glory shots. Who's topping yours? Ready to top them all? Dive into a challenge now! 👉 <a href="https://top-x.co/challenges" class="has-text-primary">top-x.co/challenges</a>.
-          </p>
-          <p class="is-size-5">
-            Got feedback, ideas or collabs? Hit us up: <a href="mailto:contact@top-x.co" class="has-text-primary">contact@top-x.co</a> or DM <a href="https://x.com/topxapp" target="_blank" rel="noopener noreferrer" class="has-text-primary">@topxapp</a>. Let's build the next big thing - together! 🏆
-          </p>
+          <p class="is-size-5">{{ t('about.paragraph1') }}</p>
+          <p class="is-size-5">{{ t('about.paragraph2') }}</p>
+          <p class="is-size-5" v-html="t('about.paragraph3')"></p>
+          <p class="is-size-5" v-html="t('about.paragraph4')"></p>
           <CustomButton
             type="is-primary is-large mt-5"
-            label="Dive into Challenges"
+            :label="t('about.cta')"
             @click="$router.push('/')"
           />
         </div>
@@ -37,25 +29,23 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
 import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import { useLocaleStore } from '@/stores/locale';
 
-export default defineComponent({
-  name: 'AboutPage',
-  components: {
-    CustomButton,
-  },
-  setup() {
-    useHead({
-      title: 'About TOP-X',
-      meta: [
-        { name: 'description', content: 'Rise to the challenge at TOP-X, the Grok-powered arena for games, rankings, and viral showdowns.' },
-      ],
-    });
-  },
-});
+const localeStore = useLocaleStore();
+const t = (key: string) => localeStore.translate(key);
+
+useHead(() => ({
+  title: t('about.metaTitle'),
+  meta: [
+    {
+      name: 'description',
+      content: t('about.metaDescription'),
+    },
+  ],
+}));
 </script>
 
 <style scoped>
