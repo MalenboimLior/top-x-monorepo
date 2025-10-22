@@ -1,29 +1,58 @@
 <template>
   <div class="about-page">
-    <section class="hero is-medium is-dark">
-      <div class="hero-body">
-        <div class="container has-text-centered">
-          <h1 class="title is-1 has-text-white">{{ t('about.title') }}</h1>
-          <p class="subtitle is-4 has-text-light">
-            {{ t('about.subtitle') }}
-          </p>
+    <section class="about-hero">
+      <div class="about-hero__glow"></div>
+      <div class="about-hero__content">
+        <p class="about-hero__pill">Community powered</p>
+        <h1 class="about-hero__title">{{ t('about.title') }}</h1>
+        <p class="about-hero__subtitle">
+          {{ t('about.subtitle') }}
+        </p>
+        <div class="about-hero__stats">
+          <div class="stat">
+            <span class="stat__value">24/7</span>
+            <span class="stat__label">Play from anywhere</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">∞</span>
+            <span class="stat__label">Game possibilities</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">100%</span>
+            <span class="stat__label">Social & fun</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="section fade-in">
-      <div class="container">
-        <div class="content has-text-centered">
-          <p class="is-size-5">{{ t('about.paragraph1') }}</p>
-          <p class="is-size-5">{{ t('about.paragraph2') }}</p>
-          <p class="is-size-5" v-html="t('about.paragraph3')"></p>
-          <p class="is-size-5" v-html="t('about.paragraph4')"></p>
-          <CustomButton
-            type="is-primary is-large mt-5"
-            :label="t('about.cta')"
-            @click="$router.push('/')"
-          />
+    <section class="about-body fade-in">
+      <div class="about-surface">
+        <div class="about-copy">
+          <p>{{ t('about.paragraph1') }}</p>
+          <p>{{ t('about.paragraph2') }}</p>
+          <p v-html="t('about.paragraph3')"></p>
+          <p v-html="t('about.paragraph4')"></p>
         </div>
+        <CustomButton
+          type="is-primary is-large"
+          :label="t('about.cta')"
+          @click="$router.push('/')"
+        />
+      </div>
+    </section>
+
+    <section class="about-highlights">
+      <div class="highlight-card">
+        <h3>Built for live moments</h3>
+        <p>Launch games instantly during streams, parties, or team hangouts.</p>
+      </div>
+      <div class="highlight-card">
+        <h3>Powered by players</h3>
+        <p>Create, remix, and share challenges that reflect your community.</p>
+      </div>
+      <div class="highlight-card">
+        <h3>Moderation with care</h3>
+        <p>Our team keeps the vibe safe, inclusive, and competition-ready.</p>
       </div>
     </section>
   </div>
@@ -50,36 +79,157 @@ useHead(() => ({
 
 <style scoped>
 .about-page {
-  background-color: #000000;
+  background-color: #000;
   min-height: 100vh;
-  color: #ffffff;
+  color: var(--bulma-text);
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
 }
 
-.hero.is-dark {
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('@/assets/background-pattern.png');
-  background-size: cover;
+.about-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 6rem 1.5rem 5rem;
+  display: flex;
+  justify-content: center;
 }
 
-.section {
-  padding: 3rem 1.5rem;
+.about-hero__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(0, 232, 224, 0.32), transparent 55%),
+    radial-gradient(circle at 80% 30%, rgba(196, 255, 0, 0.18), transparent 60%);
+  opacity: 0.8;
+  pointer-events: none;
 }
 
-.content p {
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
+.about-hero__content {
+  position: relative;
+  width: min(960px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  text-align: center;
+  align-items: center;
 }
 
-.content a {
-  color: #00e8e0;
+.about-hero__pill {
+  display: inline-flex;
+  padding: 0.4rem 1.3rem;
+  border-radius: 999px;
+  background: rgba(0, 232, 224, 0.15);
+  color: var(--bulma-primary);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.about-hero__title {
+  font-size: clamp(2.5rem, 2vw + 2rem, 3.8rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.about-hero__subtitle {
+  margin: 0;
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.72);
+  max-width: 48ch;
+}
+
+.about-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.stat {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(0, 232, 224, 0.14);
+  border-radius: 18px;
+  padding: 1.4rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stat__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bulma-primary);
+}
+
+.stat__label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.about-body {
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.about-surface {
+  width: min(960px, 100%);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 32px;
+  border: 1px solid rgba(0, 232, 224, 0.12);
+  padding: 3rem clamp(1.75rem, 3vw, 3rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  align-items: center;
+  text-align: center;
+}
+
+.about-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.about-copy a {
+  color: var(--bulma-link);
   text-decoration: underline;
-  transition: color 0.3s ease;
 }
 
-.content a:hover {
-  color: #ffffff;
+.about-highlights {
+  padding: 0 1.5rem 4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.highlight-card {
+  background: rgba(0, 232, 224, 0.05);
+  border: 1px solid rgba(0, 232, 224, 0.18);
+  border-radius: 24px;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 28px 45px rgba(0, 0, 0, 0.4);
+}
+
+.highlight-card h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.highlight-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.6;
 }
 
 .fade-in {
@@ -92,17 +242,16 @@ useHead(() => ({
 }
 
 @media (max-width: 768px) {
-  .hero-body {
-    padding: 2rem 1rem;
+  .about-page {
+    gap: 3rem;
   }
-  .title.is-1 {
-    font-size: 2.5rem !important;
+
+  .about-hero {
+    padding: 4.5rem 1rem 3.5rem;
   }
-  .subtitle.is-4 {
-    font-size: 1.25rem !important;
-  }
-  .content p {
-    font-size: 1rem;
+
+  .about-surface {
+    padding: 2.5rem 1.5rem;
   }
 }
 </style>
