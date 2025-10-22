@@ -13,6 +13,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(faXTwitter,faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable,faMedal, faSortUp, faSortDown,faCircleInfo,faDownload,faEdit,faSquarePollVertical);
 
 import 'bulma/css/bulma.min.css';
+import './styles/tokens.css';
+import './styles/layout.css';
 import './styles/dark-theme.css'; // Import custom dark theme overrides
 
 import { logEvent } from 'firebase/analytics';

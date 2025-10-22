@@ -1,0 +1,25 @@
+.layout-container {
+  width: min(var(--container-xl), 100%);
+  margin-inline: auto;
+  padding-inline: var(--layout-inline-padding);
+}
+
+.section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-stack-gap);
+}
+
+.surface {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 232, 224, 0.18);
+  border-radius: 1.25rem;
+  backdrop-filter: blur(14px);
+  padding: var(--space-6);
+}
+
+@media (max-width: 48rem) {
+  .surface {
+    padding: var(--space-5);
+  }
+}
