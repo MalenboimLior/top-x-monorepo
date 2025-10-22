@@ -11,6 +11,12 @@ interface LocaleState {
   initialized: boolean;
 }
 
+interface LocaleActions {
+  initialize(): Promise<void>;
+  setLanguage(language: string): Promise<void>;
+  translate(key: string): string;
+}
+
 async function detectPreferredLanguage(): Promise<string> {
   if (typeof window === 'undefined') {
     return 'en';
@@ -52,7 +58,7 @@ async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
   }
 }
 
-export const useLocaleStore = defineStore('locale', {
+export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActions>('locale', {
   state: (): LocaleState => ({
     language: '',
     direction: 'ltr',

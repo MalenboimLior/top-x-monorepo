@@ -35,12 +35,12 @@
         </dl>
       </div>
       <div class="hero-visual">
-        <div class="hero-glow" />
+        <div class="hero-glow"></div>
         <img
           src="../assets/topx-logo.png"
           alt="TOP-X"
           class="hero-logo"
-        >
+        />
       </div>
     </section>
 
@@ -78,7 +78,7 @@
           @click="navigateToGame(game.id, game.gameTypeId)"
         >
           <div class="game-card__media">
-            <img :src="game.image" :alt="`${game.name} image`" loading="lazy">
+            <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
           </div>
           <div class="game-card__content">
             <div class="game-card__meta">
@@ -96,7 +96,8 @@
           </div>
         </article>
       </div>
-    </div>
+      <p v-if="!filteredAdminGames.length" class="empty-state">No featured games yet — check back soon!</p>
+    </section>
 
     <ins
       v-if="shouldDisplayAds"
@@ -107,17 +108,6 @@
       data-ad-format="auto"
       data-full-width-responsive="true"
     ></ins>
-
-    <h2 class="title is-3 has-text-white mt-6">{{ t('home.communityGames') }}</h2>
-    <div class="columns is-multiline is-mobile">
-      <div v-for="game in filteredCommunityGames" :key="game.id" class="column is-half-desktop is-half-tablet is-full-mobile is-clickable" @click="navigateToGame(game.id, game.gameTypeId)">
-        <Card>
-          <div class="card-image">
-            <figure class="image is-4by3">
-              <img :src="game.image" :alt="`${game.name} image`" />
-            </figure>
-      <p v-if="!filteredAdminGames.length" class="empty-state">No featured games yet — check back soon!</p>
-    </section>
 
     <section class="game-section">
       <header class="section-header">
@@ -134,7 +124,7 @@
           @click="navigateToGame(game.id, game.gameTypeId)"
         >
           <div class="game-card__media">
-            <img :src="game.image" :alt="`${game.name} image`" loading="lazy">
+            <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
           </div>
           <div class="game-card__content">
             <div class="game-card__meta">
@@ -202,32 +192,6 @@ onMounted(() => {
   console.log('Home: Fetching games from Firestore...');
   trackEvent(analytics, 'page_view', { page_name: 'home' });
   const q = query(collection(db, 'games'));
-  onSnapshot(q, (snapshot) => {
-    games.value = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      console.log('Home: Game fetched:', { id: doc.id, data });
-      return {
-        id: doc.id,
-        name: data.name || 'Unnamed Game',
-        description: data.description || 'No description available',
-        gameTypeId: data.gameTypeId || '',
-        image: data.image || fallbackImg,
-        active: data.active ?? false,
-        language: data.language || 'en',
-        shareLink: data.shareLink || '',
-        community: data.community ?? false,
-        creator: data.creator,
-        gameHeader: data.gameHeader,
-        gameInstruction: data.gameInstruction,
-        vip: data.vip || [],
-        custom: data.custom || {},
-      } as Game;
-    }).filter(g => g.active);
-    console.log('Home: Games updated:', games.value);
-  }, (err) => {
-    console.error('Home: Error fetching games:', err.message, err);
-  });
-
   if (shouldDisplayAds.value) {
     nextTick(() => {
       pushAdSenseSlot();
