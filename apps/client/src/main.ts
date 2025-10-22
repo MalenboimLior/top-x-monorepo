@@ -18,6 +18,7 @@ import './styles/dark-theme.css'; // Import custom dark theme overrides
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import { useLocaleStore } from './stores/locale';
+import { loadAdSenseScript } from './utils/googleAdsense';
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
@@ -32,6 +33,8 @@ app
   .component('font-awesome-icon', FontAwesomeIcon);
 
 const localeStore = useLocaleStore(pinia);
+
+loadAdSenseScript(import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID);
 
 localeStore.initialize().finally(() => {
   app.mount('#app');
