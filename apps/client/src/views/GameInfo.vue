@@ -3,13 +3,30 @@
   <div class="game-info-container">
     <!-- Section 1: Game Info -->
     <section class="game-info-section">
-      <img :src="game.image" :alt="`${game.name} image`" class="game-image" />
-      <h1 class="title has-text-white">{{ game.name }}</h1>
-      <p class="subtitle has-text-grey-light">{{ game.description }}</p>
-      <p v-if="game.gameHeader" class="has-text-white"><strong>Header:</strong> {{ game.gameHeader }}</p>
-      <p v-if="game.gameInstruction" class="has-text-white"><strong>Instructions:</strong> {{ game.gameInstruction }}</p>
-      <p class="has-text-white"><strong>Game Type:</strong> {{ game.gameTypeId }}</p>
-      <!-- Add more fields as needed in the future -->
+      <div class="game-hero">
+        <div class="game-image-wrapper">
+          <img :src="game.image" :alt="`${game.name} image`" class="game-image" />
+        </div>
+        <div class="game-details">
+          <p class="game-pill">Top Pick</p>
+          <h1 class="game-title">{{ game.name }}</h1>
+          <p class="game-description">{{ game.description }}</p>
+          <div class="game-meta-grid">
+            <div class="meta-card">
+              <h3>Game Type</h3>
+              <p>{{ game.gameTypeId || 'Coming Soon' }}</p>
+            </div>
+            <div class="meta-card" v-if="game.gameHeader">
+              <h3>Header</h3>
+              <p>{{ game.gameHeader }}</p>
+            </div>
+            <div class="meta-card" v-if="game.gameInstruction">
+              <h3>How to play</h3>
+              <p>{{ game.gameInstruction }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Section 2: Action Buttons -->
@@ -19,34 +36,48 @@
         label="Play Now"
         @click="playGame"
       />
-      <CustomButton
-        type="is-secondary mt-4"
-        label="Back to Games"
-        @click="backToGames"
-      />
+      <button class="ghost-button" type="button" @click="backToGames">
+        Back to Games
+      </button>
     </section>
 
     <!-- Section 3: Leaderboard -->
     <section class="leaderboard-section">
-      <h2 class="title is-3 has-text-white">Leaderboard</h2>
-      <Leaderboard :game-id="gameId" />
+      <div class="section-heading">
+        <h2 class="section-title">Leaderboard</h2>
+        <p class="section-subtitle">See who is dominating this challenge.</p>
+      </div>
+      <div class="section-surface">
+        <Leaderboard :game-id="gameId" />
+      </div>
     </section>
 
     <!-- Section 4: Daily Challenges -->
     <section v-if="game.dailyChallengeActive" class="daily-challenges-section">
-      <h2 class="title is-3 has-text-white">Daily Challenges</h2>
-      <!-- Assuming DailyChallenges component can accept gameId prop; adjust if needed -->
-      <DailyChallenges :gameId="gameId" />
+      <div class="section-heading">
+        <h2 class="section-title">Daily Challenges</h2>
+        <p class="section-subtitle">A fresh leaderboard every 24 hours.</p>
+      </div>
+      <div class="section-surface">
+        <!-- Assuming DailyChallenges component can accept gameId prop; adjust if needed -->
+        <DailyChallenges :gameId="gameId" />
+      </div>
     </section>
 
     <!-- Section 5: Build Your Own Game -->
     <section class="build-section">
-      <CustomButton
-        type="is-info mt-4"
-        label="Build Your Own Game"
-        @click="buildGame"
-      />
-      <span class="has-text-grey-light ml-2">(only for registered users)</span>
+      <div class="section-surface build-card">
+        <div class="build-copy">
+          <h3>Build your own game</h3>
+          <p>Design custom experiences and share them with the community.</p>
+        </div>
+        <CustomButton
+          type="is-info"
+          label="Create now"
+          @click="buildGame"
+        />
+      </div>
+      <p class="build-hint">(only for registered users)</p>
     </section>
   </div>
 </template>
@@ -146,29 +177,202 @@ function buildGame() {
 
 <style scoped>
 .game-info-container {
-  padding: 20px;
+  min-height: 100vh;
+  padding: 4rem 1.5rem 5rem;
+  background: #000;
+  color: var(--bulma-text);
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
 }
 
 .game-info-section {
-  text-align: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.game-hero {
+  display: grid;
+  width: min(1200px, 100%);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.game-image-wrapper {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 232, 224, 0.22);
+  background: radial-gradient(circle at 30% 20%, rgba(0, 232, 224, 0.35), rgba(0, 0, 0, 0.85));
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6);
 }
 
 .game-image {
-  max-width: 300px;
-  height: auto;
-  border-radius: 8px;
+  width: 100%;
+  display: block;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.game-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.game-pill {
+  align-self: flex-start;
+  padding: 0.35rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(0, 232, 224, 0.16);
+  color: var(--bulma-primary);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-title {
+  font-size: clamp(2.2rem, 2vw + 1.5rem, 3.2rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.game-description {
+  margin: 0;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.6;
+}
+
+.game-meta-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.meta-card {
+  background: rgba(0, 232, 224, 0.05);
+  border: 1px solid rgba(0, 232, 224, 0.18);
+  border-radius: 18px;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 140px;
+}
+
+.meta-card h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.meta-card p {
+  margin: 0;
+  font-size: 1rem;
+  color: #ffffff;
+  line-height: 1.5;
 }
 
 .action-buttons-section {
   display: flex;
-  flex-direction: column;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  margin: 20px 0;
 }
 
-.leaderboard-section,
-.daily-challenges-section,
+.ghost-button {
+  background: transparent;
+  border: 1px solid rgba(0, 232, 224, 0.25);
+  color: var(--bulma-text);
+  padding: 0.9rem 1.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ghost-button:hover {
+  background: rgba(0, 232, 224, 0.12);
+  border-color: rgba(0, 232, 224, 0.45);
+}
+
+.section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 1vw + 1.2rem, 2.4rem);
+}
+
+.section-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.section-surface {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 232, 224, 0.12);
+  padding: 2rem 1.5rem;
+  backdrop-filter: blur(12px);
+}
+
 .build-section {
-  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.build-card {
+  width: min(960px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.build-copy h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.build-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.build-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .game-info-container {
+    padding: 3rem 1.25rem 4rem;
+    gap: 3rem;
+  }
+
+  .section-surface {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .build-card {
+    align-items: stretch;
+  }
 }
 </style>
