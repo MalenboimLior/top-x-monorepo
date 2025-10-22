@@ -86,9 +86,19 @@ const selectedLanguage = ref('');
 const previousDirection = ref<string | null>(null);
 
 function changeLayout(language: string) {
-  const direction = language === 'il' ? 'rtl' : 'ltr';
-  document.documentElement.setAttribute('dir', direction);
-  document.body.setAttribute('dir', direction);
+  if (language === 'il') {
+    document.documentElement.setAttribute('dir', 'rtl');
+    document.body.setAttribute('dir', 'rtl');
+    return;
+  }
+
+  if (previousDirection.value) {
+    document.documentElement.setAttribute('dir', previousDirection.value);
+    document.body.setAttribute('dir', previousDirection.value);
+  } else {
+    document.documentElement.removeAttribute('dir');
+    document.body.removeAttribute('dir');
+  }
 }
 
 useHead({
@@ -139,13 +149,7 @@ watch(selectedLanguage, (language) => {
 });
 
 onBeforeUnmount(() => {
-  if (previousDirection.value) {
-    document.documentElement.setAttribute('dir', previousDirection.value);
-    document.body.setAttribute('dir', previousDirection.value);
-  } else {
-    document.documentElement.removeAttribute('dir');
-    document.body.removeAttribute('dir');
-  }
+  changeLayout('');
 });
 
 const filteredAdminGames = computed(() => {
