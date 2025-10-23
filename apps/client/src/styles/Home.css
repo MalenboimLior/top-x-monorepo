@@ -179,9 +179,9 @@
 }
 
 .language-toggle {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  --responsive-gap: 0.75rem;
+  --responsive-item-flex: 0 0 auto;
+  justify-content: flex-start;
 }
 
 .language-chip {
@@ -308,14 +308,13 @@
 
 
 .game-card__meta {
-  display: flex;
+  --responsive-gap: 0.75rem;
+  --responsive-item-flex: 0 1 200px;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.55);
 }
-
 
 .game-card__badge {
   display: inline-flex;
@@ -329,6 +328,7 @@
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  flex: 0 0 auto;
 }
 
 .game-card__badge--alt {
@@ -339,6 +339,8 @@
 .game-card__creator {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.55);
+  flex: 1 1 auto;
+  text-align: right;
 }
 
 .game-card__title {
@@ -410,6 +412,19 @@
 
   .filter-card {
     padding: 1.25rem;
+  }
+
+  .language-toggle {
+    justify-content: center;
+  }
+
+  .game-card__meta {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .game-card__creator {
+    text-align: center;
   }
 
   .game-card__content {
