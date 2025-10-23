@@ -20,7 +20,7 @@
       "@top-x/shared/*": ["../../packages/shared/src/*"],
       "@top-x/shared/types/*": ["../../packages/shared/src/types/*"]
     },
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node", "react", "react-dom"]
   },
   "include": ["src/**/*", "vite.config.ts", "vite-env.d.ts"],
   "references": [
