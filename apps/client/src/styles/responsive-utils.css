@@ -1,0 +1,19 @@
+.responsive-flex-row {
+  --responsive-gap: 0.75rem;
+  --responsive-item-flex: 1 1 160px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--responsive-gap);
+}
+
+.responsive-flex-row > * {
+  flex: var(--responsive-item-flex);
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .responsive-flex-row {
+    --responsive-gap: 0.5rem;
+  }
+}
