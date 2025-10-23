@@ -178,14 +178,14 @@ function buildGame() {
 <style scoped>
 .game-info-container {
   min-height: 100vh;
-  padding: 4rem 1.5rem 5rem;
+  padding: 4rem clamp(1.5rem, 5vw, 2.5rem) 5rem;
   background: #000;
   color: var(--bulma-text);
   display: flex;
   flex-direction: column;
   gap: 3.5rem;
   width: 100%;
-  max-width: 100vw;
+  max-width: var(--container-xl);
   margin-inline: auto;
   box-sizing: border-box;
 }
