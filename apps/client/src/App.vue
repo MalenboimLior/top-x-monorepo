@@ -59,7 +59,7 @@ const route = useRoute();
   justify-content: flex-start; /* Align content to top */
   align-items: center;
   width: 100%;
-  padding: 1rem;
+  /* padding: 1rem;  removed by Lior manually*/
   box-sizing: border-box;
 }
 </style>
