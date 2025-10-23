@@ -207,6 +207,10 @@
   --section-stack-gap: var(--space-7);
 }
 
+.game-section.layout-container {
+  padding-inline: clamp(var(--space-3), 4vw, var(--space-5));
+}
+
 .section-header {
   display: flex;
   align-items: flex-end;
