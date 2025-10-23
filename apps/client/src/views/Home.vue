@@ -47,7 +47,7 @@
     <section class="filter-panel">
       <div class="filter-card">
         <p class="filter-label">{{ t('home.filterLabel') }}</p>
-        <div class="language-toggle" role="tablist" aria-label="Language filter">
+        <div class="language-toggle responsive-flex-row" role="tablist" aria-label="Language filter">
           <button
             v-for="option in languageOptions"
             :key="option.value"
@@ -81,7 +81,7 @@
             <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
           </div>
           <div class="game-card__content">
-            <div class="game-card__meta">
+            <div class="game-card__meta responsive-flex-row">
               <span class="game-card__badge">Featured</span>
             </div>
             <h3 class="game-card__title">{{ game.name }}</h3>
@@ -127,7 +127,7 @@
             <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
           </div>
           <div class="game-card__content">
-            <div class="game-card__meta">
+            <div class="game-card__meta responsive-flex-row">
               <span class="game-card__badge game-card__badge--alt">Community</span>
               <span class="game-card__creator">{{ t('home.createdBy') }}: {{ game.creator?.username || t('home.unknownCreator') }}</span>
             </div>

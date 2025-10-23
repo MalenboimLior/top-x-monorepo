@@ -14,6 +14,7 @@ library.add(faXTwitter,faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, fa
 
 import 'bulma/css/bulma.min.css';
 import './styles/dark-theme.css'; // Import custom dark theme overrides
+import './styles/responsive-utils.css';
 
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
