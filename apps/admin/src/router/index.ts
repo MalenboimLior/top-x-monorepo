@@ -1,15 +1,36 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import { useUserStore } from '../stores/user';
-import Home from '@/views/Home.vue';
-import Login from '@/views/Login.vue';
-import GameManagement from '@/views/GameManagement.vue';
-import SendMessage from '@/views/SendMessage.vue';  // New import
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import AdminShell from '@/layouts/AdminShell.vue';
+import DashboardPage from '@/pages/DashboardPage.vue';
+import GameTypesPage from '@/pages/GameTypesPage.vue';
+import GamesPage from '@/pages/GamesPage.vue';
+import ContentPage from '@/pages/ContentPage.vue';
+import CommunicationsPage from '@/pages/CommunicationsPage.vue';
+import SettingsPage from '@/pages/SettingsPage.vue';
+import LoginPage from '@/pages/LoginPage.vue';
+import { registerAuthGuards } from '@/router/guards';
 
-const routes = [
-  { path: '/', name: 'Dashboard', component: Home, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false } },
-  { path: '/game-management', name: 'GameManagement', component: GameManagement, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/send-message', name: 'SendMessage', component: SendMessage, meta: { requiresAuth: false, requiresAdmin: false } },  // New route
+const adminChildren: RouteRecordRaw[] = [
+  { path: '', name: 'dashboard', component: DashboardPage, meta: { title: 'Dashboard', requiresAuth: true, requiresAdmin: true } },
+  { path: 'game-types', name: 'game-types', component: GameTypesPage, meta: { title: 'Game Types', requiresAuth: true, requiresAdmin: true } },
+  { path: 'games', name: 'games', component: GamesPage, meta: { title: 'Games', requiresAuth: true, requiresAdmin: true } },
+  { path: 'content', name: 'content', component: ContentPage, meta: { title: 'Content', requiresAuth: true, requiresAdmin: true } },
+  { path: 'communications', name: 'communications', component: CommunicationsPage, meta: { title: 'Communications', requiresAuth: true, requiresAdmin: true } },
+  { path: 'settings', name: 'settings', component: SettingsPage, meta: { title: 'Settings', requiresAuth: true, requiresAdmin: true } },
+];
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    component: AdminShell,
+    children: adminChildren,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginPage,
+    meta: { requiresAuth: false },
+  },
 ];
 
 const router = createRouter({
@@ -17,23 +38,6 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, from, next) => {
-  const userStore = useUserStore();
-  console.log('Router guard: Navigating to', to.path, 'user:', {
-    uid: userStore.user?.uid,
-    isAdmin: userStore.user?.isAdmin,
-  });
-
-  if (to.meta.requiresAuth && !userStore.user) {
-    console.log('Redirecting to /login: User not authenticated');
-    next('/login');
-  } else if (to.meta.requiresAdmin && !userStore.user?.isAdmin) {
-    console.log('Redirecting to /login: User is not admin');
-    next('/login');
-  } else {
-    console.log('Navigation allowed');
-    next();
-  }
-});
+registerAuthGuards(router);
 
 export default router;
