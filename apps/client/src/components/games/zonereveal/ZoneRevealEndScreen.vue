@@ -49,6 +49,8 @@ import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
 import axios from 'axios'
 import Leaderboard from '@/components/Leaderboard.vue'
+import { recordGameEvents } from '@/services/gameCounters'
+import { GAME_COUNTER_EVENTS } from '@top-x/shared/types/counters'
 
 const props = defineProps<{
   score: number
@@ -105,6 +107,9 @@ async function handleSubmit() {
   const custom = { answer: answer.value }
   await saveScore(custom)
   hasSubmitted.value = true
+  if (userStore.user) {
+    void recordGameEvents(props.gameId, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER])
+  }
   if (analytics) {
     logEvent(analytics, 'user_action', { action: 'submit_answer', game_id: props.gameId, answer: answer.value })
   }
