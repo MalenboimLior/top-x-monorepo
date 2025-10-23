@@ -184,6 +184,10 @@ function buildGame() {
   display: flex;
   flex-direction: column;
   gap: 3.5rem;
+  width: 100%;
+  max-width: 100vw;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .game-info-section {
@@ -363,7 +367,7 @@ function buildGame() {
 
 @media (max-width: 768px) {
   .game-info-container {
-    padding: 3rem 1.25rem 4rem;
+    padding: 3rem clamp(1rem, 4vw, 1.25rem) 4rem;
     gap: 3rem;
   }
 
