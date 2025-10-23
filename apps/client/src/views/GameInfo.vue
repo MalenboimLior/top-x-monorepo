@@ -184,6 +184,10 @@ function buildGame() {
   display: flex;
   flex-direction: column;
   gap: 3.5rem;
+  width: 100%;
+  max-width: 100vw;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .game-info-section {
@@ -195,7 +199,7 @@ function buildGame() {
 .game-hero {
   display: grid;
   width: min(1200px, 100%);
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 2.5rem;
   align-items: center;
 }
@@ -249,7 +253,7 @@ function buildGame() {
 .game-meta-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .meta-card {
@@ -363,8 +367,22 @@ function buildGame() {
 
 @media (max-width: 768px) {
   .game-info-container {
-    padding: 3rem 1.25rem 4rem;
+    padding: 3rem clamp(1rem, 4vw, 1.25rem) 4rem;
     gap: 3rem;
+  }
+
+  .game-hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .game-details {
+    align-items: center;
+    text-align: center;
+  }
+
+  .game-pill {
+    align-self: center;
   }
 
   .section-surface {
@@ -373,6 +391,29 @@ function buildGame() {
 
   .build-card {
     align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-info-container {
+    padding: 2.5rem clamp(0.75rem, 5vw, 1rem) 3.5rem;
+  }
+
+  .action-buttons-section {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .action-buttons-section > * {
+    width: 100%;
+  }
+
+  .section-surface {
+    padding: 1.25rem 1rem;
+  }
+
+  .meta-card {
+    min-height: auto;
   }
 }
 </style>
