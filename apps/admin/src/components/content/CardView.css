@@ -1,0 +1,111 @@
+.card-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card-view__grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.card-view__card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid rgba(10, 10, 10, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(10, 10, 10, 0.08);
+  background: #ffffff;
+}
+
+.card-view__card.dark-mode {
+  background: #1f1f24;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.card-view__content {
+  flex: 1 1 auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-view__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-view__meta {
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card-view__meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-view__meta-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: rgba(24, 24, 27, 0.7);
+}
+
+.card-view__meta-value {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #1a1a1a;
+}
+
+.card-view__actions {
+  border-top: 1px solid rgba(10, 10, 10, 0.08);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.card-view__empty {
+  padding: 2rem;
+  border: 1px dashed rgba(10, 10, 10, 0.2);
+  border-radius: 12px;
+  text-align: center;
+  color: rgba(24, 24, 27, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card-view__meta-label {
+    color: rgba(228, 228, 231, 0.72);
+  }
+
+  .card-view__meta-value {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .card-view__empty {
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(228, 228, 231, 0.72);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .card-view__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-view__actions {
+    justify-content: stretch;
+    flex-wrap: wrap;
+  }
+
+  .card-view__actions .button {
+    flex: 1 1 auto;
+  }
+}

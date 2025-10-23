@@ -63,59 +63,31 @@
           <progress class="progress is-small is-link" max="100">Loading</progress>
         </div>
 
-        <div v-else-if="activeItems.length === 0" class="notification is-info is-light">
-          <p>No entries found yet. Start creating content to populate this section.</p>
-        </div>
-
-        <div v-else>
-          <table v-if="activeView === 'table'" class="table is-fullwidth is-striped">
-            <thead>
-              <tr>
-                <th v-for="column in activeSection?.columns" :key="column.key">{{ column.label }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in activeItems" :key="item.id">
-                <td v-for="column in activeSection?.columns" :key="column.key">
-                  {{ formatCell(item, column) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div v-else class="columns is-multiline">
-            <div
-              class="column is-12-tablet is-6-desktop is-4-widescreen"
-              v-for="item in activeItems"
-              :key="item.id"
-            >
-              <Card>
-                <p class="title is-5 mb-2">{{ formatPrimary(item, activeSection?.primaryField) }}</p>
-                <p v-if="activeSection?.secondaryField" class="subtitle is-6 mb-3">
-                  {{ formatSecondary(item, activeSection.secondaryField) }}
-                </p>
-                <ul class="content-manager__card-list">
-                  <li v-for="column in activeSection?.columns" :key="column.key">
-                    <span class="has-text-weight-semibold">{{ column.label }}:</span>
-                    <span>{{ formatCell(item, column) }}</span>
-                  </li>
-                </ul>
-              </Card>
-            </div>
-          </div>
-        </div>
+        <TableView
+          v-else-if="activeSection"
+          :key="activeSection.id"
+          :data="activeSection.data.value"
+          :columns="activeSection.columns"
+          :view-mode="activeView"
+          :card-layout="activeSection.cardLayout"
+          :enable-search="activeSection.enableSearch ?? true"
+          :enable-filters="activeSection.enableFilters ?? true"
+          :enable-sorting="activeSection.enableSorting ?? true"
+          :empty-state="emptyStates[activeSection.id]"
+        />
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import Card from '@top-x/shared/components/Card.vue';
+import { computed, h, ref } from 'vue';
+import TableView from '@/components/content/TableView.vue';
 import { useCollection, type UseCollectionResult } from '@top-x/shared/api/useCollection';
 import type { PyramidItem } from '@top-x/shared/types/pyramid';
 import type { TriviaQuestion } from '@top-x/shared/types/trivia';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
+import type { TableColumn, CardLayout } from '@/components/content/tableTypes';
 
 interface CommunitySubmission {
   id: string;
@@ -126,12 +98,6 @@ interface CommunitySubmission {
   type?: string;
 }
 
-interface ColumnDefinition {
-  key: string;
-  label: string;
-  formatter?: (value: unknown, item: ContentEntry) => string;
-}
-
 interface SectionConfig {
   id: ContentTab;
   label: string;
@@ -140,9 +106,11 @@ interface SectionConfig {
   isLoading: UseCollectionResult<ContentEntry>['isLoading'];
   error: UseCollectionResult<ContentEntry>['error'];
   refresh: UseCollectionResult<ContentEntry>['refresh'];
-  columns: ColumnDefinition[];
-  primaryField: string;
-  secondaryField?: string;
+  columns: TableColumn<ContentEntry>[];
+  cardLayout: CardLayout;
+  enableSearch?: boolean;
+  enableFilters?: boolean;
+  enableSorting?: boolean;
 }
 
 type ContentTab = 'pyramids' | 'trivia' | 'community' | 'daily';
@@ -222,6 +190,175 @@ const dailyChallengesCollection = useCollection<ContentEntry>('daily_challenges'
   listen: false,
 });
 
+const statusFilters = [
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
+];
+
+const submissionStatusFilters = [
+  { label: 'Pending', value: 'pending' },
+  { label: 'Approved', value: 'approved' },
+  { label: 'Rejected', value: 'rejected' },
+];
+
+const pyramidColumns: TableColumn<ContentEntry>[] = [
+  {
+    id: 'name',
+    header: 'Name',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'name')),
+    getValue: (row) => getField<string>(row, 'name') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'name') ?? '').toLowerCase(),
+  },
+  {
+    id: 'label',
+    header: 'Label',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'label')),
+    getValue: (row) => getField<string>(row, 'label') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'label') ?? '').toLowerCase(),
+  },
+  {
+    id: 'source',
+    header: 'Source',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'source')),
+    getValue: (row) => getField<string>(row, 'source') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'source') ?? '').toLowerCase(),
+  },
+  {
+    id: 'active',
+    header: 'Status',
+    accessor: (row) => (resolveStatus(row) === 'active' ? 'Active' : 'Inactive'),
+    getValue: (row) => (resolveStatus(row) === 'active' ? 'Active' : 'Inactive'),
+    filterOptions: statusFilters,
+    filterFn: (row, value) => resolveStatus(row) === value,
+    sortAccessor: (row) => (resolveStatus(row) === 'active' ? 1 : 0),
+  },
+  {
+    id: 'color',
+    header: 'Color',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'color')),
+    getValue: (row) => getField<string>(row, 'color') ?? '',
+    searchable: true,
+  },
+];
+
+const triviaColumns: TableColumn<ContentEntry>[] = [
+  {
+    id: 'text',
+    header: 'Question',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'text')),
+    getValue: (row) => getField<string>(row, 'text') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'text') ?? '').toLowerCase(),
+  },
+  {
+    id: 'category',
+    header: 'Category',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'category')),
+    getValue: (row) => getField<string>(row, 'category') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'category') ?? '').toLowerCase(),
+  },
+  {
+    id: 'options',
+    header: 'Choices',
+    accessor: (row) => {
+      const options = getField<string[]>(row, 'options');
+      return options ? `${options.length} options` : '—';
+    },
+    getValue: (row) => {
+      const options = getField<string[]>(row, 'options');
+      return options ? `${options.length} options` : '—';
+    },
+    sortAccessor: (row) => getField<string[]>(row, 'options')?.length ?? 0,
+  },
+  {
+    id: 'correctAnswer',
+    header: 'Answer',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'correctAnswer')),
+    getValue: (row) => getField<string>(row, 'correctAnswer') ?? '',
+  },
+];
+
+const communityColumns: TableColumn<ContentEntry>[] = [
+  {
+    id: 'title',
+    header: 'Title',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'title')),
+    getValue: (row) => getField<string>(row, 'title') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'title') ?? '').toLowerCase(),
+  },
+  {
+    id: 'submittedBy',
+    header: 'Submitted By',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'submittedBy')),
+    getValue: (row) => getField<string>(row, 'submittedBy') ?? '',
+    searchable: true,
+    sortAccessor: (row) => (getField<string>(row, 'submittedBy') ?? '').toLowerCase(),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'status')),
+    getValue: (row) => getField<string>(row, 'status') ?? '',
+    filterOptions: submissionStatusFilters,
+    filterFn: (row, value) => (getField<string>(row, 'status') ?? '').toLowerCase() === value,
+  },
+  {
+    id: 'createdAt',
+    header: 'Submitted',
+    accessor: (row) => formatDate(getField<unknown>(row, 'createdAt')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'createdAt')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'createdAt')) ?? 0,
+  },
+  {
+    id: 'type',
+    header: 'Type',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'type')),
+    getValue: (row) => getField<string>(row, 'type') ?? '',
+  },
+];
+
+const dailyColumns: TableColumn<ContentEntry>[] = [
+  {
+    id: 'number',
+    header: 'Challenge #',
+    accessor: (row) => textOrPlaceholder(getField<number | string>(row, 'number')),
+    getValue: (row) => getField<number | string>(row, 'number') ?? '',
+    sortAccessor: (row) => Number(getField<number | string>(row, 'number') ?? 0),
+  },
+  {
+    id: 'date',
+    header: 'Date',
+    accessor: (row) => formatDate(getField<unknown>(row, 'date')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'date')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'date')) ?? 0,
+  },
+  {
+    id: 'challengeAvailableUTC',
+    header: 'Opens',
+    accessor: (row) => formatDate(getField<unknown>(row, 'challengeAvailableUTC')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'challengeAvailableUTC')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'challengeAvailableUTC')) ?? 0,
+  },
+  {
+    id: 'answerRevealUTC',
+    header: 'Answer Reveal',
+    accessor: (row) => formatDate(getField<unknown>(row, 'answerRevealUTC')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'answerRevealUTC')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'answerRevealUTC')) ?? 0,
+  },
+  {
+    id: 'type',
+    header: 'Mode',
+    accessor: (row) => textOrPlaceholder(getField<string>(row, 'type')),
+    getValue: (row) => getField<string>(row, 'type') ?? '',
+  },
+];
+
 const sections: Record<ContentTab, SectionConfig> = {
   pyramids: {
     id: 'pyramids',
@@ -231,18 +368,12 @@ const sections: Record<ContentTab, SectionConfig> = {
     isLoading: pyramidCollection.isLoading,
     error: pyramidCollection.error,
     refresh: pyramidCollection.refresh,
-    columns: [
-      { key: 'name', label: 'Name' },
-      { key: 'label', label: 'Label' },
-      { key: 'source', label: 'Source' },
-      {
-        key: 'active',
-        label: 'Status',
-        formatter: (value) => (value ? 'Active' : 'Inactive'),
-      },
-    ],
-    primaryField: 'name',
-    secondaryField: 'label',
+    columns: pyramidColumns,
+    cardLayout: {
+      primary: 'name',
+      secondary: 'label',
+      metadata: ['source', 'active', 'color'],
+    },
   },
   trivia: {
     id: 'trivia',
@@ -252,18 +383,13 @@ const sections: Record<ContentTab, SectionConfig> = {
     isLoading: triviaCollection.isLoading,
     error: triviaCollection.error,
     refresh: triviaCollection.refresh,
-    columns: [
-      { key: 'text', label: 'Question' },
-      { key: 'category', label: 'Category' },
-      {
-        key: 'options',
-        label: 'Choices',
-        formatter: (value) => (Array.isArray(value) ? `${value.length} options` : '—'),
-      },
-      { key: 'correctAnswer', label: 'Answer' },
-    ],
-    primaryField: 'text',
-    secondaryField: 'category',
+    columns: triviaColumns,
+    cardLayout: {
+      primary: 'text',
+      secondary: 'category',
+      metadata: ['correctAnswer', 'options'],
+    },
+    enableFilters: false,
   },
   community: {
     id: 'community',
@@ -273,19 +399,12 @@ const sections: Record<ContentTab, SectionConfig> = {
     isLoading: communityCollection.isLoading,
     error: communityCollection.error,
     refresh: communityCollection.refresh,
-    columns: [
-      { key: 'title', label: 'Title' },
-      { key: 'submittedBy', label: 'Submitted By' },
-      { key: 'status', label: 'Status' },
-      {
-        key: 'createdAt',
-        label: 'Submitted',
-        formatter: (value) => formatDate(value),
-      },
-      { key: 'type', label: 'Type' },
-    ],
-    primaryField: 'title',
-    secondaryField: 'submittedBy',
+    columns: communityColumns,
+    cardLayout: {
+      primary: 'title',
+      secondary: 'submittedBy',
+      metadata: ['status', 'createdAt', 'type'],
+    },
   },
   daily: {
     id: 'daily',
@@ -295,33 +414,24 @@ const sections: Record<ContentTab, SectionConfig> = {
     isLoading: dailyChallengesCollection.isLoading,
     error: dailyChallengesCollection.error,
     refresh: dailyChallengesCollection.refresh,
-    columns: [
-      { key: 'number', label: 'Challenge #' },
-      {
-        key: 'date',
-        label: 'Date',
-        formatter: (value) => formatDate(value),
-      },
-      {
-        key: 'challengeAvailableUTC',
-        label: 'Opens',
-        formatter: (value) => formatDate(value),
-      },
-      {
-        key: 'answerRevealUTC',
-        label: 'Answer Reveal',
-        formatter: (value) => formatDate(value),
-      },
-      { key: 'type', label: 'Mode' },
-    ],
-    primaryField: 'number',
-    secondaryField: 'date',
+    columns: dailyColumns,
+    cardLayout: {
+      primary: 'number',
+      secondary: 'date',
+      metadata: ['challengeAvailableUTC', 'answerRevealUTC', 'type'],
+    },
   },
 };
 
 const contentSections = computed(() => Object.values(sections));
 const activeSection = computed(() => sections[activeTab.value]);
-const activeItems = computed(() => activeSection.value?.data.value ?? []);
+
+const emptyStates: Record<ContentTab, ReturnType<typeof h>> = {
+  pyramids: h('p', { class: 'has-text-grey' }, 'No pyramid items found yet.'),
+  trivia: h('p', { class: 'has-text-grey' }, 'No trivia questions have been added.'),
+  community: h('p', { class: 'has-text-grey' }, 'Community submissions will appear here once players contribute.'),
+  daily: h('p', { class: 'has-text-grey' }, 'No daily challenges scheduled. Create one to populate this list.'),
+};
 
 function setTab(tab: ContentTab) {
   activeTab.value = tab;
@@ -335,58 +445,45 @@ function refreshActive() {
   void activeSection.value?.refresh();
 }
 
-function extractValue(item: ContentEntry, key: string): unknown {
-  return key.split('.').reduce<unknown>((acc, part) => {
-    if (acc && typeof acc === 'object' && part in acc) {
-      return (acc as Record<string, unknown>)[part];
-    }
-    return undefined;
-  }, item);
+function getField<T>(item: ContentEntry, key: string): T | undefined {
+  return item[key] as T | undefined;
 }
 
-function formatCell(item: ContentEntry, column: ColumnDefinition): string {
-  const value = extractValue(item, column.key);
-  if (column.formatter) {
-    return column.formatter(value, item);
-  }
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
+function textOrPlaceholder(value: unknown): string {
+  if (!value) return '—';
   if (Array.isArray(value)) {
-    return value.join(', ');
+    return value.length ? value.join(', ') : '—';
   }
   return String(value);
 }
 
-function formatPrimary(item: ContentEntry, key: string | undefined): string {
-  if (!key) return item.id;
-  const value = extractValue(item, key);
-  if (typeof value === 'string' && value.length > 0) {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return value.toString();
-  }
-  return item.id;
+function resolveStatus(item: ContentEntry): 'active' | 'inactive' {
+  const value = getField<boolean>(item, 'active');
+  return value === false ? 'inactive' : 'active';
 }
 
-function formatSecondary(item: ContentEntry, key: string): string {
-  const value = extractValue(item, key);
-  if (!value) {
-    return '';
+function resolveTimestamp(value: unknown): number | null {
+  if (!value) return null;
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'toDate' in value &&
+    typeof (value as { toDate: () => Date }).toDate === 'function'
+  ) {
+    return (value as { toDate: () => Date }).toDate().getTime();
   }
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return value.toString();
-  }
-  return String(value);
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
 }
 
 function formatDate(value: unknown): string {
   if (!value) return '—';
-  if (typeof value === 'object' && value !== null && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'toDate' in value &&
+    typeof (value as { toDate: () => Date }).toDate === 'function'
+  ) {
     return (value as { toDate: () => Date }).toDate().toLocaleString();
   }
   const date = value instanceof Date ? value : new Date(String(value));

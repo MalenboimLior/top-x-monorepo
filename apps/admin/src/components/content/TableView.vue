@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <div class="table-container">
+    <div v-if="props.viewMode === 'table'" class="table-container">
       <table class="table is-fullwidth is-striped is-hoverable">
         <thead>
           <tr>
@@ -113,58 +113,26 @@
         </tbody>
       </table>
     </div>
+    <CardView
+      v-else
+      :rows="displayedRows"
+      :columns="columns"
+      :render-cell="renderCell"
+      :get-row-id="getRowId"
+      :render-actions="props.renderActions ? renderActionsContent : undefined"
+      :on-edit="onEdit"
+      :on-delete="onDelete"
+      :empty-state="emptyStateContent"
+      :card-layout="props.cardLayout"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, h, isVNode, ref, watch } from 'vue';
 import type { VNodeChild } from 'vue';
-
-type Primitive = string | number | boolean | Date | null | undefined;
-
-export type TableFilterOption = {
-  label: string;
-  value: string;
-};
-
-export type TableColumn<T> = {
-  id: string;
-  header: string;
-  accessor: (row: T) => VNodeChild;
-  getValue?: (row: T) => Primitive;
-  filterOptions?: TableFilterOption[];
-  filterFn?: (row: T, filterValue: string) => boolean;
-  searchable?: boolean;
-  sortable?: boolean;
-  sortAccessor?: (row: T) => Primitive;
-  className?: string;
-};
-
-type SortDirection = 'asc' | 'desc';
-
-export type TableViewProps<T> = {
-  data: T[];
-  columns: TableColumn<T>[];
-  getRowId?: (row: T, index: number) => string | number;
-  title?: string;
-  addLabel?: string;
-  onAdd?: () => void;
-  onEdit?: (row: T) => void;
-  onDelete?: (row: T) => void;
-  renderActions?: (row: T) => VNodeChild;
-  searchPlaceholder?: string;
-  searchLabel?: string;
-  initialSearch?: string;
-  enableSearch?: boolean;
-  enableFilters?: boolean;
-  enableSorting?: boolean;
-  emptyState?: VNodeChild;
-};
-
-type InternalSortState = {
-  columnId?: string;
-  direction: SortDirection;
-};
+import CardView from './CardView';
+import type { InternalSortState, TableColumn, TableViewProps, Primitive, SortDirection } from './tableTypes';
 
 const defaultEmptyState = h('p', { class: 'has-text-grey' }, 'No records available.');
 
@@ -175,6 +143,7 @@ const props = withDefaults(defineProps<TableViewProps<unknown>>(), {
   enableSearch: true,
   enableFilters: true,
   enableSorting: true,
+  viewMode: 'table',
 });
 
 const searchQuery = ref(props.initialSearch ?? '');
