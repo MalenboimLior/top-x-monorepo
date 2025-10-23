@@ -14,7 +14,8 @@
         <div v-else-if="!leaderboard.length" class="empty-state has-text-white">
           <p>No leaderboard entries yet. Play to climb the ranks!</p>
         </div>
-        <table v-else class="table is-striped is-fullwidth">
+        <div v-else class="table-wrapper">
+          <table class="table is-striped is-fullwidth leaderboard-table">
           <thead>
             <tr>
               <th class="has-text-white">Rank</th>
@@ -31,8 +32,8 @@
               class="animate-item"
               :style="{ '--animation-delay': `${0.4 + index * 0.1}s` }"
             >
-              <td>{{ index + 1 }}</td>
-              <td>
+              <td data-label="Rank">{{ index + 1 }}</td>
+              <td data-label="Player">
                 <div class="media">
                   <div class="media-left">
                     <figure class="image is-32x32">
@@ -44,8 +45,8 @@
                   </div>
                 </div>
               </td>
-              <td>{{ entry.score }}</td>
-              <td v-if="showActions">
+              <td data-label="Score">{{ entry.score }}</td>
+              <td v-if="showActions" data-label="Action">
                 <CustomButton
                   v-if="entry.uid !== currentUserId && !frenemiesSet.has(entry.uid)"
                   type="is-link is-small"
@@ -56,7 +57,8 @@
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   </div>
