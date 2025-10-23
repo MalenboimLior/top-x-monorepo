@@ -101,8 +101,9 @@
 
     <ins
       v-if="shouldDisplayAds"
+      ref="adSlotRef"
       class="adsbygoogle"
-      style="display:block; margin: 2rem auto;"
+      style="display:block; width: 100%; min-height: 250px; margin: 2rem auto;"
       :data-ad-client="adClient"
       :data-ad-slot="adSlot"
       data-ad-format="auto"
@@ -149,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -172,6 +173,8 @@ const t = (key: string) => localeStore.translate(key);
 const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
 const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 const shouldDisplayAds = computed(() => Boolean(adClient && adSlot));
+const adSlotRef = ref<HTMLElement | null>(null);
+const hasInitializedAd = ref(false);
 const languageOptions = computed(() => [
   { label: t('home.filter.all'), value: '' },
   { label: t('home.filter.english'), value: 'en' },
@@ -188,13 +191,41 @@ useHead({
   ],
 });
 
+let resizeObserver: ResizeObserver | null = null;
+
+function tryInitializeAdSlot() {
+  if (!shouldDisplayAds.value || hasInitializedAd.value) {
+    return;
+  }
+
+  const adNode = adSlotRef.value;
+  if (!adNode) {
+    return;
+  }
+
+  if (adNode.offsetWidth > 0) {
+    pushAdSenseSlot();
+    hasInitializedAd.value = true;
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+  }
+}
+
 onMounted(() => {
   console.log('Home: Fetching games from Firestore...');
   trackEvent(analytics, 'page_view', { page_name: 'home' });
   const q = query(collection(db, 'games'));
   if (shouldDisplayAds.value) {
     nextTick(() => {
-      pushAdSenseSlot();
+      tryInitializeAdSlot();
+      if (!hasInitializedAd.value && adSlotRef.value) {
+        resizeObserver = new ResizeObserver(() => {
+          tryInitializeAdSlot();
+        });
+        resizeObserver.observe(adSlotRef.value);
+      }
     });
   }
   onSnapshot(
@@ -262,6 +293,13 @@ function selectLanguage(language: string) {
 function scrollToGames() {
   gamesSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+onBeforeUnmount(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+});
 </script>
 
 <style scoped>
