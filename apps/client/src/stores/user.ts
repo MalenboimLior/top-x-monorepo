@@ -2,9 +2,9 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { auth, db, functions, analytics, trackEvent } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
-import { User, UserGameData } from '@top-x/shared/types/user';
+import { User, UserGameData, SubmitGameScoreRequest, SubmitGameScoreResponse } from '@top-x/shared/types/user';
 
 // Define a sanitized user type to avoid reactivity issues
 interface SanitizedUser {
@@ -277,19 +277,16 @@ export const useUserStore = defineStore('user', () => {
       return;
     }
     try {
-      const userDocRef = doc(db, 'users', user.value.uid);
-      await setDoc(
-        userDocRef,
-        {
-          games: {
-            [gameTypeId]: {
-              [gameId]: gameData,
-            },
-          },
-        },
-        { merge: true }
-      );
-      console.log(`Updated game progress for ${gameTypeId}/${gameId}`);
+      const submitGameScore: HttpsCallable<SubmitGameScoreRequest, SubmitGameScoreResponse> = httpsCallable(functions, 'submitGameScore');
+      const { data } = await submitGameScore({ gameTypeId, gameId, gameData });
+
+      if (!data?.success) {
+        const message = data?.message || 'Score was not updated';
+        console.log('submitGameScore completed without updating score:', { gameTypeId, gameId, message });
+        return;
+      }
+
+      console.log(`Submitted game progress for ${gameTypeId}/${gameId}`, data);
     } catch (err: any) {
       console.error('Error updating game progress:', err);
       error.value = err.message;
