@@ -116,7 +116,7 @@
       </header>
 
       <main class="admin-shell__content">
-        <slot />
+        <RouterView />
       </main>
     </div>
   </div>
