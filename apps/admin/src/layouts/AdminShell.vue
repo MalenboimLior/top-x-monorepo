@@ -25,8 +25,8 @@
       <nav class="menu">
         <p class="menu-label">Main</p>
         <ul class="menu-list">
-          <li v-for="link in navigation" :key="link.to">
-            <RouterLink :to="link.to" class="is-capitalized" active-class="is-active">
+          <li v-for="link in navigation" :key="link.name">
+            <RouterLink :to="{ name: link.name }" class="is-capitalized" active-class="is-active">
               <span class="icon-text">
                   <span class="icon">
                     <font-awesome-icon :icon="link.icon" aria-hidden="true" />
@@ -128,12 +128,12 @@ import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 
 const navigation = [
-  { label: 'Dashboard', to: '/', icon: 'chart-line' },
-  { label: 'Game Types', to: '/game-types', icon: 'layer-group' },
-  { label: 'Games', to: '/games', icon: 'gamepad' },
-  { label: 'Content', to: '/content', icon: 'pen-nib' },
-  { label: 'Communications', to: '/communications', icon: 'bullhorn' },
-  { label: 'Settings', to: '/settings', icon: 'cog' },
+  { label: 'Dashboard', name: 'dashboard', icon: 'chart-line' },
+  { label: 'Game Types', name: 'game-types', icon: 'layer-group' },
+  { label: 'Games', name: 'games', icon: 'gamepad' },
+  { label: 'Content', name: 'content', icon: 'pen-nib' },
+  { label: 'Communications', name: 'communications', icon: 'bullhorn' },
+  { label: 'Settings', name: 'settings', icon: 'cog' },
 ];
 
 const route = useRoute();
@@ -144,8 +144,8 @@ const isAccountMenuOpen = ref(false);
 const user = computed(() => userStore.user);
 
 const currentTitle = computed(() => {
-  const active = navigation.find((link) => link.to === route.path);
-  return active?.label ?? 'Admin';
+  const title = route.meta?.title;
+  return typeof title === 'string' ? title : 'Admin';
 });
 
 function toggleSidebar() {
