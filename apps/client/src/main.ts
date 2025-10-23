@@ -16,6 +16,7 @@ import 'bulma/css/bulma.min.css';
 import './styles/tokens.css';
 import './styles/layout.css';
 import './styles/dark-theme.css'; // Import custom dark theme overrides
+import './styles/responsive-utils.css';
 
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';

@@ -5,7 +5,7 @@
       {{ error }}
     </div>
 
-    <div class="hud">
+    <div class="hud responsive-flex-row">
       <div class="hud-item">
         <span class="label">Score: {{ score }}</span>
       </div>
