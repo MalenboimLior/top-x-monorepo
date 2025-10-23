@@ -1,14 +1,12 @@
 // Firebase Cloud Functions for backend APIs
 import * as functions from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
-import { FirestoreEvent, Change } from 'firebase-functions/v2/firestore';
-import { DocumentSnapshot } from 'firebase-admin/firestore';
 import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
-import { UserGameData } from '@top-x/shared/types';
-import type { LeaderboardEntry } from '@top-x/shared/types/game'
+import { UserGameData, SubmitGameScoreRequest, SubmitGameScoreResponse, User } from '@top-x/shared/types/user';
+import type { LeaderboardEntry } from '@top-x/shared/types/game';
 import { postOnX } from './external/xApi';
 import './utils/firebaseAdmin'; // Triggers centralized init (no re-init needed)
 
@@ -95,157 +93,167 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
   }
 });
 
-// Firestore trigger that updates the leaderboard and aggregate
-// statistics every time a user's game data changes.
-export const syncScoresAndVots = functions.firestore.onDocumentWritten('users/{uid}', async (event: FirestoreEvent<Change<DocumentSnapshot> | undefined, { uid: string }>) => {
-  const uid = event.params.uid;
-  const change = event.data;
+// Callable function that receives game progress submissions from
+// the client, persists them to the user document and keeps the
+// leaderboard/statistics in sync. This replaces the previous
+// onDocumentWritten trigger so that validation and leaderboard
+// updates happen atomically on the backend.
+export const submitGameScore = functions.https.onCall(async (
+  request: functions.https.CallableRequest<SubmitGameScoreRequest>
+): Promise<SubmitGameScoreResponse> => {
+  const { auth, data } = request;
 
-  if (!change || !change.after.data()) {
-    console.log(`User ${uid} deleted or no data, no action taken`);
-    return;
+  if (!auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const beforeData = change.before.data();
-  const afterData = change.after.data();
+  const payload = (data ?? {}) as SubmitGameScoreRequest;
+  const { gameTypeId, gameId, gameData } = payload;
 
-  if (!afterData) {
-    console.log(`No data after change for user ${uid}, no action taken`);
-    return;
+  if (!gameTypeId || !gameId || !gameData) {
+    throw new functions.https.HttpsError('invalid-argument', 'gameTypeId, gameId and gameData are required');
   }
 
-  const gamesAfter = afterData.games || {};
-  const gamesBefore = beforeData?.games || {};
+  const uid = auth.uid;
 
-  for (const gameTypeId in gamesAfter) {
-    for (const gameId in gamesAfter[gameTypeId]) {
-      const gameDataAfter = gamesAfter[gameTypeId][gameId] as UserGameData;
-      const gameDataBefore = gamesBefore?.[gameTypeId]?.[gameId] as UserGameData | undefined;
+  try {
+    const result = await db.runTransaction(async (tx) => {
+      const userRef = db.collection('users').doc(uid);
+      const leaderboardRef = db.collection('games').doc(gameId).collection('leaderboard').doc(uid);
+      const statsRef = db.collection('games').doc(gameId).collection('stats').doc('general');
+      const gameRef = db.collection('games').doc(gameId);
 
-      if (JSON.stringify(gameDataAfter) !== JSON.stringify(gameDataBefore)) {
-        const previousScore = gameDataBefore?.score ?? null;
-        const newScore = gameDataAfter.score;
+      const userDoc = await tx.get(userRef);
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('failed-precondition', 'User profile not found');
+      }
 
-        if (previousScore !== null && newScore <= previousScore) {
-          console.log(`New score ${newScore} is not higher than existing score ${previousScore} for user ${uid} in game ${gameId}. Skipping update.`);
-          // Revert the user document to the previous score to maintain best score
-          await db
-            .collection('users')
-            .doc(uid)
-            .update({ [`games.${gameTypeId}.${gameId}`]: gameDataBefore });
-          continue;
+      const userData = userDoc.data() as User;
+      const previousGameData = userData.games?.[gameTypeId]?.[gameId] as UserGameData | undefined;
+      const previousScore = previousGameData?.score ?? null;
+
+      if (previousScore !== null && gameData.score <= previousScore) {
+        console.log(`submitGameScore: score ${gameData.score} is not higher than previous score ${previousScore} for user ${uid}`);
+        return {
+          success: false,
+          message: 'Score is not higher than the existing best score',
+          previousScore,
+          newScore: gameData.score,
+        } satisfies SubmitGameScoreResponse;
+      }
+
+      const [statsDoc, gameDoc] = await Promise.all([
+        tx.get(statsRef),
+        tx.get(gameRef),
+      ]);
+
+      if (!gameDoc.exists) {
+        throw new functions.https.HttpsError('failed-precondition', `Game ${gameId} does not exist`);
+      }
+
+      tx.set(userRef, {
+        games: {
+          [gameTypeId]: {
+            [gameId]: gameData,
+          },
+        },
+      }, { merge: true });
+
+      const currentStats = statsDoc.exists
+        ? statsDoc.data() as GameStats
+        : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() } as GameStats;
+
+      const distribution = { ...currentStats.scoreDistribution } as { [score: number]: number };
+      let totalPlayers = currentStats.totalPlayers;
+      let custom = { ...currentStats.custom } as Record<string, any>;
+
+      if (!previousGameData) {
+        distribution[gameData.score] = (distribution[gameData.score] || 0) + 1;
+        totalPlayers++;
+      } else if (previousScore !== gameData.score) {
+        if (previousScore !== null) {
+          distribution[previousScore] = Math.max((distribution[previousScore] || 1) - 1, 0);
+        }
+        distribution[gameData.score] = (distribution[gameData.score] || 0) + 1;
+      }
+
+      if (gameTypeId === 'PyramidTier') {
+        const itemRanks = custom.itemRanks || {};
+        const worstItemCounts = custom.worstItemCounts || {};
+
+        if (previousGameData?.custom?.pyramid) {
+          previousGameData.custom.pyramid.forEach((tier: { tier: number; slots: (string | null)[] }) => {
+            tier.slots.forEach((itemId: string | null) => {
+              if (itemId) {
+                const rowId = tier.tier;
+                itemRanks[itemId] = itemRanks[itemId] || {};
+                itemRanks[itemId][rowId] = Math.max((itemRanks[itemId][rowId] || 1) - 1, 0);
+              }
+            });
+          });
+        }
+        if (previousGameData?.custom?.worstItem?.id) {
+          const itemId = previousGameData.custom.worstItem.id;
+          worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
         }
 
-        console.log(`Updating leaderboard and stats for gameType ${gameTypeId} game ${gameId} for user ${uid}`);
-
-        await db.runTransaction(async (tx) => {
-          // Update leaderboard
-          const leaderboardRef = db.collection('games').doc(gameId).collection('leaderboard').doc(uid);
-          const statsRef = db.collection('games').doc(gameId).collection('stats').doc('general');
-          const gameRef = db.collection('games').doc(gameId);
-
-          const [statsDoc, gameDoc] = await Promise.all([
-            tx.get(statsRef),
-            tx.get(gameRef)
-          ]);
-
-          if (!gameDoc.exists) {
-            console.error(`Game ${gameId} does not exist`);
-            return;
-          }
-
-          const currentStats = statsDoc.exists
-            ? statsDoc.data() as GameStats
-            : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() };
-
-          const distribution = { ...currentStats.scoreDistribution };
-          let totalPlayers = currentStats.totalPlayers;
-          let custom = { ...currentStats.custom };
-
-          const beforeScore = gameDataBefore?.score || null;
-          const afterScore = gameDataAfter.score;
-
-          if (!gameDataBefore) {
-            // New entry
-            distribution[afterScore] = (distribution[afterScore] || 0) + 1;
-            totalPlayers++;
-          } else if (beforeScore !== afterScore) {
-            // Score changed
-            if (beforeScore !== null) {
-              distribution[beforeScore] = Math.max((distribution[beforeScore] || 1) - 1, 0);
-            }
-            distribution[afterScore] = (distribution[afterScore] || 0) + 1;
-          }
-
-          // For pyramid-specific custom stats
-          if (gameTypeId === 'PyramidTier') {
-            const itemRanks = custom.itemRanks || {};
-            const worstItemCounts = custom.worstItemCounts || {};
-
-            // Decrement old custom if exists
-            if (gameDataBefore?.custom) {
-              gameDataBefore.custom.pyramid.forEach((tier: { tier: number; slots: string[] }) => {
-                tier.slots.forEach((itemId: string | null) => {
-                  if (itemId) {
-                    const rowId = tier.tier;
-                    itemRanks[itemId] = itemRanks[itemId] || {};
-                    itemRanks[itemId][rowId] = Math.max((itemRanks[itemId][rowId] || 1) - 1, 0);
-                  }
-                });
-              });
-              if (gameDataBefore.custom.worstItem) {
-                const itemId = gameDataBefore.custom.worstItem.id;
-                worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
+        if (gameData.custom?.pyramid) {
+          gameData.custom.pyramid.forEach((tier: { tier: number; slots: (string | null)[] }) => {
+            tier.slots.forEach((itemId: string | null) => {
+              if (itemId) {
+                const rowId = tier.tier;
+                itemRanks[itemId] = itemRanks[itemId] || {};
+                itemRanks[itemId][rowId] = (itemRanks[itemId][rowId] || 0) + 1;
               }
-            }
-
-            // Increment new custom
-            if (gameDataAfter.custom) {
-              gameDataAfter.custom.pyramid.forEach((tier: { tier: number; slots: string[] }) => {
-                tier.slots.forEach((itemId: string | null) => {
-                  if (itemId) {
-                    const rowId = tier.tier;
-                    itemRanks[itemId] = itemRanks[itemId] || {};
-                    itemRanks[itemId][rowId] = (itemRanks[itemId][rowId] || 0) + 1;
-                  }
-                });
-              });
-              if (gameDataAfter.custom.worstItem) {
-                const itemId = gameDataAfter.custom.worstItem.id;
-                worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
-              }
-            }
-
-            custom = { itemRanks, worstItemCounts };
-          }
-
-          // Set leaderboard data
-          tx.set(leaderboardRef, {
-            ...gameDataAfter,
-            displayName: afterData.displayName,
-            username: afterData.username,
-            photoURL: afterData.photoURL
+            });
           });
+        }
+        if (gameData.custom?.worstItem?.id) {
+          const itemId = gameData.custom.worstItem.id;
+          worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
+        }
 
-          // Update stats
-          tx.set(statsRef, {
-            scoreDistribution: distribution,
-            totalPlayers,
-            custom,
-            updatedAt: Date.now(),
-          });
-
-          // Add to VIP if eligible
-          if (!gameDataBefore && afterData.followersCount >=0) {
-            let vip = gameDoc.data()?.vip || [];
-            if (!vip.includes(uid)) {
-              vip = [...vip, uid];
-              tx.update(gameRef, { vip });
-            }
-          }
-        });
+        custom = { itemRanks, worstItemCounts };
       }
+
+      tx.set(leaderboardRef, {
+        ...gameData,
+        displayName: userData.displayName,
+        username: userData.username,
+        photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+        updatedAt: Date.now(),
+      });
+
+      tx.set(statsRef, {
+        scoreDistribution: distribution,
+        totalPlayers,
+        custom,
+        updatedAt: Date.now(),
+      });
+
+      if (!previousGameData && (userData.followersCount ?? 0) >= 0) {
+        const gameDataSnapshot = gameDoc.data();
+        let vip: string[] = gameDataSnapshot?.vip || [];
+        if (!vip.includes(uid)) {
+          vip = [...vip, uid];
+          tx.update(gameRef, { vip });
+        }
+      }
+
+      return {
+        success: true,
+        previousScore,
+        newScore: gameData.score,
+      } satisfies SubmitGameScoreResponse;
+    });
+
+    return result;
+  } catch (error: any) {
+    console.error('submitGameScore error:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
     }
+    throw new functions.https.HttpsError('internal', 'Failed to submit game score');
   }
 });
 
