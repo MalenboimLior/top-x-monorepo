@@ -195,7 +195,7 @@ function buildGame() {
 .game-hero {
   display: grid;
   width: min(1200px, 100%);
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 2.5rem;
   align-items: center;
 }
@@ -249,7 +249,7 @@ function buildGame() {
 .game-meta-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .meta-card {
@@ -367,12 +367,49 @@ function buildGame() {
     gap: 3rem;
   }
 
+  .game-hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .game-details {
+    align-items: center;
+    text-align: center;
+  }
+
+  .game-pill {
+    align-self: center;
+  }
+
   .section-surface {
     padding: 1.5rem 1.25rem;
   }
 
   .build-card {
     align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-info-container {
+    padding: 2.5rem 1rem 3.5rem;
+  }
+
+  .action-buttons-section {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .action-buttons-section > * {
+    width: 100%;
+  }
+
+  .section-surface {
+    padding: 1.25rem 1rem;
+  }
+
+  .meta-card {
+    min-height: auto;
   }
 }
 </style>
