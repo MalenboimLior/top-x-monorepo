@@ -1,7 +1,7 @@
 <!-- Top navigation bar for the client app -->
 <template>
   <nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar-inner">
+    <div class="navbar-inner layout-container">
       <div class="navbar-brand">
         <router-link class="navbar-item" to="/">
           <img src="@/assets/topx-icon.png" alt="TOP-X Logo">
@@ -140,13 +140,11 @@ const closeMenu = () => {
 }
 
 .navbar-inner {
-  max-width: 1280px;
-  margin: 0 auto;
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
+  width: 100%;
+  padding-block: var(--space-3);
 }
 
 .navbar-brand {
@@ -166,7 +164,7 @@ const closeMenu = () => {
 }
 
 .navbar-brand .navbar-item {
-  gap: 0.65rem;
+  gap: var(--space-3);
   display: inline-flex;
   align-items: center;
   font-size: 1rem;
@@ -198,7 +196,7 @@ const closeMenu = () => {
 .navbar-end {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .navbar-end {
@@ -210,8 +208,8 @@ const closeMenu = () => {
   color: var(--bulma-primary);
   background: rgba(0, 232, 224, 0.08);
   border-radius: 999px;
-  padding: 0.4rem 0.6rem;
-  margin-left: 0.75rem;
+  padding: var(--space-2) var(--space-3);
+  margin-left: var(--space-3);
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -245,12 +243,12 @@ const closeMenu = () => {
   max-height: 48px;
 }
 
-@media screen and (max-width: 1023px) {
+@media screen and (max-width: 64rem) {
   .navbar-inner {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: var(--space-2);
+    padding-block: var(--space-3);
   }
 
   .navbar-menu {
@@ -261,7 +259,7 @@ const closeMenu = () => {
     background: rgba(0, 0, 0, 0.96);
     border: 1px solid rgba(0, 232, 224, 0.12);
     border-radius: 18px;
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .navbar-menu.is-active {
@@ -276,7 +274,7 @@ const closeMenu = () => {
 
   .navbar-item {
     border-radius: 12px;
-    padding: 0.75rem 0.85rem;
+    padding: var(--space-3) var(--space-4);
   }
 
   .navbar-item:hover,

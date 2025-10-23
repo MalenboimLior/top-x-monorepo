@@ -1,7 +1,7 @@
 <template>
   <footer class="footer has-background-dark has-text-white">
     <div class="footer-glow"></div>
-    <div class="footer-content">
+    <div class="footer-content layout-container section-stack">
       <div class="footer-branding">
         <router-link to="/about" class="grok-badge">{{ t('footer.powered') }}</router-link>
         <p class="footer-tagline">Play together. Compete everywhere.</p>
@@ -47,7 +47,7 @@ export default defineComponent({
 .footer {
   position: relative;
   background: #000;
-  padding: 3rem 1.5rem 2.5rem;
+  padding: var(--space-10) var(--space-6) var(--space-9);
   overflow: hidden;
   border-top: 1px solid rgba(0, 232, 224, 0.12);
 }
@@ -62,12 +62,8 @@ export default defineComponent({
 
 .footer-content {
   position: relative;
-  max-width: 1280px;
-  margin: 0 auto;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
+  --section-stack-gap: var(--space-7);
   align-items: center;
   text-align: center;
 }
@@ -75,7 +71,7 @@ export default defineComponent({
 .footer-branding {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-items: center;
 }
 
@@ -89,7 +85,7 @@ export default defineComponent({
 .footer-tagline {
   margin: 0;
   color: rgba(255, 255, 255, 0.65);
-  font-size: 0.95rem;
+  font-size: var(--font-size-400);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -103,12 +99,12 @@ export default defineComponent({
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
 
 .footer-link {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 1rem;
+  font-size: var(--font-size-400);
   transition: color 0.3s ease;
 }
 
@@ -120,21 +116,27 @@ export default defineComponent({
 .footer-copy {
   margin: 0;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.85rem;
+  font-size: var(--font-size-300);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
   .grok-badge {
     font-size: 1rem;
   }
   .footer-links {
-    gap: 1rem;
+    gap: var(--space-4);
     flex-direction: column;
   }
   .footer-link {
-    font-size: 0.9rem;
+    font-size: var(--font-size-300);
+  }
+}
+
+@media (max-width: 37.5rem) {
+  .footer {
+    padding: var(--space-9) var(--space-4) var(--space-8);
   }
 }
 </style>

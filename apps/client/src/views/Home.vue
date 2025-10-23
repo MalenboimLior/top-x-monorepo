@@ -1,7 +1,7 @@
 <!-- Home.vue -->
 <template>
-  <div class="home-page">
-    <section class="hero">
+  <div class="home-page section-stack">
+    <section class="hero layout-container">
       <div class="hero-content">
         <div class="hero-eyebrow">
           <span class="hero-pill">TOP-X</span>
@@ -44,8 +44,8 @@
       </div>
     </section>
 
-    <section class="filter-panel">
-      <div class="filter-card">
+    <section class="filter-panel layout-container">
+      <div class="filter-card surface">
         <p class="filter-label">{{ t('home.filterLabel') }}</p>
         <div class="language-toggle responsive-flex-row" role="tablist" aria-label="Language filter">
           <button
@@ -63,7 +63,7 @@
       </div>
     </section>
 
-    <section ref="gamesSection" class="game-section">
+    <section ref="gamesSection" class="game-section layout-container section-stack">
       <header class="section-header">
         <div>
           <h2 class="section-title">{{ t('home.topGames') }}</h2>
@@ -109,7 +109,7 @@
       data-full-width-responsive="true"
     ></ins>
 
-    <section class="game-section">
+    <section class="game-section layout-container section-stack">
       <header class="section-header">
         <div>
           <h2 class="section-title">{{ t('home.communityGames') }}</h2>
