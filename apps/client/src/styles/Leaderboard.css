@@ -16,19 +16,6 @@
   padding: 1.5rem;
 }
 
-.table-wrapper {
-  overflow-x: auto;
-}
-
-.table-wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-
-.table-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-}
-
 .table {
   background-color: transparent;
   border-radius: 8px;
@@ -48,10 +35,6 @@
 
 .table td {
   padding: 0.75rem;
-}
-
-.leaderboard-table td[data-label] {
-  position: relative;
 }
 
 .table th:nth-child(1),
@@ -146,10 +129,6 @@
     font-size: 14px;
   }
 
-  .table-wrapper {
-    margin: 0 -0.75rem;
-  }
-
   .table th,
   .table td {
     padding: 0.5rem;
@@ -177,72 +156,5 @@
   .table th:nth-child(4),
   .table td:nth-child(4) {
     width: 30%;
-  }
-}
-
-@media (max-width: 540px) {
-  .leaderboard-table thead {
-    display: none;
-  }
-
-  .leaderboard-table,
-  .leaderboard-table tbody,
-  .leaderboard-table tr,
-  .leaderboard-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .leaderboard-table tr {
-    margin-bottom: 1rem;
-    border-radius: 10px;
-    background: rgba(58, 58, 58, 0.4);
-    padding: 0.75rem 1rem;
-  }
-
-  .leaderboard-table tr.is-current-user {
-    background-color: rgba(32, 156, 238, 0.15);
-    border: 1px solid #209cee;
-  }
-
-  .leaderboard-table td {
-    padding: 0.35rem 0;
-    text-align: left;
-  }
-
-  .leaderboard-table td[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 0.15rem;
-  }
-
-  .leaderboard-table td[data-label='Rank'] {
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-
-  .leaderboard-table td[data-label='Player'] {
-    margin-top: 0.5rem;
-  }
-
-  .leaderboard-table td[data-label='Score'] {
-    font-size: 1rem;
-    font-weight: 600;
-  }
-
-  .leaderboard-table td[data-label='Action'] {
-    margin-top: 0.75rem;
-  }
-
-  .leaderboard-table .media {
-    align-items: center;
-  }
-
-  .leaderboard-table .media-left {
-    margin-right: 0.75rem;
   }
 }
