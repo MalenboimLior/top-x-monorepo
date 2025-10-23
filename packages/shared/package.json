@@ -53,6 +53,14 @@
     "./types/dailyChallenge": {
       "types": "./src/types/dailyChallenge.ts",
       "default": "./src/types/dailyChallenge.ts"
+    },
+    "./api": {
+      "types": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./api/useCollection": {
+      "types": "./src/api/useCollection.ts",
+      "default": "./src/api/useCollection.ts"
     }
   }
 }
