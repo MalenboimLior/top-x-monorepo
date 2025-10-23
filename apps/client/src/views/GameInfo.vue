@@ -178,7 +178,7 @@ function buildGame() {
 <style scoped>
 .game-info-container {
   min-height: 100vh;
-  padding: 4rem clamp(1.5rem, 5vw, 2.5rem) 5rem;
+  padding: 4rem clamp(1rem, 4vw, 1.5rem) 5rem;
   background: #000;
   color: var(--bulma-text);
   display: flex;
@@ -328,7 +328,7 @@ function buildGame() {
   background: rgba(255, 255, 255, 0.02);
   border-radius: 24px;
   border: 1px solid rgba(0, 232, 224, 0.12);
-  padding: 2rem 1.5rem;
+  padding: 2rem clamp(1rem, 4vw, 1.5rem);
   backdrop-filter: blur(12px);
 }
 
@@ -367,7 +367,7 @@ function buildGame() {
 
 @media (max-width: 768px) {
   .game-info-container {
-    padding: 3rem clamp(1rem, 4vw, 1.25rem) 4rem;
+    padding: 3rem clamp(0.75rem, 4vw, 1.25rem) 4rem;
     gap: 3rem;
   }
 
@@ -386,7 +386,7 @@ function buildGame() {
   }
 
   .section-surface {
-    padding: 1.5rem 1.25rem;
+    padding: 1.5rem clamp(0.75rem, 4vw, 1.15rem);
   }
 
   .build-card {
@@ -396,7 +396,7 @@ function buildGame() {
 
 @media (max-width: 480px) {
   .game-info-container {
-    padding: 2.5rem 1rem 3.5rem;
+    padding: 2.5rem 0.75rem 3.5rem;
   }
 
   .action-buttons-section {
@@ -409,7 +409,7 @@ function buildGame() {
   }
 
   .section-surface {
-    padding: 1.25rem 1rem;
+    padding: 1.25rem clamp(0.65rem, 4vw, 0.9rem);
   }
 
   .meta-card {
