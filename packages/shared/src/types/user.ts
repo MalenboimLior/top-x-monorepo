@@ -23,3 +23,16 @@ export interface User {
   games: Record<string, Record<string, UserGameData>>;
   badges: Array<{ id: string; earnedAt: string }>;
 }
+
+export interface SubmitGameScoreRequest {
+  gameTypeId: string;
+  gameId: string;
+  gameData: UserGameData;
+}
+
+export interface SubmitGameScoreResponse {
+  success: boolean;
+  message?: string;
+  previousScore?: number | null;
+  newScore?: number;
+}
