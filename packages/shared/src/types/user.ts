@@ -7,6 +7,10 @@ export interface UserGameData {
   custom?: Record<string, any>;
 }
 
+export interface UserEngagement {
+  games?: Record<string, Record<string, boolean>>;
+}
+
 export interface User {
   uid: string;
   username: string;
@@ -22,6 +26,8 @@ export interface User {
   addedBy: string[];
   games: Record<string, Record<string, UserGameData>>;
   badges: Array<{ id: string; earnedAt: string }>;
+  favoriteGames?: string[];
+  engagement?: UserEngagement;
 }
 
 export interface SubmitGameScoreRequest {

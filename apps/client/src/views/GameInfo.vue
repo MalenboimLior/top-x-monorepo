@@ -25,6 +25,16 @@
               <p>{{ game.gameInstruction }}</p>
             </div>
           </div>
+          <div v-if="hasCounters" class="game-stats">
+            <div
+              v-for="counter in counterList"
+              :key="counter.key"
+              class="stat-pill"
+            >
+              <span class="stat-value">{{ formatCounter(counter.value) }}</span>
+              <span class="stat-label">{{ counter.label }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -36,6 +46,15 @@
         label="Play Now"
         @click="playGame"
       />
+      <button
+        class="ghost-button"
+        type="button"
+        :class="{ 'is-active': isFavorite }"
+        :aria-pressed="isFavorite"
+        @click="toggleFavoriteStatus"
+      >
+        {{ isFavorite ? 'Remove Favorite' : 'Add to Favorites' }}
+      </button>
       <button class="ghost-button" type="button" @click="backToGames">
         Back to Games
       </button>
@@ -83,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
@@ -95,6 +114,7 @@ import { Game } from '@top-x/shared/types/game';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import fallbackImg from '@/assets/images/fallback.png';
+import { formatNumber } from '@top-x/shared/utils/format';
 
 const route = useRoute();
 const router = useRouter();
@@ -110,7 +130,35 @@ const game = ref<Game>({
   vip: [],
   custom: {} as any,
   language: 'en',
+  counters: {},
 });
+
+const isFavorite = computed(() => (gameId.value ? userStore.isGameFavorite(gameId.value) : false));
+const counterList = computed(() => {
+  const counters = game.value.counters || {};
+  return [
+    { key: 'players', label: 'Players', value: counters.totalPlayers },
+    { key: 'favorites', label: 'Favorites', value: counters.favorites },
+    { key: 'sessions', label: 'Sessions', value: counters.sessionsPlayed },
+    { key: 'submissions', label: 'Submissions', value: counters.uniqueSubmitters },
+  ].filter((entry) => typeof entry.value === 'number' && entry.value !== undefined);
+});
+const hasCounters = computed(() => counterList.value.length > 0);
+
+function toggleFavoriteStatus() {
+  if (!gameId.value) {
+    return;
+  }
+
+  if (!userStore.user) {
+    alert('Please log in to manage favorites.');
+    return;
+  }
+
+  void userStore.toggleFavorite(gameId.value);
+}
+
+const formatCounter = (value?: number) => formatNumber(value ?? 0);
 
 onMounted(async () => {
   if (!gameId.value) {
@@ -137,6 +185,7 @@ onMounted(async () => {
         language: data.language || 'en',
         shareLink: data.shareLink,
         dailyChallengeActive: data.dailyChallengeActive,
+        counters: data.counters || {},
         // Add other fields as needed
       } as Game;
       console.log('GameInfo: Game data fetched:', game.value);
@@ -256,6 +305,37 @@ function buildGame() {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
+.game-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 232, 224, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  min-width: 120px;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .meta-card {
   background: rgba(0, 232, 224, 0.05);
   border: 1px solid rgba(0, 232, 224, 0.18);
@@ -304,6 +384,12 @@ function buildGame() {
 .ghost-button:hover {
   background: rgba(0, 232, 224, 0.12);
   border-color: rgba(0, 232, 224, 0.45);
+}
+
+.ghost-button.is-active {
+  background: rgba(0, 232, 224, 0.18);
+  border-color: rgba(0, 232, 224, 0.6);
+  color: #ffffff;
 }
 
 .section-heading {
