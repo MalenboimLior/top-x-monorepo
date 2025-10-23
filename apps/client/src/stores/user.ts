@@ -5,6 +5,7 @@ import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as Fireb
 import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
 import { User, UserGameData, SubmitGameScoreRequest, SubmitGameScoreResponse } from '@top-x/shared/types/user';
+import type { SetGameFavoriteRequest, SetGameFavoriteResponse } from '@top-x/shared/types/counters';
 
 // Define a sanitized user type to avoid reactivity issues
 interface SanitizedUser {
@@ -158,6 +159,8 @@ export const useUserStore = defineStore('user', () => {
       addedBy: [],
       games: {},
       badges: [],
+      favoriteGames: [],
+      engagement: { games: {} },
     };
     try {
       console.log('Attempting to create profile:', userProfile);
@@ -293,5 +296,60 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  return { user, profile, error, loginWithX, logout, addFrenemy, removeFrenemy, updateGameProgress };
+  function isGameFavorite(gameId: string): boolean {
+    return Boolean(profile.value?.favoriteGames?.includes(gameId));
+  }
+
+  async function toggleFavorite(gameId: string) {
+    if (!user.value) {
+      error.value = 'Please log in to manage favorites';
+      return;
+    }
+
+    try {
+      const setFavorite = httpsCallable<SetGameFavoriteRequest, SetGameFavoriteResponse>(functions, 'setGameFavorite');
+      const nextFavorite = !isGameFavorite(gameId);
+      const { data } = await setFavorite({ gameId, favorite: nextFavorite });
+
+      if (!data?.success) {
+        console.warn('toggleFavorite: backend rejected update');
+        return;
+      }
+
+      const existingFavorites = new Set(profile.value?.favoriteGames ?? []);
+      if (nextFavorite) {
+        existingFavorites.add(gameId);
+      } else {
+        existingFavorites.delete(gameId);
+      }
+
+      if (profile.value) {
+        profile.value = {
+          ...profile.value,
+          favoriteGames: Array.from(existingFavorites),
+        };
+      }
+
+      trackEvent(analytics, 'user_action', {
+        action: nextFavorite ? 'favorite_game' : 'unfavorite_game',
+        game_id: gameId,
+      });
+    } catch (err: any) {
+      console.error('Error toggling favorite:', err);
+      error.value = err.message;
+    }
+  }
+
+  return {
+    user,
+    profile,
+    error,
+    loginWithX,
+    logout,
+    addFrenemy,
+    removeFrenemy,
+    updateGameProgress,
+    toggleFavorite,
+    isGameFavorite,
+  };
 }, { persist: true });

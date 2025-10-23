@@ -86,6 +86,20 @@
             </div>
             <h3 class="game-card__title">{{ game.name }}</h3>
             <p class="game-card__description">{{ game.description }}</p>
+            <div class="game-card__stats" v-if="game.counters">
+              <div class="game-card__stat">
+                <span class="game-card__stat-value">{{ formatNumber(game.counters?.totalPlayers || 0) }}</span>
+                <span class="game-card__stat-label">Players</span>
+              </div>
+              <div class="game-card__stat">
+                <span class="game-card__stat-value">{{ formatNumber(game.counters?.favorites || 0) }}</span>
+                <span class="game-card__stat-label">Favorites</span>
+              </div>
+              <div class="game-card__stat">
+                <span class="game-card__stat-value">{{ formatNumber(game.counters?.sessionsPlayed || 0) }}</span>
+                <span class="game-card__stat-label">Sessions</span>
+              </div>
+            </div>
             <div class="game-card__footer">
               <CustomButton
                 type="is-primary is-small"
@@ -134,6 +148,20 @@
             </div>
             <h3 class="game-card__title">{{ game.name }}</h3>
             <p class="game-card__description">{{ game.description }}</p>
+            <div class="game-card__stats" v-if="game.counters">
+              <div class="game-card__stat">
+                <span class="game-card__stat-value">{{ formatNumber(game.counters?.totalPlayers || 0) }}</span>
+                <span class="game-card__stat-label">Players</span>
+              </div>
+              <div class="game-card__stat">
+                <span class="game-card__stat-value">{{ formatNumber(game.counters?.favorites || 0) }}</span>
+                <span class="game-card__stat-label">Favorites</span>
+              </div>
+              <div class="game-card__stat">
+                <span class="game-card__stat-value">{{ formatNumber(game.counters?.sessionsPlayed || 0) }}</span>
+                <span class="game-card__stat-label">Sessions</span>
+              </div>
+            </div>
             <div class="game-card__footer">
               <CustomButton
                 type="is-primary is-small"
@@ -161,6 +189,7 @@ import { analytics, trackEvent } from '@top-x/shared';
 import { Game } from '@top-x/shared/types/game';
 import { useLocaleStore } from '@/stores/locale';
 import { pushAdSenseSlot } from '@/utils/googleAdsense';
+import { formatNumber } from '@top-x/shared/utils/format';
 
 const router = useRouter();
 
@@ -250,6 +279,7 @@ onMounted(() => {
             gameInstruction: data.gameInstruction,
             vip: data.vip || [],
             custom: data.custom || {},
+            counters: data.counters || {},
           } as Game;
         })
         .filter((g) => g.active);
