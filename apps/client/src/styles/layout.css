@@ -1,7 +1,9 @@
 .layout-container {
-  width: min(var(--container-xl), 100%);
+  width: 100%;
+  max-width: var(--container-xl);
   margin-inline: auto;
   padding-inline: var(--layout-inline-padding);
+  box-sizing: border-box;
 }
 
 .section-stack {
