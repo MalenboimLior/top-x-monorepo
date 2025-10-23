@@ -396,7 +396,7 @@ function buildGame() {
 
 @media (max-width: 480px) {
   .game-info-container {
-    padding: 2.5rem clamp(0.75rem, 5vw, 1rem) 3.5rem;
+    padding: 2.5rem 1rem 3.5rem;
   }
 
   .action-buttons-section {
