@@ -21,6 +21,9 @@ import {
   faPlus,
   faSearch,
   faSignOutAlt,
+  faSync,
+  faTable,
+  faThLarge,
 } from '@fortawesome/free-solid-svg-icons';
 import 'bulma/css/bulma.min.css';
 
@@ -41,6 +44,9 @@ library.add(
   faPlus,
   faSearch,
   faSignOutAlt,
+  faSync,
+  faTable,
+  faThLarge,
   faXTwitter,
 );
 
