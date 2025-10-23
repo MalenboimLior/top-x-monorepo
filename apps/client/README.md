@@ -5,9 +5,22 @@ This template should help get you started developing with Vue 3 and TypeScript i
 Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
 
 
+## Shared design tokens & layout utilities
+
+Global CSS tokens and layout helpers live in [`src/styles/tokens.css`](./src/styles/tokens.css) and [`src/styles/layout.css`](./src/styles/layout.css). These files are imported once in [`src/main.ts`](./src/main.ts) so every component can use the shared variables and utilities without additional imports.
+
+- **Tokens (`tokens.css`)** expose breakpoints, container widths, spacing, and typography scales via custom properties (e.g. `var(--space-6)` or `var(--font-size-500)`). Prefer these variables over hard-coded values to keep spacing and type consistent.
+- **Layout utilities (`layout.css`)** provide reusable classes:
+  - `.layout-container` constrains content width and applies responsive horizontal padding. Add it to wrappers that previously set `max-width` and `margin: 0 auto`.
+  - `.section-stack` creates a vertical flex stack with a configurable gap. Override the gap with the `--section-stack-gap` custom property when a section needs tighter or looser spacing.
+  - `.surface` applies the shared glassmorphism surface treatment (background, border, padding). Extend it with component-specific effects such as unique shadows.
+
+When adjusting layout or spacing in components, start by checking whether an existing token or utility already matches the need before introducing new values. This keeps future updates centralized in one place.
+
+
 firebase deploy --only hosting
 
-//rm -rf dist   
+//rm -rf dist
 //cd functions                                    
 //npm run build
 //firebase deploy --only functions
