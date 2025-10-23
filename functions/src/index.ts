@@ -31,6 +31,21 @@ interface GameStats {
   custom?: Record<string, any>;
 }
 
+const hasPyramidCustomChanges = (
+  previousCustom?: Record<string, any>,
+  newCustom?: Record<string, any>
+): boolean => {
+  const previousPyramid = previousCustom?.pyramid ?? [];
+  const newPyramid = newCustom?.pyramid ?? [];
+  const previousWorstItem = previousCustom?.worstItem ?? null;
+  const newWorstItem = newCustom?.worstItem ?? null;
+
+  return (
+    JSON.stringify(previousPyramid) !== JSON.stringify(newPyramid) ||
+    JSON.stringify(previousWorstItem) !== JSON.stringify(newWorstItem)
+  );
+};
+
 const oauth = new OAuth({
   consumer: {
     key: process.env.XAPI_KEY || '',
@@ -131,8 +146,12 @@ export const submitGameScore = functions.https.onCall(async (
       const userData = userDoc.data() as User;
       const previousGameData = userData.games?.[gameTypeId]?.[gameId] as UserGameData | undefined;
       const previousScore = previousGameData?.score ?? null;
+      const isPyramidGame = gameTypeId === 'PyramidTier';
+      const pyramidCustomChanged = isPyramidGame
+        ? hasPyramidCustomChanges(previousGameData?.custom, gameData.custom)
+        : false;
 
-      if (previousScore !== null && gameData.score <= previousScore) {
+      if (previousScore !== null && gameData.score <= previousScore && !pyramidCustomChanged) {
         console.log(`submitGameScore: score ${gameData.score} is not higher than previous score ${previousScore} for user ${uid}`);
         return {
           success: false,
@@ -141,6 +160,13 @@ export const submitGameScore = functions.https.onCall(async (
           newScore: gameData.score,
         } satisfies SubmitGameScoreResponse;
       }
+
+      const scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
+      const mergedGameData: UserGameData = {
+        ...(previousGameData ?? {}),
+        ...gameData,
+        score: scoreToPersist,
+      };
 
       const [statsDoc, gameDoc] = await Promise.all([
         tx.get(statsRef),
@@ -154,7 +180,7 @@ export const submitGameScore = functions.https.onCall(async (
       tx.set(userRef, {
         games: {
           [gameTypeId]: {
-            [gameId]: gameData,
+            [gameId]: mergedGameData,
           },
         },
       }, { merge: true });
@@ -168,13 +194,13 @@ export const submitGameScore = functions.https.onCall(async (
       let custom = { ...currentStats.custom } as Record<string, any>;
 
       if (!previousGameData) {
-        distribution[gameData.score] = (distribution[gameData.score] || 0) + 1;
+        distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
         totalPlayers++;
-      } else if (previousScore !== gameData.score) {
+      } else if (previousScore !== mergedGameData.score) {
         if (previousScore !== null) {
           distribution[previousScore] = Math.max((distribution[previousScore] || 1) - 1, 0);
         }
-        distribution[gameData.score] = (distribution[gameData.score] || 0) + 1;
+        distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
       }
 
       if (gameTypeId === 'PyramidTier') {
@@ -197,8 +223,8 @@ export const submitGameScore = functions.https.onCall(async (
           worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
         }
 
-        if (gameData.custom?.pyramid) {
-          gameData.custom.pyramid.forEach((tier: { tier: number; slots: (string | null)[] }) => {
+        if (mergedGameData.custom?.pyramid) {
+          mergedGameData.custom.pyramid.forEach((tier: { tier: number; slots: (string | null)[] }) => {
             tier.slots.forEach((itemId: string | null) => {
               if (itemId) {
                 const rowId = tier.tier;
@@ -208,8 +234,8 @@ export const submitGameScore = functions.https.onCall(async (
             });
           });
         }
-        if (gameData.custom?.worstItem?.id) {
-          const itemId = gameData.custom.worstItem.id;
+        if (mergedGameData.custom?.worstItem?.id) {
+          const itemId = mergedGameData.custom.worstItem.id;
           worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
         }
 
@@ -217,7 +243,7 @@ export const submitGameScore = functions.https.onCall(async (
       }
 
       tx.set(leaderboardRef, {
-        ...gameData,
+        ...mergedGameData,
         displayName: userData.displayName,
         username: userData.username,
         photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
@@ -243,7 +269,7 @@ export const submitGameScore = functions.https.onCall(async (
       return {
         success: true,
         previousScore,
-        newScore: gameData.score,
+        newScore: mergedGameData.score,
       } satisfies SubmitGameScoreResponse;
     });
 
