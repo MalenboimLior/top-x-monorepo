@@ -51,6 +51,8 @@ import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
+import { recordGameEvents } from '@/services/gameCounters';
+import { GAME_COUNTER_EVENTS } from '@top-x/shared/types/counters';
 
 const route = useRoute();
 const router = useRouter();
@@ -238,6 +240,7 @@ async function handleSubmit(data: PyramidData) {
   try {
     await userStore.updateGameProgress(gameTypeId, gameId.value, { score, streak: 0, lastPlayed: new Date().toISOString(), custom });
     console.log('PyramidTier: User progress updated successfully');
+    void recordGameEvents(gameId.value, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER]);
     hasSubmitted.value = true;
     router.push({ name: 'PyramidTier', query: { game: gameId.value } });
   } catch (err: any) {

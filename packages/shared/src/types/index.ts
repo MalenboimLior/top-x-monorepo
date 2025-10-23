@@ -5,3 +5,4 @@ export * from './trivia';
 export * from './game';
 export * from './zoneReveal';
 export * from './dailyChallenge';
+export * from './counters';

@@ -2,6 +2,7 @@
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
+import type { GameCounters } from "./counters";
 
 
 export interface GameType {
@@ -34,6 +35,7 @@ export interface Game {
   dailyChallengeActive?: boolean;
   /** Date identifier for the challenge shown when today's is missing */
   dailyChallengeCurrent?: string;
+  counters?: GameCounters;
 }
 
 export interface LeaderboardEntry {
