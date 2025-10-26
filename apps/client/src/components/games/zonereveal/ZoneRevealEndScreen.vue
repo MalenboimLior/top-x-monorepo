@@ -95,7 +95,6 @@ async function saveScore(custom = {}) {
     await userStore.updateGameProgress(gameTypeId, props.gameId, {
       score: props.score,
       streak: 0,
-      lastPlayed: new Date().toISOString(),
       custom
     })
   } catch (err) {
