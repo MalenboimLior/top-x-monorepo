@@ -1,8 +1,17 @@
 <template>
   <section class="section">
     <div class="container">
-      <h1 class="title">Games</h1>
-      <p class="subtitle">Track live games, monitor engagement, and launch new experiences.</p>
+      <div class="page-header">
+        <div>
+          <h1 class="title">Games</h1>
+          <p class="subtitle">Track live games, monitor engagement, and launch new experiences.</p>
+        </div>
+        <div class="header-actions">
+          <button class="button is-primary" @click="openCreateGame" :disabled="!gameTypes.length">
+            Add game
+          </button>
+        </div>
+      </div>
 
       <div v-if="!sortedGames.length" class="box has-text-centered has-text-grey">
         No games found yet. Once games are published you'll see live counters here.
@@ -17,6 +26,7 @@
               <th scope="col" class="has-text-right">Favorites</th>
               <th scope="col" class="has-text-right">Sessions</th>
               <th scope="col" class="has-text-right">Submissions</th>
+              <th scope="col" class="has-text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -31,23 +41,82 @@
               <td class="has-text-right">{{ formatCounter(game.counters?.favorites) }}</td>
               <td class="has-text-right">{{ formatCounter(game.counters?.sessionsPlayed) }}</td>
               <td class="has-text-right">{{ formatCounter(game.counters?.uniqueSubmitters) }}</td>
+              <td class="has-text-right">
+                <div class="buttons are-small is-right action-buttons">
+                  <button class="button is-link" type="button" @click="openEditGame(game)">
+                    Edit
+                  </button>
+                  <button
+                    class="button is-danger"
+                    type="button"
+                    :class="{ 'is-loading': isDeletingId === game.id }"
+                    @click="confirmDelete(game)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
   </section>
+
+  <div class="modal" :class="{ 'is-active': isEditorOpen }">
+    <div class="modal-background" @click="closeEditor"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">{{ selectedGame ? 'Edit game' : 'Add new game' }}</p>
+        <button class="delete" aria-label="close" @click="closeEditor"></button>
+      </header>
+      <section class="modal-card-body">
+        <div class="field">
+          <label class="label">Game type</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select v-model="selectedGameTypeId" :disabled="Boolean(selectedGame)">
+                <option value="" disabled>Select a game type</option>
+                <option v-for="type in gameTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="!selectedGameTypeId" class="has-text-grey">
+          Choose a game type to configure the game settings.
+        </p>
+        <p v-else-if="!selectedGameType" class="has-text-grey">Loading game type details…</p>
+
+        <GameEditorForm
+          v-else
+          :key="selectedGame?.id || selectedGameType.id"
+          :gameType="selectedGameType"
+          :existingGame="selectedGame"
+          @saved="handleEditorSaved"
+          @cancel="closeEditor"
+        />
+      </section>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
+import { collection, deleteDoc, doc, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import type { Game } from '@top-x/shared/types/game';
+import type { Game, GameType } from '@top-x/shared/types/game';
 import { formatNumber } from '@top-x/shared/utils/format';
+import GameEditorForm from '@/components/games/GameEditorForm.vue';
 
 const games = ref<Game[]>([]);
 const unsubscribe = ref<(() => void) | null>(null);
+const gameTypes = ref<GameType[]>([]);
+const gameTypesUnsubscribe = ref<(() => void) | null>(null);
+const isEditorOpen = ref(false);
+const selectedGame = ref<Game | null>(null);
+const selectedGameTypeId = ref('');
+const isDeletingId = ref<string | null>(null);
 
 const formatCounter = (value?: number) => formatNumber(value ?? 0);
 
@@ -73,12 +142,21 @@ onMounted(() => {
       } as Game;
     });
   });
+
+  const gameTypesQuery = query(collection(db, 'gameTypes'));
+  gameTypesUnsubscribe.value = onSnapshot(gameTypesQuery, (snapshot) => {
+    gameTypes.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...(docItem.data() as GameType) }));
+  });
 });
 
 onBeforeUnmount(() => {
   if (unsubscribe.value) {
     unsubscribe.value();
     unsubscribe.value = null;
+  }
+  if (gameTypesUnsubscribe.value) {
+    gameTypesUnsubscribe.value();
+    gameTypesUnsubscribe.value = null;
   }
 });
 
@@ -87,9 +165,78 @@ const sortedGames = computed(() =>
     (a, b) => (b.counters?.totalPlayers || 0) - (a.counters?.totalPlayers || 0),
   ),
 );
+
+const selectedGameType = computed(() => gameTypes.value.find((type) => type.id === selectedGameTypeId.value) || null);
+
+watch(
+  () => selectedGame.value,
+  (value) => {
+    if (value) {
+      selectedGameTypeId.value = value.gameTypeId;
+    }
+  },
+);
+
+watch(
+  () => gameTypes.value,
+  (types) => {
+    if (isEditorOpen.value && !selectedGame.value && !selectedGameTypeId.value && types.length) {
+      selectedGameTypeId.value = types[0].id;
+    }
+  },
+);
+
+const openCreateGame = () => {
+  selectedGame.value = null;
+  selectedGameTypeId.value = gameTypes.value[0]?.id ?? '';
+  isEditorOpen.value = true;
+};
+
+const openEditGame = (game: Game) => {
+  selectedGame.value = game;
+  selectedGameTypeId.value = game.gameTypeId;
+  isEditorOpen.value = true;
+};
+
+const closeEditor = () => {
+  isEditorOpen.value = false;
+  selectedGame.value = null;
+  selectedGameTypeId.value = '';
+};
+
+const handleEditorSaved = () => {
+  closeEditor();
+};
+
+const confirmDelete = async (game: Game) => {
+  if (!confirm(`Delete ${game.name}? This action cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    isDeletingId.value = game.id;
+    await deleteDoc(doc(db, 'games', game.id));
+  } catch (error) {
+    console.error('Failed to delete game', error);
+  } finally {
+    isDeletingId.value = null;
+  }
+};
 </script>
 
 <style scoped>
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
 .table-container {
   margin-top: 2rem;
 }
@@ -102,5 +249,15 @@ const sortedGames = computed(() =>
 .game-meta {
   font-size: 0.75rem;
   color: #7a7a7a;
+}
+
+.action-buttons {
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.modal-card {
+  width: 90%;
+  max-width: 960px;
 }
 </style>
