@@ -117,7 +117,7 @@
                       <td>{{ modeName }}</td>
                       <td>{{ data.score }}</td>
                       <td>{{ data.streak }}</td>
-                      <td>{{ data.lastPlayed }}</td>
+                      <td>{{ formatLastPlayed(data.lastPlayed) }}</td>
                     </tr>
                   </template>
                 </template>
@@ -265,6 +265,34 @@ const filteredGames = computed(() => {
   delete games.PyramidTier;
   return games;
 });
+
+function formatLastPlayed(value: unknown): string {
+  if (!value) return '—';
+
+  let millis: number | null = null;
+
+  if (typeof value === 'number') {
+    millis = value;
+  } else if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    millis = Number.isNaN(parsed) ? null : parsed;
+  } else if (typeof value === 'object' && value !== null) {
+    const timestampLike = value as { toMillis?: () => number; seconds?: number; nanoseconds?: number };
+    if (typeof timestampLike.toMillis === 'function') {
+      millis = timestampLike.toMillis();
+    } else if (typeof timestampLike.seconds === 'number') {
+      const nanos = typeof timestampLike.nanoseconds === 'number' ? timestampLike.nanoseconds : 0;
+      millis = timestampLike.seconds * 1000 + Math.floor(nanos / 1_000_000);
+    }
+  }
+
+  if (!millis) return '—';
+
+  const date = new Date(millis);
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return date.toLocaleString();
+}
 
 async function loadProfile() {
   const uidParam = route.query.user as string | undefined;

@@ -2,10 +2,14 @@
 export interface UserGameData {
   score: number;
   streak: number;
-  lastPlayed: string;
+  lastPlayed: number;
   achievements?: Array<{ id: string; earnedAt: string }>;
   custom?: Record<string, any>;
 }
+
+export type UserGameDataSubmission = Omit<UserGameData, 'lastPlayed'> & {
+  lastPlayed?: number;
+};
 
 export interface UserEngagement {
   games?: Record<string, Record<string, boolean>>;
@@ -33,7 +37,7 @@ export interface User {
 export interface SubmitGameScoreRequest {
   gameTypeId: string;
   gameId: string;
-  gameData: UserGameData;
+  gameData: UserGameDataSubmission;
 }
 
 export interface SubmitGameScoreResponse {
