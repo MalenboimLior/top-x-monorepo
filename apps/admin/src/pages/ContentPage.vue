@@ -167,6 +167,7 @@ const dailyChallengesCollection = useCollection<ContentEntry>('daily_challenges'
     const data = doc.data() as DailyChallenge;
     const custom = data.custom as Record<string, unknown> | undefined;
     let mode: string | undefined;
+    const schedule = data.schedule;
 
     if (custom) {
       if ('rows' in custom && 'items' in custom) {
@@ -182,8 +183,9 @@ const dailyChallengesCollection = useCollection<ContentEntry>('daily_challenges'
       id: doc.id,
       number: data.number,
       date: data.date,
-      challengeAvailableUTC: data.challengeAvailableUTC,
-      answerRevealUTC: data.answerRevealUTC,
+      scheduleAvailableAt: schedule?.availableAt,
+      scheduleClosesAt: schedule?.closesAt,
+      scheduleRevealAt: schedule?.revealAt,
       type: mode,
     } satisfies ContentEntry;
   },
@@ -338,18 +340,25 @@ const dailyColumns: TableColumn<ContentEntry>[] = [
     sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'date')) ?? 0,
   },
   {
-    id: 'challengeAvailableUTC',
+    id: 'scheduleAvailableAt',
     header: 'Opens',
-    accessor: (row) => formatDate(getField<unknown>(row, 'challengeAvailableUTC')),
-    getValue: (row) => formatDate(getField<unknown>(row, 'challengeAvailableUTC')),
-    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'challengeAvailableUTC')) ?? 0,
+    accessor: (row) => formatDate(getField<unknown>(row, 'scheduleAvailableAt')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'scheduleAvailableAt')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'scheduleAvailableAt')) ?? 0,
   },
   {
-    id: 'answerRevealUTC',
+    id: 'scheduleClosesAt',
+    header: 'Closes',
+    accessor: (row) => formatDate(getField<unknown>(row, 'scheduleClosesAt')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'scheduleClosesAt')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'scheduleClosesAt')) ?? 0,
+  },
+  {
+    id: 'scheduleRevealAt',
     header: 'Answer Reveal',
-    accessor: (row) => formatDate(getField<unknown>(row, 'answerRevealUTC')),
-    getValue: (row) => formatDate(getField<unknown>(row, 'answerRevealUTC')),
-    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'answerRevealUTC')) ?? 0,
+    accessor: (row) => formatDate(getField<unknown>(row, 'scheduleRevealAt')),
+    getValue: (row) => formatDate(getField<unknown>(row, 'scheduleRevealAt')),
+    sortAccessor: (row) => resolveTimestamp(getField<unknown>(row, 'scheduleRevealAt')) ?? 0,
   },
   {
     id: 'type',
@@ -418,7 +427,7 @@ const sections: Record<ContentTab, SectionConfig> = {
     cardLayout: {
       primary: 'number',
       secondary: 'date',
-      metadata: ['challengeAvailableUTC', 'answerRevealUTC', 'type'],
+      metadata: ['scheduleAvailableAt', 'scheduleClosesAt', 'scheduleRevealAt', 'type'],
     },
   },
 };
