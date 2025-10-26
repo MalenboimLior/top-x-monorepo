@@ -238,7 +238,7 @@ async function handleSubmit(data: PyramidData) {
   };
 
   try {
-    await userStore.updateGameProgress(gameTypeId, gameId.value, { score, streak: 0, lastPlayed: new Date().toISOString(), custom });
+    await userStore.updateGameProgress(gameTypeId, gameId.value, { score, streak: 0, custom });
     console.log('PyramidTier: User progress updated successfully');
     void recordGameEvents(gameId.value, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER]);
     hasSubmitted.value = true;

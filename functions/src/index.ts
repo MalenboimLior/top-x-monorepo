@@ -5,7 +5,12 @@ import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
-import { UserGameData, SubmitGameScoreRequest, SubmitGameScoreResponse, User } from '@top-x/shared/types/user';
+import {
+  UserGameData,
+  SubmitGameScoreRequest,
+  SubmitGameScoreResponse,
+  User,
+} from '@top-x/shared/types/user';
 import type { LeaderboardEntry } from '@top-x/shared/types/game';
 import { postOnX } from './external/xApi';
 import './utils/firebaseAdmin'; // Triggers centralized init (no re-init needed)
@@ -176,10 +181,12 @@ export const submitGameScore = functions.https.onCall(async (
       }
 
       const scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
+      const serverLastPlayed = Date.now();
       const mergedGameData: UserGameData = {
         ...(previousGameData ?? {}),
         ...gameData,
         score: scoreToPersist,
+        lastPlayed: serverLastPlayed,
       };
 
       const [statsDoc, gameDoc] = await Promise.all([
