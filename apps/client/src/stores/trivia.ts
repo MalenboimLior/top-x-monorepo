@@ -275,7 +275,7 @@ export const useTriviaStore = defineStore('trivia', () => {
             'games.smartest_on_x.default': {
               score: bestScore.value,
               streak: bestStreak.value,
-              lastPlayed: new Date().toISOString(),
+              lastPlayed: Date.now(),
             },
           }).catch(async err => {
             if (err.code === 'not-found') {
@@ -295,7 +295,7 @@ export const useTriviaStore = defineStore('trivia', () => {
                     default: {
                       score: bestScore.value,
                       streak: bestStreak.value,
-                      lastPlayed: new Date().toISOString(),
+                      lastPlayed: Date.now(),
                     },
                   },
                 },

@@ -77,7 +77,7 @@ async function saveCachedVote(data: PyramidData, userId: string) {
   };
   const score = calculateScore(data.pyramid, data.worstItem);
 
-  await userStore.updateGameProgress(gameTypeId, props.gameId, { score, streak: 0, lastPlayed: new Date().toISOString(), custom });
+  await userStore.updateGameProgress(gameTypeId, props.gameId, { score, streak: 0, custom });
 
   console.log('PyramidLoginPopup: Cached vote saved to user progress');
 }
