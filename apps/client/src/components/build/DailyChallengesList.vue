@@ -81,15 +81,24 @@ function addChallenge() {
     number: challenges.value.length + 1,
     date: '',
     createdAt: new Date().toISOString(),
-    challengeAvailableUTC: '',
-    answerRevealUTC: '',
-    nextChallengeAnnounceUTC: '',
+    schedule: {
+      availableAt: '',
+      closesAt: '',
+      revealAt: '',
+    },
     custom: props.game.custom,
   };
 }
 
 function editChallenge(ch: DailyChallenge & { id: string }) {
-  editingChallenge.value = { ...ch };
+  editingChallenge.value = {
+    ...ch,
+    schedule: {
+      availableAt: ch.schedule?.availableAt ?? '',
+      closesAt: ch.schedule?.closesAt ?? '',
+      revealAt: ch.schedule?.revealAt ?? '',
+    },
+  };
 }
 
 function duplicateChallenge(ch: DailyChallenge & { id: string }) {
@@ -97,6 +106,11 @@ function duplicateChallenge(ch: DailyChallenge & { id: string }) {
   dup.date = '';
   dup.createdAt = new Date().toISOString();
   dup.number = challenges.value.length + 1;
+  dup.schedule = {
+    availableAt: ch.schedule?.availableAt ?? '',
+    closesAt: ch.schedule?.closesAt ?? '',
+    revealAt: ch.schedule?.revealAt ?? '',
+  };
   delete dup.id;
   editingChallenge.value = dup;
 }

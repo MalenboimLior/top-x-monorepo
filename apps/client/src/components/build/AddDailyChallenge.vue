@@ -11,15 +11,15 @@
     </div>
     <div class="field">
       <label class="label has-text-white">Challenge Available UTC</label>
-      <input class="input" type="datetime-local" v-model="localChallenge.challengeAvailableUTC" />
+      <input class="input" type="datetime-local" v-model="localChallenge.schedule.availableAt" />
+    </div>
+    <div class="field">
+      <label class="label has-text-white">Challenge Closes UTC</label>
+      <input class="input" type="datetime-local" v-model="localChallenge.schedule.closesAt" />
     </div>
     <div class="field">
       <label class="label has-text-white">Answer Reveal UTC</label>
-      <input class="input" type="datetime-local" v-model="localChallenge.answerRevealUTC" />
-    </div>
-    <div class="field">
-      <label class="label has-text-white">Next Challenge Announce UTC</label>
-      <input class="input" type="datetime-local" v-model="localChallenge.nextChallengeAnnounceUTC" />
+      <input class="input" type="datetime-local" v-model="localChallenge.schedule.revealAt" />
     </div>
     <div class="field">
       <label class="checkbox has-text-white">
@@ -72,7 +72,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { Game } from '@top-x/shared/types/game';
-import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
+import type { DailyChallenge, DailyChallengeSchedule } from '@top-x/shared/types/dailyChallenge';
 import AddPyramid from './AddPyramid.vue';
 import AddZoneReveal from './AddZoneReveal.vue';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
@@ -90,6 +90,7 @@ const customType = computed(() => {
 
 const localChallenge = ref<DailyChallenge>({
   ...props.challenge,
+  schedule: withDefaultSchedule(props.challenge.schedule),
   custom: props.challenge.custom || getDefaultCustom(customType.value),
 });
 
@@ -97,6 +98,7 @@ async function save() {
   const challengeRef = doc(db, 'games', props.game.id, 'daily_challenges', localChallenge.value.date);
   await setDoc(challengeRef, {
     ...localChallenge.value,
+    schedule: withDefaultSchedule(localChallenge.value.schedule),
     custom: localChallenge.value.custom,
     createdAt: localChallenge.value.createdAt || new Date().toISOString(),
   });
@@ -131,6 +133,14 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
   } else {
     throw new Error('Unknown custom type');
   }
+}
+
+function withDefaultSchedule(schedule?: DailyChallengeSchedule): DailyChallengeSchedule {
+  return {
+    availableAt: schedule?.availableAt ?? '',
+    closesAt: schedule?.closesAt ?? '',
+    revealAt: schedule?.revealAt ?? '',
+  };
 }
 </script>
 
