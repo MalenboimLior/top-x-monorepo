@@ -46,6 +46,9 @@
                   <button class="button is-link" type="button" @click="openEditGame(game)">
                     Edit
                   </button>
+                  <button class="button is-info" type="button" @click="openDailyChallenges(game)">
+                    Daily challenges
+                  </button>
                   <button
                     class="button is-danger"
                     type="button"
@@ -99,6 +102,19 @@
       </section>
     </div>
   </div>
+
+  <div class="modal" :class="{ 'is-active': isDailyChallengesOpen }">
+    <div class="modal-background" @click="closeDailyChallenges"></div>
+    <div class="modal-card daily-challenges-modal">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Daily challenges</p>
+        <button class="delete" aria-label="close" @click="closeDailyChallenges"></button>
+      </header>
+      <section class="modal-card-body" v-if="selectedDailyChallengeGame">
+        <DailyChallengesManager :game="selectedDailyChallengeGame" @close="closeDailyChallenges" />
+      </section>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -108,6 +124,7 @@ import { db } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import { formatNumber } from '@top-x/shared/utils/format';
 import GameEditorForm from '@/components/games/GameEditorForm.vue';
+import DailyChallengesManager from '@/components/games/DailyChallengesManager.vue';
 
 const games = ref<Game[]>([]);
 const unsubscribe = ref<(() => void) | null>(null);
@@ -117,6 +134,8 @@ const isEditorOpen = ref(false);
 const selectedGame = ref<Game | null>(null);
 const selectedGameTypeId = ref('');
 const isDeletingId = ref<string | null>(null);
+const isDailyChallengesOpen = ref(false);
+const selectedDailyChallengeGame = ref<Game | null>(null);
 
 const formatCounter = (value?: number) => formatNumber(value ?? 0);
 
@@ -186,6 +205,17 @@ watch(
   },
 );
 
+watch(
+  () => games.value,
+  (value) => {
+    if (!selectedDailyChallengeGame.value) return;
+    const updated = value.find((game) => game.id === selectedDailyChallengeGame.value?.id);
+    if (updated) {
+      selectedDailyChallengeGame.value = updated;
+    }
+  },
+);
+
 const openCreateGame = () => {
   selectedGame.value = null;
   selectedGameTypeId.value = gameTypes.value[0]?.id ?? '';
@@ -198,6 +228,11 @@ const openEditGame = (game: Game) => {
   isEditorOpen.value = true;
 };
 
+const openDailyChallenges = (game: Game) => {
+  selectedDailyChallengeGame.value = game;
+  isDailyChallengesOpen.value = true;
+};
+
 const closeEditor = () => {
   isEditorOpen.value = false;
   selectedGame.value = null;
@@ -206,6 +241,11 @@ const closeEditor = () => {
 
 const handleEditorSaved = () => {
   closeEditor();
+};
+
+const closeDailyChallenges = () => {
+  isDailyChallengesOpen.value = false;
+  selectedDailyChallengeGame.value = null;
 };
 
 const confirmDelete = async (game: Game) => {
@@ -259,5 +299,10 @@ const confirmDelete = async (game: Game) => {
 .modal-card {
   width: 90%;
   max-width: 960px;
+}
+
+.daily-challenges-modal {
+  width: 95%;
+  max-width: 1100px;
 }
 </style>
