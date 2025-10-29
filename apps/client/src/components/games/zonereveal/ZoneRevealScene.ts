@@ -94,7 +94,7 @@ export default function createZoneRevealScene(
   private playerSpeed: number;
 
   // Config for levels
-  private zoneRevealConfig: ZoneRevealConfig;
+  readonly zoneRevealConfig: ZoneRevealConfig;
 
   constructor() {
     super('GameScene');
