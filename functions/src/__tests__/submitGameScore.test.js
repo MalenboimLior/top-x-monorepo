@@ -297,7 +297,6 @@ test('increments aggregated score and streak for the first correct attempt', asy
       },
       dailyChallengeId: challengeId,
       dailyChallengeDate: challengeDate,
-      isDailyChallenge: true,
     },
   });
 
@@ -369,7 +368,6 @@ test('keeps aggregated score and streak unchanged for repeated correct attempts'
       },
       dailyChallengeId: challengeId,
       dailyChallengeDate: challengeDate,
-      isDailyChallenge: true,
     },
   });
 
@@ -420,7 +418,6 @@ test('increments aggregated score only after a correct attempt following an inco
       },
       dailyChallengeId: challengeId,
       dailyChallengeDate: challengeDate,
-      isDailyChallenge: true,
     },
   });
 
@@ -456,7 +453,6 @@ test('increments aggregated score only after a correct attempt following an inco
       },
       dailyChallengeId: challengeId,
       dailyChallengeDate: challengeDate,
-      isDailyChallenge: true,
     },
   });
 

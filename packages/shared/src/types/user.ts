@@ -77,18 +77,12 @@ export interface SubmitGameScoreRequest {
   gameTypeId: string;
   gameId: string;
   gameData: UserGameDataSubmission;
-  /** Optional metadata when the score submission is tied to a daily challenge. */
+  /** Optional identifier when the score submission is tied to a daily challenge. */
   dailyChallengeId?: string;
   /** Logical date for the challenge (YYYY-MM-DD). */
   dailyChallengeDate?: string;
   /** Additional metadata captured for audit/analytics around the challenge. */
   challengeMetadata?: Record<string, unknown>;
-  /**
-   * Indicates whether the submission should be treated as part of a daily
-   * challenge flow. When false or omitted the submission is processed as a
-   * regular game run.
-   */
-  isDailyChallenge?: boolean;
 }
 
 export interface SubmitGameScoreResponse {
@@ -101,5 +95,4 @@ export interface SubmitGameScoreResponse {
   challengeBestScore?: number;
   dailyChallengeId?: string;
   dailyChallengeDate?: string;
-  isDailyChallenge?: boolean;
 }
