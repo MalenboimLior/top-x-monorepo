@@ -152,6 +152,23 @@ const game = ref<Game>(props.existingGame ? { ...props.existingGame } : {
   shareLink: '',
 });
 
+if (props.existingGame?.custom && 'levelsConfig' in props.existingGame.custom) {
+  game.value.custom = withDefaultZoneRevealAnswer(
+    JSON.parse(JSON.stringify(props.existingGame.custom)) as ZoneRevealConfig,
+  );
+}
+
+const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+
+function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
+  if (!config.answer) {
+    config.answer = createDefaultAnswer();
+  } else {
+    config.answer.accepted = config.answer.accepted ?? [];
+  }
+  return config;
+}
+
 function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig {
   if (customType === 'PyramidConfig') {
     return {
@@ -168,7 +185,7 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       communityHeader: '',
     };
   } else if (customType === 'ZoneRevealConfig') {
-    return {
+    return withDefaultZoneRevealAnswer({
       levelsConfig: [],
       backgroundImage: '',
       spritesheets: {},
@@ -176,7 +193,7 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       enemiesSpeedArray: {},
       finishPercent: 0,
       heartIcon: '',
-    };
+    });
   } else {
     throw new Error('Unknown custom type');
   }
