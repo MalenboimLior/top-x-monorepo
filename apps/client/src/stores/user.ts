@@ -24,6 +24,7 @@ export const useUserStore = defineStore('user', () => {
   const profile = ref<User | null>(null);
   const error = ref<string | null>(null);
   let unsubscribeProfile: (() => void) | null = null;
+  let lastLoggedProfileSignature: string | null = null;
 
   onAuthStateChanged(auth, (currentUser) => {
     console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
@@ -46,8 +47,22 @@ export const useUserStore = defineStore('user', () => {
         userDoc,
         (snapshot) => {
           if (snapshot.exists()) {
-            profile.value = snapshot.data() as User;
-            console.log('Profile loaded:', profile.value);
+            const newProfile = snapshot.data() as User;
+            profile.value = newProfile;
+
+            const nextSignature = JSON.stringify({
+              uid: newProfile.uid,
+              followersCount: newProfile.followersCount,
+              followingCount: newProfile.followingCount,
+              displayName: newProfile.displayName,
+              photoURL: newProfile.photoURL,
+              username: newProfile.username,
+            });
+
+            if (lastLoggedProfileSignature !== nextSignature) {
+              console.log('Profile loaded:', newProfile);
+              lastLoggedProfileSignature = nextSignature;
+            }
           } else {
             console.log('No profile found, creating new one');
             createUserProfile(currentUser);
@@ -61,6 +76,7 @@ export const useUserStore = defineStore('user', () => {
     } else {
       user.value = null;
       profile.value = null;
+      lastLoggedProfileSignature = null;
       console.log('No user logged in');
     }
   });
