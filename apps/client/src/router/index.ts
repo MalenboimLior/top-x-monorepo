@@ -1,21 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from '@/views/Home.vue';
-import Profile from '@/views/Profile.vue';
-import About from '@/views/About.vue';
-import TermsOfUse from '@/views/TermsOfUse.vue';
-import PrivacyPolicy from '@/views/PrivacyPolicy.vue';
-import ContactUs from '@/views/ContactUs.vue';
-import FAQ from '@/views/FAQ.vue';
-import Trivia from '@/views/games/Trivia.vue';
-import PyramidTier from '@/views/games/PyramidTier.vue';
-import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
-import ZoneReveal from '../views/games/ZoneReveal.vue';
-import Build from '@/views/Build.vue';
-import DailyChallenges from '@/views/DailyChallenges.vue';
-import GameInfo from '@/views/GameInfo.vue';
+const Home = () => import('@/views/Home.vue');
+const Profile = () => import('@/views/Profile.vue');
+const About = () => import('@/views/About.vue');
+const TermsOfUse = () => import('@/views/TermsOfUse.vue');
+const PrivacyPolicy = () => import('@/views/PrivacyPolicy.vue');
+const ContactUs = () => import('@/views/ContactUs.vue');
+const FAQ = () => import('@/views/FAQ.vue');
+const Trivia = () => import('@/views/games/Trivia.vue');
+const PyramidTier = () => import('@/views/games/PyramidTier.vue');
+const FrenemySearch = () => import('@/views/FrenemySearch.vue');
+const ZoneReveal = () => import('@/views/games/ZoneReveal.vue');
+const Build = () => import('@/views/Build.vue');
+const DailyChallenges = () => import('@/views/DailyChallenges.vue');
+const GameInfo = () => import('@/views/GameInfo.vue');
 
 const routes = [
   // {
