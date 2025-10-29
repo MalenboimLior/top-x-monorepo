@@ -11,8 +11,10 @@ import {
   SubmitGameScoreResponse,
   User,
 } from '@top-x/shared/types/user';
-import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import type { Game, LeaderboardEntry } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
+import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
+import { evaluateZoneRevealAnswer } from '@top-x/shared/utils/zoneRevealAnswer';
 import { postOnX } from './external/xApi';
 import './utils/firebaseAdmin'; // Triggers centralized init (no re-init needed)
 import {
@@ -173,15 +175,6 @@ export const submitGameScore = functions.https.onCall(async (
         } satisfies SubmitGameScoreResponse;
       }
 
-      const scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
-      const serverLastPlayed = Date.now();
-      const mergedGameData: UserGameData = {
-        ...(previousGameData ?? {}),
-        ...gameData,
-        score: scoreToPersist,
-        lastPlayed: serverLastPlayed,
-      };
-
       const [statsDoc, gameDoc] = await Promise.all([
         tx.get(statsRef),
         tx.get(gameRef),
@@ -190,6 +183,54 @@ export const submitGameScore = functions.https.onCall(async (
       if (!gameDoc.exists) {
         throw new functions.https.HttpsError('failed-precondition', `Game ${gameId} does not exist`);
       }
+
+      const scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
+      const serverLastPlayed = Date.now();
+      const gameSnapshot = gameDoc.data() as Game | undefined;
+
+      let enrichedGameData = gameData;
+
+      if (gameTypeId === 'ZoneReveal' && gameSnapshot?.custom) {
+        const zoneRevealConfig = gameSnapshot.custom as ZoneRevealConfig;
+        const rawAnswer = gameData.custom?.answer;
+        let attempt: string | undefined;
+
+        if (typeof rawAnswer === 'string') {
+          attempt = rawAnswer;
+        } else if (rawAnswer && typeof rawAnswer === 'object') {
+          const candidate = (rawAnswer as Record<string, unknown>).original
+            ?? (rawAnswer as Record<string, unknown>).value
+            ?? (rawAnswer as Record<string, unknown>).attempt;
+
+          if (typeof candidate === 'string') {
+            attempt = candidate;
+          }
+        }
+
+        if (zoneRevealConfig?.answer && typeof attempt === 'string') {
+          const { normalizedAnswer, distance, isMatch } = evaluateZoneRevealAnswer(
+            zoneRevealConfig.answer,
+            attempt,
+          );
+
+          enrichedGameData = {
+            ...gameData,
+            custom: {
+              ...(gameData.custom ?? {}),
+              normalized: normalizedAnswer,
+              distance,
+              isMatch,
+            },
+          };
+        }
+      }
+
+      const mergedGameData: UserGameData = {
+        ...(previousGameData ?? {}),
+        ...enrichedGameData,
+        score: scoreToPersist,
+        lastPlayed: serverLastPlayed,
+      };
 
       tx.set(userRef, {
         games: {
