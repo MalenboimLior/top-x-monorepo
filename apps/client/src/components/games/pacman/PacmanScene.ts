@@ -255,10 +255,38 @@ export default function createPacmanScene(
       generateCircle('pellet', 4, 0xfff2b3)
       generateCircle('energizer', 6, 0xff9d76)
 
-      for (const enemy of this.pacmanConfig.enemies) {
-        const hex = Phaser.Display.Color.HexStringToColor(enemy.color ?? '#5ee0ff').color
-        generateGhostTexture(`ghost-${enemy.id}`, hex)
+      const enemyDefinitions = new Map<string, PacmanEnemyEntry>()
+      const registerEnemy = (enemy: PacmanEnemyEntry | undefined) => {
+        if (!enemy || !enemy.id) {
+          return
+        }
+        enemyDefinitions.set(enemy.id, enemy)
       }
+
+      ;(this.pacmanConfig.enemies ?? []).forEach((enemy) => registerEnemy(enemy))
+      ;(this.pacmanConfig.levels ?? []).forEach((level) => {
+        level.enemyOverrides?.forEach((enemy) => registerEnemy(enemy))
+      })
+
+      if (enemyDefinitions.size === 0) {
+        DEFAULT_PACMAN_CONFIG.enemies.forEach((enemy) => registerEnemy(enemy))
+      }
+
+      enemyDefinitions.forEach((enemy, id) => {
+        const textureKey = `ghost-${id}`
+        if (this.textures.exists(textureKey)) {
+          return
+        }
+
+        const baseColor = enemy.color && enemy.color.trim().length > 0 ? enemy.color.trim() : '#5ee0ff'
+        const normalizedColor = baseColor.startsWith('#') ? baseColor : `#${baseColor.replace(/^#/, '')}`
+        const parsed = Phaser.Display.Color.HexStringToColor(normalizedColor)
+        const color = Number.isFinite(parsed.color)
+          ? parsed.color
+          : Phaser.Display.Color.HexStringToColor('#5ee0ff').color
+
+        generateGhostTexture(textureKey, color)
+      })
 
       graphics.destroy()
     }
@@ -457,11 +485,12 @@ export default function createPacmanScene(
         ghost.setData('config', enemy)
         ghost.setData('speedMultiplier', enemy.speedMultiplier ?? 1)
         ghost.setData('state', this.isScatter ? 'scatter' : 'chase')
-        ghost.setData('direction', 'left')
+        ghost.setData('direction', null)
         ghost.setData('spawnPoint', spawn.clone())
         ghost.setData('scatterTarget', this.getScatterTarget(idx, enemy))
         ghost.setCollideWorldBounds(true)
         this.ghosts.add(ghost)
+        this.initializeGhostMovement(ghost)
       })
 
       this.physics.add.collider(this.player, this.walls)
@@ -692,15 +721,10 @@ export default function createPacmanScene(
     }
 
     private updateGhosts(deltaSeconds: number) {
-      const speedBase = this.resolveSpeed(
-        this.pacmanConfig.speedSettings?.ghostSpeed,
-        DEFAULT_PACMAN_CONFIG.speedSettings?.ghostSpeed ?? 100
-      )
-
       this.updateScatterChaseTimers(deltaSeconds)
       this.updateFrightenedState(deltaSeconds)
 
-      this.ghosts.children.iterate((ghostObj) => {
+      this.ghosts.children.each((ghostObj) => {
         const ghost = ghostObj as Phaser.Physics.Arcade.Sprite
         if (!ghost.active) return true
 
@@ -739,32 +763,7 @@ export default function createPacmanScene(
           return true
         }
 
-        let actualSpeed = speedBase * multiplier
-        if (state === 'frightened') {
-          const frightenedBase = this.resolveSpeed(
-            this.pacmanConfig.speedSettings?.frightenedSpeed,
-            DEFAULT_PACMAN_CONFIG.speedSettings?.frightenedSpeed ?? 80
-          )
-          const frightenedMultiplier = ghostConfig?.frightenedSpeedMultiplier ?? 1
-          actualSpeed = frightenedBase * frightenedMultiplier
-        } else if (state === 'returning') {
-          actualSpeed = speedBase * 1.25
-        }
-
-        switch (direction) {
-          case 'up':
-            ghost.setVelocity(0, -actualSpeed)
-            break
-          case 'down':
-            ghost.setVelocity(0, actualSpeed)
-            break
-          case 'left':
-            ghost.setVelocity(-actualSpeed, 0)
-            break
-          case 'right':
-            ghost.setVelocity(actualSpeed, 0)
-            break
-        }
+        this.applyGhostVelocity(ghost, direction, state, ghostConfig)
 
         if (this.pacmanConfig.allowWraparound) {
           if (ghost.x < -TILE_SIZE / 2) {
@@ -1046,6 +1045,63 @@ export default function createPacmanScene(
       }
 
       return fallback * setting
+    }
+
+    private getGhostBaseSpeed() {
+      return this.resolveSpeed(
+        this.pacmanConfig.speedSettings?.ghostSpeed,
+        DEFAULT_PACMAN_CONFIG.speedSettings?.ghostSpeed ?? 100
+      )
+    }
+
+    private applyGhostVelocity(
+      ghost: Phaser.Physics.Arcade.Sprite,
+      direction: Direction,
+      state: string,
+      ghostConfig?: PacmanEnemyEntry
+    ) {
+      const multiplier = ghost.getData('speedMultiplier') ?? 1
+      const baseSpeed = this.getGhostBaseSpeed()
+      let actualSpeed = baseSpeed * multiplier
+
+      if (state === 'frightened') {
+        const frightenedBase = this.resolveSpeed(
+          this.pacmanConfig.speedSettings?.frightenedSpeed,
+          DEFAULT_PACMAN_CONFIG.speedSettings?.frightenedSpeed ?? 80
+        )
+        const frightenedMultiplier = ghostConfig?.frightenedSpeedMultiplier ?? 1
+        actualSpeed = frightenedBase * frightenedMultiplier
+      } else if (state === 'returning') {
+        actualSpeed = baseSpeed * 1.25
+      }
+
+      switch (direction) {
+        case 'up':
+          ghost.setVelocity(0, -actualSpeed)
+          break
+        case 'down':
+          ghost.setVelocity(0, actualSpeed)
+          break
+        case 'left':
+          ghost.setVelocity(-actualSpeed, 0)
+          break
+        case 'right':
+          ghost.setVelocity(actualSpeed, 0)
+          break
+      }
+    }
+
+    private initializeGhostMovement(ghost: Phaser.Physics.Arcade.Sprite) {
+      this.chooseGhostDirection(ghost)
+      const direction = ghost.getData('direction') as Direction | null
+      if (!direction) {
+        ghost.setVelocity(0, 0)
+        return
+      }
+
+      const state = ghost.getData('state') as string
+      const ghostConfig = ghost.getData('config') as PacmanEnemyEntry | undefined
+      this.applyGhostVelocity(ghost, direction, state, ghostConfig)
     }
 
     private isAtTileCenter(sprite: Phaser.Physics.Arcade.Sprite) {
