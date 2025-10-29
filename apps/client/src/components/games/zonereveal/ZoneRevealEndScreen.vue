@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
@@ -113,6 +113,8 @@ const userStore = useUserStore()
 const answer = ref('')
 const hasSubmitted = ref(false)
 const submissionResult = ref<ZoneRevealAnswerEvaluation | null>(null)
+const lastAutoSaveKey = ref<string | null>(null)
+const pendingSave = ref<Record<string, unknown> | null>(null)
 
 const revealImage = computed(() => props.answerConfig?.image ?? '')
 const dailyChallengeId = computed(() => props.challengeContext?.id ?? null)
@@ -121,6 +123,7 @@ const dailyChallengeDate = computed(() => props.challengeContext?.dailyDate ?? n
 const challengeAvailableAt = computed(() => formatChallengeDate(props.challengeContext?.availableAt))
 const challengeClosesAt = computed(() => formatChallengeDate(props.challengeContext?.closesAt))
 const hasDailyChallenge = computed(() => Boolean(dailyChallengeId.value))
+const isChallengeContextResolved = computed(() => props.challengeContext !== undefined)
 
 const formattedRevealDate = computed(() => {
   if (!props.revealAt) return ''
@@ -144,11 +147,45 @@ const submissionMessageClass = computed(() =>
   submissionResult.value?.isMatch ? 'has-text-success' : 'has-text-warning'
 )
 
-onMounted(async () => {
-  if (userStore.user) {
-    await saveScore()
-  }
+onMounted(() => {
+  void attemptAutoSave()
 })
+
+watch(
+  [
+    () => userStore.user,
+    () => dailyChallengeId.value,
+    () => props.score,
+    () => props.challengeContext
+  ],
+  () => {
+    void attemptAutoSave()
+  }
+)
+
+async function attemptAutoSave() {
+  if (!userStore.user) return
+  if (!isChallengeContextResolved.value) return
+
+  const challengeId = dailyChallengeId.value
+
+  if (props.challengeContext && !challengeId) {
+    if (pendingSave.value === null) {
+      pendingSave.value = {}
+    }
+    return
+  }
+
+  const customPayload = pendingSave.value ?? {}
+  const saveKey = `${challengeId ?? 'global'}::${props.score}`
+  if (pendingSave.value === null && lastAutoSaveKey.value === saveKey) {
+    return
+  }
+
+  pendingSave.value = null
+  await saveScore(customPayload)
+  lastAutoSaveKey.value = saveKey
+}
 
 async function saveScore(custom: Record<string, unknown> = {}) {
   if (!props.gameId) {
@@ -161,10 +198,19 @@ async function saveScore(custom: Record<string, unknown> = {}) {
   const gameTypeId = 'ZoneReveal'
 
   const isDailyChallenge = hasDailyChallenge.value
+  const challengeId = dailyChallengeId.value
 
   // Only save if this score is better than the previously stored one
   const previousScore =
     userStore.profile?.games?.[gameTypeId]?.[props.gameId]?.score ?? null
+
+  if (props.challengeContext && !challengeId) {
+    pendingSave.value = custom
+    console.warn('Daily challenge context present without id; skipping score save until id is available')
+    return
+  }
+
+  pendingSave.value = null
 
   if (!isDailyChallenge && previousScore !== null && props.score <= previousScore) {
     console.log('New score is not higher than existing score. Skipping save.')
