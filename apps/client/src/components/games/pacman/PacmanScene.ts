@@ -183,6 +183,7 @@ export default function createPacmanScene(
     private frightenedTimer = 0
     private frightenedDurationMs = DEFAULT_PACMAN_CONFIG.defaultScoring.frightenedDurationMs
     private navigableTiles: PhaserVector2[] = []
+    private layoutGrid: string[][] = []
 
     private handleSetDirection = (event: Event) => {
       const detail = (event as CustomEvent<'up' | 'down' | 'left' | 'right'>).detail
@@ -397,6 +398,8 @@ export default function createPacmanScene(
       let energizerCount = 0
       this.navigableTiles = []
 
+      this.layoutGrid = layout.map((row) => row.split(''))
+
       layout.forEach((row, rowIndex) => {
         for (let colIndex = 0; colIndex < row.length; colIndex++) {
           const tile = row[colIndex]
@@ -596,10 +599,14 @@ export default function createPacmanScene(
       if (!this.player.active) return
 
       const speed = this.pacmanConfig.speedSettings?.pacmanSpeed ?? 110
+      const previousDirection = this.direction
 
       if (this.queuedDirection && this.canMove(this.queuedDirection)) {
         this.direction = this.queuedDirection
         this.queuedDirection = null
+        if (this.direction && this.direction !== previousDirection) {
+          this.snapPlayerToGrid(this.direction)
+        }
       }
 
       if (this.direction && !this.canMove(this.direction)) {
@@ -727,31 +734,47 @@ export default function createPacmanScene(
     }
 
     private canMoveFromPosition(x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') {
-      const offset = TILE_SIZE / 2
-      let targetX = x
-      let targetY = y
+      if (this.layoutGrid.length === 0) {
+        return true
+      }
+
+      const width = this.layoutGrid[0]?.length ?? GRID_WIDTH
+      const height = this.layoutGrid.length
+
+      const currentCol = Phaser.Math.Wrap(Math.round((x - TILE_SIZE / 2) / TILE_SIZE), 0, width)
+      const currentRow = clamp(Math.round((y - TILE_SIZE / 2) / TILE_SIZE), 0, height - 1)
+
+      let targetCol = currentCol
+      let targetRow = currentRow
 
       switch (direction) {
         case 'up':
-          targetY -= offset
+          targetRow -= 1
           break
         case 'down':
-          targetY += offset
+          targetRow += 1
           break
         case 'left':
-          targetX -= offset
+          targetCol -= 1
           break
         case 'right':
-          targetX += offset
+          targetCol += 1
           break
       }
 
-      const bodies = this.walls.getChildren() as Phaser.Physics.Arcade.Sprite[]
-      return !bodies.some((wall) => {
-        const dx = Math.abs(wall.x - targetX)
-        const dy = Math.abs(wall.y - targetY)
-        return dx < TILE_SIZE / 1.5 && dy < TILE_SIZE / 1.5
-      })
+      if (targetCol < 0 || targetCol >= width) {
+        if (!this.pacmanConfig.allowWraparound) {
+          return false
+        }
+        targetCol = Phaser.Math.Wrap(targetCol, 0, width)
+      }
+
+      if (targetRow < 0 || targetRow >= height) {
+        return false
+      }
+
+      const targetTile = this.layoutGrid[targetRow]?.[targetCol]
+      return targetTile !== '#'
     }
 
     private updateScatterChaseTimers(deltaSeconds: number) {
@@ -973,6 +996,7 @@ export default function createPacmanScene(
       if (this.canMove(dir)) {
         this.direction = dir
         this.queuedDirection = null
+        this.snapPlayerToGrid(dir)
       } else {
         this.queuedDirection = dir
       }
@@ -987,6 +1011,23 @@ export default function createPacmanScene(
       }
 
       window.dispatchEvent(new CustomEvent<PacmanStatePayload>('pacmanState', { detail: payload }))
+    }
+
+    private snapPlayerToGrid(direction: Direction) {
+      if (!this.player) return
+
+      const width = this.layoutGrid.length > 0 ? this.layoutGrid[0]?.length ?? GRID_WIDTH : GRID_WIDTH
+      const height = this.layoutGrid.length > 0 ? this.layoutGrid.length : GRID_HEIGHT
+
+      if (direction === 'left' || direction === 'right') {
+        const row = clamp(Math.round((this.player.y - TILE_SIZE / 2) / TILE_SIZE), 0, height - 1)
+        this.player.y = row * TILE_SIZE + TILE_SIZE / 2
+        this.player.setVelocityY(0)
+      } else {
+        const col = Phaser.Math.Wrap(Math.round((this.player.x - TILE_SIZE / 2) / TILE_SIZE), 0, width)
+        this.player.x = col * TILE_SIZE + TILE_SIZE / 2
+        this.player.setVelocityX(0)
+      }
     }
 
   }
