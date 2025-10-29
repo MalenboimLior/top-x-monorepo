@@ -1,5 +1,10 @@
 <template>
   <form class="daily-challenge-form" @submit.prevent="save">
+    <div class="form-toolbar">
+      <button class="button is-primary" type="submit" :class="{ 'is-loading': isSaving }">
+        Save challenge
+      </button>
+    </div>
     <div class="columns is-multiline">
       <div class="column is-one-quarter">
         <div class="field">
@@ -124,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import type { Game } from '@top-x/shared/types/game';
@@ -139,9 +144,11 @@ const props = defineProps<{
   challenge: (DailyChallenge & { id?: string }) | null;
 }>();
 
-const emit = defineEmits<{ (e: 'saved'): void; (e: 'cancel'): void }>();
+const emit = defineEmits<{ (e: 'saved'): void; (e: 'cancel'): void; (e: 'dirty-change', value: boolean): void }>();
 
 const isSaving = ref(false);
+const initialSnapshot = ref('');
+const isDirty = ref(false);
 
 const customType = computed(() => {
   const custom = props.game.custom;
@@ -153,11 +160,22 @@ const customType = computed(() => {
 const originalId = computed(() => props.challenge?.id || props.challenge?.date || '');
 
 const localChallenge = ref<DailyChallenge>(mapChallenge(props.challenge));
+setInitialSnapshot();
 
 watch(
   () => props.challenge,
   (value) => {
     localChallenge.value = mapChallenge(value);
+    nextTick(setInitialSnapshot);
+  },
+  { deep: true },
+);
+
+watch(
+  localChallenge,
+  () => {
+    const next = snapshotState();
+    updateDirty(next !== initialSnapshot.value);
   },
   { deep: true },
 );
@@ -207,12 +225,35 @@ async function save() {
       await deleteDoc(doc(db, 'games', props.game.id, 'daily_challenges', originalId.value));
     }
 
+    setInitialSnapshot();
     emit('saved');
   } catch (error) {
     console.error('Failed to save daily challenge', error);
   } finally {
     isSaving.value = false;
   }
+}
+
+defineExpose({
+  submit: save,
+});
+
+function snapshotState() {
+  return JSON.stringify(localChallenge.value);
+}
+
+function setInitialSnapshot() {
+  initialSnapshot.value = snapshotState();
+  isDirty.value = false;
+  emit('dirty-change', false);
+}
+
+function updateDirty(value: boolean) {
+  if (isDirty.value === value) {
+    return;
+  }
+  isDirty.value = value;
+  emit('dirty-change', value);
 }
 
 function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig {
@@ -258,5 +299,11 @@ function withDefaultSchedule(schedule?: DailyChallengeSchedule): DailyChallengeS
 <style scoped>
 .daily-challenge-form {
   padding: 0.5rem;
+}
+
+.form-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 </style>
