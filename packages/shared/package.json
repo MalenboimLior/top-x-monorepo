@@ -35,36 +35,36 @@
     "./components/CustomButton.vue": "./src/components/CustomButton.vue",
     "./components/ImageUploader.vue": "./src/components/ImageUploader.vue",
     "./types/user": {
-      "types": "./src/types/user.ts",
-      "default": "./src/types/user.ts"
+      "types": "./dist/types/user.d.ts",
+      "default": "./dist/types/user.js"
     },
     "./types/game": {
-      "types": "./src/types/game.ts",
-      "default": "./src/types/game.ts"
+      "types": "./dist/types/game.d.ts",
+      "default": "./dist/types/game.js"
     },
     "./types/pyramid": {
-      "types": "./src/types/pyramid.ts",
-      "default": "./src/types/pyramid.ts"
+      "types": "./dist/types/pyramid.d.ts",
+      "default": "./dist/types/pyramid.js"
     },
     "./types/zoneReveal": {
-      "types": "./src/types/zoneReveal.ts",
-      "default": "./src/types/zoneReveal.ts"
+      "types": "./dist/types/zoneReveal.d.ts",
+      "default": "./dist/types/zoneReveal.js"
     },
     "./types/dailyChallenge": {
-      "types": "./src/types/dailyChallenge.ts",
-      "default": "./src/types/dailyChallenge.ts"
+      "types": "./dist/types/dailyChallenge.d.ts",
+      "default": "./dist/types/dailyChallenge.js"
     },
     "./utils/zoneRevealAnswer": {
-      "types": "./src/utils/zoneRevealAnswer.ts",
-      "default": "./src/utils/zoneRevealAnswer.ts"
+      "types": "./dist/utils/zoneRevealAnswer.d.ts",
+      "default": "./dist/utils/zoneRevealAnswer.js"
     },
     "./api": {
-      "types": "./src/api/index.ts",
-      "default": "./src/api/index.ts"
+      "types": "./dist/api/index.d.ts",
+      "default": "./dist/api/index.js"
     },
     "./api/useCollection": {
-      "types": "./src/api/useCollection.ts",
-      "default": "./src/api/useCollection.ts"
+      "types": "./dist/api/useCollection.d.ts",
+      "default": "./dist/api/useCollection.js"
     }
   }
 }
