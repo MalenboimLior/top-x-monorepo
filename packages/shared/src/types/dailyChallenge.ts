@@ -1,3 +1,5 @@
+import type { GameCounters } from './counters';
+import type { LeaderboardEntry } from './game';
 import { PyramidConfig } from './pyramid';
 import { TriviaConfig } from './trivia';
 import { ZoneRevealConfig } from './zoneReveal';
@@ -8,25 +10,17 @@ export interface DailyChallengeSchedule {
   revealAt: string;    // ISO timestamp — when the answer is revealed
 }
 
-export interface DailyChallengeLeaderboardEntry {
-  userId: string;
-  score: number;
-  displayName?: string;
-  avatarUrl?: string;
-  rank?: number;
-}
-
 export interface DailyChallengeLeaderboardSummary {
   updatedAt: string;
-  topEntries: DailyChallengeLeaderboardEntry[];
-  totalPlayers?: number;
+  topEntries: LeaderboardEntry[];
+  totalPlayers?: GameCounters['totalPlayers'];
 }
 
-interface DailyChallengeAnalytics {
+export type DailyChallengeAnalytics = GameCounters & {
   totalAttempts?: number;
   correctAttempts?: number;
   averageSolveTimeSec?: number;
-}
+};
 
 export interface DailyChallenge {
   // Meta

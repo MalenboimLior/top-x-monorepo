@@ -12,6 +12,7 @@ import {
   User,
 } from '@top-x/shared/types/user';
 import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import type { GameStats } from '@top-x/shared/types/stats';
 import { postOnX } from './external/xApi';
 import './utils/firebaseAdmin'; // Triggers centralized init (no re-init needed)
 import {
@@ -33,14 +34,6 @@ import {
 const db = admin.firestore();
 
 const corsHandler = cors({ origin: true });
-
-
-interface GameStats {
-  totalPlayers: number;
-  scoreDistribution: { [score: number]: number };
-  updatedAt: number;
-  custom?: Record<string, any>;
-}
 
 const hasPyramidCustomChanges = (
   previousCustom?: Record<string, any>,
