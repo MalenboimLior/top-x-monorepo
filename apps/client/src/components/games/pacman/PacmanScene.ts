@@ -1153,7 +1153,11 @@ export default function createPacmanScene(
       const row = Math.round((sprite.y - TILE_SIZE / 2) / TILE_SIZE)
       const centerX = col * TILE_SIZE + TILE_SIZE / 2
       const centerY = row * TILE_SIZE + TILE_SIZE / 2
-      return Math.abs(sprite.x - centerX) < 2 && Math.abs(sprite.y - centerY) < 2
+
+      const tolerance = Math.min(TILE_SIZE * 0.1, 0.75)
+      return (
+        Math.abs(sprite.x - centerX) <= tolerance && Math.abs(sprite.y - centerY) <= tolerance
+      )
     }
 
     private handleKeyboardInput() {
