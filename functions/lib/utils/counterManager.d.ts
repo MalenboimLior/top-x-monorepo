@@ -1,4 +1,4 @@
-import type { User } from '@top-x/shared/types/user';
+import type { DailyChallengeUserProgress, User } from '@top-x/shared/types/user';
 export declare const GAME_COUNTER_KEYS: {
     readonly TOTAL_PLAYERS: "totalPlayers";
     readonly FAVORITES: "favorites";
@@ -28,7 +28,14 @@ interface ApplyGameCounterUpdatesParams {
     gameId: string;
     updates: CounterUpdate[];
 }
+interface ApplyChallengeCounterUpdatesParams {
+    tx: FirebaseFirestore.Transaction;
+    challengeRef: FirebaseFirestore.DocumentReference;
+    counterState?: DailyChallengeUserProgress['counters'];
+    updates: CounterUpdate[];
+}
 export declare const applyGameCounterUpdates: ({ tx, userRef, gameRef, userData, gameId, updates, }: ApplyGameCounterUpdatesParams) => void;
+export declare const applyChallengeCounterUpdates: ({ tx, challengeRef, counterState, updates, }: ApplyChallengeCounterUpdatesParams) => DailyChallengeUserProgress["counters"];
 export declare const GAME_COUNTER_EVENT_MAP: {
     readonly submit_answer: [{
         readonly key: "uniqueSubmitters";
