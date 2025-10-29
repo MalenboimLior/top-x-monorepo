@@ -100,6 +100,12 @@ const routes = [
       import(/* webpackChunkName: "zone-reveal" */ '@/views/games/ZoneReveal.vue'),
   },
   {
+    path: '/games/Pacman',
+    name: 'Pacman',
+    component: () =>
+      import(/* webpackChunkName: "pacman" */ '@/views/games/Pacman.vue'),
+  },
+  {
     path: '/games/PyramidTier',
     name: 'PyramidTier',
     component: () =>
