@@ -1,5 +1,10 @@
 <template>
   <div class="game-editor-form">
+    <div class="form-toolbar">
+      <button class="button is-primary" :class="{ 'is-loading': isSaving }" @click="saveGame">
+        {{ existingGame ? 'Save changes' : 'Create game' }}
+      </button>
+    </div>
     <div class="tabs is-boxed">
       <ul>
         <li :class="{ 'is-active': activeTab === 'general' }">
@@ -171,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
@@ -186,11 +191,13 @@ const props = defineProps<{
   existingGame?: Game | null;
 }>();
 
-const emit = defineEmits(['saved', 'cancel']);
+const emit = defineEmits(['saved', 'cancel', 'dirty-change']);
 
 const activeTab = ref<'general' | 'custom'>('general');
 const isSaving = ref(false);
 const vipList = ref('');
+const initialSnapshot = ref('');
+const isDirty = ref(false);
 
 const validatedGameId = computed(() => {
   const id = props.existingGame?.id || `temp-${Date.now()}`;
@@ -238,6 +245,7 @@ watch(
       game.value = defaultGame();
       vipList.value = '';
     }
+    nextTick(setInitialSnapshot);
   },
   { immediate: true },
 );
@@ -254,6 +262,7 @@ watch(
         game.value.custom = getDefaultCustom(value.custom);
       }
     }
+    nextTick(setInitialSnapshot);
   },
 );
 
@@ -265,6 +274,15 @@ watch(
       .map((item) => item.trim())
       .filter((item) => item.length);
   },
+);
+
+watch(
+  [game, vipList],
+  () => {
+    const next = snapshotState();
+    updateDirty(next !== initialSnapshot.value);
+  },
+  { deep: true },
 );
 
 function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | Record<string, unknown> {
@@ -317,12 +335,31 @@ async function saveGame() {
       await addDoc(collectionRef, payload);
     }
 
+    setInitialSnapshot();
     emit('saved');
   } catch (error) {
     console.error('Failed to save game', error);
   } finally {
     isSaving.value = false;
   }
+}
+
+function snapshotState() {
+  return JSON.stringify({ game: game.value, vipList: vipList.value });
+}
+
+function setInitialSnapshot() {
+  initialSnapshot.value = snapshotState();
+  isDirty.value = false;
+  emit('dirty-change', false);
+}
+
+function updateDirty(value: boolean) {
+  if (isDirty.value === value) {
+    return;
+  }
+  isDirty.value = value;
+  emit('dirty-change', value);
 }
 </script>
 
@@ -331,6 +368,12 @@ async function saveGame() {
   background: #fff;
   padding: 1.5rem;
   border-radius: 8px;
+}
+
+.form-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .tabs.is-boxed li.is-disabled a {

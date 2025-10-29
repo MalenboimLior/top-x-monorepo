@@ -98,6 +98,7 @@
           :existingGame="selectedGame"
           @saved="handleEditorSaved"
           @cancel="closeEditor"
+          @dirty-change="handleEditorDirtyChange"
         />
       </section>
     </div>
@@ -111,7 +112,11 @@
         <button class="delete" aria-label="close" @click="closeDailyChallenges"></button>
       </header>
       <section class="modal-card-body" v-if="selectedDailyChallengeGame">
-        <DailyChallengesManager :game="selectedDailyChallengeGame" @close="closeDailyChallenges" />
+        <DailyChallengesManager
+          :game="selectedDailyChallengeGame"
+          @close="closeDailyChallenges"
+          @dirty-change="handleDailyChallengesDirtyChange"
+        />
       </section>
     </div>
   </div>
@@ -136,6 +141,8 @@ const selectedGameTypeId = ref('');
 const isDeletingId = ref<string | null>(null);
 const isDailyChallengesOpen = ref(false);
 const selectedDailyChallengeGame = ref<Game | null>(null);
+const isEditorDirty = ref(false);
+const isDailyChallengesDirty = ref(false);
 
 const formatCounter = (value?: number) => formatNumber(value ?? 0);
 
@@ -220,32 +227,54 @@ const openCreateGame = () => {
   selectedGame.value = null;
   selectedGameTypeId.value = gameTypes.value[0]?.id ?? '';
   isEditorOpen.value = true;
+  isEditorDirty.value = false;
 };
 
 const openEditGame = (game: Game) => {
   selectedGame.value = game;
   selectedGameTypeId.value = game.gameTypeId;
   isEditorOpen.value = true;
+  isEditorDirty.value = false;
 };
 
 const openDailyChallenges = (game: Game) => {
   selectedDailyChallengeGame.value = game;
   isDailyChallengesOpen.value = true;
+  isDailyChallengesDirty.value = false;
 };
 
-const closeEditor = () => {
+const closeEditor = (event?: Event) => {
+  event?.preventDefault();
+  if (isEditorDirty.value && !confirm('Are you sure you want to close without save?')) {
+    return;
+  }
   isEditorOpen.value = false;
   selectedGame.value = null;
   selectedGameTypeId.value = '';
+  isEditorDirty.value = false;
 };
 
 const handleEditorSaved = () => {
+  isEditorDirty.value = false;
   closeEditor();
 };
 
-const closeDailyChallenges = () => {
+const closeDailyChallenges = (event?: Event) => {
+  event?.preventDefault();
+  if (isDailyChallengesDirty.value && !confirm('Are you sure you want to close without save?')) {
+    return;
+  }
   isDailyChallengesOpen.value = false;
   selectedDailyChallengeGame.value = null;
+  isDailyChallengesDirty.value = false;
+};
+
+const handleEditorDirtyChange = (value: boolean) => {
+  isEditorDirty.value = value;
+};
+
+const handleDailyChallengesDirtyChange = (value: boolean) => {
+  isDailyChallengesDirty.value = value;
 };
 
 const confirmDelete = async (game: Game) => {
