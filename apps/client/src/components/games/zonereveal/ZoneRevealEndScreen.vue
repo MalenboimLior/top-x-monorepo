@@ -160,11 +160,13 @@ async function saveScore(custom: Record<string, unknown> = {}) {
 
   const gameTypeId = 'ZoneReveal'
 
+  const isDailyChallenge = hasDailyChallenge.value
+
   // Only save if this score is better than the previously stored one
   const previousScore =
     userStore.profile?.games?.[gameTypeId]?.[props.gameId]?.score ?? null
 
-  if (previousScore !== null && props.score <= previousScore) {
+  if (!isDailyChallenge && previousScore !== null && props.score <= previousScore) {
     console.log('New score is not higher than existing score. Skipping save.')
     return
   }
