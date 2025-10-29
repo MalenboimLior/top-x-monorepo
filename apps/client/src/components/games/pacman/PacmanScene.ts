@@ -1,6 +1,8 @@
-import type { PacmanConfig } from '@top-x/shared/types/pacman'
+import type { PacmanConfig, PacmanLevelConfig } from '@top-x/shared/types/pacman'
 
 type PhaserNamespace = typeof import('phaser')
+type PhaserSceneType = import('phaser').Types.Scenes.SceneType
+type PhaserVector2 = import('phaser').Math.Vector2
 
 export const TILE_SIZE = 16
 export const GRID_WIDTH = 15
@@ -135,7 +137,10 @@ const DEFAULT_PACMAN_CONFIG: PacmanConfig = {
   theme: 'retro'
 }
 
-export default function createPacmanScene(Phaser: PhaserNamespace, config?: PacmanConfig) {
+export default function createPacmanScene(
+  Phaser: PhaserNamespace,
+  config?: PacmanConfig
+): PhaserSceneType {
   const clamp = Phaser.Math.Clamp
 
   class PacmanScene extends Phaser.Scene {
@@ -152,7 +157,7 @@ export default function createPacmanScene(Phaser: PhaserNamespace, config?: Pacm
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
     private direction: 'up' | 'down' | 'left' | 'right' | null = null
     private queuedDirection: 'up' | 'down' | 'left' | 'right' | null = null
-    private playerSpawnPoint = new Phaser.Math.Vector2(WIDTH / 2, HEIGHT - TILE_SIZE)
+    private playerSpawnPoint: PhaserVector2 = new Phaser.Math.Vector2(WIDTH / 2, HEIGHT - TILE_SIZE)
     private scatterTimer = 0
     private chaseTimer = 0
     private isScatter = true
@@ -193,7 +198,8 @@ export default function createPacmanScene(Phaser: PhaserNamespace, config?: Pacm
     }
 
     preload() {
-      const graphics = this.make.graphics({ x: 0, y: 0, add: false })
+      const graphics = this.add.graphics({ x: 0, y: 0 })
+      graphics.setVisible(false)
 
       const generateCircle = (key: string, radius: number, color: number) => {
         graphics.clear()
@@ -281,6 +287,22 @@ export default function createPacmanScene(Phaser: PhaserNamespace, config?: Pacm
       }
     }
 
+    private resolveLevel(index: number): PacmanLevelConfig {
+      const fallbackLevel =
+        this.pacmanConfig.levels[0] ?? DEFAULT_PACMAN_CONFIG.levels[0]
+
+      if (!fallbackLevel) {
+        throw new Error('Pacman configuration is missing level definitions')
+      }
+
+      const level = this.pacmanConfig.levels[index]
+      if (!level || !level.metadata || !level.metadata.layoutId) {
+        return fallbackLevel
+      }
+
+      return level
+    }
+
     private loadLevel(index: number) {
       this.levelIndex = index
       this.direction = null
@@ -296,8 +318,9 @@ export default function createPacmanScene(Phaser: PhaserNamespace, config?: Pacm
         this.totalTime = 0
       }
 
-      const levelConfig = this.pacmanConfig.levels[index] ?? this.pacmanConfig.levels[0]
-      const layout = this.getLayout(levelConfig.metadata.layoutId)
+      const levelConfig = this.resolveLevel(index)
+      const layoutId = levelConfig?.metadata?.layoutId ?? DEFAULT_LAYOUTS[0].id
+      const layout = this.getLayout(layoutId)
 
       this.levelText.setText(`LEVEL ${index + 1}`)
 
@@ -328,8 +351,8 @@ export default function createPacmanScene(Phaser: PhaserNamespace, config?: Pacm
     }
 
     private createLevelGeometry(layout: string[]) {
-      let playerSpawn: Phaser.Math.Vector2 | null = null
-      const ghostSpawns: Phaser.Math.Vector2[] = []
+      let playerSpawn: PhaserVector2 | null = null
+      const ghostSpawns: PhaserVector2[] = []
       let pelletCount = 0
       let energizerCount = 0
 
@@ -659,11 +682,7 @@ export default function createPacmanScene(Phaser: PhaserNamespace, config?: Pacm
       window.dispatchEvent(new CustomEvent<PacmanStatePayload>('pacmanState', { detail: payload }))
     }
 
-    override destroy(fromScene?: boolean) {
-      this.unregisterInputEvents()
-      super.destroy(fromScene)
-    }
   }
 
-  return PacmanScene
+  return PacmanScene as PhaserSceneType
 }
