@@ -1,4 +1,6 @@
 // User and user game data models
+import type { DailyChallengeAttemptMetadata } from './dailyChallenge';
+
 export interface DailyChallengeUserProgress {
   /** Whether the user has attempted the challenge. */
   played: boolean;
@@ -14,6 +16,12 @@ export interface DailyChallengeUserProgress {
   solvedAt?: string;
   /** ISO timestamp for when {@link bestScore} was recorded. */
   bestScoreAt?: string;
+  /** How many attempts the user has made for the challenge. */
+  attemptCount?: number;
+  /** Snapshot of the most recent attempt metadata. */
+  attemptMetadata?: DailyChallengeAttemptMetadata;
+  /** Tracks which unique counters have been applied for this user. */
+  counters?: Record<string, boolean>;
 }
 
 export interface UserGameCustomData {
@@ -86,6 +94,9 @@ export interface SubmitGameScoreResponse {
   message?: string;
   previousScore?: number | null;
   newScore?: number;
+  aggregatedScore?: number;
+  aggregatedStreak?: number;
+  challengeBestScore?: number;
   dailyChallengeId?: string;
   dailyChallengeDate?: string;
   isDailyChallenge?: boolean;

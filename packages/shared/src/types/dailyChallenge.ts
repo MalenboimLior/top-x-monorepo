@@ -4,6 +4,13 @@ import { PyramidConfig } from './pyramid';
 import { TriviaConfig } from './trivia';
 import { ZoneRevealConfig } from './zoneReveal';
 
+export interface DailyChallengeAttemptMetadata {
+  normalizedAnswer?: string;
+  distance?: number | null;
+  isMatch?: boolean;
+  recordedAt?: string;
+}
+
 export interface DailyChallengeSchedule {
   availableAt: string; // ISO timestamp — when the level becomes available to play
   closesAt: string;    // ISO timestamp — when the challenge closes/promos next challenge
@@ -31,6 +38,8 @@ export interface DailyChallengeLeaderboardEntry extends LeaderboardEntry {
   solvedAt?: string;
   /** How many attempts the player made for this challenge, if tracked. */
   attemptCount?: number;
+  /** Metadata captured for the latest attempt. */
+  attempt?: DailyChallengeAttemptMetadata;
 }
 
 /**
