@@ -54,6 +54,10 @@
       "types": "./src/types/dailyChallenge.ts",
       "default": "./src/types/dailyChallenge.ts"
     },
+    "./utils/zoneRevealAnswer": {
+      "types": "./src/utils/zoneRevealAnswer.ts",
+      "default": "./src/utils/zoneRevealAnswer.ts"
+    },
     "./api": {
       "types": "./src/api/index.ts",
       "default": "./src/api/index.ts"
