@@ -80,7 +80,7 @@
       v-if="showEndScreen"
       :score="endScreenScore"
       :game-id="gameId"
-      :answer-reveal-u-t-c="answerRevealUTC"
+      :reveal-at="revealAt"
       @close="showEndScreen = false"
     />
   </div>
@@ -90,11 +90,12 @@
 import ZoneRevealEndScreen from '@/components/games/zonereveal/ZoneRevealEndScreen.vue'
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { doc, getDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore'
 import { db } from '@top-x/shared'
 import Phaser from 'phaser'
 import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/zonereveal/ZoneRevealScene'
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
+import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge'
 import { useHead } from '@vueuse/head'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
@@ -111,7 +112,96 @@ const gameTitle = ref('')
 const gameDescription = ref('')
 const showEndScreen = ref(false)
 const endScreenScore = ref(0)
-const answerRevealUTC = ref('')
+const revealAt = ref('')
+
+type ZoneRevealDailyChallenge = DailyChallenge & { answerRevealUTC?: string }
+
+async function loadDailyChallengeDocument(
+  gameId: string,
+  challenge: string
+): Promise<ZoneRevealDailyChallenge | null> {
+  try {
+    const challengeDocRef = doc(db, 'games', gameId, 'daily_challenges', challenge)
+    const snapshot = await getDoc(challengeDocRef)
+
+    if (!snapshot.exists()) {
+      console.error('No challenge found for', challenge)
+      return null
+    }
+
+    return snapshot.data() as ZoneRevealDailyChallenge
+  } catch (err) {
+    console.error('Failed fetching daily challenge:', err)
+    return null
+  }
+}
+
+async function findActiveDailyChallenge(
+  gameId: string,
+  fallbackId?: string
+): Promise<ZoneRevealDailyChallenge | null> {
+  const now = DateTime.utc()
+  const nowISO = now.toISO()
+
+  if (!nowISO) return null
+
+  try {
+    const challengesRef = collection(db, 'games', gameId, 'daily_challenges')
+    const activeQuery = query(
+      challengesRef,
+      where('schedule.availableAt', '<=', nowISO),
+      orderBy('schedule.availableAt', 'desc'),
+      limit(5)
+    )
+    const snapshot = await getDocs(activeQuery)
+
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data() as ZoneRevealDailyChallenge
+      if (data && isChallengeActive(data, now)) {
+        return data
+      }
+    }
+  } catch (err) {
+    console.error('Failed fetching active daily challenge:', err)
+  }
+
+  if (fallbackId) {
+    const fallbackChallenge = await loadDailyChallengeDocument(gameId, fallbackId)
+    if (fallbackChallenge && isChallengeActive(fallbackChallenge, now)) {
+      return fallbackChallenge
+    }
+  }
+
+  return null
+}
+
+function isChallengeActive(challenge: ZoneRevealDailyChallenge, now: DateTime): boolean {
+  const schedule = challenge?.schedule
+  if (!schedule) return false
+
+  const availableAt = DateTime.fromISO(schedule.availableAt, { zone: 'utc' })
+  if (availableAt.isValid && availableAt > now) {
+    return false
+  }
+
+  const closesAt = DateTime.fromISO(schedule.closesAt, { zone: 'utc' })
+  if (closesAt.isValid && closesAt <= now) {
+    return false
+  }
+
+  return true
+}
+
+function resolveRevealTimestamp(challenge: ZoneRevealDailyChallenge | null): string {
+  if (!challenge) return ''
+
+  const fromSchedule = challenge.schedule.revealAt
+  if (fromSchedule) {
+    return fromSchedule
+  }
+
+  return challenge.answerRevealUTC || ''
+}
 
 function hideChrome() {
   document.querySelector('.navbar')?.classList.add('is-hidden')
@@ -175,52 +265,29 @@ onMounted(async () => {
       const gameDocRef = doc(db, 'games', gameId.value)
       const gameDoc = await getDoc(gameDocRef)
 
-      if (gameDoc.exists()) {
-        const gameData = gameDoc.data()
-        gameTitle.value = gameData.name || ''
-        gameDescription.value = gameData.description || ''
-
-        if (challengeId) {
-          try {
-            const challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeId)
-            const snapshot = await getDoc(challengeDocRef)
-
-            if (snapshot.exists()) {
-              const dailyChallenge = snapshot.data()
-              zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
-              answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
-            } else {
-              console.error('No challenge found for', challengeId)
-            }
-          } catch (err) {
-            console.error('Failed fetching daily challenge:', err)
-          }
-        } else if (gameData.dailyChallengeActive) {
-          try {
-            const challengeDate = DateTime.utc().toFormat('yyyy-MM-dd')
-            let challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', challengeDate)
-            let snapshot = await getDoc(challengeDocRef)
-
-            if (!snapshot.exists() && gameData.dailyChallengeCurrent) {
-              challengeDocRef = doc(db, 'games', gameId.value, 'daily_challenges', gameData.dailyChallengeCurrent)
-              snapshot = await getDoc(challengeDocRef)
-            }
-
-            if (snapshot.exists()) {
-              const dailyChallenge = snapshot.data()
-              zoneRevealConfig.value = dailyChallenge.custom as ZoneRevealConfig
-              answerRevealUTC.value = dailyChallenge.answerRevealUTC || ''
-            } else {
-              console.error('No challenge found for', challengeDate, 'or', gameData.dailyChallengeCurrent)
-            }
-          } catch (err) {
-            console.error('Failed fetching daily challenge:', err)
-          }
-        } else {
-          zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
-        }
-      } else {
+      if (!gameDoc.exists()) {
         console.error('ZoneReveal: Game document not found for ID:', gameId.value)
+        return
+      }
+
+      const gameData = gameDoc.data()
+      gameTitle.value = gameData.name || ''
+      gameDescription.value = gameData.description || ''
+
+      let loadedChallenge: ZoneRevealDailyChallenge | null = null
+
+      if (challengeId) {
+        loadedChallenge = await loadDailyChallengeDocument(gameId.value, challengeId)
+      } else if (gameData.dailyChallengeActive) {
+        loadedChallenge = await findActiveDailyChallenge(gameId.value, gameData.dailyChallengeCurrent)
+      }
+
+      if (loadedChallenge) {
+        zoneRevealConfig.value = loadedChallenge.custom as ZoneRevealConfig
+        revealAt.value = resolveRevealTimestamp(loadedChallenge)
+      } else {
+        zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
+        revealAt.value = ''
       }
     } catch (err) {
       console.error('Failed fetching zone reveal config:', err)
