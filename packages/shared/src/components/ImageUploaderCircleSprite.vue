@@ -2,9 +2,9 @@
   <div class="image-uploader">
     <div v-if="modelValue">
       <img :src="modelValue" alt="Current sprite sheet" style="max-width: 200px; height: auto;" />
-      <button class="button is-primary" @click="selectImage">Change Image</button>
+      <button type="button" class="button is-primary" @click="selectImage">Change Image</button>
     </div>
-    <button v-else class="button is-primary" @click="selectImage">Upload Image</button>
+    <button type="button" v-else class="button is-primary" @click="selectImage">Upload Image</button>
 
     <input
       type="file"
@@ -51,17 +51,17 @@
             />
           </div>
           <div class="zoom-controls mt-2 has-text-centered">
-            <button class="button is-small mr-2" @click="zoomOut" :disabled="scale <= minScale">-</button>
+            <button type="button" class="button is-small mr-2" @click="zoomOut" :disabled="scale <= minScale">-</button>
             <span style="min-width: 60px; display: inline-block;">Zoom: {{ scale.toFixed(2) }}</span>
-            <button class="button is-small ml-2" @click="zoomIn" :disabled="scale >= 3">+</button>
+            <button type="button" class="button is-small ml-2" @click="zoomIn" :disabled="scale >= 3">+</button>
           </div>
           <div class="controls mt-4 has-text-centered">
-            <button class="button is-success" @click="cropAndGenerateSprite">Upload</button>
-            <button class="button is-danger ml-2" @click="cancel">Cancel</button>
+            <button type="button" class="button is-success" @click="cropAndGenerateSprite">Upload</button>
+            <button type="button" class="button is-danger ml-2" @click="cancel">Cancel</button>
           </div>
         </div>
       </div>
-      <button class="modal-close is-large" aria-label="close" @click="cancel"></button>
+      <button type="button" class="modal-close is-large" aria-label="close" @click="cancel"></button>
     </div>
   </div>
 </template>
