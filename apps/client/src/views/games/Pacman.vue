@@ -89,12 +89,6 @@
           <svg class="icon"><use href="#ic-arrow-right" xlink:href="#ic-arrow-right" /></svg>
         </button>
       </div>
-      <div class="actions">
-        <button class="x-btn sm ghost" type="button" @click="togglePause">
-          {{ isPaused ? 'Resume' : 'Pause' }}
-        </button>
-        <button class="x-btn sm" type="button" @click="restartGame">Restart</button>
-      </div>
     </div>
     <PacmanEndScreen
       v-if="showEndScreen"
@@ -146,8 +140,6 @@ const score = ref(0)
 const lives = ref(0)
 const level = ref(1)
 const pelletsRemaining = ref(0)
-const isPaused = ref(false)
-
 const showEndScreen = ref(false)
 const endScreenScore = ref(0)
 const endScreenMeta = ref<{ totalTime: number; meta: { victory?: boolean; levelReached?: number } | null}>(
@@ -263,7 +255,6 @@ function handleGameOver(event: Event) {
   endScreenScore.value = detail.score
   endScreenMeta.value = { totalTime: detail.totalTime, meta: detail.meta || null }
   showEndScreen.value = true
-  isPaused.value = true
   showChrome()
   if (game && game.scene.isActive('PacmanScene')) {
     game.scene.pause('PacmanScene')
@@ -282,8 +273,11 @@ function handlePacmanState(event: Event) {
 
 function handleEndScreenClose() {
   showEndScreen.value = false
-  isPaused.value = false
   hideChrome()
+  // Restart the game once the end screen is dismissed so play can resume automatically
+  window.setTimeout(() => {
+    restartGame()
+  }, 50)
 }
 
 async function handleEndScreenMounted() {
@@ -312,13 +306,10 @@ function setDirection(dir: 'up' | 'down' | 'left' | 'right') {
   window.dispatchEvent(new CustomEvent('setDirection', { detail: dir }))
 }
 
-function togglePause() {
-  isPaused.value = !isPaused.value
-  window.dispatchEvent(new Event('togglePause'))
-}
-
 function restartGame() {
-  isPaused.value = false
+  if (game) {
+    game.scene.resume('PacmanScene')
+  }
   window.dispatchEvent(new Event('restartGame'))
 }
 
@@ -358,7 +349,11 @@ function showChrome() {
 
 function goBack() {
   showChrome()
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push({ name: 'Home' })
+  }
 }
 </script>
 
@@ -539,6 +534,7 @@ function goBack() {
   overflow: hidden;
   background: #000;
   box-shadow: 0 16px 40px rgba(9, 12, 23, 0.65);
+  touch-action: none;
 }
 
 .game-canvas canvas {
@@ -569,12 +565,6 @@ function goBack() {
 
 .pad .spacer {
   visibility: hidden;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
 }
 
 @media (min-width: 768px) {
