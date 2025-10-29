@@ -40,7 +40,7 @@ const DEFAULT_LAYOUTS: LayoutDefinition[] = [
       '###############',
       '#P..........G.#',
       '#.###.###.###.#',
-      '#o#.......#o#.#',
+      '#o#.......###.#',
       '#.###.#.#.###.#',
       '#.....#.#.....#',
       '###.###.###.###',
@@ -166,8 +166,8 @@ export default function createPacmanScene(
     private walls!: Phaser.Physics.Arcade.StaticGroup
     private player!: Phaser.Physics.Arcade.Sprite
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
-    private direction: 'up' | 'down' | 'left' | 'right' | null = null
-    private queuedDirection: 'up' | 'down' | 'left' | 'right' | null = null
+    private direction: Direction | null = null
+    private queuedDirection: Direction | null = null
     private playerSpawnPoint: PhaserVector2 = new Phaser.Math.Vector2(WIDTH / 2, HEIGHT - TILE_SIZE)
     private scatterTimer = 0
     private chaseTimer = 0
@@ -186,7 +186,7 @@ export default function createPacmanScene(
     private layoutGrid: string[][] = []
 
     private handleSetDirection = (event: Event) => {
-      const detail = (event as CustomEvent<'up' | 'down' | 'left' | 'right'>).detail
+      const detail = (event as CustomEvent<Direction>).detail
       if (detail) {
         this.setDirection(detail)
       }
@@ -316,7 +316,12 @@ export default function createPacmanScene(
 
       this.player = this.physics.add.sprite(0, 0, 'pacman')
       this.player.setCollideWorldBounds(true)
-      ;(this.player.body as Phaser.Physics.Arcade.Body).setCircle(TILE_SIZE / 2)
+      // Smaller circular hitbox to avoid snagging corners
+      ;(this.player.body as Phaser.Physics.Arcade.Body).setCircle(
+        TILE_SIZE * 0.4,
+        TILE_SIZE * 0.5 - TILE_SIZE * 0.4,
+        TILE_SIZE * 0.5 - TILE_SIZE * 0.4
+      )
 
       this.scoreText = this.add.text(8, 4, 'SCORE: 0', {
         font: '16px monospace',
@@ -489,6 +494,12 @@ export default function createPacmanScene(
         ghost.setData('spawnPoint', spawn.clone())
         ghost.setData('scatterTarget', this.getScatterTarget(idx, enemy))
         ghost.setCollideWorldBounds(true)
+        // Smaller circular hitbox for ghosts too
+        ;(ghost.body as Phaser.Physics.Arcade.Body).setCircle(
+          TILE_SIZE * 0.35,
+          TILE_SIZE * 0.5 - TILE_SIZE * 0.35,
+          TILE_SIZE * 0.5 - TILE_SIZE * 0.35
+        )
         this.ghosts.add(ghost)
         this.initializeGhostMovement(ghost)
       })
@@ -730,7 +741,6 @@ export default function createPacmanScene(
 
         const state = ghost.getData('state') as string
         const ghostConfig = ghost.getData('config') as PacmanEnemyEntry | undefined
-        const multiplier = ghost.getData('speedMultiplier') ?? 1
 
         if (state === 'returning') {
           const spawnPoint = ghost.getData('spawnPoint') as PhaserVector2 | undefined
@@ -777,17 +787,18 @@ export default function createPacmanScene(
       })
     }
 
-    private canMove(direction: 'up' | 'down' | 'left' | 'right') {
+    private canMove(direction: Direction) {
       const x = this.player.x
       const y = this.player.y
       return this.canMoveFromPosition(x, y, direction)
     }
 
-    private canMoveForSprite(sprite: Phaser.Physics.Arcade.Sprite, direction: 'up' | 'down' | 'left' | 'right') {
+    private canMoveForSprite(sprite: Phaser.Physics.Arcade.Sprite, direction: Direction) {
       return this.canMoveFromPosition(sprite.x, sprite.y, direction)
     }
 
-    private canMoveFromPosition(x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') {
+    // >>> FIX: consistent rounding with isAtTileCenter + wider tolerance for grid movement
+    private canMoveFromPosition(x: number, y: number, direction: Direction) {
       if (this.layoutGrid.length === 0) {
         return true
       }
@@ -795,8 +806,8 @@ export default function createPacmanScene(
       const width = this.layoutGrid[0]?.length ?? GRID_WIDTH
       const height = this.layoutGrid.length
 
-      const currentCol = Phaser.Math.Wrap(Math.floor(x / TILE_SIZE), 0, width)
-      const currentRow = clamp(Math.floor(y / TILE_SIZE), 0, height - 1)
+      let currentCol = Phaser.Math.Wrap(Math.round((x - TILE_SIZE / 2) / TILE_SIZE), 0, width)
+      let currentRow = clamp(Math.round((y - TILE_SIZE / 2) / TILE_SIZE), 0, height - 1)
 
       let targetCol = currentCol
       let targetRow = currentRow
@@ -942,6 +953,7 @@ export default function createPacmanScene(
           })
         }
         ghost.setData('direction', newDirection)
+        this.snapSpriteToGrid(ghost, newDirection) // <<< snap to avoid being off-grid
         return
       }
 
@@ -966,6 +978,7 @@ export default function createPacmanScene(
           })
         }
         ghost.setData('direction', fallbackDirection)
+        this.snapSpriteToGrid(ghost, fallbackDirection)
         return
       }
 
@@ -992,6 +1005,7 @@ export default function createPacmanScene(
       }
 
       ghost.setData('direction', bestDirection)
+      this.snapSpriteToGrid(ghost, bestDirection)
     }
 
     private getGhostTarget(ghost: Phaser.Physics.Arcade.Sprite, state: string) {
@@ -1154,7 +1168,7 @@ export default function createPacmanScene(
       const centerX = col * TILE_SIZE + TILE_SIZE / 2
       const centerY = row * TILE_SIZE + TILE_SIZE / 2
 
-      const tolerance = Math.min(TILE_SIZE * 0.1, 0.75)
+      const tolerance = Math.min(TILE_SIZE * 0.2, 2) // relaxed tolerance (was 0.75)
       return (
         Math.abs(sprite.x - centerX) <= tolerance && Math.abs(sprite.y - centerY) <= tolerance
       )
@@ -1167,7 +1181,7 @@ export default function createPacmanScene(
       else if (this.cursors.down?.isDown) this.setDirection('down')
     }
 
-    private setDirection(dir: 'up' | 'down' | 'left' | 'right') {
+    private setDirection(dir: Direction) {
       if (this.canMove(dir)) {
         this.direction = dir
         this.queuedDirection = null
@@ -1202,6 +1216,21 @@ export default function createPacmanScene(
         const col = Phaser.Math.Wrap(Math.round((this.player.x - TILE_SIZE / 2) / TILE_SIZE), 0, width)
         this.player.x = col * TILE_SIZE + TILE_SIZE / 2
         this.player.setVelocityX(0)
+      }
+    }
+
+    // Snap any sprite (ghost) to the grid when turning, to avoid tiny off-grid drift
+    private snapSpriteToGrid(sprite: Phaser.Physics.Arcade.Sprite, direction: Direction) {
+      const width = this.layoutGrid[0]?.length ?? GRID_WIDTH
+      const height = this.layoutGrid.length || GRID_HEIGHT
+      if (direction === 'left' || direction === 'right') {
+        const row = clamp(Math.round((sprite.y - TILE_SIZE / 2) / TILE_SIZE), 0, height - 1)
+        sprite.y = row * TILE_SIZE + TILE_SIZE / 2
+        ;(sprite.body as Phaser.Physics.Arcade.Body).setVelocityY(0)
+      } else {
+        const col = Phaser.Math.Wrap(Math.round((sprite.x - TILE_SIZE / 2) / TILE_SIZE), 0, width)
+        sprite.x = col * TILE_SIZE + TILE_SIZE / 2
+        ;(sprite.body as Phaser.Physics.Arcade.Body).setVelocityX(0)
       }
     }
 
