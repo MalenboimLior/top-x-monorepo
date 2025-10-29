@@ -923,7 +923,16 @@ export default function createPacmanScene(
       }
 
       if (state === 'frightened') {
-        const newDirection = Phaser.Utils.Array.GetRandom(options)
+        let frightenedOptions = options
+        if (currentDirection) {
+          const opposite = this.getOppositeDirection(currentDirection)
+          const filtered = options.filter((dir) => dir !== opposite)
+          if (filtered.length > 0) {
+            frightenedOptions = filtered
+          }
+        }
+
+        const newDirection = Phaser.Utils.Array.GetRandom(frightenedOptions)
         if (currentDirection !== newDirection) {
           console.debug('[PacmanScene] Ghost direction updated (frightened)', {
             ghost: ghostId,
