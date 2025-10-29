@@ -93,7 +93,6 @@ import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore'
 import { db } from '@top-x/shared'
-import createZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/zonereveal/ZoneRevealScene'
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge'
 import { useHead } from '@vueuse/head'
@@ -104,12 +103,13 @@ import type { Game } from 'phaser'
 
 type PhaserNamespace = typeof import('phaser')
 type ZoneRevealSceneModule = typeof import('@/components/games/zonereveal/ZoneRevealScene')
-type ZoneRevealSceneCtor = ZoneRevealSceneModule['default']
+type ZoneRevealSceneFactory = ZoneRevealSceneModule['default']
+type ZoneRevealSceneInstance = ReturnType<ZoneRevealSceneFactory>
 
 const phaserContainer = ref<HTMLDivElement | null>(null)
 let game: InstanceType<PhaserNamespace['Game']> | null = null
 let PhaserLib: PhaserNamespace | null = null
-let ZoneRevealSceneCtorRef: ZoneRevealSceneCtor | null = null
+let zoneRevealSceneFactory: ZoneRevealSceneFactory | null = null
 let sceneWidth = 0
 let sceneHeight = 0
 const route = useRoute()
@@ -312,23 +312,26 @@ onMounted(async () => {
     }
   }
 
-  if (!PhaserLib || !ZoneRevealSceneCtorRef) {
+  if (!PhaserLib || !zoneRevealSceneFactory) {
     const [{ default: Phaser }, zoneModule] = await Promise.all([
       import('phaser'),
       import('@/components/games/zonereveal/ZoneRevealScene')
     ])
     PhaserLib = Phaser
-    ZoneRevealSceneCtorRef = zoneModule.default as ZoneRevealSceneCtor
+    zoneRevealSceneFactory = zoneModule.default as ZoneRevealSceneFactory
     sceneWidth = zoneModule.WIDTH
     sceneHeight = zoneModule.HEIGHT
   }
 
-  if (!PhaserLib || !ZoneRevealSceneCtorRef) {
+  if (!PhaserLib || !zoneRevealSceneFactory) {
     console.error('Failed to load Phaser or Zone Reveal scene')
     return
   }
 
-  const scene = new ZoneRevealSceneCtorRef(zoneRevealConfig.value || undefined)
+  const scene: ZoneRevealSceneInstance = zoneRevealSceneFactory(
+    PhaserLib,
+    zoneRevealConfig.value || undefined
+  )
   game = new PhaserLib.Game({
     type: PhaserLib.AUTO,
     width: sceneWidth,
