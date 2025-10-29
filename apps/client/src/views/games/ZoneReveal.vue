@@ -93,17 +93,17 @@ import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore'
 import { db } from '@top-x/shared'
-import Phaser from 'phaser'
-import ZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/zonereveal/ZoneRevealScene'
+import createZoneRevealScene, { WIDTH, HEIGHT } from '@/components/games/zonereveal/ZoneRevealScene'
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge'
 import { useHead } from '@vueuse/head'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
 import { DateTime } from 'luxon'
+import type { Game } from 'phaser'
 
 const phaserContainer = ref<HTMLDivElement | null>(null)
-let game: Phaser.Game | null = null
+let game: Game | null = null
 const route = useRoute()
 const router = useRouter()
 const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
@@ -304,7 +304,8 @@ onMounted(async () => {
     }
   }
 
-  const scene = new ZoneRevealScene(zoneRevealConfig.value || undefined)
+  const { default: Phaser } = await import('phaser')
+  const scene = createZoneRevealScene(Phaser, zoneRevealConfig.value || undefined)
   game = new Phaser.Game({
     type: Phaser.AUTO,
     width: WIDTH,
