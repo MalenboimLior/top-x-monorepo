@@ -77,12 +77,24 @@
         </div>
         <div class="level-right">
           <div class="level-item">
-            <button class="button" type="button" @click="cancelEdit">Back to list</button>
+            <div class="buttons">
+              <button class="button is-primary" type="button" @click="submitEdit" :disabled="!editingChallenge">
+                Save challenge
+              </button>
+              <button class="button" type="button" @click="cancelEdit">Back to list</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <DailyChallengeForm :game="game" :challenge="editingChallenge" @saved="handleSaved" @cancel="cancelEdit" />
+      <DailyChallengeForm
+        :game="game"
+        :challenge="editingChallenge"
+        @saved="handleSaved"
+        @cancel="cancelEdit"
+        @dirty-change="handleDirtyChange"
+        ref="formRef"
+      />
     </div>
   </div>
 </template>
@@ -96,12 +108,14 @@ import type { Game } from '@top-x/shared/types/game';
 import DailyChallengeForm from '@/components/games/DailyChallengeForm.vue';
 
 const props = defineProps<{ game: Game }>();
-const emit = defineEmits<{ (e: 'close'): void }>();
+const emit = defineEmits<{ (e: 'close'): void; (e: 'dirty-change', value: boolean): void }>();
 
 const challenges = ref<(DailyChallenge & { id: string })[]>([]);
 const editingChallenge = ref<(DailyChallenge & { id?: string }) | null>(null);
 const deletingId = ref<string | null>(null);
 const currentChallengeId = ref(props.game.dailyChallengeCurrent || '');
+const isEditorDirty = ref(false);
+const formRef = ref<{ submit: () => void } | null>(null);
 let unsubscribe: (() => void) | null = null;
 
 const isEditing = computed(() => Boolean(editingChallenge.value));
@@ -204,11 +218,25 @@ async function setCurrent(challenge: DailyChallenge & { id: string }) {
 }
 
 function cancelEdit() {
+  if (isEditorDirty.value && !confirm('Are you sure you want to close without save?')) {
+    return;
+  }
   editingChallenge.value = null;
+  handleDirtyChange(false);
 }
 
 function handleSaved() {
   editingChallenge.value = null;
+  handleDirtyChange(false);
+}
+
+function handleDirtyChange(value: boolean) {
+  isEditorDirty.value = value;
+  emit('dirty-change', value);
+}
+
+function submitEdit() {
+  formRef.value?.submit();
 }
 
 function cloneCustom<T>(value: T): T {
@@ -241,6 +269,11 @@ function cloneCustom<T>(value: T): T {
 }
 
 .manager-header .buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.manager-editor .buttons {
   display: flex;
   gap: 0.75rem;
 }
