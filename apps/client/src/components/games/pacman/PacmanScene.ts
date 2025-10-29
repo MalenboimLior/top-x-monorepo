@@ -795,8 +795,8 @@ export default function createPacmanScene(
       const width = this.layoutGrid[0]?.length ?? GRID_WIDTH
       const height = this.layoutGrid.length
 
-      const currentCol = Phaser.Math.Wrap(Math.round((x - TILE_SIZE / 2) / TILE_SIZE), 0, width)
-      const currentRow = clamp(Math.round((y - TILE_SIZE / 2) / TILE_SIZE), 0, height - 1)
+      const currentCol = Phaser.Math.Wrap(Math.floor(x / TILE_SIZE), 0, width)
+      const currentRow = clamp(Math.floor(y / TILE_SIZE), 0, height - 1)
 
       let targetCol = currentCol
       let targetRow = currentRow
@@ -909,14 +909,30 @@ export default function createPacmanScene(
       const state = ghost.getData('state') as string
       const currentDirection = ghost.getData('direction') as Direction | null
       const options = DIRECTIONS.filter((dir) => this.canMoveForSprite(ghost, dir))
+      const ghostConfig = ghost.getData('config') as PacmanEnemyEntry | undefined
+      const ghostId = ghostConfig?.id ?? ghost.texture.key
 
       if (options.length === 0) {
+        console.warn('[PacmanScene] No available directions for ghost', {
+          ghost: ghostId,
+          position: { x: ghost.x, y: ghost.y },
+          state
+        })
         ghost.setData('direction', null)
         return
       }
 
       if (state === 'frightened') {
-        ghost.setData('direction', Phaser.Utils.Array.GetRandom(options))
+        const newDirection = Phaser.Utils.Array.GetRandom(options)
+        if (currentDirection !== newDirection) {
+          console.debug('[PacmanScene] Ghost direction updated (frightened)', {
+            ghost: ghostId,
+            from: currentDirection,
+            to: newDirection,
+            state
+          })
+        }
+        ghost.setData('direction', newDirection)
         return
       }
 
@@ -931,7 +947,16 @@ export default function createPacmanScene(
 
       const target = this.getGhostTarget(ghost, state)
       if (!target) {
-        ghost.setData('direction', Phaser.Utils.Array.GetRandom(candidates))
+        const fallbackDirection = Phaser.Utils.Array.GetRandom(candidates)
+        if (currentDirection !== fallbackDirection) {
+          console.debug('[PacmanScene] Ghost direction fallback', {
+            ghost: ghostId,
+            from: currentDirection,
+            to: fallbackDirection,
+            state
+          })
+        }
+        ghost.setData('direction', fallbackDirection)
         return
       }
 
@@ -945,6 +970,16 @@ export default function createPacmanScene(
           bestDistance = distance
           bestDirection = dir
         }
+      }
+
+      if (currentDirection !== bestDirection) {
+        console.debug('[PacmanScene] Ghost direction updated', {
+          ghost: ghostId,
+          from: currentDirection,
+          to: bestDirection,
+          state,
+          target: { x: target.x, y: target.y }
+        })
       }
 
       ghost.setData('direction', bestDirection)
