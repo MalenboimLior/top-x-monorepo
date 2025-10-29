@@ -434,6 +434,7 @@ export default function createPacmanScene(
         this.playerSpawnPoint = new Phaser.Math.Vector2(playerSpawn.x, playerSpawn.y)
         this.player.setPosition(playerSpawn.x, playerSpawn.y)
         this.player.setVelocity(0, 0)
+        this.player.setScale(1)
       }
 
       const enemyEntries = (levelConfig.enemyOverrides?.length
@@ -467,13 +468,11 @@ export default function createPacmanScene(
       this.physics.add.collider(this.ghosts, this.walls)
 
       this.physics.add.overlap(this.player, this.pellets, (_player, pellet) => {
-        pellet.destroy()
-        this.handlePelletConsumed(false)
+        this.consumePellet(pellet as Phaser.Physics.Arcade.Sprite, false)
       })
 
       this.physics.add.overlap(this.player, this.energizers, (_player, pellet) => {
-        pellet.destroy()
-        this.handlePelletConsumed(true)
+        this.consumePellet(pellet as Phaser.Physics.Arcade.Sprite, true)
       })
 
       this.physics.add.overlap(this.player, this.ghosts, (_player, ghost) => {
@@ -496,6 +495,7 @@ export default function createPacmanScene(
     private spawnPellet(x: number, y: number) {
       const pellet = this.physics.add.sprite(x, y, 'pellet')
       pellet.setOrigin(0.5)
+      pellet.setScale(1)
       ;(pellet.body as Phaser.Physics.Arcade.Body).setAllowGravity(false)
       pellet.setImmovable(true)
       this.pellets.add(pellet)
@@ -504,9 +504,36 @@ export default function createPacmanScene(
     private spawnEnergizer(x: number, y: number) {
       const pellet = this.physics.add.sprite(x, y, 'energizer')
       pellet.setOrigin(0.5)
+      pellet.setScale(1)
       ;(pellet.body as Phaser.Physics.Arcade.Body).setAllowGravity(false)
       pellet.setImmovable(true)
       this.energizers.add(pellet)
+    }
+
+    private consumePellet(pellet: Phaser.Physics.Arcade.Sprite, isEnergizer: boolean) {
+      if (!pellet.active || pellet.getData('consuming')) {
+        return
+      }
+
+      pellet.setData('consuming', true)
+
+      const body = pellet.body as Phaser.Physics.Arcade.Body | null
+      if (body) {
+        body.enable = false
+        body.stop()
+        body.checkCollision.none = true
+      }
+
+      this.tweens.add({
+        targets: pellet,
+        scale: 0,
+        alpha: 0,
+        ease: 'Back.easeIn',
+        duration: isEnergizer ? 220 : 150,
+        onComplete: () => pellet.destroy()
+      })
+
+      this.handlePelletConsumed(isEnergizer)
     }
 
     private handlePelletConsumed(isEnergizer: boolean) {
@@ -514,6 +541,7 @@ export default function createPacmanScene(
       this.score += isEnergizer ? scoring.energizerValue : scoring.dotValue
       this.scoreText.setText(`SCORE: ${this.score}`)
       this.pelletsRemaining -= 1
+      this.playChompAnimation()
       if (isEnergizer) {
         this.enterFrightenedMode()
       }
@@ -522,6 +550,24 @@ export default function createPacmanScene(
       if (this.pelletsRemaining <= 0) {
         this.advanceLevel()
       }
+    }
+
+    private playChompAnimation() {
+      if (!this.player) return
+
+      this.tweens.killTweensOf(this.player)
+      this.player.setScale(1)
+      this.tweens.add({
+        targets: this.player,
+        scaleX: 0.82,
+        scaleY: 1.18,
+        duration: 80,
+        ease: 'Sine.easeOut',
+        yoyo: true,
+        onComplete: () => {
+          this.player.setScale(1)
+        }
+      })
     }
 
     private advanceLevel() {
@@ -598,7 +644,10 @@ export default function createPacmanScene(
     private updatePlayerMovement() {
       if (!this.player.active) return
 
-      const speed = this.pacmanConfig.speedSettings?.pacmanSpeed ?? 110
+      const speed = this.resolveSpeed(
+        this.pacmanConfig.speedSettings?.pacmanSpeed,
+        DEFAULT_PACMAN_CONFIG.speedSettings?.pacmanSpeed ?? 120
+      )
       const previousDirection = this.direction
 
       if (this.queuedDirection && this.canMove(this.queuedDirection)) {
@@ -643,7 +692,10 @@ export default function createPacmanScene(
     }
 
     private updateGhosts(deltaSeconds: number) {
-      const speedBase = this.pacmanConfig.speedSettings?.ghostSpeed ?? 100
+      const speedBase = this.resolveSpeed(
+        this.pacmanConfig.speedSettings?.ghostSpeed,
+        DEFAULT_PACMAN_CONFIG.speedSettings?.ghostSpeed ?? 100
+      )
 
       this.updateScatterChaseTimers(deltaSeconds)
       this.updateFrightenedState(deltaSeconds)
@@ -689,7 +741,10 @@ export default function createPacmanScene(
 
         let actualSpeed = speedBase * multiplier
         if (state === 'frightened') {
-          const frightenedBase = this.pacmanConfig.speedSettings?.frightenedSpeed ?? 80
+          const frightenedBase = this.resolveSpeed(
+            this.pacmanConfig.speedSettings?.frightenedSpeed,
+            DEFAULT_PACMAN_CONFIG.speedSettings?.frightenedSpeed ?? 80
+          )
           const frightenedMultiplier = ghostConfig?.frightenedSpeedMultiplier ?? 1
           actualSpeed = frightenedBase * frightenedMultiplier
         } else if (state === 'returning') {
@@ -975,6 +1030,22 @@ export default function createPacmanScene(
     private getNextTileCenter(sprite: Phaser.Physics.Arcade.Sprite, direction: Direction) {
       const vector = this.getDirectionVector(direction)
       return new Phaser.Math.Vector2(sprite.x + vector.x * TILE_SIZE, sprite.y + vector.y * TILE_SIZE)
+    }
+
+    private resolveSpeed(setting: number | undefined, fallback: number) {
+      if (setting === undefined || setting === null) {
+        return fallback
+      }
+
+      if (setting <= 0) {
+        return fallback
+      }
+
+      if (setting > 5) {
+        return setting
+      }
+
+      return fallback * setting
     }
 
     private isAtTileCenter(sprite: Phaser.Physics.Arcade.Sprite) {
