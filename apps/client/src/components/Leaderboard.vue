@@ -65,9 +65,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import axios from 'axios';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import { getTopLeaderboard } from '@/services/leaderboard';
 
 interface Props {
   gameId: string;
@@ -110,18 +110,11 @@ const fetchLeaderboard = async () => {
   error.value = null;
 
   try {
-    const url = `https://us-central1-top-x-co.cloudfunctions.net/getTopLeaderboard`;
-    const params: Record<string, unknown> = {
-      gameId: props.gameId,
-      limit: props.limit,
-    };
-    if (props.dailyChallengeId) {
-      params.dailyChallengeId = props.dailyChallengeId;
-    }
-    const response = await axios.get(url, {
-      params,
-    });
-    leaderboard.value = response.data;
+    leaderboard.value = await getTopLeaderboard(
+      props.gameId,
+      props.limit,
+      props.dailyChallengeId
+    );
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
     error.value = 'Unable to load the leaderboard right now. Please try again later.';
