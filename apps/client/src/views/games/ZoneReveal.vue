@@ -81,6 +81,7 @@
       :score="endScreenScore"
       :game-id="gameId"
       :reveal-at="revealAt"
+      :answer-config="zoneRevealConfig?.answer ?? null"
       @close="showEndScreen = false"
     />
   </div>

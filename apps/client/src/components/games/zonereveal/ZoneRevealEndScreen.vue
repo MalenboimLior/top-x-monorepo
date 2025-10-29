@@ -1,17 +1,30 @@
-<!-- Updated ZoneRevealEndScreen.vue -->
 <template>
   <div class="modal is-active" @click.self="handleTryAgain">
     <div class="modal-background"></div>
     <div class="modal-content box has-background-dark has-text-white">
       <button class="delete is-large" aria-label="retry" @click="handleTryAgain"></button>
+      <div class="score-preview">
+        <div class="score-block">
+          <h2 class="title has-text-white">{{ score }}</h2>
+          <p class="subtitle is-6 has-text-grey-light">Final score</p>
+        </div>
+        <img
+          v-if="revealImage"
+          :src="revealImage"
+          alt="Zone reveal preview"
+          class="reveal-preview"
+        />
+      </div>
       <template v-if="!userStore.user">
-        <h2 class="title has-text-white">{{ score }}</h2>
         <h2 class="title has-text-white">Great Score!</h2>
         <p class="mb-4">
           Log in with X to:<br />
-          save your score to leaderboard:<br />
-          Guess and submit your answer!<br />
-          We grab just your username + pic - promise, no funny business. 🔒:<br />
+          save your score to leaderboard;<br />
+          guess and submit your answer!<br />
+          We grab just your username + pic - promise, no funny business. 🔒
+        </p>
+        <p v-if="revealImage" class="mb-4 has-text-grey-light">
+          Can't wait? Take a peek at the reveal image and come back with your best guess!
         </p>
         <div class="buttons">
           <button class="button is-success" @click="handleLogin">Log in with X</button>
@@ -19,14 +32,14 @@
         </div>
       </template>
       <template v-else>
-        <h2 class="title has-text-white">{{ score }}</h2>
-        <p>Take your Guess-</p>
+        <p class="mb-3">Take your best guess at what you've revealed!</p>
         <div v-if="!hasSubmitted">
           <input v-model="answer" placeholder="Your guess..." @keydown.stop />
           <button class="button is-success" @click="handleSubmit">Submit Answer</button>
         </div>
         <div v-else>
-          <p>Wonder if you got it right? 🤔</p>
+          <p v-if="submissionMessage" :class="submissionMessageClass">{{ submissionMessage }}</p>
+          <p v-else>Wonder if you got it right? 🤔</p>
           <p>The answer will be announced at {{ formattedRevealDate }}</p>
           <p>
             Follow
@@ -34,6 +47,7 @@
             to see the answer and the winners!
           </p>
           <p>Good luck! 🤞🏻</p>
+          <p v-if="submissionResult" class="submitted-answer">Your guess: "{{ submissionResult.originalAnswer }}"</p>
         </div>
         <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
         <Leaderboard :game-id="gameId" />
@@ -51,11 +65,18 @@ import Leaderboard from '@/components/Leaderboard.vue'
 import { recordGameEvents } from '@/services/gameCounters'
 import { GAME_COUNTER_EVENTS } from '@top-x/shared/types/counters'
 import { DateTime } from 'luxon'
+import type { ZoneRevealAnswer } from '@top-x/shared/types/zoneReveal'
+import {
+  evaluateZoneRevealAnswer,
+  normalizeZoneRevealAnswer,
+  type ZoneRevealAnswerEvaluation
+} from '@top-x/shared/utils/zoneRevealAnswer'
 
 const props = defineProps<{
   score: number
   gameId: string
   revealAt: string
+  answerConfig: ZoneRevealAnswer | null
 }>()
 
 const emit = defineEmits(['close'])
@@ -63,6 +84,9 @@ const emit = defineEmits(['close'])
 const userStore = useUserStore()
 const answer = ref('')
 const hasSubmitted = ref(false)
+const submissionResult = ref<ZoneRevealAnswerEvaluation | null>(null)
+
+const revealImage = computed(() => props.answerConfig?.image ?? '')
 
 const formattedRevealDate = computed(() => {
   if (!props.revealAt) return ''
@@ -75,13 +99,24 @@ const formattedRevealDate = computed(() => {
   return new Date(props.revealAt).toLocaleString()
 })
 
+const submissionMessage = computed(() => {
+  if (!submissionResult.value) return ''
+  return submissionResult.value.isMatch
+    ? 'Your answer was accepted! 🎉'
+    : "Thanks! We didn't auto-accept that answer, but we'll review it alongside the reveal."
+})
+
+const submissionMessageClass = computed(() =>
+  submissionResult.value?.isMatch ? 'has-text-success' : 'has-text-warning'
+)
+
 onMounted(async () => {
   if (userStore.user) {
     await saveScore()
   }
 })
 
-async function saveScore(custom = {}) {
+async function saveScore(custom: Record<string, unknown> = {}) {
   if (!props.gameId) {
     console.error('No gameId provided')
     return
@@ -112,14 +147,26 @@ async function saveScore(custom = {}) {
 }
 
 async function handleSubmit() {
-  const custom = { answer: answer.value }
-  await saveScore(custom)
+  if (!answer.value.trim()) {
+    return
+  }
+
+  const evaluation = evaluateSubmission(answer.value)
+  await saveScore(evaluation)
   hasSubmitted.value = true
+  submissionResult.value = evaluation
   if (userStore.user) {
     void recordGameEvents(props.gameId, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER])
   }
   if (analytics) {
-    logEvent(analytics, 'user_action', { action: 'submit_answer', game_id: props.gameId, answer: answer.value })
+    logEvent(analytics, 'user_action', {
+      action: 'submit_answer',
+      game_id: props.gameId,
+      answer: evaluation.originalAnswer,
+      normalized_answer: evaluation.normalizedAnswer,
+      distance: evaluation.distance,
+      is_match: evaluation.isMatch
+    })
   }
 }
 
@@ -129,6 +176,10 @@ function handleTryAgain() {
   if (active && typeof active.blur === 'function') {
     active.blur()
   }
+
+  answer.value = ''
+  hasSubmitted.value = false
+  submissionResult.value = null
 
   emit('close')
 
@@ -151,8 +202,10 @@ async function handleLogin() {
       )
       if (pending.answer) {
         answer.value = pending.answer
-        await saveScore({ answer: pending.answer })
+        const evaluation = evaluateSubmission(pending.answer)
+        await saveScore(evaluation)
         hasSubmitted.value = true
+        submissionResult.value = evaluation
       } else {
         await saveScore()
       }
@@ -171,11 +224,33 @@ async function handleLogin() {
     alert('Failed to login. Please try again.')
   }
 }
+
+function evaluateSubmission(attempt: string): ZoneRevealAnswerEvaluation {
+  if (!attempt) {
+    return {
+      originalAnswer: '',
+      normalizedAnswer: '',
+      distance: null,
+      isMatch: false
+    }
+  }
+
+  if (props.answerConfig) {
+    return evaluateZoneRevealAnswer(props.answerConfig, attempt)
+  }
+
+  return {
+    originalAnswer: attempt,
+    normalizedAnswer: normalizeZoneRevealAnswer(attempt),
+    distance: null,
+    isMatch: false
+  }
+}
 </script>
 
 <style scoped>
 .modal-content {
-  max-width: 400px;
+  max-width: 520px;
   padding: 2rem !important;
   text-align: center;
   position: relative;
@@ -190,7 +265,7 @@ async function handleLogin() {
 input {
   padding: 8px;
   margin: 10px 0;
-  width: 80%;
+  width: 100%;
 }
 
 .button.is-success {
@@ -198,7 +273,29 @@ input {
   color: #000;
 }
 
-.button.is-text {
-  text-decoration: underline;
+.score-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.score-block {
+  min-width: 140px;
+}
+
+.reveal-preview {
+  max-width: 180px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.submitted-answer {
+  margin-top: 1rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.8);
 }
 </style>
