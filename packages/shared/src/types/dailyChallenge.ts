@@ -3,6 +3,7 @@ import type { LeaderboardEntry } from './game';
 import { PyramidConfig } from './pyramid';
 import { TriviaConfig } from './trivia';
 import { ZoneRevealConfig } from './zoneReveal';
+import { PacmanConfig } from './pacman';
 
 export interface DailyChallengeAttemptMetadata {
   normalizedAnswer?: string;
@@ -74,7 +75,7 @@ export interface DailyChallenge {
   schedule: DailyChallengeSchedule;
 
   // Game content
-  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig; // Union of possible config types
+  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig | PacmanConfig; // Union of possible config types
 
   // Optional display settings
   showCountdown?: boolean;   // Whether to show time until reveal
