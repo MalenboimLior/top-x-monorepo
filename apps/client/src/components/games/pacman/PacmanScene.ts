@@ -192,11 +192,6 @@ export default function createPacmanScene(
       }
     }
 
-    private handleTogglePause = () => {
-      this.isPaused = !this.isPaused
-      this.physics.world.isPaused = this.isPaused
-    }
-
     private handleRestart = () => {
       this.scene.restart()
     }
@@ -208,7 +203,6 @@ export default function createPacmanScene(
 
     private unregisterInputEvents() {
       window.removeEventListener('setDirection', this.handleSetDirection)
-      window.removeEventListener('togglePause', this.handleTogglePause)
       window.removeEventListener('restartGame', this.handleRestart)
     }
 
@@ -303,11 +297,47 @@ export default function createPacmanScene(
       ])
 
       window.addEventListener('setDirection', this.handleSetDirection)
-      window.addEventListener('togglePause', this.handleTogglePause)
       window.addEventListener('restartGame', this.handleRestart)
 
-      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unregisterInputEvents())
-      this.events.once(Phaser.Scenes.Events.DESTROY, () => this.unregisterInputEvents())
+      let swipeStart: Phaser.Math.Vector2 | null = null
+      const handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+        swipeStart = new Phaser.Math.Vector2(pointer.x, pointer.y)
+      }
+
+      const handlePointerUp = (pointer: Phaser.Input.Pointer) => {
+        if (!swipeStart) {
+          return
+        }
+
+        const diff = new Phaser.Math.Vector2(pointer.x, pointer.y).subtract(swipeStart)
+        if (Math.abs(diff.x) > Math.abs(diff.y)) {
+          if (diff.x > 20) {
+            this.setDirection('right')
+          } else if (diff.x < -20) {
+            this.setDirection('left')
+          }
+        } else {
+          if (diff.y > 20) {
+            this.setDirection('down')
+          } else if (diff.y < -20) {
+            this.setDirection('up')
+          }
+        }
+
+        swipeStart = null
+      }
+
+      this.input.on('pointerdown', handlePointerDown)
+      this.input.on('pointerup', handlePointerUp)
+
+      const cleanupInput = () => {
+        this.unregisterInputEvents()
+        this.input.off('pointerdown', handlePointerDown)
+        this.input.off('pointerup', handlePointerUp)
+      }
+
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanupInput)
+      this.events.once(Phaser.Scenes.Events.DESTROY, cleanupInput)
 
       this.walls = this.physics.add.staticGroup()
       this.pellets = this.physics.add.group({ allowGravity: false, immovable: true })
@@ -661,6 +691,7 @@ export default function createPacmanScene(
 
     private triggerGameOver(victory: boolean) {
       this.unregisterInputEvents()
+      window.addEventListener('restartGame', this.handleRestart)
       this.isPaused = true
       this.physics.world.isPaused = true
       this.player.setVelocity(0, 0)
