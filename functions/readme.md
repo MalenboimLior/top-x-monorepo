@@ -1,3 +1,25 @@
+# Cloud Functions Overview
+
+## Leaderboard HTTP APIs
+
+The following REST endpoints now accept an optional `dailyChallengeId` query parameter in addition to `gameId` and any existing arguments:
+
+- `GET /getTopLeaderboard`
+- `GET /getAroundLeaderboard`
+- `GET /getFriendsLeaderboard`
+- `GET /getPercentileRank`
+- `GET /getVipLeaderboard`
+
+When `dailyChallengeId` is provided, these functions read from the challenge-specific leaderboard at `games/{gameId}/daily_challenges/{dailyChallengeId}/leaderboard`. If the parameter is omitted, they continue to return results from the aggregated leaderboard at `games/{gameId}/leaderboard`.
+
+Example request:
+
+```
+GET https://<region>-<project>.cloudfunctions.net/getTopLeaderboard?gameId=smartest_on_x&limit=20&dailyChallengeId=2024-05-10
+```
+
+---
+
 export const onScoreWrite = functions.firestore
   .document('leaderboards_trivia/{uid}')
   .onWrite(async (change, context) => {
