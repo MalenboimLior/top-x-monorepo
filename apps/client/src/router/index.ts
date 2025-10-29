@@ -2,6 +2,20 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
+const Home = () => import('@/views/Home.vue');
+const Profile = () => import('@/views/Profile.vue');
+const About = () => import('@/views/About.vue');
+const TermsOfUse = () => import('@/views/TermsOfUse.vue');
+const PrivacyPolicy = () => import('@/views/PrivacyPolicy.vue');
+const ContactUs = () => import('@/views/ContactUs.vue');
+const FAQ = () => import('@/views/FAQ.vue');
+const Trivia = () => import('@/views/games/Trivia.vue');
+const PyramidTier = () => import('@/views/games/PyramidTier.vue');
+const FrenemySearch = () => import('@/views/FrenemySearch.vue');
+const ZoneReveal = () => import('@/views/games/ZoneReveal.vue');
+const Build = () => import('@/views/Build.vue');
+const DailyChallenges = () => import('@/views/DailyChallenges.vue');
+const GameInfo = () => import('@/views/GameInfo.vue');
 
 const routes = [
   // {

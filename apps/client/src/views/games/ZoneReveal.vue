@@ -102,8 +102,16 @@ import { analytics } from '@top-x/shared'
 import { DateTime } from 'luxon'
 import type { Game } from 'phaser'
 
+type PhaserNamespace = typeof import('phaser')
+type ZoneRevealSceneModule = typeof import('@/components/games/zonereveal/ZoneRevealScene')
+type ZoneRevealSceneCtor = ZoneRevealSceneModule['default']
+
 const phaserContainer = ref<HTMLDivElement | null>(null)
-let game: Game | null = null
+let game: InstanceType<PhaserNamespace['Game']> | null = null
+let PhaserLib: PhaserNamespace | null = null
+let ZoneRevealSceneCtorRef: ZoneRevealSceneCtor | null = null
+let sceneWidth = 0
+let sceneHeight = 0
 const route = useRoute()
 const router = useRouter()
 const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
@@ -304,12 +312,27 @@ onMounted(async () => {
     }
   }
 
-  const { default: Phaser } = await import('phaser')
-  const scene = createZoneRevealScene(Phaser, zoneRevealConfig.value || undefined)
-  game = new Phaser.Game({
-    type: Phaser.AUTO,
-    width: WIDTH,
-    height: HEIGHT,
+  if (!PhaserLib || !ZoneRevealSceneCtorRef) {
+    const [{ default: Phaser }, zoneModule] = await Promise.all([
+      import('phaser'),
+      import('@/components/games/zonereveal/ZoneRevealScene')
+    ])
+    PhaserLib = Phaser
+    ZoneRevealSceneCtorRef = zoneModule.default as ZoneRevealSceneCtor
+    sceneWidth = zoneModule.WIDTH
+    sceneHeight = zoneModule.HEIGHT
+  }
+
+  if (!PhaserLib || !ZoneRevealSceneCtorRef) {
+    console.error('Failed to load Phaser or Zone Reveal scene')
+    return
+  }
+
+  const scene = new ZoneRevealSceneCtorRef(zoneRevealConfig.value || undefined)
+  game = new PhaserLib.Game({
+    type: PhaserLib.AUTO,
+    width: sceneWidth,
+    height: sceneHeight,
     backgroundColor: '#222',
     parent: phaserContainer.value,
     physics: { default: 'arcade', arcade: {} },
