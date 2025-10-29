@@ -44,6 +44,44 @@ const db = admin.firestore();
 
 const corsHandler = cors({ origin: true });
 
+const toOptionalString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+};
+
+const getLeaderboardCollectionRef = (
+  gameId: string,
+  dailyChallengeId?: string,
+): FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData> => {
+  const gameRef = db.collection('games').doc(gameId);
+  if (dailyChallengeId) {
+    return gameRef
+      .collection('daily_challenges')
+      .doc(dailyChallengeId)
+      .collection('leaderboard');
+  }
+  return gameRef.collection('leaderboard');
+};
+
+const getStatsDocumentRef = (
+  gameId: string,
+  dailyChallengeId?: string,
+): FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> => {
+  if (dailyChallengeId) {
+    return db
+      .collection('games')
+      .doc(gameId)
+      .collection('daily_challenges')
+      .doc(dailyChallengeId)
+      .collection('stats')
+      .doc('general');
+  }
+  return db.collection('games').doc(gameId).collection('stats').doc('general');
+};
+
 const hasPyramidCustomChanges = (
   previousCustom?: Record<string, any>,
   newCustom?: Record<string, any>
@@ -610,13 +648,14 @@ export const submitGameScore = functions.https.onCall(async (
 export const getTopLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
+    const dailyChallengeId = toOptionalString(req.query.dailyChallengeId);
     const limitParam = parseInt(req.query.limit as string) || 10;
     const validLimits = [10, 20, 30, 40, 50];
     const maxResults = validLimits.includes(limitParam) ? limitParam : 10;
 
     try {
-      const snapshot = await db
-        .collection('games').doc(gameId).collection('leaderboard')
+      const leaderboardRef = getLeaderboardCollectionRef(gameId, dailyChallengeId);
+      const snapshot = await leaderboardRef
         .orderBy('score', 'desc')
         .orderBy('streak', 'desc')
         .limit(maxResults)
@@ -774,6 +813,7 @@ export const recordGameEvent = functions.https.onCall(async (request: functions.
 export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
+    const dailyChallengeId = toOptionalString(req.query.dailyChallengeId);
     const uid = req.query.uid as string;
 
     if (!uid) {
@@ -782,7 +822,8 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
     }
 
     try {
-      const leaderboardEntryDoc = await db.collection('games').doc(gameId).collection('leaderboard').doc(uid).get();
+      const leaderboardRef = getLeaderboardCollectionRef(gameId, dailyChallengeId);
+      const leaderboardEntryDoc = await leaderboardRef.doc(uid).get();
       if (!leaderboardEntryDoc.exists) {
         res.status(404).json({ error: 'User not found in leaderboard' });
         return;
@@ -794,8 +835,7 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
       }
       const userScore = leaderboardEntryData.score;
 
-      const aboveSnapshot = await db
-        .collection('games').doc(gameId).collection('leaderboard')
+      const aboveSnapshot = await leaderboardRef
         .orderBy('score', 'desc')
         .orderBy('updatedAt', 'desc')
         .where('score', '>', userScore)
@@ -810,8 +850,7 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
         streak: doc.data().streak,
       }));
 
-      const belowSnapshot = await db
-        .collection('games').doc(gameId).collection('leaderboard')
+      const belowSnapshot = await leaderboardRef
         .orderBy('score', 'asc')
         .orderBy('updatedAt', 'asc')
         .where('score', '<', userScore)
@@ -849,6 +888,7 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
 export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
+    const dailyChallengeId = toOptionalString(req.query.dailyChallengeId);
     const uid = req.query.uid as string;
 
     if (!uid) {
@@ -869,11 +909,12 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
       const frenemies: string[] = userData.frenemies;
 
       const leaderboard: LeaderboardEntry[] = [];
+      const leaderboardRef = getLeaderboardCollectionRef(gameId, dailyChallengeId);
       for (let i = 0; i < frenemies.length; i += 30) {
         const batch = frenemies.slice(i, i + 30);
-        const snapshot = await db
-          .collection('games').doc(gameId).collection('leaderboard')
-          .where(admin.firestore.FieldPath.documentId(), 'in', batch)
+        const docRefs = batch.map(uidValue => leaderboardRef.doc(uidValue));
+        const snapshot = await leaderboardRef
+          .where(admin.firestore.FieldPath.documentId(), 'in', docRefs)
           .orderBy('score', 'desc')
           .get();
         snapshot.forEach(doc => {
@@ -905,6 +946,7 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
 export const getPercentileRank = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
+    const dailyChallengeId = toOptionalString(req.query.dailyChallengeId);
     const uid = req.query.uid as string;
 
     if (!uid) {
@@ -913,7 +955,8 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
     }
 
     try {
-      const userDoc = await db.collection('games').doc(gameId).collection('leaderboard').doc(uid).get();
+      const leaderboardRef = getLeaderboardCollectionRef(gameId, dailyChallengeId);
+      const userDoc = await leaderboardRef.doc(uid).get();
       if (!userDoc.exists) {
         res.status(404).json({ error: 'User not found in leaderboard' });
         return;
@@ -925,7 +968,7 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
       }
       const userScore = userData.score;
 
-      const statsDoc = await db.collection('games').doc(gameId).collection('stats').doc('general').get();
+      const statsDoc = await getStatsDocumentRef(gameId, dailyChallengeId).get();
       if (!statsDoc.exists) {
         res.status(404).json({ error: 'Stats not available' });
         return;
@@ -958,6 +1001,7 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
 export const getVipLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const gameId = req.query.gameId as string || 'smartest_on_x';
+    const dailyChallengeId = toOptionalString(req.query.dailyChallengeId);
 
     try {
       const gameDoc = await db.collection('games').doc(gameId).get();
@@ -973,11 +1017,12 @@ export const getVipLeaderboard = functions.https.onRequest((req, res) => {
       const vipUids: string[] = gameData.vip;
 
       const leaderboard: LeaderboardEntry[] = [];
+      const leaderboardRef = getLeaderboardCollectionRef(gameId, dailyChallengeId);
       for (let i = 0; i < vipUids.length; i += 30) {
         const batch = vipUids.slice(i, i + 30);
-        const snapshot = await db
-          .collection('games').doc(gameId).collection('leaderboard')
-          .where(admin.firestore.FieldPath.documentId(), 'in', batch)
+        const docRefs = batch.map(uidValue => leaderboardRef.doc(uidValue));
+        const snapshot = await leaderboardRef
+          .where(admin.firestore.FieldPath.documentId(), 'in', docRefs)
           .orderBy('score', 'desc')
           .get();
         snapshot.forEach(doc => {
