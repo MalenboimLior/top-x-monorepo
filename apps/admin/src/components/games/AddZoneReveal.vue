@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import ImageUploaderCircleSprite from '@top-x/shared/components/ImageUploaderCircleSprite.vue';
@@ -218,6 +218,7 @@ const defaultConfig = (): ZoneRevealConfig => ({
 });
 
 const config = ref<ZoneRevealConfig>(defaultConfig());
+let isSyncingFromProps = false;
 
 const enemyTypes = ['bouncing', 'robot', 'microbe', 'straightUp', 'straightLeft'];
 const powerupTypes = ['extralive', 'extratime', 'extraspeed', 'extrafreeze'];
@@ -232,6 +233,7 @@ const newAcceptedVariant = ref('');
 watch(
   () => props.modelValue,
   (val) => {
+    isSyncingFromProps = true;
     const next = val ? JSON.parse(JSON.stringify(val)) : defaultConfig();
     if (!next.answer) {
       next.answer = createDefaultAnswer();
@@ -239,6 +241,9 @@ watch(
       next.answer.accepted = next.answer.accepted ?? [];
     }
     config.value = next;
+    nextTick(() => {
+      isSyncingFromProps = false;
+    });
   },
   { deep: true, immediate: true },
 );
@@ -246,6 +251,7 @@ watch(
 watch(
   config,
   (val) => {
+    if (isSyncingFromProps) return;
     emit('update:modelValue', JSON.parse(JSON.stringify(val)));
   },
   { deep: true },
