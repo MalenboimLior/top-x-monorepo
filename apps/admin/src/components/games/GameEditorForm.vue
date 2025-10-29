@@ -215,6 +215,7 @@
         :gameId="existingGame?.id"
       />
       <AddZoneReveal v-else-if="gameType.custom === 'ZoneRevealConfig'" v-model="game.custom as ZoneRevealConfig" />
+      <AddPacman v-else-if="gameType.custom === 'PacmanConfig'" v-model="game.custom as PacmanConfig" />
       <p v-else class="has-text-grey">Custom configuration for this game type is not yet supported.</p>
     </div>
 
@@ -234,9 +235,11 @@ import { db } from '@top-x/shared';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import AddPyramid from '@/components/games/AddPyramid.vue';
 import AddZoneReveal from '@/components/games/AddZoneReveal.vue';
+import AddPacman from '@/components/games/AddPacman.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
+import type { PacmanConfig } from '@top-x/shared/types/pacman';
 
 const props = defineProps<{
   gameType: GameType;
@@ -294,8 +297,10 @@ watch(
       const clone = JSON.parse(JSON.stringify(value));
       clone.vip = clone.vip || [];
       clone.custom = clone.custom || getDefaultCustom(props.gameType.custom);
-      if (clone.custom && 'levelsConfig' in clone.custom) {
-        clone.custom = withDefaultZoneRevealAnswer(clone.custom as ZoneRevealConfig);
+      if (isZoneRevealConfig(clone.custom)) {
+        clone.custom = withDefaultZoneRevealAnswer(clone.custom);
+      } else if (isPacmanConfig(clone.custom)) {
+        clone.custom = withDefaultPacmanConfig(clone.custom);
       }
       clone.creator = clone.creator || { userid: '', username: '' };
       game.value = clone;
@@ -319,8 +324,10 @@ watch(
       game.value.gameTypeId = value.id;
       if (!game.value.custom || Object.keys(game.value.custom).length === 0) {
         game.value.custom = getDefaultCustom(value.custom);
-      } else if ('levelsConfig' in game.value.custom) {
-        game.value.custom = withDefaultZoneRevealAnswer(game.value.custom as ZoneRevealConfig);
+      } else if (isZoneRevealConfig(game.value.custom)) {
+        game.value.custom = withDefaultZoneRevealAnswer(game.value.custom);
+      } else if (isPacmanConfig(game.value.custom)) {
+        game.value.custom = withDefaultPacmanConfig(game.value.custom);
       }
     }
     nextTick(setInitialSnapshot);
@@ -359,7 +366,64 @@ function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig
   return config;
 }
 
-function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | Record<string, unknown> {
+function isZoneRevealConfig(value: unknown): value is ZoneRevealConfig {
+  return Boolean(value && typeof value === 'object' && 'levelsConfig' in value);
+}
+
+function isPacmanConfig(value: unknown): value is PacmanConfig {
+  return Boolean(value && typeof value === 'object' && 'levels' in value && 'defaultScoring' in value);
+}
+
+function defaultPacmanConfig(): PacmanConfig {
+  return {
+    version: 1,
+    startingLives: 3,
+    bonusLifeThresholds: [10000],
+    allowWraparound: true,
+    defaultScoring: {
+      dotValue: 10,
+      energizerValue: 50,
+      ghostComboBase: 200,
+      ghostComboIncrement: 200,
+      fruitValues: [100, 300, 500],
+      frightenedDurationMs: 6000,
+    },
+    enemies: [],
+    powerUps: [],
+    levels: [],
+    speedSettings: {
+      pacmanSpeed: 1,
+      ghostSpeed: 1,
+      frightenedSpeed: 0.8,
+    },
+    theme: 'classic',
+  };
+}
+
+function withDefaultPacmanConfig(config: PacmanConfig): PacmanConfig {
+  const defaults = defaultPacmanConfig();
+  return {
+    ...defaults,
+    ...config,
+    bonusLifeThresholds: config.bonusLifeThresholds ? [...config.bonusLifeThresholds] : [...defaults.bonusLifeThresholds],
+    defaultScoring: {
+      ...defaults.defaultScoring,
+      ...(config.defaultScoring ?? defaults.defaultScoring),
+      fruitValues: config.defaultScoring?.fruitValues
+        ? [...config.defaultScoring.fruitValues]
+        : [...defaults.defaultScoring.fruitValues],
+    },
+    speedSettings: {
+      ...defaults.speedSettings!,
+      ...(config.speedSettings ?? defaults.speedSettings),
+    },
+    enemies: config.enemies ? [...config.enemies] : [],
+    powerUps: config.powerUps ? [...config.powerUps] : [],
+    levels: config.levels ? [...config.levels] : [],
+  };
+}
+
+function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | PacmanConfig | Record<string, unknown> {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -385,6 +449,9 @@ function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig
       finishPercent: 0,
       heartIcon: '',
     } as ZoneRevealConfig);
+  }
+  if (customType === 'PacmanConfig') {
+    return withDefaultPacmanConfig(defaultPacmanConfig());
   }
   return {};
 }
