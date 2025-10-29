@@ -1,8 +1,9 @@
 // Updated packages/shared/types/game.ts
+import type { DailyChallengeLeaderboardSummary } from "./dailyChallenge";
+import type { GameCounters } from "./counters";
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
-import type { GameCounters } from "./counters";
 
 
 export interface GameType {
@@ -35,6 +36,12 @@ export interface Game {
   dailyChallengeActive?: boolean;
   /** Date identifier for the challenge shown when today's is missing */
   dailyChallengeCurrent?: string;
+  /**
+   * Aggregated leaderboard totals compiled from daily-challenge runs. The
+   * per-challenge leaderboards themselves are stored under
+   * `/daily_challenges/{challengeId}`.
+   */
+  leaderboard?: DailyChallengeLeaderboardSummary;
   counters?: GameCounters;
 }
 
