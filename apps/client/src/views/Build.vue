@@ -34,7 +34,7 @@
     </section>
 
     <section v-else class="build-body">
-      <div v-if="!selectedGameType && !selectedDailyChallengesGame" class="build-dashboard">
+      <div v-if="!selectedGameType" class="build-dashboard">
         <div class="build-panel">
           <div class="build-panel__header">
             <h2>Choose a game template</h2>
@@ -80,11 +80,6 @@
                     :label="game.active ? 'Unpublish' : 'Publish'"
                     @click="togglePublish(game)"
                   />
-                  <CustomButton
-                    type="is-info is-small"
-                    label="Daily challenges"
-                    @click="openDailyChallenges(game)"
-                  />
                 </footer>
               </article>
             </div>
@@ -112,18 +107,6 @@
         </div>
       </div>
 
-      <div v-if="selectedDailyChallengesGame" class="build-flow">
-        <button class="build-flow__back" type="button" @click="selectedDailyChallengesGame = null">
-          ← Back to games
-        </button>
-        <div class="build-flow__header">
-          <h2>Daily challenges for {{ selectedDailyChallengesGame.name }}</h2>
-          <p>Create or edit the daily drops your community will see.</p>
-        </div>
-        <div class="build-flow__surface">
-          <DailyChallengesList :game="selectedDailyChallengesGame" @close="selectedDailyChallengesGame = null" />
-        </div>
-      </div>
     </section>
   </div>
 </template>
@@ -136,7 +119,6 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
-import DailyChallengesList from '@/components/build/DailyChallengesList.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
 
 const userStore = useUserStore();
@@ -145,7 +127,6 @@ const availableGameTypes = ref<GameType[]>([]);
 const myGames = ref<Game[]>([]);
 const selectedGameType = ref<GameType | null>(null);
 const selectedGame = ref<Game | null>(null);
-const selectedDailyChallengesGame = ref<Game | null>(null);
 
 useHead({
   title: 'Build games - TOP-X',
@@ -206,10 +187,6 @@ function editGame(game: Game) {
   }
 }
 
-function openDailyChallenges(game: Game) {
-  selectedDailyChallengesGame.value = game;
-}
-
 async function togglePublish(game: Game) {
   try {
     const gameRef = doc(db, 'games', game.id);
@@ -222,7 +199,6 @@ async function togglePublish(game: Game) {
 function handleSave() {
   selectedGameType.value = null;
   selectedGame.value = null;
-  selectedDailyChallengesGame.value = null;
 }
 
 function handleCancel() {
