@@ -82,7 +82,7 @@ import StartTrivia from '@/components/StartTrivia.vue';
 import TriviaGame from '@/components/TriviaGame.vue';
 import EndScreenLoggedIn from '@/components/EndScreenLoggedIn.vue';
 import EndScreenLoggedOut from '@/components/EndScreenLoggedOut.vue';
-import { getPercentileRank } from '@/services/trivia';
+import { getPercentileRank } from '@/services/leaderboard';
 
 const triviaStore = useTriviaStore();
 const userStore = useUserStore();
