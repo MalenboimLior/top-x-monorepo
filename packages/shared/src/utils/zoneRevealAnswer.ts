@@ -92,27 +92,90 @@ function tokensEqual(a: string[], b: string[]): boolean {
   return a.every((token, index) => token === b[index]);
 }
 
-function matchesCandidate(candidate: string, attempt: string, options?: ZoneRevealAnswerMatchOptions): boolean {
+interface CandidateEvaluation {
+  normalizedCandidate: string;
+  distance: number | null;
+  isMatch: boolean;
+}
+
+function evaluateCandidate(
+  candidate: string,
+  normalizedAttempt: string,
+  options?: ZoneRevealAnswerMatchOptions,
+): CandidateEvaluation {
   const normalizedCandidate = normalizeZoneRevealAnswer(candidate);
-  const normalizedAttempt = normalizeZoneRevealAnswer(attempt);
+
+  if (!normalizedCandidate && !normalizedAttempt) {
+    return { normalizedCandidate, distance: 0, isMatch: false };
+  }
+
+  const distance = normalizedCandidate || normalizedAttempt
+    ? levenshteinDistance(normalizedCandidate, normalizedAttempt)
+    : null;
 
   if (!normalizedCandidate || !normalizedAttempt) {
-    return false;
+    return { normalizedCandidate, distance, isMatch: false };
   }
 
   if (normalizedCandidate === normalizedAttempt) {
-    return true;
+    return { normalizedCandidate, distance: 0, isMatch: true };
   }
 
   const candidateTokens = normalizedCandidate.split(' ');
   const attemptTokens = normalizedAttempt.split(' ');
 
   if (tokensEqual(candidateTokens, attemptTokens)) {
-    return true;
+    return { normalizedCandidate, distance: 0, isMatch: true };
   }
 
-  const distance = levenshteinDistance(normalizedCandidate, normalizedAttempt);
-  return distance <= getDistanceThreshold(normalizedCandidate, normalizedAttempt, options);
+  if (distance === null) {
+    return { normalizedCandidate, distance: null, isMatch: false };
+  }
+
+  const threshold = getDistanceThreshold(normalizedCandidate, normalizedAttempt, options);
+  return { normalizedCandidate, distance, isMatch: distance <= threshold };
+}
+
+export interface ZoneRevealAnswerEvaluation {
+  originalAnswer: string;
+  normalizedAnswer: string;
+  distance: number | null;
+  isMatch: boolean;
+}
+
+export function evaluateZoneRevealAnswer(
+  answer: ZoneRevealAnswer,
+  attempt: string,
+  options?: ZoneRevealAnswerMatchOptions,
+): ZoneRevealAnswerEvaluation {
+  const normalizedAttempt = normalizeZoneRevealAnswer(attempt);
+  const candidates = [answer.solution, ...(answer.accepted ?? [])];
+
+  let isMatch = false;
+  let bestDistance: number | null = null;
+
+  for (const candidate of candidates) {
+    const evaluation = evaluateCandidate(candidate, normalizedAttempt, options);
+
+    if (evaluation.distance !== null) {
+      bestDistance = bestDistance === null
+        ? evaluation.distance
+        : Math.min(bestDistance, evaluation.distance);
+    }
+
+    if (evaluation.isMatch) {
+      isMatch = true;
+      bestDistance = evaluation.distance ?? 0;
+      break;
+    }
+  }
+
+  return {
+    originalAnswer: attempt,
+    normalizedAnswer: normalizedAttempt,
+    distance: bestDistance,
+    isMatch,
+  };
 }
 
 export function isZoneRevealAnswerMatch(
@@ -120,7 +183,6 @@ export function isZoneRevealAnswerMatch(
   attempt: string,
   options?: ZoneRevealAnswerMatchOptions,
 ): boolean {
-  const candidates = [answer.solution, ...(answer.accepted ?? [])];
-  return candidates.some((candidate) => matchesCandidate(candidate, attempt, options));
+  return evaluateZoneRevealAnswer(answer, attempt, options).isMatch;
 }
 
