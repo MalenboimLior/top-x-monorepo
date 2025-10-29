@@ -238,6 +238,9 @@ watch(
       const clone = JSON.parse(JSON.stringify(value));
       clone.vip = clone.vip || [];
       clone.custom = clone.custom || getDefaultCustom(props.gameType.custom);
+      if (clone.custom && 'levelsConfig' in clone.custom) {
+        clone.custom = withDefaultZoneRevealAnswer(clone.custom as ZoneRevealConfig);
+      }
       clone.creator = clone.creator || { userid: '', username: '' };
       game.value = clone;
       vipList.value = clone.vip?.join(',') ?? '';
@@ -260,6 +263,8 @@ watch(
       game.value.gameTypeId = value.id;
       if (!game.value.custom || Object.keys(game.value.custom).length === 0) {
         game.value.custom = getDefaultCustom(value.custom);
+      } else if ('levelsConfig' in game.value.custom) {
+        game.value.custom = withDefaultZoneRevealAnswer(game.value.custom as ZoneRevealConfig);
       }
     }
     nextTick(setInitialSnapshot);
@@ -285,6 +290,17 @@ watch(
   { deep: true },
 );
 
+const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+
+function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
+  if (!config.answer) {
+    config.answer = createDefaultAnswer();
+  } else {
+    config.answer.accepted = config.answer.accepted ?? [];
+  }
+  return config;
+}
+
 function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | Record<string, unknown> {
   if (customType === 'PyramidConfig') {
     return {
@@ -302,7 +318,7 @@ function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig
     } as PyramidConfig;
   }
   if (customType === 'ZoneRevealConfig') {
-    return {
+    return withDefaultZoneRevealAnswer({
       levelsConfig: [],
       backgroundImage: '',
       spritesheets: {},
@@ -310,7 +326,7 @@ function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig
       enemiesSpeedArray: {},
       finishPercent: 0,
       heartIcon: '',
-    } as ZoneRevealConfig;
+    } as ZoneRevealConfig);
   }
   return {};
 }

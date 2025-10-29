@@ -30,6 +30,11 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
   enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90, straightUp: 150, straightleft: 150 },
   finishPercent: 50,
   heartIcon: '/assets/heart_icon.png',
+  answer: {
+    solution: 'Top X',
+    accepted: ['TopX', 'Top-X'],
+    image: '/assets/levels/level1.jpeg',
+  },
   levelsConfig: [
     {
       enemyConfig: [
