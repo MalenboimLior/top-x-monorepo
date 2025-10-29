@@ -46,11 +46,16 @@ export interface DailyChallengeGameStats extends DailyChallengeAnalytics {
   updatedAt: string;
 }
 
-export type DailyChallengeAnalytics = GameCounters & {
+export interface DailyChallengeAnalytics {
+  totalPlayers?: GameCounters['totalPlayers'];
+  favorites?: GameCounters['favorites'];
+  sessionsPlayed?: GameCounters['sessionsPlayed'];
+  uniqueSubmitters?: GameCounters['uniqueSubmitters'];
+  updatedAt?: string;
   totalAttempts?: number;
   correctAttempts?: number;
   averageSolveTimeSec?: number;
-};
+}
 
 export interface DailyChallenge {
   // Meta
