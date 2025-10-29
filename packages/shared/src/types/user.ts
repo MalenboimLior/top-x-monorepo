@@ -1,10 +1,41 @@
 // User and user game data models
+export interface DailyChallengeUserProgress {
+  /** Whether the user has attempted the challenge. */
+  played: boolean;
+  /** Whether the user solved the challenge. */
+  solved: boolean;
+  /** Highest score achieved for this challenge, if applicable. */
+  bestScore?: number;
+  /** ISO timestamp of the first time the user launched the challenge. */
+  firstPlayedAt?: string;
+  /** ISO timestamp of the most recent attempt. */
+  lastPlayedAt?: string;
+  /** ISO timestamp recorded when the challenge was solved. */
+  solvedAt?: string;
+  /** ISO timestamp for when {@link bestScore} was recorded. */
+  bestScoreAt?: string;
+}
+
+export interface UserGameCustomData {
+  /**
+   * Per-challenge progress data keyed by challenge identifier. Used by
+   * backend logic to prevent double-counting streaks or score increments for
+   * the same challenge run.
+   */
+  dailyChallenges?: Record<string, DailyChallengeUserProgress>;
+  /**
+   * Additional custom data for the game. The value type is intentionally
+   * flexible to support legacy and feature-specific metadata.
+   */
+  [key: string]: unknown;
+}
+
 export interface UserGameData {
   score: number;
   streak: number;
   lastPlayed: number;
   achievements?: Array<{ id: string; earnedAt: string }>;
-  custom?: Record<string, any>;
+  custom?: UserGameCustomData;
 }
 
 export type UserGameDataSubmission = Omit<UserGameData, 'lastPlayed'> & {
@@ -38,6 +69,16 @@ export interface SubmitGameScoreRequest {
   gameTypeId: string;
   gameId: string;
   gameData: UserGameDataSubmission;
+  /** Optional metadata when the score submission is tied to a daily challenge. */
+  dailyChallengeId?: string;
+  /** Logical date for the challenge (YYYY-MM-DD). */
+  dailyChallengeDate?: string;
+  /**
+   * Indicates whether the submission should be treated as part of a daily
+   * challenge flow. When false or omitted the submission is processed as a
+   * regular game run.
+   */
+  isDailyChallenge?: boolean;
 }
 
 export interface SubmitGameScoreResponse {
@@ -45,4 +86,7 @@ export interface SubmitGameScoreResponse {
   message?: string;
   previousScore?: number | null;
   newScore?: number;
+  dailyChallengeId?: string;
+  dailyChallengeDate?: string;
+  isDailyChallenge?: boolean;
 }
