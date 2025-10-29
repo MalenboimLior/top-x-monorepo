@@ -299,7 +299,6 @@ export const useUserStore = defineStore('user', () => {
 
       if (options?.dailyChallengeId) {
         payload.dailyChallengeId = options.dailyChallengeId;
-        payload.isDailyChallenge = true;
       }
       if (options?.dailyChallengeDate) {
         payload.dailyChallengeDate = options.dailyChallengeDate;
@@ -307,8 +306,8 @@ export const useUserStore = defineStore('user', () => {
       if (options?.challengeMetadata) {
         payload.challengeMetadata = options.challengeMetadata;
       }
-      if (options && !options.dailyChallengeId && (options.dailyChallengeDate || options.challengeMetadata)) {
-        payload.isDailyChallenge = true;
+      if (!options?.dailyChallengeId && (options?.dailyChallengeDate || options?.challengeMetadata)) {
+        console.warn('dailyChallengeId is required when providing challenge metadata or date');
       }
 
       const { data } = await submitGameScore(payload);

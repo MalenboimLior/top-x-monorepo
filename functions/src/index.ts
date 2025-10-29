@@ -225,7 +225,17 @@ export const submitGameScore = functions.https.onCall(async (
   const { gameTypeId, gameId, gameData } = payload;
   const rawDailyChallengeId = payload.dailyChallengeId?.trim();
   const requestDailyChallengeDate = payload.dailyChallengeDate?.trim();
-  const isDailyChallengeSubmission = Boolean(payload.isDailyChallenge || rawDailyChallengeId);
+  const isDailyChallengeSubmission = Boolean(rawDailyChallengeId);
+
+  if (!rawDailyChallengeId && (requestDailyChallengeDate || payload.challengeMetadata)) {
+    console.warn('submitGameScore: challenge metadata provided without dailyChallengeId', {
+      uid: auth.uid,
+      gameId,
+      gameTypeId,
+      hasChallengeMetadata: Boolean(payload.challengeMetadata),
+      requestDailyChallengeDate,
+    });
+  }
 
   if (!gameTypeId || !gameId || !gameData) {
     throw new functions.https.HttpsError('invalid-argument', 'gameTypeId, gameId and gameData are required');
@@ -628,7 +638,6 @@ export const submitGameScore = functions.https.onCall(async (
         challengeBestScore,
         dailyChallengeId: isDailyChallengeSubmission ? rawDailyChallengeId ?? undefined : undefined,
         dailyChallengeDate: isDailyChallengeSubmission ? resolvedDailyChallengeDate ?? undefined : undefined,
-        isDailyChallenge: isDailyChallengeSubmission || undefined,
       } satisfies SubmitGameScoreResponse;
     });
 
