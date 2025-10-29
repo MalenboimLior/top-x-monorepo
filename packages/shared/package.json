@@ -50,6 +50,10 @@
       "types": "./src/types/zoneReveal.ts",
       "default": "./src/types/zoneReveal.ts"
     },
+    "./types/stats": {
+      "types": "./src/types/stats.ts",
+      "default": "./src/types/stats.ts"
+    },
     "./types/dailyChallenge": {
       "types": "./src/types/dailyChallenge.ts",
       "default": "./src/types/dailyChallenge.ts"
@@ -61,6 +65,10 @@
     "./api/useCollection": {
       "types": "./src/api/useCollection.ts",
       "default": "./src/api/useCollection.ts"
+    },
+    "./utils/zoneRevealAnswer": {
+      "types": "./src/utils/zoneRevealAnswer.ts",
+      "default": "./src/utils/zoneRevealAnswer.ts"
     }
   }
 }
