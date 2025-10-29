@@ -138,6 +138,7 @@ import AddPyramid from '@/components/games/AddPyramid.vue';
 import AddZoneReveal from '@/components/games/AddZoneReveal.vue';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
+import type { PacmanConfig } from '@top-x/shared/types/pacman';
 
 const props = defineProps<{
   game: Game;
@@ -152,8 +153,9 @@ const isDirty = ref(false);
 
 const customType = computed(() => {
   const custom = props.game.custom;
-  if (custom && 'levelsConfig' in custom) return 'ZoneRevealConfig';
-  if (custom && 'items' in custom) return 'PyramidConfig';
+  if (isPacmanConfig(custom)) return 'PacmanConfig';
+  if (isZoneRevealConfig(custom)) return 'ZoneRevealConfig';
+  if (custom && typeof custom === 'object' && 'items' in custom) return 'PyramidConfig';
   return '';
 });
 
@@ -204,6 +206,63 @@ function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig
   return config;
 }
 
+function isZoneRevealConfig(value: unknown): value is ZoneRevealConfig {
+  return Boolean(value && typeof value === 'object' && 'levelsConfig' in value);
+}
+
+function isPacmanConfig(value: unknown): value is PacmanConfig {
+  return Boolean(value && typeof value === 'object' && 'levels' in value && 'defaultScoring' in value);
+}
+
+function defaultPacmanConfig(): PacmanConfig {
+  return {
+    version: 1,
+    startingLives: 3,
+    bonusLifeThresholds: [10000],
+    allowWraparound: true,
+    defaultScoring: {
+      dotValue: 10,
+      energizerValue: 50,
+      ghostComboBase: 200,
+      ghostComboIncrement: 200,
+      fruitValues: [100, 300, 500],
+      frightenedDurationMs: 6000,
+    },
+    enemies: [],
+    powerUps: [],
+    levels: [],
+    speedSettings: {
+      pacmanSpeed: 1,
+      ghostSpeed: 1,
+      frightenedSpeed: 0.8,
+    },
+    theme: 'classic',
+  };
+}
+
+function withDefaultPacmanConfig(config: PacmanConfig): PacmanConfig {
+  const defaults = defaultPacmanConfig();
+  return {
+    ...defaults,
+    ...config,
+    bonusLifeThresholds: config.bonusLifeThresholds ? [...config.bonusLifeThresholds] : [...defaults.bonusLifeThresholds],
+    defaultScoring: {
+      ...defaults.defaultScoring,
+      ...(config.defaultScoring ?? defaults.defaultScoring),
+      fruitValues: config.defaultScoring?.fruitValues
+        ? [...config.defaultScoring.fruitValues]
+        : [...defaults.defaultScoring.fruitValues],
+    },
+    speedSettings: {
+      ...defaults.speedSettings!,
+      ...(config.speedSettings ?? defaults.speedSettings),
+    },
+    enemies: config.enemies ? [...config.enemies] : [],
+    powerUps: config.powerUps ? [...config.powerUps] : [],
+    levels: config.levels ? [...config.levels] : [],
+  };
+}
+
 function mapChallenge(challenge: (DailyChallenge & { id?: string }) | null): DailyChallenge {
   if (!challenge) {
     return createDefaultChallenge();
@@ -212,8 +271,10 @@ function mapChallenge(challenge: (DailyChallenge & { id?: string }) | null): Dai
   const { id: _ignoredId, ...rest } = challenge;
 
   let customConfig = challenge.custom || getDefaultCustom(customType.value);
-  if (customConfig && 'levelsConfig' in customConfig) {
-    customConfig = withDefaultZoneRevealAnswer(customConfig as ZoneRevealConfig);
+  if (isZoneRevealConfig(customConfig)) {
+    customConfig = withDefaultZoneRevealAnswer(customConfig);
+  } else if (isPacmanConfig(customConfig)) {
+    customConfig = withDefaultPacmanConfig(customConfig);
   }
 
   return {
@@ -274,7 +335,7 @@ function updateDirty(value: boolean) {
   emit('dirty-change', value);
 }
 
-function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig {
+function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig | PacmanConfig {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -300,6 +361,9 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       finishPercent: 0,
       heartIcon: '',
     });
+  }
+  if (customType === 'PacmanConfig') {
+    return withDefaultPacmanConfig(defaultPacmanConfig());
   }
 
   return {} as PyramidConfig;
