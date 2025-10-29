@@ -97,6 +97,7 @@ class FakeTransaction {
 class FakeFirestore {
   constructor(initialData = {}) {
     this.documents = new Map();
+    this.writeCounts = new Map();
 
     for (const [pathValue, value] of Object.entries(initialData)) {
       this.documents.set(pathValue, clone(value));
@@ -124,13 +125,18 @@ class FakeFirestore {
   }
 
   _set(pathValue, data, merge) {
-    if (merge) {
-      const previous = this.documents.has(pathValue) ? this.documents.get(pathValue) : {};
+    const previous = this.documents.has(pathValue) ? this.documents.get(pathValue) : {};
+
+    if (merge && this.documents.has(pathValue)) {
       this.documents.set(pathValue, deepMerge(previous, data));
-      return;
+    } else if (merge) {
+      this.documents.set(pathValue, clone(data));
+    } else {
+      this.documents.set(pathValue, clone(data));
     }
 
-    this.documents.set(pathValue, clone(data));
+    const currentCount = this.writeCounts.get(pathValue) ?? 0;
+    this.writeCounts.set(pathValue, currentCount + 1);
   }
 
   _has(pathValue) {
@@ -143,6 +149,10 @@ class FakeFirestore {
     }
 
     return clone(this.documents.get(pathValue));
+  }
+
+  getWriteCount(pathValue) {
+    return this.writeCounts.get(pathValue) ?? 0;
   }
 }
 
@@ -225,12 +235,20 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
       return counterManagerStub;
     }
 
+    if (request.endsWith('/utils/firebaseAdmin') || request === './utils/firebaseAdmin') {
+      return { admin: mockAdmin };
+    }
+
+    if (request.endsWith('/external/xApi') || request === './external/xApi') {
+      return { postOnX: () => Promise.resolve({ success: true }) };
+    }
+
     return originalLoad(request, parent, isMain);
   };
 
-  const indexPath = path.resolve(__dirname, '../../lib/index.js');
-  const firebaseAdminPath = path.resolve(__dirname, '../../lib/utils/firebaseAdmin.js');
-  const counterManagerPath = path.resolve(__dirname, '../../lib/utils/counterManager.js');
+  const indexPath = path.resolve(__dirname, '../../../lib/index.js');
+  const firebaseAdminPath = path.resolve(__dirname, '../../../lib/utils/firebaseAdmin.js');
+  const counterManagerPath = path.resolve(__dirname, '../../../lib/utils/counterManager.js');
 
   delete require.cache[indexPath];
   if (require.cache[firebaseAdminPath]) {
@@ -263,60 +281,68 @@ const baseUser = {
 const baseGame = { vip: [] };
 
 const challengeId = 'challenge-2024-01-01';
-const challengeDate = '2024-01-01';
 const gameId = 'zone-reveal-game';
 const gameTypeId = 'ZoneReveal';
 
 const userPath = `users/${baseUser.uid}`;
 const gamePath = `games/${gameId}`;
+const leaderboardPath = `${gamePath}/leaderboard/${baseUser.uid}`;
 const challengePath = `${gamePath}/daily_challenges/${challengeId}`;
 const challengeLeaderboardPath = `${challengePath}/leaderboard/${baseUser.uid}`;
 
-test('increments aggregated score and streak for the first correct attempt', async () => {
+const getWriteDelta = (firestore, pathValue, callback) => {
+  const before = firestore.getWriteCount(pathValue);
+  return callback().then((result) => {
+    const after = firestore.getWriteCount(pathValue);
+    return { result, writes: after - before };
+  });
+};
+
+test('records non-challenge submissions without aggregated fields and writes leaderboard once', async () => {
   const { submitGameScore, firestore } = createSubmitGameScore({
     [userPath]: clone(baseUser),
     [gamePath]: clone(baseGame),
-    [challengePath]: {
-      date: challengeDate,
-      custom: { answer: 'correct-answer' },
-    },
   }, [
     () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
   ]);
 
-  const response = await submitGameScore({
+  const { result: response, writes } = await getWriteDelta(firestore, leaderboardPath, () => submitGameScore({
     auth: { uid: baseUser.uid },
     data: {
       gameTypeId,
       gameId,
       gameData: {
-        score: 123,
-        streak: 0,
+        score: 150,
+        streak: 1,
         lastPlayed: Date.now(),
         custom: { answer: 'correct-answer' },
       },
-      dailyChallengeId: challengeId,
-      dailyChallengeDate: challengeDate,
     },
-  });
+  }));
 
   assert.equal(response.success, true);
-  assert.equal(response.aggregatedScore, 1);
-  assert.equal(response.aggregatedStreak, 1);
+  assert.equal(response.previousScore, null);
+  assert.equal(response.newScore, 150);
+  assert.equal(response.challengeBestScore, undefined);
+  assert.equal('aggregatedScore' in response, false);
+  assert.equal('aggregatedStreak' in response, false);
 
   const userDoc = firestore.getDocument(userPath);
   assert.ok(userDoc);
-  const userGame = userDoc.games[gameTypeId][gameId];
-  assert.equal(userGame.score, 1);
-  assert.equal(userGame.streak, 1);
+  const storedGame = userDoc.games[gameTypeId][gameId];
+  assert.equal(storedGame.score, 150);
+  assert.equal(storedGame.streak, 1);
 
-  const leaderboardDoc = firestore.getDocument(challengeLeaderboardPath);
+  const leaderboardDoc = firestore.getDocument(leaderboardPath);
   assert.ok(leaderboardDoc);
-  assert.equal(leaderboardDoc.score, 123);
+  assert.equal(leaderboardDoc.score, 150);
   assert.equal(leaderboardDoc.streak, 1);
+  assert.equal('aggregatedScore' in leaderboardDoc, false);
+  assert.equal('aggregatedStreak' in leaderboardDoc, false);
+  assert.equal(writes, 1);
 });
 
-test('keeps aggregated score and streak unchanged for repeated correct attempts', async () => {
+test('merges challenge submissions without aggregated fields and persists best score once', async () => {
   const priorTimestamp = new Date('2024-01-01T05:00:00Z').toISOString();
   const { submitGameScore, firestore } = createSubmitGameScore({
     [userPath]: {
@@ -348,131 +374,51 @@ test('keeps aggregated score and streak unchanged for repeated correct attempts'
     },
     [gamePath]: clone(baseGame),
     [challengePath]: {
-      date: challengeDate,
+      date: '2024-01-01',
       custom: { answer: 'correct-answer' },
     },
   }, [
     () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
   ]);
 
-  const response = await submitGameScore({
+  const { result: response, writes } = await getWriteDelta(firestore, challengeLeaderboardPath, () => submitGameScore({
     auth: { uid: baseUser.uid },
     data: {
       gameTypeId,
       gameId,
       gameData: {
         score: 200,
-        streak: 1,
+        streak: 2,
         lastPlayed: Date.now(),
         custom: { answer: 'correct-answer' },
       },
       dailyChallengeId: challengeId,
-      dailyChallengeDate: challengeDate,
     },
-  });
+  }));
 
   assert.equal(response.success, true);
-  assert.equal(response.aggregatedScore, 1);
-  assert.equal(response.aggregatedStreak, 1);
+  assert.equal(response.previousScore, 1);
+  assert.equal(response.newScore, 200);
+  assert.equal(response.challengeBestScore, 200);
+  assert.equal('aggregatedScore' in response, false);
+  assert.equal('aggregatedStreak' in response, false);
+  assert.equal(response.dailyChallengeId, challengeId);
+  assert.equal(typeof response.dailyChallengeDate, 'string');
 
   const userDoc = firestore.getDocument(userPath);
   assert.ok(userDoc);
-  const userGame = userDoc.games[gameTypeId][gameId];
-  assert.equal(userGame.score, 1);
-  assert.equal(userGame.streak, 1);
-
-  const progress = userGame.custom.dailyChallenges[challengeId];
-  assert.equal(progress.attemptCount, 2);
-  assert.equal(progress.solved, true);
-  assert.equal(progress.bestScore, 200);
+  const storedGame = userDoc.games[gameTypeId][gameId];
+  assert.equal(storedGame.score, 200);
+  assert.equal(storedGame.streak, 2);
+  const challengeProgress = storedGame.custom.dailyChallenges[challengeId];
+  assert.equal(challengeProgress.bestScore, 200);
+  assert.equal(challengeProgress.attemptCount, 2);
 
   const leaderboardDoc = firestore.getDocument(challengeLeaderboardPath);
   assert.ok(leaderboardDoc);
   assert.equal(leaderboardDoc.score, 200);
-  assert.equal(leaderboardDoc.streak, 1);
+  assert.equal(leaderboardDoc.challengeId, challengeId);
+  assert.equal('aggregatedScore' in leaderboardDoc, false);
+  assert.equal('aggregatedStreak' in leaderboardDoc, false);
+  assert.equal(writes, 1);
 });
-
-test('increments aggregated score only after a correct attempt following an incorrect one', async () => {
-  const { submitGameScore, firestore } = createSubmitGameScore({
-    [userPath]: clone(baseUser),
-    [gamePath]: clone(baseGame),
-    [challengePath]: {
-      date: challengeDate,
-      custom: { answer: 'correct-answer' },
-    },
-  }, [
-    () => ({ normalizedAnswer: 'wrong', distance: 10, isMatch: false }),
-    () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
-  ]);
-
-  const incorrectResponse = await submitGameScore({
-    auth: { uid: baseUser.uid },
-    data: {
-      gameTypeId,
-      gameId,
-      gameData: {
-        score: 90,
-        streak: 0,
-        lastPlayed: Date.now(),
-        custom: { answer: 'wrong' },
-      },
-      dailyChallengeId: challengeId,
-      dailyChallengeDate: challengeDate,
-    },
-  });
-
-  assert.equal(incorrectResponse.success, true);
-  assert.equal(incorrectResponse.aggregatedScore, 0);
-  assert.equal(incorrectResponse.aggregatedStreak, 1);
-
-  const afterIncorrectUserDoc = firestore.getDocument(userPath);
-  assert.ok(afterIncorrectUserDoc);
-  const afterIncorrectGame = afterIncorrectUserDoc.games[gameTypeId][gameId];
-  assert.equal(afterIncorrectGame.score, 0);
-  assert.equal(afterIncorrectGame.streak, 1);
-
-  const incorrectProgress = afterIncorrectGame.custom.dailyChallenges[challengeId];
-  assert.equal(incorrectProgress.attemptCount, 1);
-  assert.equal(incorrectProgress.solved, false);
-
-  const incorrectLeaderboardDoc = firestore.getDocument(challengeLeaderboardPath);
-  assert.ok(incorrectLeaderboardDoc);
-  assert.equal(incorrectLeaderboardDoc.score, 90);
-  assert.equal(incorrectLeaderboardDoc.streak, 1);
-
-  const correctResponse = await submitGameScore({
-    auth: { uid: baseUser.uid },
-    data: {
-      gameTypeId,
-      gameId,
-      gameData: {
-        score: 140,
-        streak: 1,
-        lastPlayed: Date.now(),
-        custom: { answer: 'correct-answer' },
-      },
-      dailyChallengeId: challengeId,
-      dailyChallengeDate: challengeDate,
-    },
-  });
-
-  assert.equal(correctResponse.success, true);
-  assert.equal(correctResponse.aggregatedScore, 1);
-  assert.equal(correctResponse.aggregatedStreak, 1);
-
-  const finalUserDoc = firestore.getDocument(userPath);
-  assert.ok(finalUserDoc);
-  const finalGame = finalUserDoc.games[gameTypeId][gameId];
-  assert.equal(finalGame.score, 1);
-  assert.equal(finalGame.streak, 1);
-
-  const finalProgress = finalGame.custom.dailyChallenges[challengeId];
-  assert.equal(finalProgress.attemptCount, 2);
-  assert.equal(finalProgress.solved, true);
-
-  const finalLeaderboardDoc = firestore.getDocument(challengeLeaderboardPath);
-  assert.ok(finalLeaderboardDoc);
-  assert.equal(finalLeaderboardDoc.score, 140);
-  assert.equal(finalLeaderboardDoc.streak, 1);
-});
-
