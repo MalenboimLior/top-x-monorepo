@@ -52,6 +52,54 @@ const hasPyramidCustomChanges = (
   );
 };
 
+type PyramidTier = { tier: number; slots: (string | null)[] };
+type PyramidWorstItem = { id?: string | null };
+
+type PyramidCustomData = {
+  pyramid?: PyramidTier[];
+  worstItem?: PyramidWorstItem;
+};
+
+const isPyramidTier = (value: unknown): value is PyramidTier => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const tierRecord = value as Record<string, unknown>;
+  const slots = tierRecord.slots;
+
+  return (
+    typeof tierRecord.tier === 'number'
+    && Array.isArray(slots)
+    && slots.every((slot) => slot === null || typeof slot === 'string')
+  );
+};
+
+const isPyramidCustomData = (value: unknown): value is PyramidCustomData => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  const { pyramid, worstItem } = record as PyramidCustomData;
+
+  if (
+    pyramid !== undefined
+    && (!Array.isArray(pyramid) || !pyramid.every(isPyramidTier))
+  ) {
+    return false;
+  }
+
+  if (
+    worstItem !== undefined
+    && (typeof worstItem !== 'object' || worstItem === null)
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
 const oauth = new OAuth({
   consumer: {
     key: process.env.XAPI_KEY || '',
@@ -276,9 +324,10 @@ export const submitGameScore = functions.https.onCall(async (
         const itemRanks = custom.itemRanks || {};
         const worstItemCounts = custom.worstItemCounts || {};
 
-        if (previousGameData?.custom?.pyramid) {
-          previousGameData.custom.pyramid.forEach((tier: { tier: number; slots: (string | null)[] }) => {
-            tier.slots.forEach((itemId: string | null) => {
+        const previousCustom = previousGameData?.custom;
+        if (isPyramidCustomData(previousCustom) && previousCustom.pyramid) {
+          previousCustom.pyramid.forEach((tier) => {
+            tier.slots.forEach((itemId) => {
               if (itemId) {
                 const rowId = tier.tier;
                 itemRanks[itemId] = itemRanks[itemId] || {};
@@ -287,14 +336,15 @@ export const submitGameScore = functions.https.onCall(async (
             });
           });
         }
-        if (previousGameData?.custom?.worstItem?.id) {
-          const itemId = previousGameData.custom.worstItem.id;
+        if (isPyramidCustomData(previousCustom) && previousCustom.worstItem?.id) {
+          const itemId = previousCustom.worstItem.id;
           worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
         }
 
-        if (mergedGameData.custom?.pyramid) {
-          mergedGameData.custom.pyramid.forEach((tier: { tier: number; slots: (string | null)[] }) => {
-            tier.slots.forEach((itemId: string | null) => {
+        const mergedCustom = mergedGameData.custom;
+        if (isPyramidCustomData(mergedCustom) && mergedCustom.pyramid) {
+          mergedCustom.pyramid.forEach((tier) => {
+            tier.slots.forEach((itemId) => {
               if (itemId) {
                 const rowId = tier.tier;
                 itemRanks[itemId] = itemRanks[itemId] || {};
@@ -303,8 +353,8 @@ export const submitGameScore = functions.https.onCall(async (
             });
           });
         }
-        if (mergedGameData.custom?.worstItem?.id) {
-          const itemId = mergedGameData.custom.worstItem.id;
+        if (isPyramidCustomData(mergedCustom) && mergedCustom.worstItem?.id) {
+          const itemId = mergedCustom.worstItem.id;
           worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
         }
 
