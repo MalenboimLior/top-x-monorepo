@@ -2,9 +2,11 @@
   <div class="image-uploader">
     <div v-if="modelValue">
       <img :src="modelValue" alt="Current image" class="uploader-current-image" />
-      <button class="uploader-button uploader-button-primary" @click="selectImage">Change Image</button>
+      <button type="button" class="uploader-button uploader-button-primary" @click="selectImage">Change Image</button>
     </div>
-    <button v-else class="uploader-button uploader-button-primary" @click="selectImage">Upload Image</button>
+    <button type="button" v-else class="uploader-button uploader-button-primary" @click="selectImage">
+      Upload Image
+    </button>
 
     <input
       type="file"
@@ -54,16 +56,44 @@
             />
           </div>
           <div class="uploader-zoom-controls">
-            <button class="uploader-button uploader-button-small" @click="zoomOut" :disabled="scale <= minScale">-</button>
+            <button
+              type="button"
+              class="uploader-button uploader-button-small"
+              @click="zoomOut"
+              :disabled="scale <= minScale"
+            >
+              -
+            </button>
             <span class="uploader-zoom-label">Zoom: {{ scale.toFixed(2) }}</span>
-            <button class="uploader-button uploader-button-small" @click="zoomIn" :disabled="scale >= 3">+</button>
+            <button
+              type="button"
+              class="uploader-button uploader-button-small"
+              @click="zoomIn"
+              :disabled="scale >= 3"
+            >
+              +
+            </button>
           </div>
           <div class="uploader-controls">
-            <button class="uploader-button uploader-button-success" @click="cropAndUpload" :disabled="!image || !originalFile">Upload</button>
-            <button class="uploader-button uploader-button-cancel" @click="cancel" :disabled="!image || !originalFile">Cancel</button>
+            <button
+              type="button"
+              class="uploader-button uploader-button-success"
+              @click="cropAndUpload"
+              :disabled="!image || !originalFile"
+            >
+              Upload
+            </button>
+            <button
+              type="button"
+              class="uploader-button uploader-button-cancel"
+              @click="cancel"
+              :disabled="!image || !originalFile"
+            >
+              Cancel
+            </button>
           </div>
         </div>
-        <button class="uploader-modal-close" aria-label="close" @click="cancel"></button>
+        <button type="button" class="uploader-modal-close" aria-label="close" @click="cancel"></button>
       </div>
     </div>
   </div>
