@@ -277,7 +277,12 @@ export const useUserStore = defineStore('user', () => {
   async function updateGameProgress(
     gameTypeId: string,
     gameId: string,
-    gameData: UserGameDataSubmission
+    gameData: UserGameDataSubmission,
+    options?: {
+      dailyChallengeId?: string
+      dailyChallengeDate?: string
+      challengeMetadata?: Record<string, unknown>
+    }
   ) {
     if (!user.value) {
       console.log('Cannot update game progress: no user logged in');
@@ -286,7 +291,27 @@ export const useUserStore = defineStore('user', () => {
     }
     try {
       const submitGameScore: HttpsCallable<SubmitGameScoreRequest, SubmitGameScoreResponse> = httpsCallable(functions, 'submitGameScore');
-      const { data } = await submitGameScore({ gameTypeId, gameId, gameData });
+      const payload: SubmitGameScoreRequest = {
+        gameTypeId,
+        gameId,
+        gameData,
+      };
+
+      if (options?.dailyChallengeId) {
+        payload.dailyChallengeId = options.dailyChallengeId;
+        payload.isDailyChallenge = true;
+      }
+      if (options?.dailyChallengeDate) {
+        payload.dailyChallengeDate = options.dailyChallengeDate;
+      }
+      if (options?.challengeMetadata) {
+        payload.challengeMetadata = options.challengeMetadata;
+      }
+      if (options && !options.dailyChallengeId && (options.dailyChallengeDate || options.challengeMetadata)) {
+        payload.isDailyChallenge = true;
+      }
+
+      const { data } = await submitGameScore(payload);
 
       if (!data?.success) {
         const message = data?.message || 'Score was not updated';

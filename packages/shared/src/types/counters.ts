@@ -26,6 +26,10 @@ export type GameCounterEvent = typeof GAME_COUNTER_EVENTS[keyof typeof GAME_COUN
 export interface RecordGameEventRequest {
   gameId: string;
   events: GameCounterEvent[];
+  /** Optional identifier when the counter entry is tied to a daily challenge. */
+  dailyChallengeId?: string;
+  /** Logical date for the challenge leaderboard aggregation (YYYY-MM-DD). */
+  dailyChallengeDate?: string;
 }
 
 export interface RecordGameEventResponse {

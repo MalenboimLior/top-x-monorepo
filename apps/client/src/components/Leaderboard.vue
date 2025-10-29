@@ -4,6 +4,7 @@
     <h2 class="title is-3 has-text-white animate-item" style="--animation-delay: 0s;">{{ title }}</h2>
     <div class="card animate-item" style="--animation-delay: 0.2s;">
       <div class="card-content">
+        <p class="board-label">{{ boardLabel }}</p>
         <div v-if="isLoading" class="loading-state has-text-white">
           <span class="loader" aria-hidden="true"></span>
           <p>Loading leaderboard...</p>
@@ -74,6 +75,7 @@ interface Props {
   title?: string;
   frenemies?: string[];
   currentUserId?: string;
+  dailyChallengeId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -94,6 +96,10 @@ const error = ref<string | null>(null);
 const frenemiesSet = computed(() => new Set(props.frenemies));
 const showActions = computed(() => props.currentUserId !== undefined);
 
+const boardLabel = computed(() =>
+  props.dailyChallengeId ? 'Daily challenge leaderboard' : 'Lifetime leaderboard'
+);
+
 const fetchLeaderboard = async () => {
   if (!props.gameId) {
     leaderboard.value = [];
@@ -105,11 +111,15 @@ const fetchLeaderboard = async () => {
 
   try {
     const url = `https://us-central1-top-x-co.cloudfunctions.net/getTopLeaderboard`;
+    const params: Record<string, unknown> = {
+      gameId: props.gameId,
+      limit: props.limit,
+    };
+    if (props.dailyChallengeId) {
+      params.dailyChallengeId = props.dailyChallengeId;
+    }
     const response = await axios.get(url, {
-      params: {
-        gameId: props.gameId,
-        limit: props.limit,
-      },
+      params,
     });
     leaderboard.value = response.data;
   } catch (err) {
@@ -128,7 +138,7 @@ const handleAddFrenemy = (uid: string) => {
 onMounted(fetchLeaderboard);
 
 watch(
-  () => [props.gameId, props.limit],
+  () => [props.gameId, props.limit, props.dailyChallengeId],
   () => {
     fetchLeaderboard();
   }
@@ -146,6 +156,14 @@ watch(
 
 .error-state {
   color: #ff6b6b;
+}
+
+.board-label {
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .loader {

@@ -11,13 +11,22 @@ const recordGameEventCallable = httpsCallable<RecordGameEventRequest, RecordGame
   'recordGameEvent',
 );
 
-export async function recordGameEvents(gameId: string, events: GameCounterEvent[]): Promise<GameCounterEvent[]> {
+export async function recordGameEvents(
+  gameId: string,
+  events: GameCounterEvent[],
+  context?: { dailyChallengeId?: string; dailyChallengeDate?: string }
+): Promise<GameCounterEvent[]> {
   if (!gameId || !events.length) {
     return [];
   }
 
   try {
-    const { data } = await recordGameEventCallable({ gameId, events });
+    const { data } = await recordGameEventCallable({
+      gameId,
+      events,
+      dailyChallengeId: context?.dailyChallengeId,
+      dailyChallengeDate: context?.dailyChallengeDate,
+    });
     if (!data?.success) {
       return [];
     }
