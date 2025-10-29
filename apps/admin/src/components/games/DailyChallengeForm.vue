@@ -191,7 +191,9 @@ function createDefaultChallenge(): DailyChallenge {
   };
 }
 
-const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+function createDefaultAnswer(): ZoneRevealConfig['answer'] {
+  return { solution: '', accepted: [], image: '' };
+}
 
 function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
   if (!config.answer) {
