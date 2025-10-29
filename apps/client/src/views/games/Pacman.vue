@@ -1,5 +1,57 @@
 <template>
   <div class="game-wrapper">
+    <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+      <defs>
+        <symbol id="ic-chevron-left" viewBox="0 0 24 24" fill="none">
+          <path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+        <symbol id="ic-arrow-up" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 4l-7 7M12 4l7 7M12 4v16"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </symbol>
+        <symbol id="ic-arrow-down" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 20l7-7M12 20l-7-7M12 20V4"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </symbol>
+        <symbol id="ic-arrow-left" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 12l7-7M4 12l7 7M4 12h16"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </symbol>
+        <symbol id="ic-arrow-right" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M20 12l-7-7M20 12l-7 7M20 12H4"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="game-header">
+      <button class="x-btn x-back" @click="goBack" aria-label="Back">
+        <svg class="icon"><use href="#ic-chevron-left" xlink:href="#ic-chevron-left" /></svg>
+        <span class="label">Back</span>
+      </button>
+      <h2 class="subtitle has-text-success">{{ gameTitle }}</h2>
+      <div class="header-spacer" aria-hidden="true"></div>
+    </div>
     <div class="hud">
       <div class="hud-card">
         <span class="label">Score</span>
@@ -20,19 +72,28 @@
     </div>
     <div ref="phaserContainer" class="game-canvas"></div>
     <div class="controls" :class="{ 'is-disabled': showEndScreen }">
-      <div class="dpad">
-        <button class="arrow" aria-label="up" @click="setDirection('up')">▲</button>
-        <div class="mid">
-          <button class="arrow" aria-label="left" @click="setDirection('left')">◀</button>
-          <button class="arrow" aria-label="down" @click="setDirection('down')">▼</button>
-          <button class="arrow" aria-label="right" @click="setDirection('right')">▶</button>
-        </div>
+      <div class="pad">
+        <span class="spacer" />
+        <button class="x-btn md" aria-label="Up" @click="setDirection('up')">
+          <svg class="icon"><use href="#ic-arrow-up" xlink:href="#ic-arrow-up" /></svg>
+        </button>
+        <span class="spacer" />
+
+        <button class="x-btn md" aria-label="Left" @click="setDirection('left')">
+          <svg class="icon"><use href="#ic-arrow-left" xlink:href="#ic-arrow-left" /></svg>
+        </button>
+        <button class="x-btn md" aria-label="Down" @click="setDirection('down')">
+          <svg class="icon"><use href="#ic-arrow-down" xlink:href="#ic-arrow-down" /></svg>
+        </button>
+        <button class="x-btn md" aria-label="Right" @click="setDirection('right')">
+          <svg class="icon"><use href="#ic-arrow-right" xlink:href="#ic-arrow-right" /></svg>
+        </button>
       </div>
       <div class="actions">
-        <button class="button is-info" type="button" @click="togglePause">
+        <button class="x-btn sm ghost" type="button" @click="togglePause">
           {{ isPaused ? 'Resume' : 'Pause' }}
         </button>
-        <button class="button is-warning" type="button" @click="restartGame">Restart</button>
+        <button class="x-btn sm" type="button" @click="restartGame">Restart</button>
       </div>
     </div>
     <PacmanEndScreen
@@ -49,7 +110,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import PacmanEndScreen from '@/components/games/pacman/PacmanEndScreen.vue'
 import type { PacmanConfig } from '@top-x/shared/types/pacman'
@@ -60,6 +121,7 @@ import { analytics } from '@top-x/shared'
 import { logEvent } from 'firebase/analytics'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 type PhaserNamespace = typeof import('phaser')
@@ -293,10 +355,28 @@ function showChrome() {
   document.querySelector('footer.footer')?.classList.remove('is-hidden')
   document.body.style.overflow = ''
 }
+
+function goBack() {
+  showChrome()
+  router.back()
+}
 </script>
 
 <style scoped>
 .game-wrapper {
+  --x-bg: #050608;
+  --x-surface: #0b0d10;
+  --x-elev: #10141c;
+  --x-border: #20262f;
+  --x-border-strong: #2e3440;
+  --x-text: #f5f7fa;
+  --x-muted: #a5acb8;
+  --x-accent: #1d9bf0;
+
+  --size: 60px;
+  --radius: 16px;
+  --icon: 24px;
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -305,7 +385,40 @@ function showChrome() {
   gap: 1.5rem;
   padding: 1.5rem 1rem 3rem;
   background: radial-gradient(circle at top, #0b0d10, #050608 65%);
-  color: #f5f7fa;
+  color: var(--x-text);
+}
+
+.game-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: 100%;
+  max-width: min(600px, 90vw);
+  gap: 8px;
+}
+
+.game-header h2 {
+  grid-column: 2;
+  justify-self: center;
+  text-align: center;
+  margin: 0;
+}
+
+.x-back {
+  grid-column: 1;
+  justify-self: start;
+  padding: 8px 12px;
+  gap: 8px;
+  border-radius: 999px;
+}
+
+.x-back .label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.header-spacer {
+  grid-column: 3;
 }
 
 .hud {
@@ -335,6 +448,85 @@ function showChrome() {
 .hud-card .value {
   font-size: 1.5rem;
   font-weight: 700;
+}
+
+.x-btn {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size);
+  height: var(--size);
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--x-border);
+  background: linear-gradient(180deg, var(--x-elev), var(--x-surface));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.55);
+  color: var(--x-text);
+  transition: transform 0.08s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease,
+    filter 0.18s ease;
+}
+
+.x-btn .icon {
+  width: var(--icon);
+  height: var(--icon);
+  display: block;
+  color: #00e8e0;
+}
+
+.x-btn:hover {
+  border-color: var(--x-border-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 30px rgba(0, 0, 0, 0.6);
+}
+
+.x-btn:active {
+  transform: translateY(1px) scale(0.985);
+  filter: brightness(0.98);
+}
+
+.x-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--x-accent) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 30px rgba(0, 0, 0, 0.6);
+}
+
+.x-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.x-btn.ghost {
+  background: transparent;
+  box-shadow: none;
+}
+
+.x-btn.round {
+  border-radius: 999px;
+}
+
+.x-btn.sm {
+  --size: 48px;
+  --radius: 14px;
+  --icon: 20px;
+  min-width: var(--size);
+}
+
+.x-btn.md {
+  --size: 60px;
+  --radius: 16px;
+  --icon: 24px;
+  min-width: var(--size);
+}
+
+.x-btn.lg {
+  --size: 72px;
+  --radius: 18px;
+  --icon: 28px;
+  min-width: var(--size);
 }
 
 .game-canvas {
@@ -367,38 +559,22 @@ function showChrome() {
   opacity: 0.5;
 }
 
-.dpad {
+.pad {
+  touch-action: none;
   display: grid;
-  grid-template-columns: repeat(3, 50px);
-  grid-template-rows: repeat(3, 50px);
-  gap: 6px;
-  justify-content: center;
+  gap: 10px;
+  grid-template-columns: repeat(3, var(--size));
+  grid-auto-rows: var(--size);
 }
 
-.arrow {
-  background: linear-gradient(145deg, #1f2937, #111827);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  border-radius: 8px;
-  color: #e5edff;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.arrow:active {
-  transform: translateY(1px);
-}
-
-.dpad .mid {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  grid-column: 1 / span 3;
-  justify-content: center;
+.pad .spacer {
+  visibility: hidden;
 }
 
 .actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 @media (min-width: 768px) {
@@ -410,6 +586,12 @@ function showChrome() {
     flex-direction: row;
     justify-content: center;
     gap: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .x-btn {
+    transition: none;
   }
 }
 </style>
