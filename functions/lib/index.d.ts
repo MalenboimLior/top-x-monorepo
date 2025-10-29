@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions/v2';
-import { SubmitGameScoreRequest, SubmitGameScoreResponse } from '@top-x/shared/types/user';
+import type { SubmitGameScoreRequest, SubmitGameScoreResponse } from '@top-x/shared/types/user';
 import { postOnX } from './external/xApi';
 import './utils/firebaseAdmin';
 export declare const syncXUserData: functions.https.CallableFunction<any, Promise<void>, unknown>;

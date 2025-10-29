@@ -9,8 +9,8 @@
     "target": "es2017",
     "esModuleInterop": true,
     "paths": {
-      "@top-x/shared/*": ["../packages/shared/src/*"],
-      "@top-x/shared/types/*": ["../packages/shared/src/types/*"]
+      "@top-x/shared/types/*": ["../packages/shared/dist-node/types/*"],
+      "@top-x/shared/utils/*": ["../packages/shared/dist-node/utils/*"]
     }
   },
   "compileOnSave": true,

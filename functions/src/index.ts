@@ -5,7 +5,7 @@ import cors from 'cors';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
-import {
+import type {
   UserGameData,
   SubmitGameScoreRequest,
   SubmitGameScoreResponse,

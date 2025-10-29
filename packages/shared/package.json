@@ -68,7 +68,7 @@
     },
     "./utils/zoneRevealAnswer": {
       "types": "./src/utils/zoneRevealAnswer.ts",
-      "default": "./src/utils/zoneRevealAnswer.ts"
+      "default": "./dist-node/utils/zoneRevealAnswer.js"
     }
   }
 }
