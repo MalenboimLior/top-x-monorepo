@@ -17,18 +17,56 @@
           <h2>Select a challenge</h2>
           <p>Pick a card to launch the experience in a new tab.</p>
         </header>
-        <div class="daily-grid">
-          <button
-            v-for="challenge in challenges"
-            :key="challenge.id"
-            type="button"
-            class="daily-card"
-            @click="openChallenge(challenge.route)"
-          >
-            <h3>{{ challenge.id }}</h3>
-            <p>{{ challenge.description || 'Surprise the room with a fresh twist.' }}</p>
-            <span class="daily-card__cta">Play</span>
-          </button>
+        <div class="daily-content">
+          <div class="daily-grid">
+            <article
+              v-for="challenge in challenges"
+              :key="challenge.id"
+              class="daily-card"
+              :class="{ 'is-active': challenge.id === selectedChallengeId }"
+              @click="selectChallenge(challenge.id)"
+            >
+              <div class="daily-card__header">
+                <h3>{{ challenge.id }}</h3>
+                <p>{{ challenge.description || 'Surprise the room with a fresh twist.' }}</p>
+              </div>
+              <div class="daily-card__footer">
+                <button type="button" class="daily-card__cta" @click.stop="launchChallenge(challenge)">
+                  Play
+                </button>
+              </div>
+            </article>
+          </div>
+          <aside v-if="selectedChallenge" class="daily-detail">
+            <header class="daily-detail__header">
+              <h3>{{ selectedChallenge.id }}</h3>
+              <p>{{ selectedChallenge.description || 'Take on the challenge and climb the board.' }}</p>
+            </header>
+            <dl class="daily-detail__meta">
+              <div v-if="selectedChallengeAvailable">
+                <dt>Available</dt>
+                <dd>{{ selectedChallengeAvailable }}</dd>
+              </div>
+              <div v-if="selectedChallengeCloses">
+                <dt>Closes</dt>
+                <dd>{{ selectedChallengeCloses }}</dd>
+              </div>
+              <div v-if="selectedChallengeReveals">
+                <dt>Reveal</dt>
+                <dd>{{ selectedChallengeReveals }}</dd>
+              </div>
+            </dl>
+            <div class="daily-detail__actions">
+              <button type="button" class="daily-detail__play" @click="launchChallenge(selectedChallenge)">
+                Launch challenge
+              </button>
+            </div>
+            <Leaderboard
+              :game-id="gameId"
+              :daily-challenge-id="selectedChallengeId || undefined"
+              title="Today's Standings"
+            />
+          </aside>
         </div>
         <p v-if="!challenges.length && hasLoaded" class="daily-empty">
           No daily challenges are available right now. Check back soon!
@@ -39,18 +77,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, analytics, trackEvent } from '@top-x/shared';
+import Leaderboard from '@/components/Leaderboard.vue';
+import { DateTime } from 'luxon';
 
 const route = useRoute();
 const router = useRouter();
 const gameId = ref<string>((route.query.game as string) || '');
+const initialChallenge = route.query.challenge as string | undefined;
+if (initialChallenge) {
+  selectedChallengeId.value = initialChallenge;
+}
 const challenges = ref<any[]>([]);
 const gameTitle = ref('');
 const hasLoaded = ref(false);
+const selectedChallengeId = ref<string | null>(null);
+
+const selectedChallenge = computed(() =>
+  challenges.value.find((challenge) => challenge.id === selectedChallengeId.value) || null,
+);
+
+const selectedChallengeSchedule = computed(() => selectedChallenge.value?.schedule || null);
 
 useHead({
   title: 'Daily Challenges - TOP-X',
@@ -68,6 +119,9 @@ onMounted(async () => {
       ...d.data(),
       route: `/games/${gameTypeId}?game=${gameId.value}&challenge=${d.id}`,
     }));
+    if (!selectedChallengeId.value && challenges.value.length) {
+      selectedChallengeId.value = challenges.value[0].id;
+    }
   } catch (err) {
     console.error('Failed fetching challenges:', err);
   } finally {
@@ -75,11 +129,52 @@ onMounted(async () => {
   }
 });
 
-function openChallenge(challengeRoute: string) {
-  const idMatch = challengeRoute.match(/game=([^&]+)/);
+watch(
+  () => route.query.challenge,
+  (nextChallenge) => {
+    if (typeof nextChallenge === 'string') {
+      selectedChallengeId.value = nextChallenge;
+    }
+  },
+);
+
+const selectedChallengeAvailable = computed(() =>
+  formatDateTime(selectedChallengeSchedule.value?.availableAt),
+);
+const selectedChallengeCloses = computed(() =>
+  formatDateTime(selectedChallengeSchedule.value?.closesAt),
+);
+const selectedChallengeReveals = computed(() =>
+  formatDateTime(
+    selectedChallengeSchedule.value?.revealAt || selectedChallenge.value?.answerRevealUTC,
+  ),
+);
+
+function selectChallenge(challengeId: string) {
+  selectedChallengeId.value = challengeId;
+}
+
+function launchChallenge(challenge: any) {
+  if (!challenge?.route) return;
+  if (challenge.id) {
+    selectedChallengeId.value = challenge.id;
+  }
+  const idMatch = challenge.route.match(/game=([^&]+)/);
   const selectedGameId = idMatch ? idMatch[1] : 'unknown';
-  trackEvent(analytics, 'select_game', { game_id: selectedGameId });
-  router.push(challengeRoute);
+  trackEvent(analytics, 'select_game', {
+    game_id: selectedGameId,
+    daily_challenge_id: challenge.id,
+  });
+  router.push(challenge.route);
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return '';
+  const parsed = DateTime.fromISO(value, { zone: 'utc' });
+  if (parsed.isValid) {
+    return parsed.toLocal().toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+  }
+  return new Date(value).toLocaleString();
 }
 </script>
 
@@ -169,6 +264,12 @@ function openChallenge(challengeRoute: string) {
   color: rgba(255, 255, 255, 0.65);
 }
 
+
+.daily-content {
+  display: grid;
+  gap: 1.5rem;
+}
+
 .daily-grid {
   display: grid;
   gap: 1.5rem;
@@ -184,15 +285,25 @@ function openChallenge(challengeRoute: string) {
   color: inherit;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .daily-card:hover,
-.daily-card:focus {
+.daily-card:focus,
+.daily-card.is-active {
   transform: translateY(-4px);
   border-color: rgba(0, 232, 224, 0.45);
   background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35);
+}
+
+.daily-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .daily-card h3 {
@@ -206,10 +317,117 @@ function openChallenge(challengeRoute: string) {
   line-height: 1.5;
 }
 
+.daily-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .daily-card__cta {
-  margin-top: auto;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 232, 224, 0.45);
+  background: transparent;
+  color: rgba(0, 232, 224, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   font-weight: 600;
-  color: var(--bulma-primary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.daily-card__cta:hover,
+.daily-card__cta:focus {
+  background: rgba(0, 232, 224, 0.15);
+  color: #000;
+}
+
+.daily-detail {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 232, 224, 0.25);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.daily-detail__header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.daily-detail__header p {
+  margin: 0.5rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.daily-detail__meta {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.daily-detail__meta dt {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.daily-detail__meta dd {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.daily-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.daily-detail__play {
+  padding: 0.65rem 1.4rem;
+  border-radius: 12px;
+  border: none;
+  background: var(--bulma-primary);
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.daily-detail__play:hover,
+.daily-detail__play:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(0, 232, 224, 0.35);
+}
+
+.daily-detail :deep(.leaderboard-container) {
+  margin-top: 0;
+}
+
+.daily-detail :deep(.card) {
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid rgba(0, 232, 224, 0.15);
+}
+
+.daily-empty {
+  margin: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 640px) {
+  .daily-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .daily-content {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: start;
+  }
 }
 
 .daily-empty {

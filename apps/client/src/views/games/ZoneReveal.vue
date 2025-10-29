@@ -82,6 +82,7 @@
       :game-id="gameId"
       :reveal-at="revealAt"
       :answer-config="zoneRevealConfig?.answer ?? null"
+      :challenge-context="challengeContext"
       @close="showEndScreen = false"
     />
   </div>
@@ -115,14 +116,23 @@ const route = useRoute()
 const router = useRouter()
 const zoneRevealConfig = ref<ZoneRevealConfig | null>(null)
 const gameId = ref(route.query.game as string)
-const challengeId = route.query.challenge as string | undefined
+const initialChallengeId = route.query.challenge as string | undefined
+const resolvedChallengeId = ref<string | null>(initialChallengeId ?? null)
+const challengeContext = ref<{
+  id: string
+  availableAt?: string
+  closesAt?: string
+  revealAt?: string
+  dailyDate?: string
+} | null>(null)
 const gameTitle = ref('')
 const gameDescription = ref('')
 const showEndScreen = ref(false)
 const endScreenScore = ref(0)
 const revealAt = ref('')
 
-type ZoneRevealDailyChallenge = DailyChallenge & { answerRevealUTC?: string }
+type ZoneRevealDailyChallengeData = DailyChallenge & { answerRevealUTC?: string }
+type ZoneRevealDailyChallenge = ZoneRevealDailyChallengeData & { id: string }
 
 const ensureZoneRevealAnswer = (config: ZoneRevealConfig): ZoneRevealConfig => {
   if (!config.answer) {
@@ -146,7 +156,8 @@ async function loadDailyChallengeDocument(
       return null
     }
 
-    return snapshot.data() as ZoneRevealDailyChallenge
+    const data = snapshot.data() as ZoneRevealDailyChallengeData
+    return { id: challenge, ...data }
   } catch (err) {
     console.error('Failed fetching daily challenge:', err)
     return null
@@ -173,9 +184,10 @@ async function findActiveDailyChallenge(
     const snapshot = await getDocs(activeQuery)
 
     for (const docSnap of snapshot.docs) {
-      const data = docSnap.data() as ZoneRevealDailyChallenge
-      if (data && isChallengeActive(data, now)) {
-        return data
+      const data = docSnap.data() as ZoneRevealDailyChallengeData
+      const challenge: ZoneRevealDailyChallenge = { id: docSnap.id, ...data }
+      if (data && isChallengeActive(challenge, now)) {
+        return challenge
       }
     }
   } catch (err) {
@@ -274,7 +286,11 @@ onMounted(async () => {
   if (!phaserContainer.value) return
 
   if (analytics) {
-    logEvent(analytics, 'game_view', { game_name: gameId.value, view_type: 'play' })
+    logEvent(analytics, 'game_view', {
+      game_name: gameId.value,
+      view_type: 'play',
+      daily_challenge_id: resolvedChallengeId.value ?? undefined
+    })
   }
 
   if (gameId.value) {
@@ -293,8 +309,8 @@ onMounted(async () => {
 
       let loadedChallenge: ZoneRevealDailyChallenge | null = null
 
-      if (challengeId) {
-        loadedChallenge = await loadDailyChallengeDocument(gameId.value, challengeId)
+      if (initialChallengeId) {
+        loadedChallenge = await loadDailyChallengeDocument(gameId.value, initialChallengeId)
       } else if (gameData.dailyChallengeActive) {
         loadedChallenge = await findActiveDailyChallenge(gameId.value, gameData.dailyChallengeCurrent)
       }
@@ -302,9 +318,23 @@ onMounted(async () => {
       if (loadedChallenge) {
         zoneRevealConfig.value = ensureZoneRevealAnswer(loadedChallenge.custom as ZoneRevealConfig)
         revealAt.value = resolveRevealTimestamp(loadedChallenge)
+        resolvedChallengeId.value = loadedChallenge.id
+        const availableAt = loadedChallenge.schedule?.availableAt
+        const dailyDate = availableAt
+          ? DateTime.fromISO(availableAt, { zone: 'utc' }).toISODate() || undefined
+          : undefined
+        challengeContext.value = {
+          id: loadedChallenge.id,
+          availableAt,
+          closesAt: loadedChallenge.schedule?.closesAt,
+          revealAt: revealAt.value,
+          dailyDate
+        }
       } else {
         zoneRevealConfig.value = ensureZoneRevealAnswer(gameData.custom as ZoneRevealConfig)
         revealAt.value = ''
+        resolvedChallengeId.value = null
+        challengeContext.value = null
       }
     } catch (err) {
       console.error('Failed fetching zone reveal config:', err)
