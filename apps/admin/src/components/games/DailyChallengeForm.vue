@@ -191,6 +191,17 @@ function createDefaultChallenge(): DailyChallenge {
   };
 }
 
+const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+
+function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
+  if (!config.answer) {
+    config.answer = createDefaultAnswer();
+  } else {
+    config.answer.accepted = config.answer.accepted ?? [];
+  }
+  return config;
+}
+
 function mapChallenge(challenge: (DailyChallenge & { id?: string }) | null): DailyChallenge {
   if (!challenge) {
     return createDefaultChallenge();
@@ -198,10 +209,15 @@ function mapChallenge(challenge: (DailyChallenge & { id?: string }) | null): Dai
 
   const { id: _ignoredId, ...rest } = challenge;
 
+  let customConfig = challenge.custom || getDefaultCustom(customType.value);
+  if (customConfig && 'levelsConfig' in customConfig) {
+    customConfig = withDefaultZoneRevealAnswer(customConfig as ZoneRevealConfig);
+  }
+
   return {
     ...rest,
     schedule: withDefaultSchedule(challenge.schedule),
-    custom: challenge.custom || getDefaultCustom(customType.value),
+    custom: customConfig,
   };
 }
 
@@ -273,7 +289,7 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
     };
   }
   if (customType === 'ZoneRevealConfig') {
-    return {
+    return withDefaultZoneRevealAnswer({
       levelsConfig: [],
       backgroundImage: '',
       spritesheets: {},
@@ -281,7 +297,7 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       enemiesSpeedArray: {},
       finishPercent: 0,
       heartIcon: '',
-    };
+    });
   }
 
   return {} as PyramidConfig;

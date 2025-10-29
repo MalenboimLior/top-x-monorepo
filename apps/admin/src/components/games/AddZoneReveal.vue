@@ -168,6 +168,8 @@ import type { ZoneRevealConfig, LevelConfig, EnemyConfig, PowerupConfig } from '
 const props = defineProps<{ modelValue: ZoneRevealConfig }>();
 const emit = defineEmits(['update:modelValue']);
 
+const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+
 const defaultConfig = (): ZoneRevealConfig => ({
   levelsConfig: [],
   backgroundImage: '',
@@ -176,6 +178,7 @@ const defaultConfig = (): ZoneRevealConfig => ({
   enemiesSpeedArray: {},
   finishPercent: 0,
   heartIcon: '',
+  answer: createDefaultAnswer(),
 });
 
 const config = ref<ZoneRevealConfig>(defaultConfig());
@@ -192,7 +195,13 @@ const newEnemyValue = ref<number | null>(null);
 watch(
   () => props.modelValue,
   (val) => {
-    config.value = val ? JSON.parse(JSON.stringify(val)) : defaultConfig();
+    const next = val ? JSON.parse(JSON.stringify(val)) : defaultConfig();
+    if (!next.answer) {
+      next.answer = createDefaultAnswer();
+    } else {
+      next.answer.accepted = next.answer.accepted ?? [];
+    }
+    config.value = next;
   },
   { deep: true, immediate: true },
 );

@@ -16,6 +16,12 @@ export interface LevelConfig {
   levelHeader: string;
 }
 
+export interface ZoneRevealAnswer {
+  solution: string;
+  accepted?: string[];
+  image: string;
+}
+
 export interface ZoneRevealConfig {
   levelsConfig: LevelConfig[];
   backgroundImage: string;
@@ -24,6 +30,7 @@ export interface ZoneRevealConfig {
   enemiesSpeedArray?: Record<string, number>;
   finishPercent?: number;
   heartIcon?: string;
+  answer: ZoneRevealAnswer;
 }
 
 // interface EnemyType {
