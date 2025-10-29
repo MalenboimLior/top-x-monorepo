@@ -77,6 +77,50 @@
       <ImageUploader v-model="config.backgroundImage" uploadFolder="zonereveal/" :cropWidth="800" :cropHeight="600" />
     </div>
 
+    <div class="field">
+      <label class="label has-text-white">Answer</label>
+      <p class="help has-text-grey-light">Enter the canonical spelling that will be revealed to players.</p>
+      <input
+        class="input"
+        v-model="config.answer.solution"
+        placeholder="Canonical answer (e.g., Mount Everest)"
+      />
+    </div>
+
+    <div class="field">
+      <label class="label has-text-white">Accepted Variants</label>
+      <p class="help has-text-grey-light">Optional alternate spellings, nicknames, or abbreviations that should also be accepted.</p>
+      <div class="field has-addons">
+        <div class="control is-expanded">
+          <input
+            class="input"
+            v-model="newAcceptedVariant"
+            placeholder="Add an alternate answer and press enter"
+            @keyup.enter.prevent="addAcceptedVariant"
+          />
+        </div>
+        <div class="control">
+          <button class="button is-link" @click.prevent="addAcceptedVariant">Add</button>
+        </div>
+      </div>
+      <div class="tags">
+        <span
+          v-for="(variant, variantIndex) in config.answer.accepted"
+          :key="variant"
+          class="tag is-info is-light"
+        >
+          {{ variant }}
+          <button class="delete is-small" @click="removeAcceptedVariant(variantIndex)" aria-label="Remove variant"></button>
+        </span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label has-text-white">Reveal Image</label>
+      <p class="help has-text-grey-light">Optional image that appears alongside the revealed answer.</p>
+      <ImageUploader v-model="config.answer.image" uploadFolder="zonereveal/" :cropWidth="800" :cropHeight="600" />
+    </div>
+
     <!-- Spritesheets -->
     <div class="field" v-if="config.spritesheets">
       <label class="label has-text-white">Spritesheets</label>
@@ -189,6 +233,7 @@ const newSpriteKey = ref('');
 const newSpriteValue = ref('');
 const newEnemyKey = ref('');
 const newEnemyValue = ref(0);
+const newAcceptedVariant = ref('');
 
 watch(
   () => props.modelValue,
@@ -272,6 +317,21 @@ function removeEnemySpeed(key: string) {
   const enemiesSpeedArray = config.value.enemiesSpeedArray ?? {};
   const { [key]: _, ...rest } = enemiesSpeedArray;
   config.value.enemiesSpeedArray = rest;
+}
+
+function addAcceptedVariant() {
+  const variant = newAcceptedVariant.value.trim();
+  if (!variant) return;
+  if (!config.value.answer.accepted.includes(variant)) {
+    config.value.answer.accepted = [...config.value.answer.accepted, variant];
+  }
+  newAcceptedVariant.value = '';
+}
+
+function removeAcceptedVariant(index: number) {
+  const next = [...config.value.answer.accepted];
+  next.splice(index, 1);
+  config.value.answer.accepted = next;
 }
 </script>
 

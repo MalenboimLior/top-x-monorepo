@@ -77,6 +77,42 @@
       <ImageUploader v-model="config.backgroundImage" uploadFolder="zonereveal" :cropWidth="800" :cropHeight="600" />
     </div>
 
+    <div class="field">
+      <label class="label">Answer</label>
+      <p class="help">Enter the canonical spelling that should be revealed to players.</p>
+      <input class="input" v-model="config.answer.solution" placeholder="Canonical answer (e.g., Mount Everest)" />
+    </div>
+
+    <div class="field">
+      <label class="label">Accepted Variants</label>
+      <p class="help">Optional alternate spellings, nicknames, or abbreviations that should also count.</p>
+      <div class="field has-addons">
+        <div class="control is-expanded">
+          <input
+            class="input"
+            v-model="newAcceptedVariant"
+            placeholder="Add an alternate answer and press enter"
+            @keyup.enter.prevent="addAcceptedVariant"
+          />
+        </div>
+        <div class="control">
+          <button class="button is-link" @click.prevent="addAcceptedVariant">Add</button>
+        </div>
+      </div>
+      <div class="tags">
+        <span v-for="(variant, variantIndex) in config.answer.accepted" :key="variant" class="tag is-info is-light">
+          {{ variant }}
+          <button class="delete is-small" @click="removeAcceptedVariant(variantIndex)" aria-label="Remove variant"></button>
+        </span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">Reveal Image</label>
+      <p class="help">Optional image that appears with the revealed answer.</p>
+      <ImageUploader v-model="config.answer.image" uploadFolder="zonereveal" :cropWidth="800" :cropHeight="600" />
+    </div>
+
     <!-- Spritesheets -->
     <div class="field" v-if="config.spritesheets">
       <label class="label">Spritesheets</label>
@@ -191,6 +227,7 @@ const newSpriteKey = ref('');
 const newSpriteValue = ref('');
 const newEnemyKey = ref('');
 const newEnemyValue = ref<number | null>(null);
+const newAcceptedVariant = ref('');
 
 watch(
   () => props.modelValue,
@@ -271,6 +308,19 @@ function addEnemySpeed() {
 function removeEnemySpeed(key: string) {
   if (!config.value.enemiesSpeedArray) return;
   delete config.value.enemiesSpeedArray[key];
+}
+
+function addAcceptedVariant() {
+  const variant = newAcceptedVariant.value.trim();
+  if (!variant) return;
+  if (!config.value.answer.accepted.includes(variant)) {
+    config.value.answer.accepted.push(variant);
+  }
+  newAcceptedVariant.value = '';
+}
+
+function removeAcceptedVariant(index: number) {
+  config.value.answer.accepted.splice(index, 1);
 }
 </script>
 
