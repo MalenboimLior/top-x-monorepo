@@ -72,9 +72,6 @@ onMounted(() => {
 
 function handleTryAgain() {
   emit('close')
-  setTimeout(() => {
-    window.dispatchEvent(new Event('restartGame'))
-  }, 100)
 }
 
 async function handleLogin() {
