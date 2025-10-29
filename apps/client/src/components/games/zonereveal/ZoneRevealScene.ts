@@ -694,9 +694,35 @@ for (let i = 0; i < 5; i++) {
 
   private updateEnemy(enemy: Phaser.Physics.Arcade.Sprite, delta: number) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
+    const deltaSeconds = delta / 1000;
+    const enemyType = (enemy.getData('type') as string) ?? 'bouncing';
+    const baseSpeed = this.zoneRevealConfig.enemiesSpeedArray?.[enemyType] ?? 100;
+
+    const restrictAxis = enemyType === 'straightUp'
+      ? 'vertical'
+      : enemyType === 'straightleft'
+        ? 'horizontal'
+        : undefined;
+
+    if (!this.isLosingLife) {
+      this.steerEnemyTowardPlayer(enemy, baseSpeed, deltaSeconds, restrictAxis);
+    }
+
+    const currentSpeed = Math.hypot(enemyBody.velocity.x, enemyBody.velocity.y);
+    let stuckTimer = (enemy.getData('stuckTimer') as number) ?? 0;
+    if (currentSpeed < baseSpeed * 0.1) {
+      stuckTimer += delta;
+    } else {
+      stuckTimer = 0;
+    }
+
+    if (stuckTimer > 500) {
+      this.forceChaseVelocity(enemy, baseSpeed, restrictAxis);
+      stuckTimer = 0;
+    }
+    enemy.setData('stuckTimer', stuckTimer);
 
     // Calculate future position
-    const deltaSeconds = delta / 1000;
     const nextX = enemy.x + enemyBody.velocity.x * deltaSeconds;
     const nextY = enemy.y + enemyBody.velocity.y * deltaSeconds;
     const nextGX = Math.floor(nextX / TILE_SIZE);
@@ -774,6 +800,92 @@ for (let i = 0; i < 5; i++) {
       vy = dir.vy;
     }
     enemyBody.setVelocity(vx, vy);
+    enemy.setData('stuckTimer', 0);
+  }
+
+  private steerEnemyTowardPlayer(
+    enemy: Phaser.Physics.Arcade.Sprite,
+    baseSpeed: number,
+    deltaSeconds: number,
+    restrictAxis?: 'horizontal' | 'vertical'
+  ) {
+    if (!this.player || !enemy.body) return;
+
+    const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
+    let dx = this.player.x - enemy.x;
+    let dy = this.player.y - enemy.y;
+
+    if (restrictAxis === 'vertical') {
+      dx = 0;
+    } else if (restrictAxis === 'horizontal') {
+      dy = 0;
+    }
+
+    if (dx === 0 && dy === 0) {
+      if (restrictAxis === 'horizontal') {
+        dx = Phaser.Math.RND.sign() || 1;
+      } else if (restrictAxis === 'vertical') {
+        dy = Phaser.Math.RND.sign() || 1;
+      } else {
+        const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        dx = Math.cos(angle);
+        dy = Math.sin(angle);
+      }
+    }
+
+    const distance = Math.hypot(dx, dy);
+    if (distance === 0) {
+      return;
+    }
+
+    const desiredVx = (dx / distance) * baseSpeed;
+    const desiredVy = (dy / distance) * baseSpeed;
+
+    const lerpFactor = Phaser.Math.Clamp(deltaSeconds * 4, 0, 1);
+    const newVx = Phaser.Math.Linear(enemyBody.velocity.x, desiredVx, lerpFactor);
+    const newVy = Phaser.Math.Linear(enemyBody.velocity.y, desiredVy, lerpFactor);
+
+    const newSpeed = Math.hypot(newVx, newVy);
+    if (newSpeed > 0) {
+      const scale = baseSpeed / newSpeed;
+      enemyBody.setVelocity(newVx * scale, newVy * scale);
+    } else {
+      enemyBody.setVelocity(desiredVx, desiredVy);
+    }
+  }
+
+  private forceChaseVelocity(
+    enemy: Phaser.Physics.Arcade.Sprite,
+    baseSpeed: number,
+    restrictAxis?: 'horizontal' | 'vertical'
+  ) {
+    if (!this.player || !enemy.body) return;
+
+    let dx = this.player.x - enemy.x;
+    let dy = this.player.y - enemy.y;
+
+    if (restrictAxis === 'vertical') {
+      dx = 0;
+    } else if (restrictAxis === 'horizontal') {
+      dy = 0;
+    }
+
+    if (dx === 0 && dy === 0) {
+      if (restrictAxis === 'horizontal') {
+        dx = Phaser.Math.RND.sign() || 1;
+      } else if (restrictAxis === 'vertical') {
+        dy = Phaser.Math.RND.sign() || 1;
+      } else {
+        const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        dx = Math.cos(angle);
+        dy = Math.sin(angle);
+      }
+    }
+
+    const distance = Math.hypot(dx, dy) || 1;
+    const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
+    enemyBody.setVelocity((dx / distance) * baseSpeed, (dy / distance) * baseSpeed);
+    enemy.setData('stuckTimer', 0);
   }
 
  private setRandomUnfilledPosition(object: Phaser.Physics.Arcade.Sprite) {
