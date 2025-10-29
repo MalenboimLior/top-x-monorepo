@@ -11,7 +11,9 @@
     "rootDir": "src",
     "baseUrl": ".",
     "paths": {
-      "@top-x/shared/*": ["../packages/shared/src/*"]
+      "@top-x/shared/*": ["../packages/shared/src/*"],
+      "@top-x/shared/types/*": ["../packages/shared/src/types/*"],
+      "@top-x/shared/utils/*": ["../packages/shared/src/utils/*"]
     },
     "skipLibCheck": true,
     "composite": true

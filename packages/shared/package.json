@@ -50,6 +50,10 @@
       "types": "./dist/types/zoneReveal.d.ts",
       "default": "./dist/types/zoneReveal.js"
     },
+    "./types/stats": {
+      "types": "./src/types/stats.ts",
+      "default": "./src/types/stats.ts"
+    },
     "./types/dailyChallenge": {
       "types": "./dist/types/dailyChallenge.d.ts",
       "default": "./dist/types/dailyChallenge.js"

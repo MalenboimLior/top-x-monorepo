@@ -16,6 +16,36 @@ export interface DailyChallengeLeaderboardSummary {
   totalPlayers?: GameCounters['totalPlayers'];
 }
 
+/**
+ * A leaderboard entry stored inside `/daily_challenges/{challengeId}/leaderboard`.
+ * These documents track the relationship between a user and a specific challenge.
+ */
+export interface DailyChallengeLeaderboardEntry extends LeaderboardEntry {
+  /** Identifier for the parent challenge document. */
+  challengeId: string;
+  /** Logical challenge date (YYYY-MM-DD). */
+  challengeDate: string;
+  /** ISO timestamp noting when the player first submitted a score. */
+  playedAt: string;
+  /** ISO timestamp for the best solving attempt, if solved. */
+  solvedAt?: string;
+  /** How many attempts the player made for this challenge, if tracked. */
+  attemptCount?: number;
+}
+
+/**
+ * Aggregate stats stored within `/daily_challenges/{challengeId}/stats` that
+ * summarise activity for an individual challenge.
+ */
+export interface DailyChallengeGameStats extends DailyChallengeAnalytics {
+  /** Identifier for the parent challenge document. */
+  challengeId: string;
+  /** Logical challenge date (YYYY-MM-DD). */
+  challengeDate: string;
+  /** ISO timestamp of the most recent stat update. */
+  updatedAt: string;
+}
+
 export type DailyChallengeAnalytics = GameCounters & {
   totalAttempts?: number;
   correctAttempts?: number;
