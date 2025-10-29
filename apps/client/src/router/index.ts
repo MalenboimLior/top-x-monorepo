@@ -1,21 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from '@/views/Home.vue';
-import Profile from '@/views/Profile.vue';
-import About from '@/views/About.vue';
-import TermsOfUse from '@/views/TermsOfUse.vue';
-import PrivacyPolicy from '@/views/PrivacyPolicy.vue';
-import ContactUs from '@/views/ContactUs.vue';
-import FAQ from '@/views/FAQ.vue';
-import Trivia from '@/views/games/Trivia.vue';
-import PyramidTier from '@/views/games/PyramidTier.vue';
-import FrenemySearch from '@/views/FrenemySearch.vue';
 import { useUserStore } from '../stores/user';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
-import ZoneReveal from '../views/games/ZoneReveal.vue';
-import Build from '@/views/Build.vue';
-import DailyChallenges from '@/views/DailyChallenges.vue';
-import GameInfo from '@/views/GameInfo.vue';
 
 const routes = [
   // {
@@ -38,36 +24,72 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home,
+    component: () => import(/* webpackChunkName: "home" */ '@/views/Home.vue'),
   },
   {
     path: '/games/info',
     name: 'GameInfo',
-    component: GameInfo,
+    component: () => import(/* webpackChunkName: "game-info" */ '@/views/GameInfo.vue'),
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: Profile,
+    component: () => import(/* webpackChunkName: "profile" */ '@/views/Profile.vue'),
   },
-  { path: '/about', name: 'About', component: About },
-  { path: '/terms', name: 'TermsOfUse', component: TermsOfUse },
-  { path: '/privacy', name: 'PrivacyPolicy', component: PrivacyPolicy },
-  { path: '/contact', name: 'ContactUs', component: ContactUs },
-  { path: '/faq', name: 'FAQ', component: FAQ },
-  { path: '/DailyChallenges', name: 'DailyChallenges', component: DailyChallenges },
+  {
+    path: '/about',
+    name: 'About',
+    component: () => import(/* webpackChunkName: "about" */ '@/views/About.vue'),
+  },
+  {
+    path: '/terms',
+    name: 'TermsOfUse',
+    component: () => import(/* webpackChunkName: "terms" */ '@/views/TermsOfUse.vue'),
+  },
+  {
+    path: '/privacy',
+    name: 'PrivacyPolicy',
+    component: () => import(/* webpackChunkName: "privacy" */ '@/views/PrivacyPolicy.vue'),
+  },
+  {
+    path: '/contact',
+    name: 'ContactUs',
+    component: () => import(/* webpackChunkName: "contact" */ '@/views/ContactUs.vue'),
+  },
+  {
+    path: '/faq',
+    name: 'FAQ',
+    component: () => import(/* webpackChunkName: "faq" */ '@/views/FAQ.vue'),
+  },
+  {
+    path: '/DailyChallenges',
+    name: 'DailyChallenges',
+    component: () => import(/* webpackChunkName: "daily-challenges" */ '@/views/DailyChallenges.vue'),
+  },
 
-  { path: '/frenemies', name: 'FrenemySearch', component: FrenemySearch },
-  { path: '/games/trivia', name: 'Trivia', component: Trivia },
+  {
+    path: '/frenemies',
+    name: 'FrenemySearch',
+    component: () =>
+      import(/* webpackChunkName: "frenemy-search" */ '@/views/FrenemySearch.vue'),
+  },
+  {
+    path: '/games/trivia',
+    name: 'Trivia',
+    component: () =>
+      import(/* webpackChunkName: "trivia" */ '@/views/games/Trivia.vue'),
+  },
   {
     path: '/games/ZoneReveal',
     name: 'ZoneReveal',
-    component: ZoneReveal,
+    component: () =>
+      import(/* webpackChunkName: "zone-reveal" */ '@/views/games/ZoneReveal.vue'),
   },
   {
     path: '/games/PyramidTier',
     name: 'PyramidTier',
-    component: PyramidTier,
+    component: () =>
+      import(/* webpackChunkName: "pyramid-tier" */ '@/views/games/PyramidTier.vue'),
   },
   {
     path: '/PrezPyramid',
@@ -86,7 +108,7 @@ const routes = [
   {
     path: '/build',
     name: 'Build',
-    component: Build,
+    component: () => import(/* webpackChunkName: "build" */ '@/views/Build.vue'),
   },
 ];
 
