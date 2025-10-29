@@ -99,7 +99,6 @@ import { useHead } from '@vueuse/head'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
 import { DateTime } from 'luxon'
-import type { Game } from 'phaser'
 
 type PhaserNamespace = typeof import('phaser')
 type ZoneRevealSceneModule = typeof import('@/components/games/zonereveal/ZoneRevealScene')
