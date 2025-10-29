@@ -10,14 +10,21 @@ import {
   SubmitGameScoreRequest,
   SubmitGameScoreResponse,
   User,
+  DailyChallengeUserProgress,
 } from '@top-x/shared/types/user';
 import type { Game, LeaderboardEntry } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
+import type {
+  DailyChallenge,
+  DailyChallengeAttemptMetadata,
+  DailyChallengeGameStats,
+} from '@top-x/shared/types/dailyChallenge';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import { evaluateZoneRevealAnswer } from '@top-x/shared/utils/zoneRevealAnswer';
 import { postOnX } from './external/xApi';
 import './utils/firebaseAdmin'; // Triggers centralized init (no re-init needed)
 import {
+  applyChallengeCounterUpdates,
   applyGameCounterUpdates,
   GAME_COUNTER_KEYS,
   GAME_COUNTER_EVENT_MAP,
@@ -178,6 +185,9 @@ export const submitGameScore = functions.https.onCall(async (
 
   const payload = (data ?? {}) as SubmitGameScoreRequest;
   const { gameTypeId, gameId, gameData } = payload;
+  const rawDailyChallengeId = payload.dailyChallengeId?.trim();
+  const requestDailyChallengeDate = payload.dailyChallengeDate?.trim();
+  const isDailyChallengeSubmission = Boolean(payload.isDailyChallenge || rawDailyChallengeId);
 
   if (!gameTypeId || !gameId || !gameData) {
     throw new functions.https.HttpsError('invalid-argument', 'gameTypeId, gameId and gameData are required');
@@ -188,9 +198,14 @@ export const submitGameScore = functions.https.onCall(async (
   try {
     const result = await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(uid);
-      const leaderboardRef = db.collection('games').doc(gameId).collection('leaderboard').doc(uid);
-      const statsRef = db.collection('games').doc(gameId).collection('stats').doc('general');
       const gameRef = db.collection('games').doc(gameId);
+      const leaderboardRef = gameRef.collection('leaderboard').doc(uid);
+      const statsRef = gameRef.collection('stats').doc('general');
+      const challengeRef = isDailyChallengeSubmission && rawDailyChallengeId
+        ? gameRef.collection('daily_challenges').doc(rawDailyChallengeId)
+        : null;
+      const challengeLeaderboardRef = challengeRef ? challengeRef.collection('leaderboard').doc(uid) : null;
+      const challengeStatsRef = challengeRef ? challengeRef.collection('stats').doc('general') : null;
 
       const userDoc = await tx.get(userRef);
       if (!userDoc.exists) {
@@ -205,7 +220,7 @@ export const submitGameScore = functions.https.onCall(async (
         ? hasPyramidCustomChanges(previousGameData?.custom, gameData.custom)
         : false;
 
-      if (previousScore !== null && gameData.score <= previousScore && !pyramidCustomChanged) {
+      if (!isDailyChallengeSubmission && previousScore !== null && gameData.score <= previousScore && !pyramidCustomChanged) {
         console.log(`submitGameScore: score ${gameData.score} is not higher than previous score ${previousScore} for user ${uid}`);
         applyGameCounterUpdates({
           tx,
@@ -227,19 +242,53 @@ export const submitGameScore = functions.https.onCall(async (
         tx.get(statsRef),
         tx.get(gameRef),
       ]);
+      let challengeDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+      let challengeStatsDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+
+      if (challengeRef && challengeStatsRef) {
+        [challengeDoc, challengeStatsDoc] = await Promise.all([
+          tx.get(challengeRef),
+          tx.get(challengeStatsRef),
+        ]);
+      }
 
       if (!gameDoc.exists) {
         throw new functions.https.HttpsError('failed-precondition', `Game ${gameId} does not exist`);
       }
 
-      const scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
+      let challengeData: DailyChallenge | null = null;
+      let resolvedDailyChallengeDate = requestDailyChallengeDate || null;
+
+      if (isDailyChallengeSubmission) {
+        if (!rawDailyChallengeId) {
+          throw new functions.https.HttpsError('invalid-argument', 'dailyChallengeId is required for challenge submissions');
+        }
+
+        if (!challengeDoc || !challengeDoc.exists) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            `Daily challenge ${rawDailyChallengeId} does not exist for game ${gameId}`,
+          );
+        }
+
+        challengeData = challengeDoc.data() as DailyChallenge;
+        resolvedDailyChallengeDate = resolvedDailyChallengeDate || challengeData?.date || null;
+
+        if (!resolvedDailyChallengeDate) {
+          throw new functions.https.HttpsError('invalid-argument', 'Unable to resolve the daily challenge date');
+        }
+      }
+
+      let scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
       const serverLastPlayed = Date.now();
       const gameSnapshot = gameDoc.data() as Game | undefined;
 
       let enrichedGameData = gameData;
+      let attemptMetadata: DailyChallengeAttemptMetadata | undefined;
 
-      if (gameTypeId === 'ZoneReveal' && gameSnapshot?.custom) {
-        const zoneRevealConfig = gameSnapshot.custom as ZoneRevealConfig;
+      if (gameTypeId === 'ZoneReveal') {
+        const zoneRevealConfig = (challengeData?.custom as ZoneRevealConfig | undefined)
+          ?? (gameSnapshot?.custom as ZoneRevealConfig | undefined);
         const rawAnswer = gameData.custom?.answer;
         let attempt: string | undefined;
 
@@ -261,6 +310,12 @@ export const submitGameScore = functions.https.onCall(async (
             attempt,
           );
 
+          attemptMetadata = {
+            normalizedAnswer,
+            distance,
+            isMatch,
+          };
+
           enrichedGameData = {
             ...gameData,
             custom: {
@@ -273,11 +328,129 @@ export const submitGameScore = functions.https.onCall(async (
         }
       }
 
+      let streakToPersist = typeof gameData.streak === 'number'
+        ? gameData.streak
+        : previousGameData?.streak ?? 0;
+      let aggregatedScoreForResponse: number | undefined;
+      let aggregatedStreakForResponse: number | undefined;
+      let challengeBestScore: number | undefined;
+      let challengeProgressUpdate: DailyChallengeUserProgress | undefined;
+      let challengeAttemptCount: number | undefined;
+      let challengePlayedAtIso: string | undefined;
+      let challengeSolvedAtIso: string | undefined;
+      let challengeAttemptMetadata: DailyChallengeAttemptMetadata | undefined;
+
+      if (isDailyChallengeSubmission && rawDailyChallengeId && challengeRef) {
+        const previousDailyChallenges = previousGameData?.custom?.dailyChallenges ?? {};
+        const previousChallengeProgress = previousDailyChallenges[rawDailyChallengeId] as DailyChallengeUserProgress | undefined;
+        const attemptTimestamp = new Date().toISOString();
+        const firstSubmission = !previousChallengeProgress?.played;
+        const wasPreviouslySolved = previousChallengeProgress?.solved ?? false;
+        const isCurrentAttemptCorrect = attemptMetadata?.isMatch ?? false;
+        const submissionScore = gameData.score;
+        const previousChallengeBestScore = typeof previousChallengeProgress?.bestScore === 'number'
+          ? previousChallengeProgress.bestScore
+          : undefined;
+        challengeBestScore = previousChallengeBestScore !== undefined
+          ? Math.max(previousChallengeBestScore, submissionScore)
+          : submissionScore;
+        const hasNewBestScore = previousChallengeBestScore === undefined || challengeBestScore > previousChallengeBestScore;
+        const attemptCount = (previousChallengeProgress?.attemptCount ?? 0) + 1;
+        const firstPlayedAt = previousChallengeProgress?.firstPlayedAt ?? attemptTimestamp;
+        let solvedAt = previousChallengeProgress?.solvedAt;
+        if (!solvedAt && isCurrentAttemptCorrect) {
+          solvedAt = attemptTimestamp;
+        }
+        const solved = wasPreviouslySolved || isCurrentAttemptCorrect;
+        const bestScoreAt = hasNewBestScore ? attemptTimestamp : previousChallengeProgress?.bestScoreAt;
+
+        const nextCounters = applyChallengeCounterUpdates({
+          tx,
+          challengeRef,
+          counterState: previousChallengeProgress?.counters,
+          updates: [
+            { key: GAME_COUNTER_KEYS.SESSIONS_PLAYED, type: 'increment' },
+            ...(firstSubmission
+              ? [
+                { key: GAME_COUNTER_KEYS.TOTAL_PLAYERS, type: 'unique' } as const,
+                { key: GAME_COUNTER_KEYS.UNIQUE_SUBMITTERS, type: 'unique' } as const,
+              ]
+              : []),
+          ],
+        });
+
+        challengeAttemptMetadata = attemptMetadata
+          ? { ...attemptMetadata, recordedAt: attemptTimestamp }
+          : undefined;
+
+        challengeProgressUpdate = {
+          played: true,
+          solved,
+          bestScore: challengeBestScore,
+          firstPlayedAt,
+          lastPlayedAt: attemptTimestamp,
+          solvedAt: solved ? solvedAt : undefined,
+          bestScoreAt,
+          attemptCount,
+          attemptMetadata: challengeAttemptMetadata,
+          counters: nextCounters,
+        };
+
+        const aggregatedPreviousScore = previousGameData?.score ?? 0;
+        const aggregatedPreviousStreak = previousGameData?.streak ?? 0;
+        const scoreIncrement = isCurrentAttemptCorrect && !wasPreviouslySolved ? submissionScore : 0;
+        const streakIncrement = firstSubmission ? 1 : 0;
+        const aggregatedScore = aggregatedPreviousScore + scoreIncrement;
+        const aggregatedStreak = aggregatedPreviousStreak + streakIncrement;
+
+        scoreToPersist = aggregatedScore;
+        streakToPersist = aggregatedStreak;
+        aggregatedScoreForResponse = aggregatedScore;
+        aggregatedStreakForResponse = aggregatedStreak;
+
+        if (challengeStatsRef) {
+          const previousChallengeStats = challengeStatsDoc?.exists
+            ? (challengeStatsDoc.data() as DailyChallengeGameStats)
+            : undefined;
+          const nextChallengeStats: Partial<DailyChallengeGameStats> = {
+            challengeId: rawDailyChallengeId,
+            challengeDate: resolvedDailyChallengeDate!,
+            updatedAt: attemptTimestamp,
+            totalPlayers: (previousChallengeStats?.totalPlayers ?? 0) + (firstSubmission ? 1 : 0),
+            sessionsPlayed: (previousChallengeStats?.sessionsPlayed ?? 0) + 1,
+            uniqueSubmitters: (previousChallengeStats?.uniqueSubmitters ?? 0) + (firstSubmission ? 1 : 0),
+            totalAttempts: (previousChallengeStats?.totalAttempts ?? 0) + 1,
+            correctAttempts: (previousChallengeStats?.correctAttempts ?? 0) + (isCurrentAttemptCorrect ? 1 : 0),
+          };
+
+          tx.set(challengeStatsRef, nextChallengeStats, { merge: true });
+        }
+
+        challengeAttemptCount = attemptCount;
+        challengePlayedAtIso = firstPlayedAt;
+        challengeSolvedAtIso = solved ? solvedAt ?? attemptTimestamp : previousChallengeProgress?.solvedAt;
+      }
+
+      const customFromSubmission = { ...(enrichedGameData.custom ?? {}) } as Record<string, unknown>;
+      const baseCustom = {
+        ...(previousGameData?.custom ?? {}),
+        ...customFromSubmission,
+      } as UserGameData['custom'];
+
+      if (isDailyChallengeSubmission && rawDailyChallengeId && challengeProgressUpdate) {
+        baseCustom.dailyChallenges = {
+          ...(previousGameData?.custom?.dailyChallenges ?? {}),
+          [rawDailyChallengeId]: challengeProgressUpdate,
+        };
+      }
+
       const mergedGameData: UserGameData = {
         ...(previousGameData ?? {}),
         ...enrichedGameData,
         score: scoreToPersist,
+        streak: streakToPersist,
         lastPlayed: serverLastPlayed,
+        custom: baseCustom,
       };
 
       tx.set(userRef, {
@@ -301,6 +474,29 @@ export const submitGameScore = functions.https.onCall(async (
             : []),
         ],
       });
+
+      if (isDailyChallengeSubmission && challengeRef && challengeLeaderboardRef && rawDailyChallengeId && resolvedDailyChallengeDate) {
+        const challengeLeaderboardUpdate: Record<string, unknown> = {
+          uid,
+          displayName: userData.displayName,
+          username: userData.username,
+          photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+          score: challengeBestScore ?? gameData.score,
+          streak: streakToPersist,
+          challengeId: rawDailyChallengeId,
+          challengeDate: resolvedDailyChallengeDate,
+          playedAt: challengePlayedAtIso ?? new Date(serverLastPlayed).toISOString(),
+          solvedAt: challengeSolvedAtIso,
+          attemptCount: challengeAttemptCount,
+          updatedAt: Date.now(),
+        };
+
+        if (challengeAttemptMetadata) {
+          challengeLeaderboardUpdate.attempt = challengeAttemptMetadata;
+        }
+
+        tx.set(challengeLeaderboardRef, challengeLeaderboardUpdate, { merge: true });
+      }
 
       const currentStats = statsDoc.exists
         ? statsDoc.data() as GameStats
@@ -389,6 +585,12 @@ export const submitGameScore = functions.https.onCall(async (
         success: true,
         previousScore,
         newScore: mergedGameData.score,
+        aggregatedScore: aggregatedScoreForResponse ?? (isDailyChallengeSubmission ? mergedGameData.score : undefined),
+        aggregatedStreak: aggregatedStreakForResponse ?? (isDailyChallengeSubmission ? mergedGameData.streak : undefined),
+        challengeBestScore,
+        dailyChallengeId: isDailyChallengeSubmission ? rawDailyChallengeId ?? undefined : undefined,
+        dailyChallengeDate: isDailyChallengeSubmission ? resolvedDailyChallengeDate ?? undefined : undefined,
+        isDailyChallenge: isDailyChallengeSubmission || undefined,
       } satisfies SubmitGameScoreResponse;
     });
 
