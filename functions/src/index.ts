@@ -436,7 +436,7 @@ export const submitGameScore = functions.https.onCall(async (
 
         const aggregatedPreviousScore = previousGameData?.score ?? 0;
         const aggregatedPreviousStreak = previousGameData?.streak ?? 0;
-        const scoreIncrement = isCurrentAttemptCorrect && !wasPreviouslySolved ? submissionScore : 0;
+        const scoreIncrement = isCurrentAttemptCorrect && !wasPreviouslySolved ? 1 : 0;
         const streakIncrement = firstSubmission ? 1 : 0;
         const aggregatedScore = aggregatedPreviousScore + scoreIncrement;
         const aggregatedStreak = aggregatedPreviousStreak + streakIncrement;
