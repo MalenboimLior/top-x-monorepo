@@ -4,7 +4,7 @@
     "prebuild": "npx tsc --build ../packages/shared/tsconfig.json --force",
     "build": "tsc --build tsconfig.build.json",
     "build:watch": "tsc --watch",
-    "test": "npm run build && node --test src/__tests__/submitGameScore.test.js",
+    "test": "npm run build && node --test src/submitGameScore/__tests__/submitGameScore.test.js",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
