@@ -50,7 +50,28 @@
           <p v-if="submissionResult" class="submitted-answer">Your guess: "{{ submissionResult.originalAnswer }}"</p>
         </div>
         <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
-        <Leaderboard :game-id="gameId" />
+        <div v-if="hasDailyChallenge" class="challenge-meta">
+          <h3 class="challenge-meta__title">Daily challenge context</h3>
+          <p class="challenge-meta__item"><strong>ID:</strong> {{ dailyChallengeId }}</p>
+          <p v-if="challengeAvailableAt" class="challenge-meta__item">
+            <strong>Available:</strong> {{ challengeAvailableAt }}
+          </p>
+          <p v-if="challengeClosesAt" class="challenge-meta__item">
+            <strong>Closes:</strong> {{ challengeClosesAt }}
+          </p>
+        </div>
+        <div class="leaderboards">
+          <Leaderboard
+            v-if="hasDailyChallenge"
+            :game-id="gameId"
+            :daily-challenge-id="dailyChallengeId || undefined"
+            title="Today's Standings"
+          />
+          <Leaderboard
+            :game-id="gameId"
+            title="All-Time Leaders"
+          />
+        </div>
       </template>
     </div>
   </div>
@@ -77,6 +98,13 @@ const props = defineProps<{
   gameId: string
   revealAt: string
   answerConfig: ZoneRevealAnswer | null
+  challengeContext?: {
+    id: string
+    availableAt?: string
+    closesAt?: string
+    revealAt?: string
+    dailyDate?: string
+  } | null
 }>()
 
 const emit = defineEmits(['close'])
@@ -87,6 +115,12 @@ const hasSubmitted = ref(false)
 const submissionResult = ref<ZoneRevealAnswerEvaluation | null>(null)
 
 const revealImage = computed(() => props.answerConfig?.image ?? '')
+const dailyChallengeId = computed(() => props.challengeContext?.id ?? null)
+const dailyChallengeDate = computed(() => props.challengeContext?.dailyDate ?? null)
+
+const challengeAvailableAt = computed(() => formatChallengeDate(props.challengeContext?.availableAt))
+const challengeClosesAt = computed(() => formatChallengeDate(props.challengeContext?.closesAt))
+const hasDailyChallenge = computed(() => Boolean(dailyChallengeId.value))
 
 const formattedRevealDate = computed(() => {
   if (!props.revealAt) return ''
@@ -136,11 +170,26 @@ async function saveScore(custom: Record<string, unknown> = {}) {
   }
 
   try {
-    await userStore.updateGameProgress(gameTypeId, props.gameId, {
-      score: props.score,
-      streak: 0,
-      custom
-    })
+    await userStore.updateGameProgress(
+      gameTypeId,
+      props.gameId,
+      {
+        score: props.score,
+        streak: 0,
+        custom
+      },
+      {
+        dailyChallengeId: dailyChallengeId.value ?? undefined,
+        dailyChallengeDate: dailyChallengeDate.value ?? undefined,
+        challengeMetadata: props.challengeContext
+          ? {
+              availableAt: props.challengeContext.availableAt,
+              closesAt: props.challengeContext.closesAt,
+              revealAt: props.challengeContext.revealAt ?? props.revealAt
+            }
+          : undefined
+      }
+    )
   } catch (err) {
     console.error('Save score error:', err)
   }
@@ -156,7 +205,10 @@ async function handleSubmit() {
   hasSubmitted.value = true
   submissionResult.value = evaluation
   if (userStore.user) {
-    void recordGameEvents(props.gameId, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER])
+    void recordGameEvents(props.gameId, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER], {
+      dailyChallengeId: dailyChallengeId.value ?? undefined,
+      dailyChallengeDate: dailyChallengeDate.value ?? undefined
+    })
   }
   if (analytics) {
     logEvent(analytics, 'user_action', {
@@ -165,7 +217,9 @@ async function handleSubmit() {
       answer: evaluation.originalAnswer,
       normalized_answer: evaluation.normalizedAnswer,
       distance: evaluation.distance,
-      is_match: evaluation.isMatch
+      is_match: evaluation.isMatch,
+      daily_challenge_id: dailyChallengeId.value ?? undefined,
+      daily_challenge_date: dailyChallengeDate.value ?? undefined
     })
   }
 }
@@ -215,7 +269,9 @@ async function handleLogin() {
           action: 'login',
           method: 'x_auth',
           context: 'zone_reveal_end_screen',
-          game_id: props.gameId
+          game_id: props.gameId,
+          daily_challenge_id: dailyChallengeId.value ?? undefined,
+          daily_challenge_date: dailyChallengeDate.value ?? undefined
         })
       }
     }
@@ -223,6 +279,15 @@ async function handleLogin() {
     console.error('Login error:', err)
     alert('Failed to login. Please try again.')
   }
+}
+
+function formatChallengeDate(value?: string | null): string {
+  if (!value) return ''
+  const parsed = DateTime.fromISO(value, { zone: 'utc' })
+  if (parsed.isValid) {
+    return parsed.toLocal().toLocaleString(DateTime.DATETIME_MED)
+  }
+  return new Date(value).toLocaleString()
 }
 
 function evaluateSubmission(attempt: string): ZoneRevealAnswerEvaluation {
@@ -297,5 +362,37 @@ input {
   margin-top: 1rem;
   font-style: italic;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.challenge-meta {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+
+.challenge-meta__title {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.challenge-meta__item {
+  margin: 0.25rem 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.leaderboards {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .leaderboards {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
 }
 </style>

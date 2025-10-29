@@ -81,6 +81,8 @@ export interface SubmitGameScoreRequest {
   dailyChallengeId?: string;
   /** Logical date for the challenge (YYYY-MM-DD). */
   dailyChallengeDate?: string;
+  /** Additional metadata captured for audit/analytics around the challenge. */
+  challengeMetadata?: Record<string, unknown>;
   /**
    * Indicates whether the submission should be treated as part of a daily
    * challenge flow. When false or omitted the submission is processed as a
