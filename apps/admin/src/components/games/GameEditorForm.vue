@@ -290,7 +290,9 @@ watch(
   { deep: true },
 );
 
-const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+function createDefaultAnswer() {
+  return { solution: '', accepted: [] as string[], image: '' };
+}
 
 function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
   if (!config.answer) {
