@@ -141,13 +141,27 @@ onMounted(async () => {
   }
 
   const scene: PacmanSceneInstance = pacmanSceneFactory(PhaserLib, pacmanConfig.value || undefined)
+  const containerWidth = phaserContainer.value.clientWidth || sceneWidth
+  const containerHeight = phaserContainer.value.clientHeight || sceneHeight
+  const zoomX = containerWidth / sceneWidth
+  const zoomY = containerHeight / sceneHeight
+  const zoom = Math.max(1, Math.min(3, Math.min(zoomX, zoomY)))
+
   game = new PhaserLib.Game({
     type: PhaserLib.AUTO,
     width: sceneWidth,
     height: sceneHeight,
     backgroundColor: '#000',
     parent: phaserContainer.value,
+    pixelArt: true,
     physics: { default: 'arcade', arcade: { debug: false } },
+    scale: {
+      mode: PhaserLib.Scale.FIT,
+      autoCenter: PhaserLib.Scale.CENTER_BOTH,
+      width: sceneWidth,
+      height: sceneHeight,
+      zoom
+    },
     scene
   })
 })
@@ -324,15 +338,21 @@ function showChrome() {
 }
 
 .game-canvas {
-  width: min(90vw, 480px);
-  height: min(90vw, 480px);
-  max-width: 480px;
-  max-height: 480px;
+  width: min(90vw, 720px);
+  height: min(90vw, 720px);
+  max-width: 720px;
+  max-height: 720px;
   border: 2px solid rgba(90, 108, 250, 0.35);
   border-radius: 16px;
   overflow: hidden;
   background: #000;
   box-shadow: 0 16px 40px rgba(9, 12, 23, 0.65);
+}
+
+.game-canvas canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
 }
 
 .controls {
