@@ -379,14 +379,13 @@ export const submitGameScore = functions.https.onCall(async (
       let streakToPersist = typeof gameData.streak === 'number'
         ? gameData.streak
         : previousGameData?.streak ?? 0;
-      let aggregatedScoreForResponse: number | undefined;
-      let aggregatedStreakForResponse: number | undefined;
       let challengeBestScore: number | undefined;
       let challengeProgressUpdate: DailyChallengeUserProgress | undefined;
       let challengeAttemptCount: number | undefined;
       let challengePlayedAtIso: string | undefined;
       let challengeSolvedAtIso: string | undefined;
       let challengeAttemptMetadata: DailyChallengeAttemptMetadata | undefined;
+      let challengeStatsUpdate: Partial<DailyChallengeGameStats> | undefined;
 
       if (isDailyChallengeSubmission && rawDailyChallengeId && challengeRef) {
         const previousDailyChallenges = previousGameData?.custom?.dailyChallenges ?? {};
@@ -444,18 +443,6 @@ export const submitGameScore = functions.https.onCall(async (
           counters: nextCounters,
         };
 
-        const aggregatedPreviousScore = previousGameData?.score ?? 0;
-        const aggregatedPreviousStreak = previousGameData?.streak ?? 0;
-        const scoreIncrement = isCurrentAttemptCorrect && !wasPreviouslySolved ? 1 : 0;
-        const streakIncrement = firstSubmission ? 1 : 0;
-        const aggregatedScore = aggregatedPreviousScore + scoreIncrement;
-        const aggregatedStreak = aggregatedPreviousStreak + streakIncrement;
-
-        scoreToPersist = aggregatedScore;
-        streakToPersist = aggregatedStreak;
-        aggregatedScoreForResponse = aggregatedScore;
-        aggregatedStreakForResponse = aggregatedStreak;
-
         if (challengeStatsRef) {
           const previousChallengeStats = challengeStatsDoc?.exists
             ? (challengeStatsDoc.data() as DailyChallengeGameStats)
@@ -471,7 +458,7 @@ export const submitGameScore = functions.https.onCall(async (
             correctAttempts: (previousChallengeStats?.correctAttempts ?? 0) + (isCurrentAttemptCorrect ? 1 : 0),
           };
 
-          tx.set(challengeStatsRef, nextChallengeStats, { merge: true });
+          challengeStatsUpdate = nextChallengeStats;
         }
 
         challengeAttemptCount = attemptCount;
@@ -523,7 +510,23 @@ export const submitGameScore = functions.https.onCall(async (
         ],
       });
 
-      if (isDailyChallengeSubmission && challengeRef && challengeLeaderboardRef && rawDailyChallengeId && resolvedDailyChallengeDate) {
+      const usingChallengeLeaderboard = Boolean(
+        isDailyChallengeSubmission
+        && challengeRef
+        && challengeLeaderboardRef
+        && rawDailyChallengeId
+        && resolvedDailyChallengeDate,
+      );
+
+      const activeLeaderboardRef = usingChallengeLeaderboard ? challengeLeaderboardRef : leaderboardRef;
+      const activeStatsRef = usingChallengeLeaderboard ? challengeStatsRef : statsRef;
+
+      let leaderboardUpdate: Record<string, unknown> | undefined;
+      let leaderboardSetOptions: FirebaseFirestore.SetOptions | undefined;
+      let statsUpdate: Record<string, unknown> | undefined;
+      let statsSetOptions: FirebaseFirestore.SetOptions | undefined;
+
+      if (usingChallengeLeaderboard) {
         const challengeLeaderboardUpdate: Record<string, unknown> = {
           uid,
           displayName: userData.displayName,
@@ -531,8 +534,8 @@ export const submitGameScore = functions.https.onCall(async (
           photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
           score: challengeBestScore ?? gameData.score,
           streak: streakToPersist,
-          challengeId: rawDailyChallengeId,
-          challengeDate: resolvedDailyChallengeDate,
+          challengeId: rawDailyChallengeId!,
+          challengeDate: resolvedDailyChallengeDate!,
           playedAt: challengePlayedAtIso ?? new Date(serverLastPlayed).toISOString(),
           solvedAt: challengeSolvedAtIso,
           attemptCount: challengeAttemptCount,
@@ -543,82 +546,106 @@ export const submitGameScore = functions.https.onCall(async (
           challengeLeaderboardUpdate.attempt = challengeAttemptMetadata;
         }
 
-        tx.set(challengeLeaderboardRef, challengeLeaderboardUpdate, { merge: true });
-      }
+        leaderboardUpdate = challengeLeaderboardUpdate;
+        leaderboardSetOptions = { merge: true };
 
-      const currentStats = statsDoc.exists
-        ? statsDoc.data() as GameStats
-        : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() } as GameStats;
-
-      const distribution = { ...currentStats.scoreDistribution } as { [score: number]: number };
-      let totalPlayers = currentStats.totalPlayers;
-      let custom = { ...currentStats.custom } as Record<string, any>;
-
-      if (!previousGameData) {
-        distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
-        totalPlayers++;
-      } else if (previousScore !== mergedGameData.score) {
-        if (previousScore !== null) {
-          distribution[previousScore] = Math.max((distribution[previousScore] || 1) - 1, 0);
+        if (challengeStatsUpdate) {
+          statsUpdate = challengeStatsUpdate;
+          statsSetOptions = { merge: true };
         }
-        distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
-      }
+      } else {
+        const currentStats = statsDoc.exists
+          ? statsDoc.data() as GameStats
+          : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() } as GameStats;
 
-      if (gameTypeId === 'PyramidTier') {
-        const itemRanks = custom.itemRanks || {};
-        const worstItemCounts = custom.worstItemCounts || {};
+        const distribution = { ...currentStats.scoreDistribution } as { [score: number]: number };
+        let totalPlayers = currentStats.totalPlayers;
+        let custom = { ...currentStats.custom } as Record<string, any>;
 
-        const previousCustom = previousGameData?.custom;
-        if (isPyramidCustomData(previousCustom) && previousCustom.pyramid) {
-          previousCustom.pyramid.forEach((tier) => {
-            tier.slots.forEach((itemId) => {
-              if (itemId) {
-                const rowId = tier.tier;
-                itemRanks[itemId] = itemRanks[itemId] || {};
-                itemRanks[itemId][rowId] = Math.max((itemRanks[itemId][rowId] || 1) - 1, 0);
-              }
+        if (!previousGameData) {
+          distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
+          totalPlayers++;
+        } else if (previousScore !== mergedGameData.score) {
+          if (previousScore !== null) {
+            distribution[previousScore] = Math.max((distribution[previousScore] || 1) - 1, 0);
+          }
+          distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
+        }
+
+        if (gameTypeId === 'PyramidTier') {
+          const itemRanks = custom.itemRanks || {};
+          const worstItemCounts = custom.worstItemCounts || {};
+
+          const previousCustom = previousGameData?.custom;
+          if (isPyramidCustomData(previousCustom) && previousCustom.pyramid) {
+            previousCustom.pyramid.forEach((tier) => {
+              tier.slots.forEach((itemId) => {
+                if (itemId) {
+                  const rowId = tier.tier;
+                  itemRanks[itemId] = itemRanks[itemId] || {};
+                  itemRanks[itemId][rowId] = Math.max((itemRanks[itemId][rowId] || 1) - 1, 0);
+                }
+              });
             });
-          });
-        }
-        if (isPyramidCustomData(previousCustom) && previousCustom.worstItem?.id) {
-          const itemId = previousCustom.worstItem.id;
-          worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
-        }
+          }
+          if (isPyramidCustomData(previousCustom) && previousCustom.worstItem?.id) {
+            const itemId = previousCustom.worstItem.id;
+            worstItemCounts[itemId] = Math.max((worstItemCounts[itemId] || 1) - 1, 0);
+          }
 
-        const mergedCustom = mergedGameData.custom;
-        if (isPyramidCustomData(mergedCustom) && mergedCustom.pyramid) {
-          mergedCustom.pyramid.forEach((tier) => {
-            tier.slots.forEach((itemId) => {
-              if (itemId) {
-                const rowId = tier.tier;
-                itemRanks[itemId] = itemRanks[itemId] || {};
-                itemRanks[itemId][rowId] = (itemRanks[itemId][rowId] || 0) + 1;
-              }
+          const mergedCustom = mergedGameData.custom;
+          if (isPyramidCustomData(mergedCustom) && mergedCustom.pyramid) {
+            mergedCustom.pyramid.forEach((tier) => {
+              tier.slots.forEach((itemId) => {
+                if (itemId) {
+                  const rowId = tier.tier;
+                  itemRanks[itemId] = itemRanks[itemId] || {};
+                  itemRanks[itemId][rowId] = (itemRanks[itemId][rowId] || 0) + 1;
+                }
+              });
             });
-          });
-        }
-        if (isPyramidCustomData(mergedCustom) && mergedCustom.worstItem?.id) {
-          const itemId = mergedCustom.worstItem.id;
-          worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
+          }
+          if (isPyramidCustomData(mergedCustom) && mergedCustom.worstItem?.id) {
+            const itemId = mergedCustom.worstItem.id;
+            worstItemCounts[itemId] = (worstItemCounts[itemId] || 0) + 1;
+          }
+
+          custom = { itemRanks, worstItemCounts };
         }
 
-        custom = { itemRanks, worstItemCounts };
+        leaderboardUpdate = {
+          ...mergedGameData,
+          displayName: userData.displayName,
+          username: userData.username,
+          photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+          updatedAt: Date.now(),
+        };
+
+        statsUpdate = {
+          scoreDistribution: distribution,
+          totalPlayers,
+          custom,
+          updatedAt: Date.now(),
+        };
       }
 
-      tx.set(leaderboardRef, {
-        ...mergedGameData,
-        displayName: userData.displayName,
-        username: userData.username,
-        photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
-        updatedAt: Date.now(),
-      });
+      if (!activeLeaderboardRef || !leaderboardUpdate) {
+        throw new functions.https.HttpsError('internal', 'Failed to resolve leaderboard destination');
+      }
 
-      tx.set(statsRef, {
-        scoreDistribution: distribution,
-        totalPlayers,
-        custom,
-        updatedAt: Date.now(),
-      });
+      if (leaderboardSetOptions) {
+        tx.set(activeLeaderboardRef, leaderboardUpdate, leaderboardSetOptions);
+      } else {
+        tx.set(activeLeaderboardRef, leaderboardUpdate);
+      }
+
+      if (activeStatsRef && statsUpdate) {
+        if (statsSetOptions) {
+          tx.set(activeStatsRef, statsUpdate, statsSetOptions);
+        } else {
+          tx.set(activeStatsRef, statsUpdate);
+        }
+      }
 
       if (!previousGameData && (userData.followersCount ?? 0) >= 0) {
         const gameDataSnapshot = gameDoc.data();
@@ -633,8 +660,6 @@ export const submitGameScore = functions.https.onCall(async (
         success: true,
         previousScore,
         newScore: mergedGameData.score,
-        aggregatedScore: aggregatedScoreForResponse ?? (isDailyChallengeSubmission ? mergedGameData.score : undefined),
-        aggregatedStreak: aggregatedStreakForResponse ?? (isDailyChallengeSubmission ? mergedGameData.streak : undefined),
         challengeBestScore,
         dailyChallengeId: isDailyChallengeSubmission ? rawDailyChallengeId ?? undefined : undefined,
         dailyChallengeDate: isDailyChallengeSubmission ? resolvedDailyChallengeDate ?? undefined : undefined,
