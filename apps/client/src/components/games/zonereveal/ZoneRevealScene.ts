@@ -1,6 +1,6 @@
-import Phaser from 'phaser';
-import { BlendModes } from 'phaser';
 import type { ZoneRevealConfig, LevelConfig } from '@top-x/shared/types/zoneReveal';
+
+type PhaserNamespace = typeof import('phaser');
 
 
 export const TILE_SIZE = 10;
@@ -57,7 +57,13 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
   ]
 };
 
-export default class VolfiedScene extends Phaser.Scene {
+export default function createZoneRevealScene(
+  Phaser: PhaserNamespace,
+  config?: ZoneRevealConfig
+) {
+  const { BlendModes } = Phaser;
+
+  class VolfiedScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: 'up' | 'down' | 'left' | 'right' | null = null;
@@ -90,7 +96,7 @@ export default class VolfiedScene extends Phaser.Scene {
   // Config for levels
   private zoneRevealConfig: ZoneRevealConfig;
 
-  constructor(config?: ZoneRevealConfig) {
+  constructor() {
     super('GameScene');
     this.zoneRevealConfig = config || DEFAULT_ZONE_REVEAL_CONFIG;
     this.levels = this.zoneRevealConfig.levelsConfig;
@@ -1128,4 +1134,7 @@ this.enemyGroup.clear(true, true);
       heart.setVisible(index < this.lives);
     });
   }
+}
+
+  return new VolfiedScene();
 }
