@@ -47,15 +47,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
-import axios from 'axios'
 import Leaderboard from '@/components/Leaderboard.vue'
 import { recordGameEvents } from '@/services/gameCounters'
 import { GAME_COUNTER_EVENTS } from '@top-x/shared/types/counters'
+import { DateTime } from 'luxon'
 
 const props = defineProps<{
   score: number
   gameId: string
-  answerRevealUTC: string
+  revealAt: string
 }>()
 
 const emit = defineEmits(['close'])
@@ -64,7 +64,16 @@ const userStore = useUserStore()
 const answer = ref('')
 const hasSubmitted = ref(false)
 
-const formattedRevealDate = computed(() => new Date(props.answerRevealUTC).toLocaleString())
+const formattedRevealDate = computed(() => {
+  if (!props.revealAt) return ''
+
+  const reveal = DateTime.fromISO(props.revealAt, { zone: 'utc' })
+  if (reveal.isValid) {
+    return reveal.toLocal().toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)
+  }
+
+  return new Date(props.revealAt).toLocaleString()
+})
 
 onMounted(async () => {
   if (userStore.user) {
