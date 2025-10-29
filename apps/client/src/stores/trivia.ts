@@ -4,7 +4,7 @@ import { ref, watch } from 'vue';
 import { useUserStore } from './user';
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import { getTopLeaderboard } from '../services/trivia';
+import { getTopLeaderboard } from '@/services/leaderboard';
 import { User } from '@top-x/shared/types/user';
 
 interface Question {
