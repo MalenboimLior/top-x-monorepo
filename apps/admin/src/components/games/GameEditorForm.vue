@@ -19,18 +19,24 @@
     <div v-if="activeTab === 'general'" class="columns is-multiline">
       <div class="column is-half">
         <div class="field">
-          <label class="label">Game Name</label>
+          <label class="label" :for="fieldId('name')">Game Name</label>
           <div class="control">
-            <input class="input" type="text" v-model="game.name" placeholder="Enter game name" />
+            <input
+              :id="fieldId('name')"
+              class="input"
+              type="text"
+              v-model="game.name"
+              placeholder="Enter game name"
+            />
           </div>
         </div>
       </div>
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Status</label>
-          <label class="checkbox">
-            <input type="checkbox" v-model="game.active" />
+          <label class="label" :for="fieldId('status')">Status</label>
+          <label class="checkbox" :for="fieldId('status')">
+            <input :id="fieldId('status')" type="checkbox" v-model="game.active" />
             Active
           </label>
         </div>
@@ -38,9 +44,14 @@
 
       <div class="column is-full">
         <div class="field">
-          <label class="label">Description</label>
+          <label class="label" :for="fieldId('description')">Description</label>
           <div class="control">
-            <textarea class="textarea" v-model="game.description" placeholder="Enter description"></textarea>
+            <textarea
+              :id="fieldId('description')"
+              class="textarea"
+              v-model="game.description"
+              placeholder="Enter description"
+            ></textarea>
           </div>
         </div>
       </div>
@@ -59,10 +70,10 @@
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Language</label>
+          <label class="label" :for="fieldId('language')">Language</label>
           <div class="control">
             <div class="select is-fullwidth">
-              <select v-model="game.language">
+              <select :id="fieldId('language')" v-model="game.language">
                 <option value="en">English</option>
                 <option value="il">Hebrew</option>
               </select>
@@ -73,45 +84,68 @@
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Game Header</label>
+          <label class="label" :for="fieldId('gameHeader')">Game Header</label>
           <div class="control">
-            <input class="input" type="text" v-model="game.gameHeader" placeholder="Enter game header" />
+            <input
+              :id="fieldId('gameHeader')"
+              class="input"
+              type="text"
+              v-model="game.gameHeader"
+              placeholder="Enter game header"
+            />
           </div>
         </div>
       </div>
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Share Text</label>
+          <label class="label" :for="fieldId('shareText')">Share Text</label>
           <div class="control">
-            <input class="input" type="text" v-model="game.shareText" placeholder="Enter share text" />
+            <input
+              :id="fieldId('shareText')"
+              class="input"
+              type="text"
+              v-model="game.shareText"
+              placeholder="Enter share text"
+            />
           </div>
         </div>
       </div>
 
       <div class="column is-full">
         <div class="field">
-          <label class="label">Game Instruction</label>
+          <label class="label" :for="fieldId('gameInstruction')">Game Instruction</label>
           <div class="control">
-            <textarea class="textarea" v-model="game.gameInstruction" placeholder="Enter instructions"></textarea>
+            <textarea
+              :id="fieldId('gameInstruction')"
+              class="textarea"
+              v-model="game.gameInstruction"
+              placeholder="Enter instructions"
+            ></textarea>
           </div>
         </div>
       </div>
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Share Link</label>
+          <label class="label" :for="fieldId('shareLink')">Share Link</label>
           <div class="control">
-            <input class="input" type="text" v-model="game.shareLink" placeholder="Enter share link" />
+            <input
+              :id="fieldId('shareLink')"
+              class="input"
+              type="text"
+              v-model="game.shareLink"
+              placeholder="Enter share link"
+            />
           </div>
         </div>
       </div>
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Daily Challenge Active</label>
-          <label class="checkbox">
-            <input type="checkbox" v-model="game.dailyChallengeActive" />
+          <label class="label" :for="fieldId('dailyChallengeActive')">Daily Challenge Active</label>
+          <label class="checkbox" :for="fieldId('dailyChallengeActive')">
+            <input :id="fieldId('dailyChallengeActive')" type="checkbox" v-model="game.dailyChallengeActive" />
             Enabled
           </label>
         </div>
@@ -119,9 +153,9 @@
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Community Game</label>
-          <label class="checkbox">
-            <input type="checkbox" v-model="game.community" />
+          <label class="label" :for="fieldId('community')">Community Game</label>
+          <label class="checkbox" :for="fieldId('community')">
+            <input :id="fieldId('community')" type="checkbox" v-model="game.community" />
             Community submissions enabled
           </label>
         </div>
@@ -129,27 +163,45 @@
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Creator User ID</label>
+          <label class="label" :for="fieldId('creatorUserId')">Creator User ID</label>
           <div class="control">
-            <input class="input" type="text" v-model="game.creator.userid" placeholder="Creator user id" />
+            <input
+              :id="fieldId('creatorUserId')"
+              class="input"
+              type="text"
+              v-model="game.creator.userid"
+              placeholder="Creator user id"
+            />
           </div>
         </div>
       </div>
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Creator Username</label>
+          <label class="label" :for="fieldId('creatorUsername')">Creator Username</label>
           <div class="control">
-            <input class="input" type="text" v-model="game.creator.username" placeholder="Creator username" />
+            <input
+              :id="fieldId('creatorUsername')"
+              class="input"
+              type="text"
+              v-model="game.creator.username"
+              placeholder="Creator username"
+            />
           </div>
         </div>
       </div>
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">VIP Users (comma separated)</label>
+          <label class="label" :for="fieldId('vipList')">VIP Users (comma separated)</label>
           <div class="control">
-            <input class="input" type="text" v-model="vipList" placeholder="user1,user2" />
+            <input
+              :id="fieldId('vipList')"
+              class="input"
+              type="text"
+              v-model="vipList"
+              placeholder="user1,user2"
+            />
           </div>
         </div>
       </div>
@@ -203,6 +255,10 @@ const validatedGameId = computed(() => {
   const id = props.existingGame?.id || `temp-${Date.now()}`;
   return id.replace(/[\\/\\\\]/g, '');
 });
+
+function fieldId(suffix: string) {
+  return `${validatedGameId.value}-${suffix}`;
+}
 
 const defaultGame = (): Game => ({
   id: '',
