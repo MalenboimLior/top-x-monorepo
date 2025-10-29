@@ -324,7 +324,7 @@ export default function createPacmanScene(
 
       this.levelText.setText(`LEVEL ${index + 1}`)
 
-      this.createLevelGeometry(layout)
+      this.createLevelGeometry(layout, levelConfig)
 
       this.scoreText.setText(`SCORE: ${this.score}`)
       this.livesText.setText(`LIVES: ${this.lives}`)
@@ -350,7 +350,7 @@ export default function createPacmanScene(
       return layout?.tiles ?? DEFAULT_LAYOUTS[0].tiles
     }
 
-    private createLevelGeometry(layout: string[]) {
+    private createLevelGeometry(layout: string[], levelConfig: PacmanLevelConfig) {
       let playerSpawn: PhaserVector2 | null = null
       const ghostSpawns: PhaserVector2[] = []
       let pelletCount = 0
@@ -385,14 +385,27 @@ export default function createPacmanScene(
       this.pelletsRemaining = pelletCount + energizerCount
 
       if (playerSpawn) {
-        this.playerSpawnPoint = playerSpawn.clone()
+        this.playerSpawnPoint = new Phaser.Math.Vector2(playerSpawn.x, playerSpawn.y)
         this.player.setPosition(playerSpawn.x, playerSpawn.y)
         this.player.setVelocity(0, 0)
       }
 
-      const enemyEntries = this.pacmanConfig.enemies
+      const enemyEntries = (levelConfig.enemyOverrides?.length
+        ? levelConfig.enemyOverrides
+        : this.pacmanConfig.enemies) ?? []
+      const fallbackEnemies = DEFAULT_PACMAN_CONFIG.enemies
+      const activeEnemies = enemyEntries.length > 0 ? enemyEntries : fallbackEnemies
+
+      if (activeEnemies.length === 0) {
+        console.warn('PacmanScene: no enemies configured; skipping ghost spawn')
+      }
+
       ghostSpawns.forEach((spawn, idx) => {
-        const enemy = enemyEntries[idx % enemyEntries.length]
+        if (activeEnemies.length === 0) {
+          return
+        }
+
+        const enemy = activeEnemies[idx % activeEnemies.length]
         const ghost = this.physics.add.sprite(spawn.x, spawn.y, `ghost-${enemy.id}`)
         ghost.setData('speedMultiplier', enemy.speedMultiplier ?? 1)
         ghost.setData('state', 'scatter')
