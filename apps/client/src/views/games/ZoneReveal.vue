@@ -116,6 +116,15 @@ const revealAt = ref('')
 
 type ZoneRevealDailyChallenge = DailyChallenge & { answerRevealUTC?: string }
 
+const ensureZoneRevealAnswer = (config: ZoneRevealConfig): ZoneRevealConfig => {
+  if (!config.answer) {
+    config.answer = { solution: '', accepted: [], image: '' }
+  } else if (!config.answer.accepted) {
+    config.answer.accepted = []
+  }
+  return config
+}
+
 async function loadDailyChallengeDocument(
   gameId: string,
   challenge: string
@@ -283,10 +292,10 @@ onMounted(async () => {
       }
 
       if (loadedChallenge) {
-        zoneRevealConfig.value = loadedChallenge.custom as ZoneRevealConfig
+        zoneRevealConfig.value = ensureZoneRevealAnswer(loadedChallenge.custom as ZoneRevealConfig)
         revealAt.value = resolveRevealTimestamp(loadedChallenge)
       } else {
-        zoneRevealConfig.value = gameData.custom as ZoneRevealConfig
+        zoneRevealConfig.value = ensureZoneRevealAnswer(gameData.custom as ZoneRevealConfig)
         revealAt.value = ''
       }
     } catch (err) {
