@@ -27,6 +27,8 @@ const mapLeaderboardEntry = (
   snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>
 ): LeaderboardEntry => {
   const data = snapshot.data() as Partial<LeaderboardEntry> | undefined;
+  const recordedAt = data?.date?.recordedAt;
+  const fallbackUpdatedAt = typeof recordedAt === 'number' ? recordedAt : undefined;
   return {
     uid: snapshot.id,
     displayName: data?.displayName || 'Anonymous',
@@ -34,6 +36,8 @@ const mapLeaderboardEntry = (
     photoURL: data?.photoURL || 'https://www.top-x.co/assets/profile.png',
     score: data?.score ?? 0,
     streak: data?.streak ?? 0,
+    updatedAt: typeof data?.updatedAt === 'number' ? data.updatedAt : fallbackUpdatedAt,
+    date: data?.date,
     custom: data?.custom,
   };
 };

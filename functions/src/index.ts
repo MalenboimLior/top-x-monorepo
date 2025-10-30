@@ -12,7 +12,12 @@ import {
   User,
   DailyChallengeUserProgress,
 } from '@top-x/shared/types/user';
-import type { Game, LeaderboardEntry } from '@top-x/shared/types/game';
+import type {
+  Game,
+  LeaderboardDateIndexes,
+  LeaderboardEntry,
+  LeaderboardEntryDate,
+} from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
 import type {
   DailyChallenge,
@@ -43,6 +48,80 @@ import {
 const db = admin.firestore();
 
 const corsHandler = cors({ origin: true });
+
+const DEFAULT_LEADERBOARD_PHOTO = 'https://www.top-x.co/assets/profile.png';
+
+const formatLeaderboardDailyIndex = (date: Date): string => date.toISOString().slice(0, 10);
+
+const formatLeaderboardWeeklyIndex = (date: Date): string => {
+  const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayNumber = utcDate.getUTCDay() || 7;
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNumber);
+  const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+  const weekNumber = Math.ceil((((utcDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${utcDate.getUTCFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+};
+
+const formatLeaderboardMonthlyIndex = (date: Date): string => {
+  return `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+};
+
+const createLeaderboardDatePayload = (timestamp: number | null | undefined): LeaderboardEntryDate | undefined => {
+  if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) {
+    return undefined;
+  }
+  const normalizedTimestamp = Math.floor(timestamp);
+  const date = new Date(normalizedTimestamp);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  const indexes: LeaderboardDateIndexes = {
+    daily: formatLeaderboardDailyIndex(date),
+    weekly: formatLeaderboardWeeklyIndex(date),
+    monthly: formatLeaderboardMonthlyIndex(date),
+    allTime: 'all-time',
+  };
+  return {
+    recordedAt: date.getTime(),
+    indexes,
+  };
+};
+
+const parseDateLikeValue = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  if (value instanceof Date) {
+    const millis = value.getTime();
+    return Number.isNaN(millis) ? undefined : millis;
+  }
+  return undefined;
+};
+
+const mapLeaderboardDoc = (
+  docSnapshot: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>
+    | FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>,
+): LeaderboardEntry => {
+  const data = docSnapshot.data() as LeaderboardEntry | undefined;
+  const fallbackUpdatedAt = data?.date?.recordedAt;
+  return {
+    uid: docSnapshot.id,
+    displayName: data?.displayName || 'Anonymous',
+    username: data?.username || data?.displayName || 'Anonymous',
+    photoURL: data?.photoURL || DEFAULT_LEADERBOARD_PHOTO,
+    score: data?.score ?? 0,
+    streak: data?.streak ?? 0,
+    updatedAt: data?.updatedAt ?? fallbackUpdatedAt,
+    date: data?.date,
+    custom: data?.custom,
+  } satisfies LeaderboardEntry;
+};
 
 const toOptionalString = (value: unknown): string | undefined => {
   if (typeof value !== 'string') {
@@ -543,11 +622,14 @@ export const submitGameScore = functions.https.onCall(async (
       let statsSetOptions: FirebaseFirestore.SetOptions | undefined;
 
       if (usingChallengeLeaderboard) {
+        const challengeRecordedAt = parseDateLikeValue(resolvedDailyChallengeDate) ?? serverLastPlayed;
+        const challengeDatePayload = createLeaderboardDatePayload(challengeRecordedAt);
+
         const challengeLeaderboardUpdate: Record<string, unknown> = {
           uid,
           displayName: userData.displayName,
           username: userData.username,
-          photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+          photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
           score: challengeBestScore ?? gameData.score,
           streak: streakToPersist,
           challengeId: rawDailyChallengeId!,
@@ -556,6 +638,7 @@ export const submitGameScore = functions.https.onCall(async (
           solvedAt: challengeSolvedAtIso,
           attemptCount: challengeAttemptCount,
           updatedAt: Date.now(),
+          ...(challengeDatePayload ? { date: challengeDatePayload } : {}),
         };
 
         if (challengeAttemptMetadata) {
@@ -629,12 +712,15 @@ export const submitGameScore = functions.https.onCall(async (
           custom = { itemRanks, worstItemCounts };
         }
 
+        const regularDatePayload = createLeaderboardDatePayload(serverLastPlayed);
+
         leaderboardUpdate = {
           ...mergedGameData,
           displayName: userData.displayName,
           username: userData.username,
-          photoURL: userData.photoURL || 'https://www.top-x.co/assets/profile.png',
+          photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
           updatedAt: Date.now(),
+          ...(regularDatePayload ? { date: regularDatePayload } : {}),
         };
 
         statsUpdate = {
@@ -710,14 +796,7 @@ export const getTopLeaderboard = functions.https.onRequest((req, res) => {
         .orderBy('streak', 'desc')
         .limit(maxResults)
         .get();
-      const leaderboard: LeaderboardEntry[] = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        displayName: doc.data().displayName || 'Anonymous',
-        username: doc.data().username || 'Anonymous',
-        photoURL: doc.data().photoURL || 'https://www.top-x.co/assets/profile.png',
-        score: doc.data().score,
-        streak: doc.data().streak,
-      }));
+      const leaderboard: LeaderboardEntry[] = snapshot.docs.map((doc) => mapLeaderboardDoc(doc));
       res.status(200).json(leaderboard);
     } catch (error) {
       console.error('Error fetching top leaderboard:', error);
@@ -878,7 +957,7 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
         res.status(404).json({ error: 'User not found in leaderboard' });
         return;
       }
-      const leaderboardEntryData = leaderboardEntryDoc.data() as LeaderboardEntry;
+      const leaderboardEntryData = mapLeaderboardDoc(leaderboardEntryDoc);
       if (!leaderboardEntryData) {
         res.status(500).json({ error: 'User data is undefined' });
         return;
@@ -891,14 +970,7 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
         .where('score', '>', userScore)
         .limit(5)
         .get();
-      const above = aboveSnapshot.docs.map(doc => ({
-        uid: doc.id,
-        displayName: doc.data().displayName,
-        username: doc.data().username,
-        photoURL: doc.data().photoURL,
-        score: doc.data().score,
-        streak: doc.data().streak,
-      }));
+      const above = aboveSnapshot.docs.map((doc) => mapLeaderboardDoc(doc));
 
       const belowSnapshot = await leaderboardRef
         .orderBy('score', 'asc')
@@ -906,14 +978,7 @@ export const getAroundLeaderboard = functions.https.onRequest((req, res) => {
         .where('score', '<', userScore)
         .limit(5)
         .get();
-      const below = belowSnapshot.docs.map(doc => ({
-        uid: doc.id,
-        displayName: doc.data().displayName,
-        username: doc.data().username,
-        photoURL: doc.data().photoURL,
-        score: doc.data().score,
-        streak: doc.data().streak,
-      }));
+      const below = belowSnapshot.docs.map((doc) => mapLeaderboardDoc(doc));
 
       // const current: LeaderboardEntry = {
       //   uid: uid,
@@ -967,17 +1032,8 @@ export const getFriendsLeaderboard = functions.https.onRequest((req, res) => {
           .where(admin.firestore.FieldPath.documentId(), 'in', docRefs)
           .orderBy('score', 'desc')
           .get();
-        snapshot.forEach(doc => {
-          const data = doc.data() as LeaderboardEntry;
-          leaderboard.push({
-            uid: doc.id,
-            displayName: data.displayName,
-            username: data.username,
-            photoURL: data.photoURL,
-            score: data.score,
-            streak: data.streak,
-            custom: data.custom,
-          });
+        snapshot.forEach((doc) => {
+          leaderboard.push(mapLeaderboardDoc(doc));
         });
       }
 
@@ -1075,17 +1131,8 @@ export const getVipLeaderboard = functions.https.onRequest((req, res) => {
           .where(admin.firestore.FieldPath.documentId(), 'in', docRefs)
           .orderBy('score', 'desc')
           .get();
-        snapshot.forEach(doc => {
-          const data = doc.data() as LeaderboardEntry;
-          leaderboard.push({
-            uid: doc.id,
-            displayName: data.displayName,
-            username: data.username,
-            photoURL: data.photoURL,
-            score: data.score,
-            streak: data.streak,
-            custom: data.custom,
-          });
+        snapshot.forEach((doc) => {
+          leaderboard.push(mapLeaderboardDoc(doc));
         });
       }
 
