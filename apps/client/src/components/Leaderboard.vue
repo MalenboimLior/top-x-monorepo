@@ -21,6 +21,7 @@
               <th class="has-text-white">Rank</th>
               <th class="has-text-white">Player</th>
               <th class="has-text-white">Score</th>
+              <th class="has-text-white">Recorded</th>
               <th class="has-text-white" v-if="showActions">Action</th>
             </tr>
           </thead>
@@ -46,6 +47,16 @@
                 </div>
               </td>
               <td>{{ entry.score }}</td>
+              <td class="timestamp-cell">
+                <span v-if="getRecordedLabel(entry)" class="timestamp">
+                  {{ getRecordedLabel(entry) }}
+                </span>
+                <div v-if="getSliceBadges(entry).length" class="time-badges">
+                  <span v-for="badge in getSliceBadges(entry)" :key="badge.key" class="time-badge">
+                    {{ badge.label }}
+                  </span>
+                </div>
+              </td>
               <td v-if="showActions">
                 <CustomButton
                   v-if="entry.uid !== currentUserId && !frenemiesSet.has(entry.uid)"
@@ -66,8 +77,99 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import type { LeaderboardDateIndexes, LeaderboardEntry } from '@top-x/shared/types/game';
 import { getTopLeaderboard } from '@/services/leaderboard';
+
+type SliceBadgeKey = keyof LeaderboardDateIndexes;
+type SliceBadge = { key: SliceBadgeKey; label: string };
+
+const sliceBadgeDefinitions: ReadonlyArray<{ key: SliceBadgeKey; label: string }> = [
+  { key: 'daily', label: 'Daily' },
+  { key: 'weekly', label: 'Weekly' },
+  { key: 'monthly', label: 'Monthly' },
+  { key: 'allTime', label: 'All-time' },
+];
+
+const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+
+const relativeTimeFormatter = typeof Intl !== 'undefined' && typeof Intl.RelativeTimeFormat !== 'undefined'
+  ? new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+  : null;
+
+const formatRelativeTimestamp = (timestamp: number): string | null => {
+  if (!relativeTimeFormatter) {
+    return null;
+  }
+  const now = Date.now();
+  const diff = timestamp - now;
+  const absDiff = Math.abs(diff);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  if (absDiff < minute) {
+    const seconds = Math.round(diff / 1000);
+    return relativeTimeFormatter.format(seconds, 'second');
+  }
+  if (absDiff < hour) {
+    const minutes = Math.round(diff / minute);
+    return relativeTimeFormatter.format(minutes, 'minute');
+  }
+  if (absDiff < day) {
+    const hours = Math.round(diff / hour);
+    return relativeTimeFormatter.format(hours, 'hour');
+  }
+  if (absDiff < week) {
+    const days = Math.round(diff / day);
+    return relativeTimeFormatter.format(days, 'day');
+  }
+  if (absDiff < month) {
+    const weeks = Math.round(diff / week);
+    return relativeTimeFormatter.format(weeks, 'week');
+  }
+  if (absDiff < year) {
+    const months = Math.round(diff / month);
+    return relativeTimeFormatter.format(months, 'month');
+  }
+  const years = Math.round(diff / year);
+  return relativeTimeFormatter.format(years, 'year');
+};
+
+const getRecordedLabel = (entry: LeaderboardEntry): string | null => {
+  const timestamp = typeof entry.date?.recordedAt === 'number'
+    ? entry.date.recordedAt
+    : entry.updatedAt;
+  if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) {
+    return null;
+  }
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  const relative = formatRelativeTimestamp(timestamp);
+  const absolute = dateTimeFormatter.format(date);
+  return relative ? `${relative} • ${absolute}` : absolute;
+};
+
+const getSliceBadges = (entry: LeaderboardEntry): SliceBadge[] => {
+  const indexes = entry.date?.indexes;
+  if (!indexes) {
+    return [];
+  }
+  return sliceBadgeDefinitions.reduce<SliceBadge[]>((badges, definition) => {
+    const value = indexes[definition.key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      badges.push({ key: definition.key, label: `${definition.label}: ${value}` });
+    }
+    return badges;
+  }, []);
+};
 
 interface Props {
   gameId: string;
@@ -174,5 +276,33 @@ watch(
   to {
     transform: rotate(360deg);
   }
+}
+
+.timestamp-cell {
+  min-width: 12rem;
+}
+
+.timestamp {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.time-badges {
+  margin-top: 0.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.time-badge {
+  background-color: rgba(102, 255, 246, 0.15);
+  border: 1px solid rgba(102, 255, 246, 0.4);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #66fff6;
 }
 </style>
