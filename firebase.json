@@ -54,7 +54,16 @@
 }
 ],
 "functions": {
-"source": "functions"
+"source": "functions",
+"predeploy": [
+"bash -lc 'rm -f packages/shared/*.tgz functions/shared.tgz'",
+"npm --workspace @top-x/shared run build",
+"npm --workspace @top-x/shared pack --silent",
+"bash -lc 'mv packages/shared/*.tgz functions/shared.tgz'",
+"npm --prefix functions install ./shared.tgz",
+"bash -lc 'rm -f functions/shared.tgz'",
+"npm --prefix functions run build"
+]
 },
 "firestore": {
 "rules": "firestore.rules",
