@@ -444,18 +444,20 @@ export const submitGameScore = functions.https.onCall(async (
           ? { ...attemptMetadata, recordedAt: attemptTimestamp }
           : undefined;
 
+        const solvedAtValue = solved ? solvedAt : undefined;
+
         challengeProgressUpdate = {
           played: true,
           solved,
           bestScore: challengeBestScore,
           firstPlayedAt,
           lastPlayedAt: attemptTimestamp,
-          solvedAt: solved ? solvedAt : undefined,
-          bestScoreAt,
+          ...(solvedAtValue ? { solvedAt: solvedAtValue } : {}),
+          ...(bestScoreAt ? { bestScoreAt } : {}),
           attemptCount,
-          attemptMetadata: challengeAttemptMetadata,
-          counters: nextCounters,
-        };
+          ...(challengeAttemptMetadata ? { attemptMetadata: challengeAttemptMetadata } : {}),
+          ...(nextCounters ? { counters: nextCounters } : {}),
+        } satisfies DailyChallengeUserProgress;
 
         if (challengeStatsRef) {
           const previousChallengeStats = challengeStatsDoc?.exists
