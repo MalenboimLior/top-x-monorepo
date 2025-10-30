@@ -25,7 +25,6 @@ interface LocaleState {
   direction: Direction;
   messages: LocaleMessages;
   initialized: boolean;
-  loading: boolean;
 }
 
 interface LocaleActions {
@@ -96,7 +95,6 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
     direction: 'ltr',
     messages: {},
     initialized: false,
-    loading: false,
   }),
   actions: {
     async initialize() {
@@ -118,7 +116,6 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       }
     },
     async setLanguage(language: string) {
-      this.loading = true;
       const normalized = (language || 'en').toLowerCase();
       this.language = normalized === 'il' ? 'il' : 'en';
       this.direction = this.language === 'il' ? 'rtl' : 'ltr';
@@ -138,18 +135,14 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
           }
         }
       }
-      try {
-        this.messages = await loadLocaleMessages(this.language);
-        if (import.meta.env.DEV) {
-          console.info('[locale] Locale messages ready for', this.language);
-        }
-      } finally {
-        this.loading = false;
+      this.messages = await loadLocaleMessages(this.language);
+      if (import.meta.env.DEV) {
+        console.info('[locale] Locale messages ready for', this.language);
       }
     },
     translate(key: string): string {
       const value = this.messages[key];
-      if (value === undefined && import.meta.env.DEV && !this.loading) {
+      if (value === undefined && import.meta.env.DEV) {
         console.warn('[locale] Missing translation for key', key, 'in language', this.language);
       }
       return value ?? key;
