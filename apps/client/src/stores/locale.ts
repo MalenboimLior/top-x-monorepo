@@ -63,16 +63,25 @@ async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
   const localeId = normalized === 'il' ? 'il' : 'en';
 
   if (staticLocaleMessages[localeId]) {
+    if (import.meta.env.DEV) {
+      console.info('[locale] Using cached locale messages for', localeId);
+    }
     return staticLocaleMessages[localeId];
   }
 
   try {
+    if (import.meta.env.DEV) {
+      console.info('[locale] Fetching locale messages for', localeId);
+    }
     const response = await fetch(`/locales/${localeId}.json?_=${Date.now()}`);
     if (!response.ok) {
       throw new Error(`Unable to load locale file for ${localeId}`);
     }
     const data = await response.json() as LocaleMessages;
     staticLocaleMessages[localeId] = data;
+    if (import.meta.env.DEV) {
+      console.info('[locale] Loaded locale messages for', localeId, 'with', Object.keys(data).length, 'entries');
+    }
     return data;
   } catch (error) {
     console.error('Failed to load locale messages:', error);
@@ -89,18 +98,30 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
   }),
   actions: {
     async initialize() {
+      if (import.meta.env.DEV) {
+        console.info('[locale] initialize called. Already initialized?', this.initialized);
+      }
       if (this.initialized) {
         return;
       }
 
       const preferredLanguage = this.language || await detectPreferredLanguage();
+      if (import.meta.env.DEV) {
+        console.info('[locale] Preferred language detected as', preferredLanguage);
+      }
       await this.setLanguage(preferredLanguage);
       this.initialized = true;
+      if (import.meta.env.DEV) {
+        console.info('[locale] Initialization complete');
+      }
     },
     async setLanguage(language: string) {
       const normalized = (language || 'en').toLowerCase();
       this.language = normalized === 'il' ? 'il' : 'en';
       this.direction = this.language === 'il' ? 'rtl' : 'ltr';
+      if (import.meta.env.DEV) {
+        console.info('[locale] Setting language to', this.language, 'direction', this.direction);
+      }
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('dir', this.direction);
         document.documentElement.setAttribute('lang', this.language === 'il' ? 'he' : 'en');
@@ -115,9 +136,16 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         }
       }
       this.messages = await loadLocaleMessages(this.language);
+      if (import.meta.env.DEV) {
+        console.info('[locale] Locale messages ready for', this.language);
+      }
     },
     translate(key: string): string {
-      return this.messages[key] ?? key;
+      const value = this.messages[key];
+      if (value === undefined && import.meta.env.DEV) {
+        console.warn('[locale] Missing translation for key', key, 'in language', this.language);
+      }
+      return value ?? key;
     },
   },
   persist: {
