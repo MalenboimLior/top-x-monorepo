@@ -11,7 +11,7 @@
           </span>
         </RouterLink>
         <button
-          class="button is-small is-white"
+          class="button is-small admin-shell__collapse"
           type="button"
           @click="toggleSidebar"
           aria-label="Toggle navigation"
@@ -175,7 +175,7 @@ async function logout() {
 }
 
 .admin-shell__sidebar {
-  background: #1f2933;
+  background: linear-gradient(180deg, #1f2933 0%, #0f172a 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -198,6 +198,56 @@ async function logout() {
 .admin-shell__brand a {
   color: inherit;
   font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.admin-shell__collapse {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-shell__collapse:hover,
+.admin-shell__collapse:focus {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.menu-label {
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.menu-list a {
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.menu-list a .icon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.menu-list a:hover,
+.menu-list a:focus {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.menu-list a.is-active {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+}
+
+.menu-list a.is-active .icon {
+  color: #fff;
 }
 
 .admin-shell__main {
@@ -212,8 +262,9 @@ async function logout() {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e5e7eb;
   background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
   gap: 1rem;
 }
 
