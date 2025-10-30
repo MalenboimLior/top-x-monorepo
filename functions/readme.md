@@ -38,3 +38,7 @@ Key expectations:
 - The callable merges new data with the player document, updates the leaderboard document once per request, and records challenge progress (best score, attempt counts, timestamps) when applicable.
 
 The response mirrors this simplified contract by returning the player's previous and new score, and if relevant the best challenge score and identifiers so clients can reconcile local state without reading the leaderboard again.
+
+## Deployment note
+
+Because the Firebase Functions project lives inside an npm workspace, dependencies can otherwise be hoisted to the repository root. That breaks Cloud Functions deployments (modules such as `axios` are missing at runtime). The `.npmrc` in this folder sets `install-strategy=nested` so every deploy installs dependencies locally under `functions/node_modules`.
