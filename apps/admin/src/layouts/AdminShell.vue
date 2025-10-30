@@ -136,6 +136,7 @@ const navigation = [
   { label: 'Dashboard', name: 'dashboard', icon: 'chart-line' },
   { label: 'Game Types', name: 'game-types', icon: 'layer-group' },
   { label: 'Games', name: 'games', icon: 'gamepad' },
+  { label: 'Homepage', name: 'homepage', icon: 'home' },
   { label: 'Content', name: 'content', icon: 'pen-nib' },
   { label: 'Communications', name: 'communications', icon: 'bullhorn' },
   { label: 'Settings', name: 'settings', icon: 'cog' },
