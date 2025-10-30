@@ -3,98 +3,43 @@
     {
       "target": "top-x-co",
       "public": "apps/client/dist",
-      "ignore": [
-        "firebase.json",
-        "/.*",
-        "/node_modules/"
-      ],
+      "ignore": ["firebase.json", "/.*", "/node_modules/"],
       "rewrites": [
-        {
-          "source": "/getTopLeaderboard",
-          "function": {
-            "functionId": "getTopLeaderboard",
-            "region": "us-central1"
-          }
-        },
-        {
-          "source": "/getAroundLeaderboard",
-          "function": {
-            "functionId": "getAroundLeaderboard",
-            "region": "us-central1"
-          }
-        },
-        {
-          "source": "/getFriendsLeaderboard",
-          "function": {
-            "functionId": "getFriendsLeaderboard",
-            "region": "us-central1"
-          }
-        },
-        {
-          "source": "/getPercentileRank",
-          "function": {
-            "functionId": "getPercentileRank",
-            "region": "us-central1"
-          }
-        },
-        {
-          "source": "/getVipLeaderboard",
-          "function": {
-            "functionId": "getVipLeaderboard",
-            "region": "us-central1"
-          }
-        },
-        {
-          "source": "**",
-          "destination": "/index.html"
-        }
+        { "source": "/getTopLeaderboard", "function": { "functionId": "getTopLeaderboard", "region": "us-central1" } },
+        { "source": "/getAroundLeaderboard", "function": { "functionId": "getAroundLeaderboard", "region": "us-central1" } },
+        { "source": "/getFriendsLeaderboard", "function": { "functionId": "getFriendsLeaderboard", "region": "us-central1" } },
+        { "source": "/getPercentileRank", "function": { "functionId": "getPercentileRank", "region": "us-central1" } },
+        { "source": "/getVipLeaderboard", "function": { "functionId": "getVipLeaderboard", "region": "us-central1" } },
+        { "source": "**", "destination": "/index.html" }
       ]
     },
     {
       "target": "admin-top-x-co",
       "public": "apps/admin/dist",
-      "ignore": [
-        "firebase.json",
-        "/.*",
-        "/node_modules/"
-      ],
-      "rewrites": [
-        {
-          "source": "**",
-          "destination": "/index.html"
-        }
-      ]
+      "ignore": ["firebase.json", "/.*", "/node_modules/"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
     }
   ],
+
   "functions": {
     "source": "functions",
     "predeploy": [
-      "bash -lc 'shopt -s nullglob; files=(packages/shared/*.tgz functions/shared.tgz); if [ ${#files[@]} -gt 0 ]; then rm -f \"${files[@]}\"; fi'",
       "npm --workspace @top-x/shared run build",
-      "npm --workspace @top-x/shared pack --silent",
-      "bash -lc 'mv packages/shared/*.tgz functions/shared.tgz'",
-      "npm --prefix functions install ./shared.tgz",
-      "bash -lc 'rm -f functions/shared.tgz'",
-      "npm --prefix functions run build"
+      "npm --workspace @top-x/shared pack --silent --pack-destination functions",
+      "npm --prefix functions i ./functions/top-x-shared-*.tgz"
     ]
   },
+
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+
   "emulators": {
-    "functions": {
-      "port": 5001
-    },
-    "firestore": {
-      "port": 8080
-    },
-    "hosting": {
-      "port": 5000
-    },
-    "ui": {
-      "enabled": true
-    },
+    "functions": { "port": 5001 },
+    "firestore": { "port": 8080 },
+    "hosting": { "port": 5000 },
+    "ui": { "enabled": true },
     "singleProjectMode": true
   }
 }

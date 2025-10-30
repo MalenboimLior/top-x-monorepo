@@ -232,7 +232,6 @@ async function logout() {
 }
 
 .menu-list a {
-  color: rgba(248, 250, 252, 0.92);
   padding: 0.65rem 0.85rem;
   border-radius: 0.9rem;
   display: flex;
