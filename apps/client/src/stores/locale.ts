@@ -20,10 +20,13 @@ const staticLocaleMessages = Object.entries(localeModules).reduce(
   {} as Record<string, LocaleMessages>,
 );
 
+const FALLBACK_LANGUAGE = 'en';
+const fallbackMessages = staticLocaleMessages[FALLBACK_LANGUAGE] ?? {};
+
 interface LocaleState {
   language: string;
   direction: Direction;
-  messages: LocaleMessages;
+    messages: LocaleMessages;
   initialized: boolean;
 }
 
@@ -93,7 +96,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
   state: (): LocaleState => ({
     language: '',
     direction: 'ltr',
-    messages: {},
+    messages: fallbackMessages,
     initialized: false,
   }),
   actions: {
@@ -142,10 +145,23 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
     },
     translate(key: string): string {
       const value = this.messages[key];
-      if (value === undefined && import.meta.env.DEV) {
+      if (value !== undefined) {
+        return value;
+      }
+
+      const fallbackValue = fallbackMessages[key];
+
+      if (fallbackValue !== undefined) {
+        if (import.meta.env.DEV && this.language !== FALLBACK_LANGUAGE) {
+          console.warn('[locale] Missing translation for key', key, 'in language', this.language, '- using fallback');
+        }
+        return fallbackValue;
+      }
+
+      if (import.meta.env.DEV) {
         console.warn('[locale] Missing translation for key', key, 'in language', this.language);
       }
-      return value ?? key;
+      return key;
     },
   },
   persist: {
