@@ -26,7 +26,12 @@
         <p class="menu-label">Main</p>
         <ul class="menu-list">
           <li v-for="link in navigation" :key="link.name">
-            <RouterLink :to="{ name: link.name }" class="is-capitalized" active-class="is-active">
+            <RouterLink
+              :to="{ name: link.name }"
+              class="is-capitalized"
+              active-class="is-active"
+              :title="isSidebarCollapsed ? link.label : undefined"
+            >
               <span class="icon-text">
                   <span class="icon">
                     <font-awesome-icon :icon="link.icon" aria-hidden="true" />
@@ -175,12 +180,15 @@ async function logout() {
 }
 
 .admin-shell__sidebar {
-  background: linear-gradient(180deg, #1f2933 0%, #0f172a 100%);
-  color: #fff;
+  position: relative;
+  background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+  color: #e2e8f0;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
   gap: 1rem;
+  box-shadow: 12px 0 45px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
 }
 
 .admin-shell.is-collapsed .admin-shell__sidebar span:not(.icon) {
@@ -215,45 +223,56 @@ async function logout() {
 }
 
 .menu-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(226, 232, 240, 0.75);
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .menu-list a {
-  color: rgba(255, 255, 255, 0.85);
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.75rem;
+  color: rgba(248, 250, 252, 0.92);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.9rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .menu-list a .icon {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(248, 250, 252, 0.7);
 }
 
 .menu-list a:hover,
 .menu-list a:focus {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
+  transform: translateX(4px);
 }
 
 .menu-list a.is-active {
-  background: #2563eb;
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
   color: #fff;
-  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.35);
+  transform: translateX(6px);
 }
 
 .menu-list a.is-active .icon {
   color: #fff;
 }
 
+.menu-list a:focus-visible {
+  outline: 2px solid rgba(148, 163, 184, 0.65);
+  outline-offset: 3px;
+}
+
 .admin-shell__main {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
 }
 
 .admin-shell__header {
@@ -261,11 +280,12 @@ async function logout() {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   gap: 1rem;
+  backdrop-filter: blur(12px);
 }
 
 .admin-shell__breadcrumbs {
@@ -287,8 +307,9 @@ async function logout() {
 }
 
 .admin-shell__content {
-  padding: 1.5rem;
+  padding: 2rem;
   flex: 1 1 auto;
+  color: #1f2937;
 }
 
 @media screen and (max-width: 960px) {
