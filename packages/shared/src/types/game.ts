@@ -49,6 +49,18 @@ export interface Game {
   updatedAt?: number;
 }
 
+export interface LeaderboardDateIndexes {
+  daily: string;
+  weekly: string;
+  monthly: string;
+  allTime: string;
+}
+
+export interface LeaderboardEntryDate {
+  recordedAt: number;
+  indexes: LeaderboardDateIndexes;
+}
+
 export interface LeaderboardEntry {
   uid: string;
   displayName: string;
@@ -56,6 +68,8 @@ export interface LeaderboardEntry {
   photoURL: string;
   score: number;
   streak: number;
+  updatedAt?: number;
+  date?: LeaderboardEntryDate;
   custom?: Record<string, any>;
 }
 
