@@ -243,6 +243,20 @@ export const submitGameScore = functions.https.onCall(async (
 
   const uid = auth.uid;
 
+  console.log('submitGameScore: received request payload', {
+    uid,
+    gameId,
+    gameTypeId,
+    score: gameData.score,
+    dailyChallenge: {
+      id: rawDailyChallengeId ?? null,
+      date: requestDailyChallengeDate ?? null,
+    },
+    hasChallengeMetadata: Boolean(payload.challengeMetadata),
+    challengeMetadata: payload.challengeMetadata ?? null,
+    custom: gameData.custom ?? null,
+  });
+
   try {
     const result = await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(uid);
