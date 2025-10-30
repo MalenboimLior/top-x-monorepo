@@ -8,3 +8,4 @@ export * from './dailyChallenge';
 export * from './counters';
 export * from './stats';
 export * from './pacman';
+export * from './home';
