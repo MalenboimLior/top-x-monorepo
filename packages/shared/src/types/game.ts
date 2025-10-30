@@ -34,6 +34,7 @@ export interface Game {
   custom: PyramidConfig | TriviaConfig | ZoneRevealConfig | PacmanConfig; // Union of possible config types
   creator?: { userid: string; username: string };
   community?: boolean;
+  hideFromHome?: boolean;
   dailyChallengeActive?: boolean;
   /** Date identifier for the challenge shown when today's is missing */
   dailyChallengeCurrent?: string;
@@ -44,6 +45,8 @@ export interface Game {
    */
   leaderboard?: DailyChallengeLeaderboardSummary;
   counters?: GameCounters;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface LeaderboardEntry {
