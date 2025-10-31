@@ -19,7 +19,7 @@ export type CounterUpdate =
 interface ApplyGameCounterUpdatesParams {
   tx: FirebaseFirestore.Transaction;
   userRef: FirebaseFirestore.DocumentReference;
-  gameRef: FirebaseFirestore.DocumentReference;
+  statsRef: FirebaseFirestore.DocumentReference;
   userData: User;
   gameId: string;
   updates: CounterUpdate[];
@@ -43,14 +43,14 @@ const buildUserEngagementUpdate = (
   return payload;
 };
 
-const buildCounterIncrementUpdate = (
+const buildStatsIncrementUpdate = (
   increments: Record<string, number>,
 ): Record<string, FirebaseFirestore.FieldValue | number> => {
   const payload: Record<string, FirebaseFirestore.FieldValue | number> = {};
   Object.entries(increments).forEach(([counterKey, amount]) => {
-    payload[`counters.${counterKey}`] = admin.firestore.FieldValue.increment(amount);
+    payload[counterKey] = admin.firestore.FieldValue.increment(amount);
   });
-  payload[`counters.${GAME_COUNTER_KEYS.UPDATED_AT}`] = Date.now();
+  payload[GAME_COUNTER_KEYS.UPDATED_AT] = Date.now();
   return payload;
 };
 
@@ -68,7 +68,7 @@ const buildChallengeAnalyticsIncrementUpdate = (
 export const applyGameCounterUpdates = ({
   tx,
   userRef,
-  gameRef,
+  statsRef,
   userData,
   gameId,
   updates,
@@ -119,7 +119,7 @@ export const applyGameCounterUpdates = ({
   }
 
   if (Object.keys(counterIncrements).length > 0) {
-    tx.set(gameRef, buildCounterIncrementUpdate(counterIncrements), { merge: true });
+    tx.set(statsRef, buildStatsIncrementUpdate(counterIncrements), { merge: true });
   }
 };
 
@@ -169,9 +169,3 @@ export const applyChallengeCounterUpdates = ({
 
   return state;
 };
-
-export const GAME_COUNTER_EVENT_MAP = {
-  submit_answer: [{ key: GAME_COUNTER_KEYS.UNIQUE_SUBMITTERS, type: 'unique' }],
-} as const satisfies Record<string, CounterUpdate[]>;
-
-export type GameCounterEvent = keyof typeof GAME_COUNTER_EVENT_MAP;

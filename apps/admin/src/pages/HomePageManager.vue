@@ -217,8 +217,8 @@
                           {{ game.community ? 'Community' : 'Official' }} · {{ game.language?.toUpperCase() }}
                         </p>
                       </td>
-                      <td class="has-text-centered">{{ formatNumber(game.counters?.totalPlayers || 0) }}</td>
-                      <td class="has-text-centered">{{ formatNumber(game.counters?.favorites || 0) }}</td>
+                      <td class="has-text-centered">{{ formatNumber(getGameStat(game.id, 'totalPlayers')) }}</td>
+                      <td class="has-text-centered">{{ formatNumber(getGameStat(game.id, 'favorites')) }}</td>
                       <td class="has-text-right">
                         <label class="checkbox">
                           <input
@@ -314,7 +314,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { doc, onSnapshot, setDoc, updateDoc, where, deleteField } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { useCollection } from '@top-x/shared/api/useCollection';
@@ -323,6 +323,7 @@ import type { HomePageConfig, HomeOrderField } from '@top-x/shared/types/home';
 import { defaultHomePageConfig } from '@top-x/shared/types/home';
 import { useUserStore } from '@/stores/user';
 import { formatNumber } from '@top-x/shared/utils/format';
+import type { GameStats } from '@top-x/shared/types/stats';
 
 interface FeaturedEntry {
   id: string;
@@ -340,6 +341,9 @@ const user = computed(() => userStore.user);
 const gamesCollection = useCollection<Game>('games', {
   transform: (snapshot) => ({ id: snapshot.id, ...(snapshot.data() as Game) }),
 });
+
+const gameStats = reactive<Record<string, Partial<GameStats>>>({});
+const statsUnsubscribers = new Map<string, () => void>();
 
 const gameTypesCollection = useCollection<GameType>('gameTypes', {
   constraints: [where('availableToBuild', '==', true)],
@@ -398,8 +402,60 @@ const availableBuildOptions = computed(() => {
     .sort((a, b) => a.name.localeCompare(b.name));
 });
 
+type GameStatMetric = 'totalPlayers' | 'favorites' | 'sessionsPlayed' | 'uniqueSubmitters';
+
+function subscribeToGameStats(gameId: string) {
+  if (statsUnsubscribers.has(gameId)) {
+    return;
+  }
+
+  const statsRef = doc(db, 'games', gameId, 'stats', 'general');
+  const unsubscribeStats = onSnapshot(
+    statsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        gameStats[gameId] = snapshot.data() as Partial<GameStats>;
+      } else {
+        delete gameStats[gameId];
+      }
+    },
+    (error) => {
+      console.error(`HomePageManager: Failed to load stats for ${gameId}`, error);
+      delete gameStats[gameId];
+    },
+  );
+
+  statsUnsubscribers.set(gameId, unsubscribeStats);
+}
+
+function cleanupStatsSubscriptions(activeGameIds: Set<string>) {
+  for (const [gameId, unsubscribeStats] of statsUnsubscribers) {
+    if (!activeGameIds.has(gameId)) {
+      unsubscribeStats();
+      statsUnsubscribers.delete(gameId);
+      delete gameStats[gameId];
+    }
+  }
+}
+
+function getGameStat(gameId: string, key: GameStatMetric): number {
+  const stats = gameStats[gameId];
+  const value = stats?.[key];
+  return typeof value === 'number' ? value : 0;
+}
+
 const sortedGames = computed(() =>
   [...gamesCollection.data.value].sort((a, b) => a.name.localeCompare(b.name)),
+);
+
+watch(
+  () => gamesCollection.data.value.map((game) => game.id),
+  (ids) => {
+    const activeIds = new Set(ids);
+    ids.forEach((id) => subscribeToGameStats(id));
+    cleanupStatsSubscriptions(activeIds);
+  },
+  { immediate: true },
 );
 
 watch(
@@ -441,6 +497,13 @@ onBeforeUnmount(() => {
   if (configUnsubscribe) {
     configUnsubscribe();
     configUnsubscribe = null;
+  }
+  for (const unsubscribeStats of statsUnsubscribers.values()) {
+    unsubscribeStats();
+  }
+  statsUnsubscribers.clear();
+  for (const key of Object.keys(gameStats)) {
+    delete gameStats[key];
   }
 });
 

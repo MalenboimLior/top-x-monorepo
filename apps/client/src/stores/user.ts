@@ -10,7 +10,7 @@ import {
   SubmitGameScoreResponse,
   UserGameDataSubmission,
 } from '@top-x/shared/types/user';
-import type { SetGameFavoriteRequest, SetGameFavoriteResponse } from '@top-x/shared/types/counters';
+import type { SetGameFavoriteRequest, SetGameFavoriteResponse } from '@top-x/shared/types/favorites';
 
 // Define a sanitized user type to avoid reactivity issues
 interface SanitizedUser {

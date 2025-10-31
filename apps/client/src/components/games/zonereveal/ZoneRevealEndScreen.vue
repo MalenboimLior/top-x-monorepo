@@ -83,8 +83,6 @@ import { useUserStore } from '@/stores/user'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
 import Leaderboard from '@/components/Leaderboard.vue'
-import { recordGameEvents } from '@/services/gameCounters'
-import { GAME_COUNTER_EVENTS } from '@top-x/shared/types/counters'
 import { DateTime } from 'luxon'
 import type { ZoneRevealAnswer } from '@top-x/shared/types/zoneReveal'
 import {
@@ -252,12 +250,6 @@ async function handleSubmit() {
   await saveScore(evaluation)
   hasSubmitted.value = true
   submissionResult.value = evaluation
-  if (userStore.user) {
-    void recordGameEvents(props.gameId, [GAME_COUNTER_EVENTS.SUBMIT_ANSWER], {
-      dailyChallengeId: dailyChallengeId.value ?? undefined,
-      dailyChallengeDate: dailyChallengeDate.value ?? undefined
-    })
-  }
   if (analytics) {
     logEvent(analytics, 'user_action', {
       action: 'submit_answer',
