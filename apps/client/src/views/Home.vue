@@ -82,17 +82,17 @@
             </div>
             <h3 class="game-card__title">{{ game.name }}</h3>
             <p class="game-card__description">{{ game.description }}</p>
-            <div class="game-card__stats" v-if="game.counters">
+            <div class="game-card__stats" v-if="gameStats[game.id]">
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.totalPlayers || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.totalPlayers || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.players') }}</span>
               </div>
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.favorites || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.favorites || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.favorites') }}</span>
               </div>
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.sessionsPlayed || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.sessionsPlayed || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.sessions') }}</span>
               </div>
             </div>
@@ -143,17 +143,17 @@
             </div>
             <h3 class="game-card__title">{{ game.name }}</h3>
             <p class="game-card__description">{{ game.description }}</p>
-            <div class="game-card__stats" v-if="game.counters">
+            <div class="game-card__stats" v-if="gameStats[game.id]">
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.totalPlayers || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.totalPlayers || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.players') }}</span>
               </div>
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.favorites || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.favorites || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.favorites') }}</span>
               </div>
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.sessionsPlayed || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.sessionsPlayed || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.sessions') }}</span>
               </div>
             </div>
@@ -196,17 +196,17 @@
             </div>
             <h3 class="game-card__title">{{ game.name }}</h3>
             <p class="game-card__description">{{ game.description }}</p>
-            <div class="game-card__stats" v-if="game.counters">
+            <div class="game-card__stats" v-if="gameStats[game.id]">
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.totalPlayers || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.totalPlayers || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.players') }}</span>
               </div>
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.favorites || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.favorites || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.favorites') }}</span>
               </div>
               <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(game.counters?.sessionsPlayed || 0) }}</span>
+                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.sessionsPlayed || 0) }}</span>
                 <span class="game-card__stat-label">{{ t('home.stats.sessions') }}</span>
               </div>
             </div>
@@ -250,7 +250,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick, reactive } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import {
@@ -267,6 +267,7 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import fallbackImg from '@/assets/images/fallback.png';
 import { analytics, trackEvent } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
+import type { GameStats } from '@top-x/shared/types/stats';
 import type { HomePageConfig, HomeOrderField, HomeSectionOrder } from '@top-x/shared/types/home';
 import { defaultHomePageConfig } from '@top-x/shared/types/home';
 import { useLocaleStore } from '@/stores/locale';
@@ -276,6 +277,7 @@ import { formatNumber } from '@top-x/shared/utils/format';
 const router = useRouter();
 
 const games = ref<Game[]>([]);
+const gameStats = reactive<Record<string, Partial<GameStats>>>({});
 const gameTypes = ref<GameType[]>([]);
 const homeConfig = ref<HomePageConfig>({ ...defaultHomePageConfig });
 const configLoaded = ref(false);
@@ -311,6 +313,7 @@ let resizeObserver: ResizeObserver | null = null;
 let gamesUnsubscribe: (() => void) | null = null;
 let configUnsubscribe: (() => void) | null = null;
 let gameTypesUnsubscribe: (() => void) | null = null;
+const statsUnsubscribers = new Map<string, () => void>();
 
 function timestampToMillis(value: unknown): number | undefined {
   if (!value) return undefined;
@@ -362,10 +365,51 @@ function mapGameDocument(docSnapshot: QueryDocumentSnapshot<DocumentData>): Game
     dailyChallengeActive: data.dailyChallengeActive,
     dailyChallengeCurrent: data.dailyChallengeCurrent,
     leaderboard: data.leaderboard,
-    counters: data.counters || {},
     createdAt,
     updatedAt,
   } as Game;
+}
+
+function subscribeToGameStats(gameId: string) {
+  if (statsUnsubscribers.has(gameId)) {
+    return;
+  }
+
+  const statsRef = doc(db, 'games', gameId, 'stats', 'general');
+  const unsubscribe = onSnapshot(
+    statsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        gameStats[gameId] = snapshot.data() as Partial<GameStats>;
+      } else {
+        delete gameStats[gameId];
+      }
+    },
+    (error) => {
+      console.error(`Home: Error fetching stats for game ${gameId}:`, error.message, error);
+      delete gameStats[gameId];
+    },
+  );
+
+  statsUnsubscribers.set(gameId, unsubscribe);
+}
+
+function cleanupStatsSubscriptions(activeGameIds: Set<string>) {
+  for (const [gameId, unsubscribe] of statsUnsubscribers) {
+    if (!activeGameIds.has(gameId)) {
+      unsubscribe();
+      statsUnsubscribers.delete(gameId);
+      delete gameStats[gameId];
+    }
+  }
+}
+
+type GameStatMetric = 'totalPlayers' | 'favorites' | 'sessionsPlayed' | 'uniqueSubmitters';
+
+function getGameStat(gameId: string, key: GameStatMetric): number {
+  const stats = gameStats[gameId];
+  const value = stats?.[key];
+  return typeof value === 'number' ? value : 0;
 }
 
 function tryInitializeAdSlot() {
@@ -431,9 +475,18 @@ onMounted(() => {
   gamesUnsubscribe = onSnapshot(
     gamesQuery,
     (snapshot) => {
-      games.value = snapshot.docs
+      const mappedGames = snapshot.docs
         .map((docSnapshot) => mapGameDocument(docSnapshot))
         .filter((g) => g.active);
+      games.value = mappedGames;
+
+      const activeIds = new Set<string>();
+      mappedGames.forEach((game) => {
+        activeIds.add(game.id);
+        subscribeToGameStats(game.id);
+      });
+      cleanupStatsSubscriptions(activeIds);
+
       console.log('Home: Games updated:', games.value);
     },
     (err) => {
@@ -545,13 +598,13 @@ function getSortValue(game: Game, field: HomeOrderField): number {
     case 'date':
       return game.createdAt ?? 0;
     case 'players':
-      return game.counters?.totalPlayers ?? 0;
+      return getGameStat(game.id, 'totalPlayers');
     case 'favorites':
-      return game.counters?.favorites ?? 0;
+      return getGameStat(game.id, 'favorites');
     case 'sessions':
-      return game.counters?.sessionsPlayed ?? 0;
+      return getGameStat(game.id, 'sessionsPlayed');
     case 'submissions':
-      return game.counters?.uniqueSubmitters ?? 0;
+      return getGameStat(game.id, 'uniqueSubmitters');
     default:
       return 0;
   }
@@ -631,6 +684,13 @@ onBeforeUnmount(() => {
   if (gameTypesUnsubscribe) {
     gameTypesUnsubscribe();
     gameTypesUnsubscribe = null;
+  }
+  for (const unsubscribe of statsUnsubscribers.values()) {
+    unsubscribe();
+  }
+  statsUnsubscribers.clear();
+  for (const key of Object.keys(gameStats)) {
+    delete gameStats[key];
   }
 });
 </script>

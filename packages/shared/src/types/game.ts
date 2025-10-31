@@ -1,6 +1,5 @@
 // Updated packages/shared/types/game.ts
 import type { DailyChallengeLeaderboardSummary } from "./dailyChallenge";
-import type { GameCounters } from "./counters";
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
@@ -44,7 +43,6 @@ export interface Game {
    * `/daily_challenges/{challengeId}`.
    */
   leaderboard?: DailyChallengeLeaderboardSummary;
-  counters?: GameCounters;
   createdAt?: number;
   updatedAt?: number;
 }

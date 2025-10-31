@@ -181,7 +181,7 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
     firestore: firestoreFn,
   };
 
-  const counterManagerStub = {
+  const statsManagerStub = {
     GAME_COUNTER_KEYS: {
       TOTAL_PLAYERS: 'totalPlayers',
       FAVORITES: 'favorites',
@@ -189,7 +189,6 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
       UNIQUE_SUBMITTERS: 'uniqueSubmitters',
       UPDATED_AT: 'updatedAt',
     },
-    GAME_COUNTER_EVENT_MAP: {},
     applyGameCounterUpdates: () => {},
     applyChallengeCounterUpdates: (params) => params.counterState || {},
   };
@@ -231,8 +230,8 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
       };
     }
 
-    if (request.endsWith('/utils/counterManager') || request === './utils/counterManager') {
-      return counterManagerStub;
+    if (request.endsWith('/utils/statsManager') || request === './utils/statsManager') {
+      return statsManagerStub;
     }
 
     if (request.endsWith('/utils/firebaseAdmin') || request === './utils/firebaseAdmin') {
@@ -248,14 +247,14 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
 
   const indexPath = path.resolve(__dirname, '../../../lib/index.js');
   const firebaseAdminPath = path.resolve(__dirname, '../../../lib/utils/firebaseAdmin.js');
-  const counterManagerPath = path.resolve(__dirname, '../../../lib/utils/counterManager.js');
+  const statsManagerPath = path.resolve(__dirname, '../../../lib/utils/statsManager.js');
 
   delete require.cache[indexPath];
   if (require.cache[firebaseAdminPath]) {
     delete require.cache[firebaseAdminPath];
   }
-  if (require.cache[counterManagerPath]) {
-    delete require.cache[counterManagerPath];
+  if (require.cache[statsManagerPath]) {
+    delete require.cache[statsManagerPath];
   }
 
   const { submitGameScore } = require(indexPath);
