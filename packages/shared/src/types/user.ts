@@ -25,12 +25,8 @@ export interface DailyChallengeUserProgress {
 }
 
 export interface UserGameCustomData {
-  /**
-   * Per-challenge progress data keyed by challenge identifier. Used by
-   * backend logic to prevent double-counting streaks or score increments for
-   * the same challenge run.
-   */
-  dailyChallenges?: Record<string, DailyChallengeUserProgress>;
+  /** Challenge-specific metadata captured for the latest attempt. */
+  dailyChallengeProgress?: DailyChallengeUserProgress;
   /**
    * Additional custom data for the game. The value type is intentionally
    * flexible to support legacy and feature-specific metadata.
@@ -43,6 +39,8 @@ export interface UserGameData {
   streak: number;
   lastPlayed: number;
   achievements?: Array<{ id: string; earnedAt: string }>;
+  /** Per-challenge snapshots keyed by challenge identifier. */
+  dailyChallenges?: Record<string, UserGameData>;
   custom?: UserGameCustomData;
 }
 
