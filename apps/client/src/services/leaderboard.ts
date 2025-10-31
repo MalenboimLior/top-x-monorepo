@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import type { GameStats } from '@top-x/shared/types/stats';
 
 const DEFAULT_GAME_ID = 'smartest_on_x';
 const BATCH_SIZE = 10;
@@ -156,10 +157,10 @@ export async function getPercentileRank(
   const userScore = userData?.score ?? 0;
 
   const statsDoc = await getDoc(getStatsDocument(gameId, dailyChallengeId));
-  const statsData = statsDoc.data() as { scoreDistribution?: Record<string, number>; totalPlayers?: number } | undefined;
+  const statsData = statsDoc.data() as Partial<GameStats> | undefined;
 
   const scoreDistribution = statsData?.scoreDistribution ?? {};
-  const totalPlayers = statsData?.totalPlayers ?? 0;
+  const totalPlayers = typeof statsData?.totalPlayers === 'number' ? statsData.totalPlayers : 0;
 
   if (totalPlayers === 0) {
     return { percentile: 0, usersTopped: 0 };
@@ -167,12 +168,14 @@ export async function getPercentileRank(
 
   let playersBelowOrEqual = 0;
   for (const [scoreValue, count] of Object.entries(scoreDistribution)) {
-    if (Number(scoreValue) <= userScore) {
+    const numericScore = Number(scoreValue);
+    if (!Number.isNaN(numericScore) && numericScore <= userScore) {
       playersBelowOrEqual += count;
     }
   }
 
-  const percentile = Math.round((playersBelowOrEqual / totalPlayers) * 100);
+  const safeTotal = playersBelowOrEqual > totalPlayers ? playersBelowOrEqual : totalPlayers;
+  const percentile = safeTotal === 0 ? 0 : Math.round((playersBelowOrEqual / safeTotal) * 100);
 
   return {
     percentile,
