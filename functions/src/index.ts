@@ -12,6 +12,7 @@ import {
   User,
   DailyChallengeUserProgress,
   UserGameCustomData,
+  DailyChallengeAttemptMetadata,
 } from '@top-x/shared/types/user';
 import type {
   Game,
@@ -20,10 +21,7 @@ import type {
   LeaderboardEntryDate,
 } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
-import type {
-  DailyChallenge,
-  DailyChallengeAttemptMetadata,
-} from '@top-x/shared/types/dailyChallenge';
+import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import { evaluateZoneRevealAnswer } from '@top-x/shared/utils/zoneRevealAnswer';
 import { postOnX } from './external/xApi';
@@ -747,6 +745,28 @@ export const submitGameScore = functions.https.onCall(async (
       if (usingChallengeLeaderboard) {
         const challengeRecordedAt = parseDateLikeValue(resolvedDailyChallengeDate) ?? serverLastPlayed;
         const challengeDatePayload = createLeaderboardDatePayload(challengeRecordedAt);
+        const challengePlayedAt = challengePlayedAtIso ?? new Date(serverLastPlayed).toISOString();
+        const challengeCustom: Record<string, unknown> = {
+          id: rawDailyChallengeId!,
+          date: resolvedDailyChallengeDate!,
+          playedAt: challengePlayedAt,
+        };
+
+        if (challengeSolvedAtIso) {
+          challengeCustom.solvedAt = challengeSolvedAtIso;
+        }
+
+        if (typeof challengeAttemptCount === 'number') {
+          challengeCustom.attemptCount = challengeAttemptCount;
+        }
+
+        if (challengeAttemptMetadata) {
+          challengeCustom.attempt = challengeAttemptMetadata;
+        }
+
+        if (payload.challengeMetadata) {
+          challengeCustom.metadata = payload.challengeMetadata;
+        }
 
         const challengeLeaderboardUpdate: Record<string, unknown> = {
           uid,
@@ -755,18 +775,12 @@ export const submitGameScore = functions.https.onCall(async (
           photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
           score: challengeBestScore ?? gameData.score,
           streak: streakToPersist,
-          challengeId: rawDailyChallengeId!,
-          challengeDate: resolvedDailyChallengeDate!,
-          playedAt: challengePlayedAtIso ?? new Date(serverLastPlayed).toISOString(),
-          solvedAt: challengeSolvedAtIso,
-          attemptCount: challengeAttemptCount,
           updatedAt: Date.now(),
+          custom: {
+            challenge: challengeCustom,
+          },
           ...(challengeDatePayload ? { date: challengeDatePayload } : {}),
         };
-
-        if (challengeAttemptMetadata) {
-          challengeLeaderboardUpdate.attempt = challengeAttemptMetadata;
-        }
 
         leaderboardUpdate = challengeLeaderboardUpdate;
         leaderboardSetOptions = { merge: true };

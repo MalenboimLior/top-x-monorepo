@@ -1,5 +1,3 @@
-// Updated packages/shared/types/game.ts
-import type { DailyChallengeLeaderboardSummary } from "./dailyChallenge";
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
@@ -42,7 +40,11 @@ export interface Game {
    * per-challenge leaderboards themselves are stored under
    * `/daily_challenges/{challengeId}`.
    */
-  leaderboard?: DailyChallengeLeaderboardSummary;
+  leaderboard?: {
+    updatedAt: string;
+    topEntries: LeaderboardEntry[];
+    totalPlayers?: number;
+  };
   createdAt?: number;
   updatedAt?: number;
 }
