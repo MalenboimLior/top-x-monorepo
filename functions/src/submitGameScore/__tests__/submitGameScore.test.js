@@ -353,21 +353,27 @@ test('merges challenge submissions without aggregated fields and persists best s
             score: 1,
             streak: 1,
             lastPlayed: Date.now(),
-            custom: {
-              dailyChallenges: {
-                [challengeId]: {
-                  played: true,
-                  solved: true,
-                  bestScore: 150,
-                  firstPlayedAt: priorTimestamp,
-                  lastPlayedAt: priorTimestamp,
-                  solvedAt: priorTimestamp,
-                  bestScoreAt: priorTimestamp,
-                  attemptCount: 1,
-                  counters: {},
+            dailyChallenges: {
+              [challengeId]: {
+                score: 150,
+                streak: 1,
+                lastPlayed: Date.now(),
+                custom: {
+                  dailyChallengeProgress: {
+                    played: true,
+                    solved: true,
+                    bestScore: 150,
+                    firstPlayedAt: priorTimestamp,
+                    lastPlayedAt: priorTimestamp,
+                    solvedAt: priorTimestamp,
+                    bestScoreAt: priorTimestamp,
+                    attemptCount: 1,
+                    counters: {},
+                  },
                 },
               },
             },
+            custom: {},
           },
         },
       },
@@ -410,7 +416,9 @@ test('merges challenge submissions without aggregated fields and persists best s
   const storedGame = userDoc.games[gameTypeId][gameId];
   assert.equal(storedGame.score, 200);
   assert.equal(storedGame.streak, 2);
-  const challengeProgress = storedGame.custom.dailyChallenges[challengeId];
+  const challengeGameData = storedGame.dailyChallenges[challengeId];
+  assert.equal(challengeGameData.score, 200);
+  const challengeProgress = challengeGameData.custom.dailyChallengeProgress;
   assert.equal(challengeProgress.bestScore, 200);
   assert.equal(challengeProgress.attemptCount, 2);
 
