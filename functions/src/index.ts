@@ -11,6 +11,7 @@ import {
   SubmitGameScoreResponse,
   User,
   DailyChallengeUserProgress,
+  UserGameCustomData,
 } from '@top-x/shared/types/user';
 import type {
   Game,
@@ -474,6 +475,7 @@ export const submitGameScore = functions.https.onCall(async (
         : previousGameData?.streak ?? 0;
       let challengeBestScore: number | undefined;
       let challengeProgressUpdate: DailyChallengeUserProgress | undefined;
+      let challengeGameDataUpdate: UserGameData | undefined;
       let challengeAttemptCount: number | undefined;
       let challengePlayedAtIso: string | undefined;
       let challengeSolvedAtIso: string | undefined;
@@ -481,8 +483,8 @@ export const submitGameScore = functions.https.onCall(async (
       let challengeStatsUpdate: Partial<DailyChallengeGameStats> | undefined;
 
       if (isDailyChallengeSubmission && rawDailyChallengeId && challengeRef) {
-        const previousDailyChallenges = previousGameData?.custom?.dailyChallenges ?? {};
-        const previousChallengeProgress = previousDailyChallenges[rawDailyChallengeId] as DailyChallengeUserProgress | undefined;
+        const previousChallengeGameData = previousGameData?.dailyChallenges?.[rawDailyChallengeId];
+        const previousChallengeProgress = previousChallengeGameData?.custom?.dailyChallengeProgress;
         const attemptTimestamp = new Date().toISOString();
         const firstSubmission = !previousChallengeProgress?.played;
         const wasPreviouslySolved = previousChallengeProgress?.solved ?? false;
@@ -538,6 +540,30 @@ export const submitGameScore = functions.https.onCall(async (
           ...(nextCounters ? { counters: nextCounters } : {}),
         } satisfies DailyChallengeUserProgress;
 
+        const challengeCustomFromSubmission = { ...(enrichedGameData.custom ?? {}) } as UserGameCustomData;
+        const challengeBaseCustom: UserGameCustomData = {
+          ...(previousChallengeGameData?.custom ?? {}),
+          ...challengeCustomFromSubmission,
+        };
+
+        delete (challengeBaseCustom as Record<string, unknown>).dailyChallenges;
+
+        challengeBaseCustom.dailyChallengeProgress = challengeProgressUpdate;
+
+        const challengeScoreToPersist = challengeBestScore ?? submissionScore;
+
+        challengeGameDataUpdate = {
+          score: challengeScoreToPersist,
+          streak: streakToPersist,
+          lastPlayed: serverLastPlayed,
+          ...(enrichedGameData.achievements
+            ? { achievements: enrichedGameData.achievements }
+            : previousChallengeGameData?.achievements
+              ? { achievements: previousChallengeGameData.achievements }
+              : {}),
+          custom: challengeBaseCustom,
+        } satisfies UserGameData;
+
         if (challengeStatsRef) {
           const previousChallengeStats = challengeStatsDoc?.exists
             ? (challengeStatsDoc.data() as DailyChallengeGameStats)
@@ -561,18 +587,13 @@ export const submitGameScore = functions.https.onCall(async (
         challengeSolvedAtIso = solved ? solvedAt ?? attemptTimestamp : previousChallengeProgress?.solvedAt;
       }
 
-      const customFromSubmission = { ...(enrichedGameData.custom ?? {}) } as Record<string, unknown>;
-      const baseCustom = {
+      const customFromSubmission = { ...(enrichedGameData.custom ?? {}) } as UserGameCustomData;
+      const baseCustom: UserGameCustomData = {
         ...(previousGameData?.custom ?? {}),
         ...customFromSubmission,
-      } as UserGameData['custom'];
+      };
 
-      if (isDailyChallengeSubmission && rawDailyChallengeId && challengeProgressUpdate) {
-        baseCustom.dailyChallenges = {
-          ...(previousGameData?.custom?.dailyChallenges ?? {}),
-          [rawDailyChallengeId]: challengeProgressUpdate,
-        };
-      }
+      delete (baseCustom as Record<string, unknown>).dailyChallenges;
 
       const mergedGameData: UserGameData = {
         ...(previousGameData ?? {}),
@@ -582,6 +603,17 @@ export const submitGameScore = functions.https.onCall(async (
         lastPlayed: serverLastPlayed,
         custom: baseCustom,
       };
+
+      if (previousGameData?.dailyChallenges) {
+        mergedGameData.dailyChallenges = previousGameData.dailyChallenges;
+      }
+
+      if (isDailyChallengeSubmission && rawDailyChallengeId && challengeGameDataUpdate) {
+        mergedGameData.dailyChallenges = {
+          ...(mergedGameData.dailyChallenges ?? {}),
+          [rawDailyChallengeId]: challengeGameDataUpdate,
+        };
+      }
 
       tx.set(userRef, {
         games: {
