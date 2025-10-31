@@ -32,9 +32,7 @@ import {
   applyChallengeCounterUpdates,
   applyGameCounterUpdates,
   GAME_COUNTER_KEYS,
-  GAME_COUNTER_EVENT_MAP,
-  type GameCounterEvent,
-} from './utils/counterManager';
+} from './utils/statsManager';
 
 // -------------------------------------------------------------
 // Cloud Functions used by the TOP-X backend
@@ -413,8 +411,8 @@ export const submitGameScore = functions.https.onCall(async (
     const result = await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(uid);
       const gameRef = db.collection('games').doc(gameId);
-      const leaderboardRef = gameRef.collection('leaderboard').doc(uid);
       const statsRef = gameRef.collection('stats').doc('general');
+      const leaderboardRef = gameRef.collection('leaderboard').doc(uid);
       const challengeRef = isDailyChallengeSubmission && rawDailyChallengeId
         ? gameRef.collection('daily_challenges').doc(rawDailyChallengeId)
         : null;
@@ -439,7 +437,7 @@ export const submitGameScore = functions.https.onCall(async (
         applyGameCounterUpdates({
           tx,
           userRef,
-          gameRef,
+          statsRef,
           userData,
           gameId,
           updates: [{ key: GAME_COUNTER_KEYS.SESSIONS_PLAYED, type: 'increment' }],
@@ -719,7 +717,7 @@ export const submitGameScore = functions.https.onCall(async (
       applyGameCounterUpdates({
         tx,
         userRef,
-        gameRef,
+        statsRef,
         userData,
         gameId,
         updates: [
@@ -786,10 +784,7 @@ export const submitGameScore = functions.https.onCall(async (
         let totalPlayers = currentStats.totalPlayers;
         let sessionsPlayed = currentStats.sessionsPlayed + 1;
         let uniqueSubmitters = currentStats.uniqueSubmitters;
-        const counters = (gameDoc.data()?.counters ?? {}) as Record<string, unknown>;
-        const favorites = typeof counters.favorites === 'number'
-          ? counters.favorites
-          : currentStats.favorites;
+        const favorites = currentStats.favorites;
         let custom = { ...(currentStats.custom ?? {}) } as Record<string, any>;
 
         if (!previousGameData) {
@@ -966,6 +961,7 @@ export const setGameFavorite = functions.https.onCall(async (request: functions.
     const result = await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(uid);
       const gameRef = db.collection('games').doc(gameId);
+      const statsRef = gameRef.collection('stats').doc('general');
 
       const userDoc = await tx.get(userRef);
       if (!userDoc.exists) {
@@ -994,7 +990,7 @@ export const setGameFavorite = functions.https.onCall(async (request: functions.
       applyGameCounterUpdates({
         tx,
         userRef,
-        gameRef,
+        statsRef,
         userData,
         gameId,
         updates: [{ key: GAME_COUNTER_KEYS.FAVORITES, type: 'toggle', value: favorite }],
@@ -1010,69 +1006,6 @@ export const setGameFavorite = functions.https.onCall(async (request: functions.
       throw error;
     }
     throw new functions.https.HttpsError('internal', 'Failed to update favorite state');
-  }
-});
-
-export const recordGameEvent = functions.https.onCall(async (request: functions.https.CallableRequest) => {
-  const { auth, data } = request;
-
-  if (!auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
-
-  const payload = data as { gameId?: string; events?: GameCounterEvent[] } | undefined;
-  const gameId = payload?.gameId;
-  const events = Array.isArray(payload?.events) ? payload!.events : [];
-
-  if (!gameId || !events.length) {
-    throw new functions.https.HttpsError('invalid-argument', 'gameId and events are required');
-  }
-
-  const recognizedEvents = Array.from(new Set(events)).filter((event): event is GameCounterEvent => {
-    return Object.prototype.hasOwnProperty.call(GAME_COUNTER_EVENT_MAP, event);
-  });
-
-  if (!recognizedEvents.length) {
-    return { success: false, appliedEvents: [] };
-  }
-
-  const uid = auth.uid;
-
-  try {
-    await db.runTransaction(async (tx) => {
-      const userRef = db.collection('users').doc(uid);
-      const gameRef = db.collection('games').doc(gameId);
-
-      const userDoc = await tx.get(userRef);
-      if (!userDoc.exists) {
-        throw new functions.https.HttpsError('failed-precondition', 'User profile not found');
-      }
-
-      const gameDoc = await tx.get(gameRef);
-      if (!gameDoc.exists) {
-        throw new functions.https.HttpsError('failed-precondition', `Game ${gameId} does not exist`);
-      }
-
-      const userData = userDoc.data() as User;
-      const counterUpdates = recognizedEvents.flatMap((event) => GAME_COUNTER_EVENT_MAP[event]);
-
-      applyGameCounterUpdates({
-        tx,
-        userRef,
-        gameRef,
-        userData,
-        gameId,
-        updates: counterUpdates,
-      });
-    });
-
-    return { success: true, appliedEvents: recognizedEvents };
-  } catch (error: any) {
-    console.error('recordGameEvent error:', error);
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
-    }
-    throw new functions.https.HttpsError('internal', 'Failed to record game event');
   }
 });
 
