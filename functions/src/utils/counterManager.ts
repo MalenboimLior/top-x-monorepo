@@ -56,12 +56,12 @@ const buildCounterIncrementUpdate = (
 
 const buildChallengeAnalyticsIncrementUpdate = (
   increments: Record<string, number>,
-): Record<string, FirebaseFirestore.FieldValue | string> => {
-  const payload: Record<string, FirebaseFirestore.FieldValue | string> = {};
+): Record<string, FirebaseFirestore.FieldValue | number> => {
+  const payload: Record<string, FirebaseFirestore.FieldValue | number> = {};
   Object.entries(increments).forEach(([counterKey, amount]) => {
     payload[`analytics.${counterKey}`] = admin.firestore.FieldValue.increment(amount);
   });
-  payload['analytics.updatedAt'] = new Date().toISOString();
+  payload['analytics.updatedAt'] = Date.now();
   return payload;
 };
 
