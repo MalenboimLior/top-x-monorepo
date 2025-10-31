@@ -22,7 +22,6 @@ import type { GameStats } from '@top-x/shared/types/stats';
 import type {
   DailyChallenge,
   DailyChallengeAttemptMetadata,
-  DailyChallengeGameStats,
 } from '@top-x/shared/types/dailyChallenge';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import { evaluateZoneRevealAnswer } from '@top-x/shared/utils/zoneRevealAnswer';
@@ -222,6 +221,79 @@ const isPyramidCustomData = (value: unknown): value is PyramidCustomData => {
   }
 
   return true;
+};
+
+const createEmptyGameStats = (): GameStats => ({
+  totalPlayers: 0,
+  sessionsPlayed: 0,
+  uniqueSubmitters: 0,
+  favorites: 0,
+  scoreDistribution: {},
+  updatedAt: Date.now(),
+  custom: {},
+});
+
+const normalizeGameStats = (
+  raw?: FirebaseFirestore.DocumentData | Partial<GameStats>,
+): GameStats => {
+  const base = createEmptyGameStats();
+  if (!raw) {
+    return base;
+  }
+
+  const stats = raw as Partial<GameStats>;
+  const normalizedDistribution: GameStats['scoreDistribution'] = {};
+  const rawDistribution = stats.scoreDistribution as Record<string, number> | undefined;
+
+  if (rawDistribution) {
+    Object.entries(rawDistribution).forEach(([scoreKey, count]) => {
+      const numericScore = Number(scoreKey);
+      if (!Number.isNaN(numericScore)) {
+        normalizedDistribution[numericScore] = Number.isFinite(count) ? count : 0;
+      }
+    });
+  }
+
+  const normalized: GameStats = {
+    totalPlayers: typeof stats.totalPlayers === 'number' ? stats.totalPlayers : base.totalPlayers,
+    sessionsPlayed: typeof stats.sessionsPlayed === 'number' ? stats.sessionsPlayed : base.sessionsPlayed,
+    uniqueSubmitters: typeof stats.uniqueSubmitters === 'number' ? stats.uniqueSubmitters : base.uniqueSubmitters,
+    favorites: typeof stats.favorites === 'number' ? stats.favorites : base.favorites,
+    scoreDistribution: normalizedDistribution,
+    updatedAt: typeof stats.updatedAt === 'number' ? stats.updatedAt : base.updatedAt,
+    custom: stats.custom ? { ...stats.custom } : {},
+    totalAttempts: typeof stats.totalAttempts === 'number' ? stats.totalAttempts : undefined,
+    correctAttempts: typeof stats.correctAttempts === 'number' ? stats.correctAttempts : undefined,
+    averageSolveTimeSec: typeof stats.averageSolveTimeSec === 'number' ? stats.averageSolveTimeSec : undefined,
+  };
+
+  return normalized;
+};
+
+const hasMeaningfulCustomData = (custom?: Record<string, unknown>): boolean => {
+  if (!custom) {
+    return false;
+  }
+
+  return Object.entries(custom).some(([key, value]) => {
+    if (key === 'dailyChallenges') {
+      return false;
+    }
+
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    if (typeof value === 'object') {
+      return Object.keys(value as Record<string, unknown>).length > 0;
+    }
+
+    return true;
+  });
 };
 
 const oauth = new OAuth({
@@ -478,7 +550,7 @@ export const submitGameScore = functions.https.onCall(async (
       let challengePlayedAtIso: string | undefined;
       let challengeSolvedAtIso: string | undefined;
       let challengeAttemptMetadata: DailyChallengeAttemptMetadata | undefined;
-      let challengeStatsUpdate: Partial<DailyChallengeGameStats> | undefined;
+      let challengeStatsUpdate: (Partial<GameStats> & { totalAttempts?: number; correctAttempts?: number }) | undefined;
 
       if (isDailyChallengeSubmission && rawDailyChallengeId && challengeRef) {
         const previousDailyChallenges = previousGameData?.custom?.dailyChallenges ?? {};
@@ -540,18 +612,39 @@ export const submitGameScore = functions.https.onCall(async (
 
         if (challengeStatsRef) {
           const previousChallengeStats = challengeStatsDoc?.exists
-            ? (challengeStatsDoc.data() as DailyChallengeGameStats)
+            ? normalizeGameStats(challengeStatsDoc.data())
+            : createEmptyGameStats();
+
+          const challengeScore = typeof challengeBestScore === 'number'
+            ? challengeBestScore
+            : submissionScore;
+          const previousBestForDistribution = typeof previousChallengeBestScore === 'number'
+            ? previousChallengeBestScore
             : undefined;
-          const nextChallengeStats: Partial<DailyChallengeGameStats> = {
-            challengeId: rawDailyChallengeId,
-            challengeDate: resolvedDailyChallengeDate!,
-            updatedAt: attemptTimestamp,
-            totalPlayers: (previousChallengeStats?.totalPlayers ?? 0) + (firstSubmission ? 1 : 0),
-            sessionsPlayed: (previousChallengeStats?.sessionsPlayed ?? 0) + 1,
-            uniqueSubmitters: (previousChallengeStats?.uniqueSubmitters ?? 0) + (firstSubmission ? 1 : 0),
-            totalAttempts: (previousChallengeStats?.totalAttempts ?? 0) + 1,
-            correctAttempts: (previousChallengeStats?.correctAttempts ?? 0) + (isCurrentAttemptCorrect ? 1 : 0),
+          const distribution = { ...previousChallengeStats.scoreDistribution };
+
+          if (firstSubmission || previousBestForDistribution === undefined) {
+            distribution[challengeScore] = (distribution[challengeScore] || 0) + 1;
+          } else if (previousBestForDistribution !== challengeScore) {
+            distribution[previousBestForDistribution] = Math.max((distribution[previousBestForDistribution] || 1) - 1, 0);
+            distribution[challengeScore] = (distribution[challengeScore] || 0) + 1;
+          }
+
+          const nextChallengeStats: (Partial<GameStats> & { totalAttempts?: number; correctAttempts?: number }) = {
+            scoreDistribution: distribution,
+            totalPlayers: previousChallengeStats.totalPlayers + (firstSubmission ? 1 : 0),
+            sessionsPlayed: previousChallengeStats.sessionsPlayed + 1,
+            uniqueSubmitters: previousChallengeStats.uniqueSubmitters + (firstSubmission ? 1 : 0),
+            favorites: previousChallengeStats.favorites,
+            totalAttempts: (previousChallengeStats.totalAttempts ?? 0) + 1,
+            correctAttempts: (previousChallengeStats.correctAttempts ?? 0) + (isCurrentAttemptCorrect ? 1 : 0),
+            updatedAt: Date.now(),
+            custom: { ...(previousChallengeStats.custom ?? {}) },
           };
+
+          if (typeof previousChallengeStats.averageSolveTimeSec === 'number') {
+            nextChallengeStats.averageSolveTimeSec = previousChallengeStats.averageSolveTimeSec;
+          }
 
           challengeStatsUpdate = nextChallengeStats;
         }
@@ -654,21 +747,33 @@ export const submitGameScore = functions.https.onCall(async (
         }
       } else {
         const currentStats = statsDoc.exists
-          ? statsDoc.data() as GameStats
-          : { totalPlayers: 0, scoreDistribution: {}, custom: {}, updatedAt: Date.now() } as GameStats;
+          ? normalizeGameStats(statsDoc.data())
+          : createEmptyGameStats();
 
         const distribution = { ...currentStats.scoreDistribution } as { [score: number]: number };
         let totalPlayers = currentStats.totalPlayers;
-        let custom = { ...currentStats.custom } as Record<string, any>;
+        let sessionsPlayed = currentStats.sessionsPlayed + 1;
+        let uniqueSubmitters = currentStats.uniqueSubmitters;
+        const counters = (gameDoc.data()?.counters ?? {}) as Record<string, unknown>;
+        const favorites = typeof counters.favorites === 'number'
+          ? counters.favorites
+          : currentStats.favorites;
+        let custom = { ...(currentStats.custom ?? {}) } as Record<string, any>;
 
         if (!previousGameData) {
           distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
-          totalPlayers++;
+          totalPlayers += 1;
         } else if (previousScore !== mergedGameData.score) {
           if (previousScore !== null) {
             distribution[previousScore] = Math.max((distribution[previousScore] || 1) - 1, 0);
           }
           distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
+        }
+
+        const hadCustomData = hasMeaningfulCustomData(previousGameData?.custom as Record<string, unknown> | undefined);
+        const hasCustomDataNow = hasMeaningfulCustomData(mergedGameData.custom as Record<string, unknown> | undefined);
+        if (!hadCustomData && hasCustomDataNow) {
+          uniqueSubmitters += 1;
         }
 
         if (gameTypeId === 'PyramidTier') {
@@ -726,6 +831,9 @@ export const submitGameScore = functions.https.onCall(async (
         statsUpdate = {
           scoreDistribution: distribution,
           totalPlayers,
+          sessionsPlayed,
+          uniqueSubmitters,
+          favorites,
           custom,
           updatedAt: Date.now(),
         };
@@ -1079,20 +1187,28 @@ export const getPercentileRank = functions.https.onRequest((req, res) => {
         res.status(404).json({ error: 'Stats not available' });
         return;
       }
-      const stats = statsDoc.data() as GameStats;
-      if (!stats.scoreDistribution) {
-        res.status(500).json({ error: 'Stats distribution is undefined' });
+
+      const stats = normalizeGameStats(statsDoc.data());
+      const { scoreDistribution } = stats;
+      const totalPlayers = Math.max(stats.totalPlayers, 0);
+
+      if (!scoreDistribution || totalPlayers === 0) {
+        res.status(200).json({ percentile: 0, usersTopped: 0 });
         return;
       }
 
       let playersBelowOrEqual = 0;
-      for (const score in stats.scoreDistribution) {
-        if (parseInt(score) <= userScore) {
-          playersBelowOrEqual += stats.scoreDistribution[score];
+      Object.entries(scoreDistribution).forEach(([scoreValue, count]) => {
+        const numericScore = Number(scoreValue);
+        if (!Number.isNaN(numericScore) && numericScore <= userScore) {
+          playersBelowOrEqual += count;
         }
-      }
+      });
 
-      const percentile = Math.round((playersBelowOrEqual / stats.totalPlayers) * 100);
+      const safeTotal = playersBelowOrEqual > totalPlayers ? playersBelowOrEqual : totalPlayers;
+      const percentile = safeTotal === 0
+        ? 0
+        : Math.round((playersBelowOrEqual / safeTotal) * 100);
       const usersTopped = playersBelowOrEqual;
       res.status(200).json({ percentile, usersTopped });
     } catch (error) {

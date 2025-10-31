@@ -1,5 +1,6 @@
 import type { GameCounters } from './counters';
 import type { LeaderboardEntry } from './game';
+import type { GameStats } from './stats';
 import { PyramidConfig } from './pyramid';
 import { TriviaConfig } from './trivia';
 import { ZoneRevealConfig } from './zoneReveal';
@@ -43,30 +44,6 @@ export interface DailyChallengeLeaderboardEntry extends LeaderboardEntry {
   attempt?: DailyChallengeAttemptMetadata;
 }
 
-/**
- * Aggregate stats stored within `/daily_challenges/{challengeId}/stats` that
- * summarise activity for an individual challenge.
- */
-export interface DailyChallengeGameStats extends DailyChallengeAnalytics {
-  /** Identifier for the parent challenge document. */
-  challengeId: string;
-  /** Logical challenge date (YYYY-MM-DD). */
-  challengeDate: string;
-  /** ISO timestamp of the most recent stat update. */
-  updatedAt: string;
-}
-
-export interface DailyChallengeAnalytics {
-  totalPlayers?: GameCounters['totalPlayers'];
-  favorites?: GameCounters['favorites'];
-  sessionsPlayed?: GameCounters['sessionsPlayed'];
-  uniqueSubmitters?: GameCounters['uniqueSubmitters'];
-  updatedAt?: string;
-  totalAttempts?: number;
-  correctAttempts?: number;
-  averageSolveTimeSec?: number;
-}
-
 export interface DailyChallenge {
   // Meta
   number: number;             // Sequential challenge number (e.g. 183)
@@ -87,7 +64,7 @@ export interface DailyChallenge {
   discussionUrl?: string;    // Link to share/discuss the level
 
   // Analytics (write/update later via backend or Cloud Functions)
-  analytics?: DailyChallengeAnalytics;
+  analytics?: Partial<GameStats>;
 
   // Leaderboard aggregation
   leaderboardSummary?: DailyChallengeLeaderboardSummary;
