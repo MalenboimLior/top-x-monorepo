@@ -37,10 +37,10 @@
                   <span class="game-meta">{{ game.gameTypeId || 'Unassigned' }}</span>
                 </div>
               </td>
-              <td class="has-text-right">{{ formatCounter(game.counters?.totalPlayers) }}</td>
-              <td class="has-text-right">{{ formatCounter(game.counters?.favorites) }}</td>
-              <td class="has-text-right">{{ formatCounter(game.counters?.sessionsPlayed) }}</td>
-              <td class="has-text-right">{{ formatCounter(game.counters?.uniqueSubmitters) }}</td>
+              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'totalPlayers')) }}</td>
+              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'favorites')) }}</td>
+              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'sessionsPlayed')) }}</td>
+              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'uniqueSubmitters')) }}</td>
               <td class="has-text-right">
                 <div class="buttons are-small is-right action-buttons">
                   <button class="button is-link" type="button" @click="openEditGame(game)">
@@ -123,15 +123,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch, reactive } from 'vue';
 import { collection, deleteDoc, doc, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
+import type { GameStats } from '@top-x/shared/types/stats';
 import { formatNumber } from '@top-x/shared/utils/format';
 import GameEditorForm from '@/components/games/GameEditorForm.vue';
 import DailyChallengesManager from '@/components/games/DailyChallengesManager.vue';
 
 const games = ref<Game[]>([]);
+const gameStats = reactive<Record<string, Partial<GameStats>>>({});
 const unsubscribe = ref<(() => void) | null>(null);
 const gameTypes = ref<GameType[]>([]);
 const gameTypesUnsubscribe = ref<(() => void) | null>(null);
@@ -144,15 +146,59 @@ const selectedDailyChallengeGame = ref<Game | null>(null);
 const isEditorDirty = ref(false);
 const isDailyChallengesDirty = ref(false);
 
+const statsUnsubscribers = new Map<string, () => void>();
+
 const formatCounter = (value?: number) => formatNumber(value ?? 0);
+
+type GameStatMetric = 'totalPlayers' | 'favorites' | 'sessionsPlayed' | 'uniqueSubmitters';
+
+function subscribeToGameStats(gameId: string) {
+  if (statsUnsubscribers.has(gameId)) {
+    return;
+  }
+
+  const statsRef = doc(db, 'games', gameId, 'stats', 'general');
+  const unsubscribeStats = onSnapshot(
+    statsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        gameStats[gameId] = snapshot.data() as Partial<GameStats>;
+      } else {
+        delete gameStats[gameId];
+      }
+    },
+    (error) => {
+      console.error(`GamesPage: Failed to load stats for ${gameId}`, error);
+      delete gameStats[gameId];
+    },
+  );
+
+  statsUnsubscribers.set(gameId, unsubscribeStats);
+}
+
+function cleanupStatsSubscriptions(activeGameIds: Set<string>) {
+  for (const [gameId, unsubscribeStats] of statsUnsubscribers) {
+    if (!activeGameIds.has(gameId)) {
+      unsubscribeStats();
+      statsUnsubscribers.delete(gameId);
+      delete gameStats[gameId];
+    }
+  }
+}
+
+function getStatValue(gameId: string, key: GameStatMetric): number {
+  const stats = gameStats[gameId];
+  const value = stats?.[key];
+  return typeof value === 'number' ? value : 0;
+}
 
 onMounted(() => {
   const gamesQuery = query(collection(db, 'games'));
   unsubscribe.value = onSnapshot(gamesQuery, (snapshot) => {
-    games.value = snapshot.docs.map((doc) => {
-      const data = doc.data();
+    const mappedGames = snapshot.docs.map((docItem) => {
+      const data = docItem.data();
       return {
-        id: doc.id,
+        id: docItem.id,
         name: data.name || 'Unnamed Game',
         description: data.description || '',
         gameTypeId: data.gameTypeId || '',
@@ -161,12 +207,20 @@ onMounted(() => {
         vip: data.vip || [],
         custom: data.custom || {},
         language: data.language || 'en',
-        counters: data.counters || {},
         community: data.community ?? false,
         shareLink: data.shareLink,
         dailyChallengeActive: data.dailyChallengeActive,
       } as Game;
     });
+
+    games.value = mappedGames;
+
+    const activeIds = new Set<string>();
+    mappedGames.forEach((game) => {
+      activeIds.add(game.id);
+      subscribeToGameStats(game.id);
+    });
+    cleanupStatsSubscriptions(activeIds);
   });
 
   const gameTypesQuery = query(collection(db, 'gameTypes'));
@@ -184,11 +238,18 @@ onBeforeUnmount(() => {
     gameTypesUnsubscribe.value();
     gameTypesUnsubscribe.value = null;
   }
+  for (const unsubscribeStats of statsUnsubscribers.values()) {
+    unsubscribeStats();
+  }
+  statsUnsubscribers.clear();
+  for (const key of Object.keys(gameStats)) {
+    delete gameStats[key];
+  }
 });
 
 const sortedGames = computed(() =>
   [...games.value].sort(
-    (a, b) => (b.counters?.totalPlayers || 0) - (a.counters?.totalPlayers || 0),
+    (a, b) => getStatValue(b.id, 'totalPlayers') - getStatValue(a.id, 'totalPlayers'),
   ),
 );
 

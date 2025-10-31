@@ -111,6 +111,7 @@ import Leaderboard from '@/components/Leaderboard.vue';
 import DailyChallenges from '@/views/DailyChallenges.vue';
 import { useUserStore } from '@/stores/user';
 import { Game } from '@top-x/shared/types/game';
+import type { GameStats } from '@top-x/shared/types/stats';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import fallbackImg from '@/assets/images/fallback.png';
@@ -130,12 +131,12 @@ const game = ref<Game>({
   vip: [],
   custom: {} as any,
   language: 'en',
-  counters: {},
 });
+const stats = ref<Partial<GameStats>>({});
 
 const isFavorite = computed(() => (gameId.value ? userStore.isGameFavorite(gameId.value) : false));
 const counterList = computed(() => {
-  const counters = game.value.counters || {};
+  const counters = stats.value;
   return [
     { key: 'players', label: 'Players', value: counters.totalPlayers },
     { key: 'favorites', label: 'Favorites', value: counters.favorites },
@@ -169,7 +170,17 @@ onMounted(async () => {
 
   try {
     const gameDocRef = doc(db, 'games', gameId.value);
-    const gameDoc = await getDoc(gameDocRef);
+    const statsDocRef = doc(db, 'games', gameId.value, 'stats', 'general');
+    const [gameDoc, statsDoc] = await Promise.all([
+      getDoc(gameDocRef),
+      getDoc(statsDocRef),
+    ]);
+
+    if (statsDoc.exists()) {
+      stats.value = statsDoc.data() as Partial<GameStats>;
+    } else {
+      stats.value = {};
+    }
 
     if (gameDoc.exists()) {
       const data = gameDoc.data();
@@ -185,7 +196,6 @@ onMounted(async () => {
         language: data.language || 'en',
         shareLink: data.shareLink,
         dailyChallengeActive: data.dailyChallengeActive,
-        counters: data.counters || {},
         // Add other fields as needed
       } as Game;
       console.log('GameInfo: Game data fetched:', game.value);

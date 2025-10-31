@@ -1,4 +1,3 @@
-import type { GameCounters } from './counters';
 import type { LeaderboardEntry } from './game';
 import type { GameStats } from './stats';
 import { PyramidConfig } from './pyramid';
@@ -22,7 +21,7 @@ export interface DailyChallengeSchedule {
 export interface DailyChallengeLeaderboardSummary {
   updatedAt: string;
   topEntries: LeaderboardEntry[];
-  totalPlayers?: GameCounters['totalPlayers'];
+  totalPlayers?: GameStats['totalPlayers'];
 }
 
 /**

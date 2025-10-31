@@ -23,7 +23,7 @@ export type CounterUpdate = {
 interface ApplyGameCounterUpdatesParams {
     tx: FirebaseFirestore.Transaction;
     userRef: FirebaseFirestore.DocumentReference;
-    gameRef: FirebaseFirestore.DocumentReference;
+    statsRef: FirebaseFirestore.DocumentReference;
     userData: User;
     gameId: string;
     updates: CounterUpdate[];
@@ -34,13 +34,6 @@ interface ApplyChallengeCounterUpdatesParams {
     counterState?: DailyChallengeUserProgress['counters'];
     updates: CounterUpdate[];
 }
-export declare const applyGameCounterUpdates: ({ tx, userRef, gameRef, userData, gameId, updates, }: ApplyGameCounterUpdatesParams) => void;
+export declare const applyGameCounterUpdates: ({ tx, userRef, statsRef, userData, gameId, updates, }: ApplyGameCounterUpdatesParams) => void;
 export declare const applyChallengeCounterUpdates: ({ tx, challengeRef, counterState, updates, }: ApplyChallengeCounterUpdatesParams) => DailyChallengeUserProgress["counters"];
-export declare const GAME_COUNTER_EVENT_MAP: {
-    readonly submit_answer: [{
-        readonly key: "uniqueSubmitters";
-        readonly type: "unique";
-    }];
-};
-export type GameCounterEvent = keyof typeof GAME_COUNTER_EVENT_MAP;
 export {};
