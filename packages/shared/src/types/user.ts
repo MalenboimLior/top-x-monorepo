@@ -1,5 +1,11 @@
 // User and user game data models
-import type { DailyChallengeAttemptMetadata } from './dailyChallenge';
+
+export interface DailyChallengeAttemptMetadata {
+  normalizedAnswer?: string;
+  distance?: number | null;
+  isMatch?: boolean;
+  recordedAt?: string;
+}
 
 export interface DailyChallengeUserProgress {
   /** Whether the user has attempted the challenge. */
