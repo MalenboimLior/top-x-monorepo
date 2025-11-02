@@ -211,7 +211,10 @@ async function saveScore(custom: Record<string, unknown> = {}) {
   pendingSave.value = null
 
   if (!isDailyChallenge && previousScore !== null && props.score <= previousScore) {
-    console.log('New score is not higher than existing score. Skipping save.')
+    console.log(
+      `Skipping score save (${isDailyChallenge ? 'daily challenge' : 'standard mode'}): new score ${props.score} ` +
+        `is not higher than existing score ${previousScore}.`
+    )
     return
   }
 
