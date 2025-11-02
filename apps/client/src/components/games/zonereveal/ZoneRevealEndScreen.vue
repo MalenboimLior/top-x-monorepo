@@ -3,6 +3,9 @@
     <div class="modal-background"></div>
     <div class="modal-content box has-background-dark has-text-white">
       <button class="delete is-large" aria-label="retry" @click="handleTryAgain"></button>
+      <div v-if="isNewBestScore" class="notification is-success new-best-indicator">
+        <strong>New best score!</strong> 🏆 Way to level up!
+      </div>
       <div class="score-preview">
         <div class="score-block">
           <h2 class="title has-text-white">{{ score }}</h2>
@@ -33,13 +36,28 @@
       </template>
       <template v-else>
         <p class="mb-3">Take your best guess at what you've revealed!</p>
-        <div v-if="!hasSubmitted">
-          <input v-model="answer" placeholder="Your guess..." @keydown.stop />
-          <button class="button is-success" @click="handleSubmit">Submit Answer</button>
+        <div class="answer-panel">
+          <input
+            v-model="answer"
+            placeholder="Your guess..."
+            :disabled="!canSubmitAnswer"
+            @keydown.stop
+          />
+          <button
+            class="button is-success"
+            :disabled="!canSubmitAnswer || !answer.trim()"
+            @click="handleSubmit"
+          >
+            {{ hasSubmitted ? 'Update Answer' : 'Submit Answer' }}
+          </button>
+          <p v-if="!canSubmitAnswer" class="help is-warning">
+            {{ challengeInputRestrictionMessage }}
+          </p>
         </div>
-        <div v-else>
+        <div class="submission-status">
           <p v-if="submissionMessage" :class="submissionMessageClass">{{ submissionMessage }}</p>
-          <p v-else>Wonder if you got it right? 🤔</p>
+          <p v-else-if="hasSubmitted">Wonder if you got it right? 🤔</p>
+          <p v-else>Share your best guess to see if you nailed it!</p>
           <p>The answer will be announced at {{ formattedRevealDate }}</p>
           <p>
             Follow
@@ -47,7 +65,10 @@
             to see the answer and the winners!
           </p>
           <p>Good luck! 🤞🏻</p>
-          <p v-if="submissionResult" class="submitted-answer">Your guess: "{{ submissionResult.originalAnswer }}"</p>
+          <p v-if="hasSubmitted" class="submitted-answer">
+            Your guess:
+            <span class="submitted-answer__text">"{{ submissionResult?.originalAnswer || answer }}"</span>
+          </p>
         </div>
         <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
         <div v-if="hasDailyChallenge" class="challenge-meta">
@@ -78,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
@@ -113,6 +134,13 @@ const hasSubmitted = ref(false)
 const submissionResult = ref<ZoneRevealAnswerEvaluation | null>(null)
 const lastAutoSaveKey = ref<string | null>(null)
 const pendingSave = ref<Record<string, unknown> | null>(null)
+const isNewBestScore = ref(false)
+const globalBestScore = ref<number | null>(null)
+const challengeBestScore = ref<number | null>(null)
+const lastHydratedAnswer = ref('')
+const hasUserEditedAnswer = ref(false)
+const now = ref<DateTime>(DateTime.now())
+let nowInterval: number | null = null
 
 const revealImage = computed(() => props.answerConfig?.image ?? '')
 const dailyChallengeId = computed(() => props.challengeContext?.id ?? null)
@@ -122,6 +150,68 @@ const challengeAvailableAt = computed(() => formatChallengeDate(props.challengeC
 const challengeClosesAt = computed(() => formatChallengeDate(props.challengeContext?.closesAt))
 const hasDailyChallenge = computed(() => Boolean(dailyChallengeId.value))
 const isChallengeContextResolved = computed(() => props.challengeContext !== undefined)
+const rawChallengeAvailableAt = computed(() => props.challengeContext?.availableAt ?? null)
+const rawChallengeClosesAt = computed(() => props.challengeContext?.closesAt ?? null)
+
+const storedGameData = computed(() => userStore.profile?.games?.ZoneReveal?.[props.gameId] ?? null)
+
+const storedChallengeGameData = computed(() => {
+  if (!dailyChallengeId.value) return null
+  return storedGameData.value?.dailyChallenges?.[dailyChallengeId.value] ?? null
+})
+
+const storedChallengeProgress = computed(
+  () => storedChallengeGameData.value?.custom?.dailyChallengeProgress ?? null
+)
+
+const canSubmitAnswer = computed(() => {
+  if (!props.challengeContext) return true
+  const availableAtIso = rawChallengeAvailableAt.value
+  const closesAtIso = rawChallengeClosesAt.value
+  const current = now.value
+
+  if (availableAtIso) {
+    const available = DateTime.fromISO(availableAtIso, { zone: 'utc' })
+    if (available.isValid && current < available) {
+      return false
+    }
+  }
+
+  if (closesAtIso) {
+    const closes = DateTime.fromISO(closesAtIso, { zone: 'utc' })
+    if (closes.isValid && current >= closes) {
+      return false
+    }
+  }
+
+  return true
+})
+
+const challengeInputRestrictionMessage = computed(() => {
+  if (!props.challengeContext) {
+    return ''
+  }
+
+  const availableAtIso = rawChallengeAvailableAt.value
+  const closesAtIso = rawChallengeClosesAt.value
+  const current = now.value
+
+  if (availableAtIso) {
+    const available = DateTime.fromISO(availableAtIso, { zone: 'utc' })
+    if (available.isValid && current < available) {
+      return 'This challenge opens soon. Check back when it starts to submit your answer.'
+    }
+  }
+
+  if (closesAtIso) {
+    const closes = DateTime.fromISO(closesAtIso, { zone: 'utc' })
+    if (closes.isValid && current >= closes) {
+      return 'This challenge is now closed to new submissions.'
+    }
+  }
+
+  return ''
+})
 
 const formattedRevealDate = computed(() => {
   if (!props.revealAt) return ''
@@ -147,6 +237,22 @@ const submissionMessageClass = computed(() =>
 
 onMounted(() => {
   void attemptAutoSave()
+  nowInterval = window.setInterval(() => {
+    now.value = DateTime.now()
+  }, 30_000)
+})
+
+onBeforeUnmount(() => {
+  if (nowInterval !== null) {
+    window.clearInterval(nowInterval)
+    nowInterval = null
+  }
+})
+
+watch(answer, (value) => {
+  if (value !== lastHydratedAnswer.value) {
+    hasUserEditedAnswer.value = true
+  }
 })
 
 watch(
@@ -159,6 +265,31 @@ watch(
   () => {
     void attemptAutoSave()
   }
+)
+
+watch(
+  [
+    () => userStore.profile,
+    () => props.gameId,
+    () => dailyChallengeId.value
+  ],
+  () => {
+    hydrateFromProfile()
+  },
+  { immediate: true }
+)
+
+watch(
+  [
+    () => props.score,
+    () => globalBestScore.value,
+    () => challengeBestScore.value,
+    () => hasDailyChallenge.value
+  ],
+  () => {
+    evaluateBestScoreFlag()
+  },
+  { immediate: true }
 )
 
 async function attemptAutoSave() {
@@ -245,6 +376,9 @@ async function saveScore(custom: Record<string, unknown> = {}) {
 }
 
 async function handleSubmit() {
+  if (!canSubmitAnswer.value) {
+    return
+  }
   if (!answer.value.trim()) {
     return
   }
@@ -253,6 +387,18 @@ async function handleSubmit() {
   await saveScore(evaluation)
   hasSubmitted.value = true
   submissionResult.value = evaluation
+  lastHydratedAnswer.value = evaluation.originalAnswer
+  hasUserEditedAnswer.value = false
+  if (globalBestScore.value === null || props.score > globalBestScore.value) {
+    globalBestScore.value = props.score
+  }
+  if (
+    hasDailyChallenge.value &&
+    (challengeBestScore.value === null || props.score > challengeBestScore.value)
+  ) {
+    challengeBestScore.value = props.score
+  }
+  evaluateBestScoreFlag()
   if (analytics) {
     logEvent(analytics, 'user_action', {
       action: 'submit_answer',
@@ -265,6 +411,8 @@ async function handleSubmit() {
       daily_challenge_date: dailyChallengeDate.value ?? undefined
     })
   }
+
+  hydrateFromProfile()
 }
 
 function handleTryAgain() {
@@ -277,6 +425,8 @@ function handleTryAgain() {
   answer.value = ''
   hasSubmitted.value = false
   submissionResult.value = null
+  lastHydratedAnswer.value = ''
+  hasUserEditedAnswer.value = false
 
   emit('close')
 
@@ -303,6 +453,17 @@ async function handleLogin() {
         await saveScore(evaluation)
         hasSubmitted.value = true
         submissionResult.value = evaluation
+        lastHydratedAnswer.value = evaluation.originalAnswer
+        hasUserEditedAnswer.value = false
+        if (globalBestScore.value === null || props.score > globalBestScore.value) {
+          globalBestScore.value = props.score
+        }
+        if (
+          hasDailyChallenge.value &&
+          (challengeBestScore.value === null || props.score > challengeBestScore.value)
+        ) {
+          challengeBestScore.value = props.score
+        }
       } else {
         await saveScore()
       }
@@ -322,6 +483,8 @@ async function handleLogin() {
     console.error('Login error:', err)
     alert('Failed to login. Please try again.')
   }
+
+  hydrateFromProfile()
 }
 
 function formatChallengeDate(value?: string | null): string {
@@ -353,6 +516,126 @@ function evaluateSubmission(attempt: string): ZoneRevealAnswerEvaluation {
     distance: null,
     isMatch: false
   }
+}
+
+function hydrateFromProfile() {
+  const gameData = storedGameData.value
+  const challengeData = storedChallengeGameData.value
+  const challengeProgress = storedChallengeProgress.value
+  globalBestScore.value = typeof gameData?.score === 'number' ? gameData.score : null
+  challengeBestScore.value = typeof challengeProgress?.bestScore === 'number' ? challengeProgress.bestScore : null
+
+  const activeGameData = dailyChallengeId.value ? challengeData : gameData
+  const customData = activeGameData?.custom ?? null
+
+  const attemptMetadata = challengeProgress?.attemptMetadata
+  const originalAnswerFromCustom = extractStringField(customData, [
+    'originalAnswer',
+    'original',
+    'answer'
+  ])
+  const normalizedFromCustom = extractStringField(customData, [
+    'normalizedAnswer',
+    'normalized'
+  ])
+  const storedDistance = extractNumberOrNull(customData, 'distance', attemptMetadata?.distance)
+  const storedIsMatch = extractBoolean(customData, 'isMatch', attemptMetadata?.isMatch ?? false)
+
+  const hasAttempt = Boolean(originalAnswerFromCustom || attemptMetadata)
+
+  if (!hasAttempt) {
+    if (!hasSubmitted.value) {
+      answer.value = ''
+      lastHydratedAnswer.value = ''
+      hasUserEditedAnswer.value = false
+    }
+    submissionResult.value = null
+    hasSubmitted.value = false
+    evaluateBestScoreFlag()
+    return
+  }
+
+  const normalizedAnswer =
+    attemptMetadata?.normalizedAnswer ?? normalizedFromCustom ??
+    (originalAnswerFromCustom ? normalizeZoneRevealAnswer(originalAnswerFromCustom) : '')
+
+  const evaluation: ZoneRevealAnswerEvaluation = {
+    originalAnswer: originalAnswerFromCustom ?? normalizedAnswer ?? '',
+    normalizedAnswer,
+    distance: typeof storedDistance === 'number' || storedDistance === null ? storedDistance : null,
+    isMatch: storedIsMatch
+  }
+
+  submissionResult.value = evaluation
+  hasSubmitted.value = true
+
+  if (!hasUserEditedAnswer.value || !canSubmitAnswer.value) {
+    answer.value = evaluation.originalAnswer
+    lastHydratedAnswer.value = evaluation.originalAnswer
+    hasUserEditedAnswer.value = false
+  }
+
+  evaluateBestScoreFlag()
+}
+
+function extractStringField(
+  source: Record<string, unknown> | null | undefined,
+  candidates: string[]
+): string | undefined {
+  if (!source) return undefined
+  for (const key of candidates) {
+    const value = source[key]
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value
+    }
+  }
+  return undefined
+}
+
+function extractNumberOrNull(
+  source: Record<string, unknown> | null | undefined,
+  key: string,
+  fallback?: number | null
+): number | null | undefined {
+  if (!source) return fallback
+  const value = source[key]
+  if (typeof value === 'number') {
+    return value
+  }
+  if (value === null) {
+    return null
+  }
+  return fallback
+}
+
+function extractBoolean(
+  source: Record<string, unknown> | null | undefined,
+  key: string,
+  fallback: boolean
+): boolean {
+  if (!source) return fallback
+  const value = source[key]
+  if (typeof value === 'boolean') {
+    return value
+  }
+  return fallback
+}
+
+function evaluateBestScoreFlag() {
+  const globalBest = globalBestScore.value
+  const challengeBest = challengeBestScore.value
+
+  const betterThanGlobal = globalBest === null || props.score > globalBest
+  const betterThanChallenge = hasDailyChallenge.value
+    ? challengeBest === null || props.score > challengeBest
+    : false
+
+  if (hasDailyChallenge.value) {
+    isNewBestScore.value = betterThanGlobal || betterThanChallenge
+    return
+  }
+
+  isNewBestScore.value = betterThanGlobal
 }
 </script>
 
@@ -401,10 +684,10 @@ input {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
 }
 
-.submitted-answer {
-  margin-top: 1rem;
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.8);
+.buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
 }
 
 .challenge-meta {
@@ -430,7 +713,40 @@ input {
 .leaderboards {
   display: grid;
   gap: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.answer-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.answer-panel .help {
+  margin: 0;
+}
+
+.submission-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.submitted-answer {
+  margin-top: 1rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.submitted-answer__text {
+  font-weight: 600;
+}
+
+.new-best-indicator {
+  margin-bottom: 1rem;
 }
 
 @media (min-width: 768px) {
