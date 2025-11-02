@@ -452,6 +452,10 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  function clearError() {
+    error.value = null;
+  }
+
   return {
     user,
     profile,
@@ -466,5 +470,6 @@ export const useUserStore = defineStore('user', () => {
     toggleFavorite,
     isGameFavorite,
     claimDailyChallengeReward,
+    clearError,
   };
 }, { persist: true });
