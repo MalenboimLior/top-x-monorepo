@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as crypto from 'crypto';
-import './utils/firebaseAdmin';
+import '../utils/firebaseAdmin';
 
 const db = admin.firestore();
 
