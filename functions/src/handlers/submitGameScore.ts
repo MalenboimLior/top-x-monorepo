@@ -58,7 +58,7 @@ const db = admin.firestore();
  * - Regular games: Only updates if new score > previous score (PyramidTier exception for custom data changes)
  * - Daily challenges: Always updates, tracks best score and attempt metadata
  * - ZoneReveal: Evaluates answer correctness using distance metrics
- * - Scores are aggregated from daily challenges when rewards are claimed
+ * - Daily challenge rewards increment leaderboard score or streak when claimed
  * - VIP status: Users with followersCount >= 0 are added to game VIP list on first play
  * 
  * @returns SubmitGameScoreResponse with success status, scores, and reward info (if applicable)
@@ -391,7 +391,7 @@ export const submitGameScore = functions.https.onCall(async (
           const nowIso = new Date(serverLastPlayed).toISOString();
           const solveState: DailyChallengeSolveState = challengeProgressUpdate?.solved ? 'solved' : 'failed';
 
-          // Create reward record with pending score/streak that will be claimed later
+          // Create reward record that will be claimed later
           // Status is preserved if already claimed (don't overwrite claimed rewards)
           const nextReward: DailyChallengeRewardRecord = {
             gameId,
@@ -401,14 +401,10 @@ export const submitGameScore = functions.https.onCall(async (
             revealAt: resolvedRevealAt,
             createdAt: existingReward?.createdAt ?? nowIso,
             updatedAt: nowIso,
-            pendingScore: challengeScoreToPersist,
-            pendingStreak: challengeProgressUpdate?.solved ? 1 : 0, // Only solved challenges get streak
             solveState,
             status: existingReward?.status === 'claimed' ? 'claimed' : 'pending',
             ...(challengeAttemptMetadata ? { attemptMetadata: challengeAttemptMetadata } : {}),
             claimedAt: existingReward?.claimedAt,
-            aggregatedScore: existingReward?.aggregatedScore,
-            aggregatedStreak: existingReward?.aggregatedStreak,
           } satisfies DailyChallengeRewardRecord;
 
           tx.set(rewardRef!, nextReward, { merge: true });
