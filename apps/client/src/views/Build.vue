@@ -3,33 +3,31 @@
     <section class="build-hero">
       <div class="build-hero__glow"></div>
       <div class="build-hero__content">
-        <p class="build-hero__pill">Creator tools</p>
-        <h1 class="build-hero__title">Build your own game</h1>
-        <p class="build-hero__subtitle">
-          Launch a custom experience in minutes. Pick a template, tweak the prompts, and share it with your community.
-        </p>
+        <p class="build-hero__pill">{{ content.hero.pill }}</p>
+        <h1 class="build-hero__title">{{ content.hero.title }}</h1>
+        <p class="build-hero__subtitle">{{ content.hero.subtitle }}</p>
         <div class="build-hero__stats" v-if="user">
           <div class="build-stat">
             <span class="build-stat__value">{{ availableGameTypes.length }}</span>
-            <span class="build-stat__label">Game templates</span>
+            <span class="build-stat__label">{{ content.stats.templatesLabel }}</span>
           </div>
           <div class="build-stat">
             <span class="build-stat__value">{{ myGames.length }}</span>
-            <span class="build-stat__label">Drafts & live games</span>
+            <span class="build-stat__label">{{ content.stats.gamesLabel }}</span>
           </div>
         </div>
         <div v-else class="build-hero__cta">
-          <p class="build-hero__reminder">Sign in to unlock the builder.</p>
-          <CustomButton type="is-primary is-medium" label="Login with X" @click="login" />
+          <p class="build-hero__reminder">{{ content.heroCta.reminder }}</p>
+          <CustomButton type="is-primary is-medium" :label="content.heroCta.button" @click="login" />
         </div>
       </div>
     </section>
 
     <section v-if="!user" class="build-locked">
       <div class="build-card">
-        <h2>Ready to create?</h2>
-        <p>Only logged-in creators can publish new challenges. Connect your X account to get started.</p>
-        <CustomButton type="is-primary" label="Login" @click="login" />
+        <h2>{{ content.locked.title }}</h2>
+        <p>{{ content.locked.body }}</p>
+        <CustomButton type="is-primary" :label="content.locked.button" @click="login" />
       </div>
     </section>
 
@@ -37,8 +35,8 @@
       <div v-if="!selectedGameType" class="build-dashboard">
         <div class="build-panel">
           <div class="build-panel__header">
-            <h2>Choose a game template</h2>
-            <p>Start from a curated format designed for fast play.</p>
+            <h2>{{ content.templates.title }}</h2>
+            <p>{{ content.templates.subtitle }}</p>
           </div>
           <div class="build-templates" role="list">
             <button
@@ -51,19 +49,17 @@
               <span class="build-template__name">{{ gameType.name }}</span>
               <span class="build-template__cta">Create</span>
             </button>
-            <p v-if="!availableGameTypes.length" class="build-empty">Templates are loading. Check back in a moment.</p>
+            <p v-if="!availableGameTypes.length" class="build-empty">{{ content.templates.empty }}</p>
           </div>
         </div>
 
         <div class="build-panel">
           <div class="build-panel__header">
-            <h2>My games</h2>
-            <p>Manage drafts, publish live games, and curate daily challenges.</p>
+            <h2>{{ content.games.title }}</h2>
+            <p>{{ content.games.subtitle }}</p>
           </div>
           <div class="build-games">
-            <div v-if="!myGames.length" class="build-empty">
-              You haven’t created any games yet. Pick a template to start building.
-            </div>
+            <div v-if="!myGames.length" class="build-empty">{{ content.games.empty }}</div>
             <div v-else class="build-games__list">
               <article v-for="game in myGames" :key="game.id" class="build-game-card">
                 <header class="build-game-card__header">
@@ -89,12 +85,12 @@
 
       <div v-if="selectedGameType" class="build-flow">
         <button class="build-flow__back" type="button" @click="handleCancel">
-          ← Back to templates
+          {{ content.editor.back }}
         </button>
         <div class="build-flow__header">
-          <h2>{{ selectedGame ? 'Edit' : 'Create' }} {{ selectedGameType.name }} game</h2>
+          <h2>{{ editorHeading }}</h2>
           <p>
-            Configure prompts, scoring, and appearance before sharing it with players.
+            {{ content.editor.subtitle }}
           </p>
         </div>
         <div class="build-flow__surface">
@@ -112,14 +108,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useUserStore } from '@/stores/user';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { db, usePageContentDoc } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
+import { useLocaleStore } from '@/stores/locale';
 
 const userStore = useUserStore();
 const user = ref(userStore.user);
@@ -128,15 +125,128 @@ const myGames = ref<Game[]>([]);
 const selectedGameType = ref<GameType | null>(null);
 const selectedGame = ref<Game | null>(null);
 
-useHead({
-  title: 'Build games - TOP-X',
+const localeStore = useLocaleStore();
+const locale = computed(() => localeStore.language || 'en');
+const t = (key: string) => localeStore.translate(key);
+
+const defaultContent = computed(() => ({
+  hero: {
+    pill: t('build.hero.pill'),
+    title: t('build.hero.title'),
+    subtitle: t('build.hero.subtitle'),
+  },
+  heroCta: {
+    reminder: t('build.hero.cta.reminder'),
+    button: t('build.hero.cta.button'),
+  },
+  stats: {
+    templatesLabel: t('build.stats.templates.label'),
+    gamesLabel: t('build.stats.games.label'),
+  },
+  locked: {
+    title: t('build.locked.title'),
+    body: t('build.locked.body'),
+    button: t('build.locked.button'),
+  },
+  templates: {
+    title: t('build.templates.title'),
+    subtitle: t('build.templates.subtitle'),
+    empty: t('build.templates.empty'),
+  },
+  games: {
+    title: t('build.games.title'),
+    subtitle: t('build.games.subtitle'),
+    empty: t('build.games.empty'),
+  },
+  editor: {
+    back: t('build.editor.back'),
+    headingCreate: t('build.editor.heading.create'),
+    headingEdit: t('build.editor.heading.edit'),
+    subtitle: t('build.editor.subtitle'),
+  },
+}));
+
+const defaultSeo = computed(() => ({
+  title: t('build.meta.title'),
+  description: t('build.meta.description'),
+  keywords: t('build.meta.keywords'),
+}));
+
+const { content: remoteContent, seo: remoteSeo } = usePageContentDoc('build', locale);
+
+const content = computed(() => {
+  const defaults = defaultContent.value;
+  const data = remoteContent.value;
+
+  return {
+    hero: {
+      pill: data['hero.pill'] ?? defaults.hero.pill,
+      title: data['hero.title'] ?? defaults.hero.title,
+      subtitle: data['hero.subtitle'] ?? defaults.hero.subtitle,
+    },
+    heroCta: {
+      reminder: data['hero.cta.reminder'] ?? defaults.heroCta.reminder,
+      button: data['hero.cta.button'] ?? defaults.heroCta.button,
+    },
+    stats: {
+      templatesLabel: data['stats.templates.label'] ?? defaults.stats.templatesLabel,
+      gamesLabel: data['stats.games.label'] ?? defaults.stats.gamesLabel,
+    },
+    locked: {
+      title: data['locked.title'] ?? defaults.locked.title,
+      body: data['locked.body'] ?? defaults.locked.body,
+      button: data['locked.button'] ?? defaults.locked.button,
+    },
+    templates: {
+      title: data['templates.title'] ?? defaults.templates.title,
+      subtitle: data['templates.subtitle'] ?? defaults.templates.subtitle,
+      empty: data['templates.empty'] ?? defaults.templates.empty,
+    },
+    games: {
+      title: data['games.title'] ?? defaults.games.title,
+      subtitle: data['games.subtitle'] ?? defaults.games.subtitle,
+      empty: data['games.empty'] ?? defaults.games.empty,
+    },
+    editor: {
+      back: data['editor.back'] ?? defaults.editor.back,
+      headingCreate: data['editor.heading.create'] ?? defaults.editor.headingCreate,
+      headingEdit: data['editor.heading.edit'] ?? defaults.editor.headingEdit,
+      subtitle: data['editor.subtitle'] ?? defaults.editor.subtitle,
+    },
+  };
+});
+
+const seo = computed(() => {
+  const defaults = defaultSeo.value;
+  const overrides = remoteSeo.value;
+  return {
+    title: overrides.title || defaults.title,
+    description: overrides.description || defaults.description,
+    keywords: overrides.keywords || defaults.keywords,
+  };
+});
+
+const editorHeading = computed(() => {
+  const templateName = selectedGameType.value?.name ?? '';
+  const format = selectedGame.value ? content.value.editor.headingEdit : content.value.editor.headingCreate;
+  return format.replace('{template}', templateName);
+});
+
+useHead(() => ({
+  title: seo.value.title,
   meta: [
     {
       name: 'description',
-      content: 'Create custom games, manage drafts, and curate daily challenges for your community on TOP-X.',
+      content: seo.value.description,
     },
-  ],
-});
+    seo.value.keywords
+      ? {
+          name: 'keywords',
+          content: seo.value.keywords,
+        }
+      : undefined,
+  ].filter(Boolean) as { name: string; content: string }[],
+}));
 
 onMounted(() => {
   if (user.value) {

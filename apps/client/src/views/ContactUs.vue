@@ -3,31 +3,30 @@
     <section class="contact-hero">
       <div class="contact-hero__glow"></div>
       <div class="contact-hero__content">
-        <span class="contact-hero__pill">Need a hand?</span>
-        <h1 class="contact-hero__title">Contact the TOP-X team</h1>
-        <p class="contact-hero__subtitle">
-          We’re here to help with partnerships, community questions, and support for your games.
-        </p>
+        <span class="contact-hero__pill">{{ content.hero.pill }}</span>
+        <h1 class="contact-hero__title">{{ content.hero.title }}</h1>
+        <p class="contact-hero__subtitle">{{ content.hero.subtitle }}</p>
       </div>
     </section>
 
     <section class="contact-body">
       <div class="contact-card">
         <div class="contact-card__section">
-          <h2>Talk to us</h2>
-          <p>For support, questions, or feedback, email the crew. We reply within two business days.</p>
-          <a href="mailto:support@top-x.co" class="contact-link">support@top-x.co</a>
+          <h2>{{ content.sections[0].title }}</h2>
+          <p>{{ content.sections[0].body }}</p>
+          <a :href="content.sections[0].linkHref" class="contact-link">{{ content.sections[0].linkLabel }}</a>
         </div>
         <div class="contact-card__divider"></div>
         <div class="contact-card__section">
-          <h2>Follow the updates</h2>
-          <p>Join the conversation on X to hear about new games, creator spotlights, and live drops.</p>
-          <a href="https://x.com/Topxapp" target="_blank" rel="noopener" class="contact-link">
-            <font-awesome-icon :icon="['fab', 'x-twitter']" class="contact-link__icon" /> @Topxapp
+          <h2>{{ content.sections[1].title }}</h2>
+          <p>{{ content.sections[1].body }}</p>
+          <a :href="content.sections[1].linkHref" target="_blank" rel="noopener" class="contact-link">
+            <font-awesome-icon :icon="['fab', 'x-twitter']" class="contact-link__icon" />
+            {{ content.sections[1].linkLabel }}
           </a>
         </div>
         <div class="contact-card__cta">
-          <CustomButton label="Back to home" type="is-primary" @click="$router.push('/')" />
+          <CustomButton :label="content.cta.label" type="is-primary" @click="handleCtaClick" />
         </div>
       </div>
     </section>
@@ -35,18 +34,132 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useHead } from '@vueuse/head';
+import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import { usePageContentDoc } from '@top-x/shared';
+import { useLocaleStore } from '@/stores/locale';
 
-useHead({
-  title: 'Contact TOP-X',
+const localeStore = useLocaleStore();
+const router = useRouter();
+
+const locale = computed(() => localeStore.language || 'en');
+const t = (key: string) => localeStore.translate(key);
+
+const defaultContent = computed(() => ({
+  hero: {
+    pill: t('contact.hero.pill'),
+    title: t('contact.hero.title'),
+    subtitle: t('contact.hero.subtitle'),
+  },
+  sections: [
+    {
+      title: t('contact.sections.talk.title'),
+      body: t('contact.sections.talk.body'),
+      linkLabel: t('contact.sections.talk.linkLabel'),
+      linkHref: t('contact.sections.talk.linkHref'),
+    },
+    {
+      title: t('contact.sections.follow.title'),
+      body: t('contact.sections.follow.body'),
+      linkLabel: t('contact.sections.follow.linkLabel'),
+      linkHref: t('contact.sections.follow.linkHref'),
+    },
+  ],
+  cta: {
+    label: t('contact.cta.label'),
+    href: t('contact.cta.href'),
+  },
+}));
+
+const defaultSeo = computed(() => ({
+  title: t('contact.meta.title'),
+  description: t('contact.meta.description'),
+  keywords: t('contact.meta.keywords'),
+}));
+
+const { content: remoteContent, seo: remoteSeo } = usePageContentDoc('contact', locale);
+
+const content = computed(() => {
+  const defaults = defaultContent.value;
+  const data = remoteContent.value;
+
+  const hero = {
+    pill: data['hero.pill'] ?? defaults.hero.pill,
+    title: data['hero.title'] ?? defaults.hero.title,
+    subtitle: data['hero.subtitle'] ?? defaults.hero.subtitle,
+  };
+
+  const talkSection = {
+    title: data['sections.talk.title'] ?? defaults.sections[0].title,
+    body: data['sections.talk.body'] ?? defaults.sections[0].body,
+    linkLabel: data['sections.talk.linkLabel'] ?? defaults.sections[0].linkLabel,
+    linkHref: data['sections.talk.linkHref'] ?? defaults.sections[0].linkHref,
+  };
+
+  const followSection = {
+    title: data['sections.follow.title'] ?? defaults.sections[1].title,
+    body: data['sections.follow.body'] ?? defaults.sections[1].body,
+    linkLabel: data['sections.follow.linkLabel'] ?? defaults.sections[1].linkLabel,
+    linkHref: data['sections.follow.linkHref'] ?? defaults.sections[1].linkHref,
+  };
+
+  return {
+    hero,
+    sections: [talkSection, followSection],
+    cta: {
+      label: data['cta.label'] ?? defaults.cta.label,
+      href: data['cta.href'] ?? defaults.cta.href,
+    },
+  };
+});
+
+const seo = computed(() => {
+  const defaults = defaultSeo.value;
+  const overrides = remoteSeo.value;
+  return {
+    title: overrides.title || defaults.title,
+    description: overrides.description || defaults.description,
+    keywords: overrides.keywords || defaults.keywords,
+  };
+});
+
+useHead(() => ({
+  title: seo.value.title,
   meta: [
     {
       name: 'description',
-      content: 'Get in touch with the TOP-X team for support, partnerships, and community updates.',
+      content: seo.value.description,
     },
-  ],
-});
+    seo.value.keywords
+      ? {
+          name: 'keywords',
+          content: seo.value.keywords,
+        }
+      : undefined,
+  ].filter(Boolean) as { name: string; content: string }[],
+}));
+
+function handleCtaClick() {
+  const href = content.value.cta.href;
+  if (!href) {
+    void router.push('/');
+    return;
+  }
+
+  if (href.startsWith('http')) {
+    window.location.href = href;
+    return;
+  }
+
+  if (href.startsWith('mailto:')) {
+    window.location.href = href;
+    return;
+  }
+
+  void router.push(href);
+}
 </script>
 
 <style scoped>
