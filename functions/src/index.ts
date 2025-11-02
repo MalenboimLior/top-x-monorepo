@@ -13,6 +13,11 @@ import {
   DailyChallengeUserProgress,
   UserGameCustomData,
   DailyChallengeAttemptMetadata,
+  DailyChallengeRewardRecord,
+  DailyChallengeSolveState,
+  ClaimDailyChallengeRewardsRequest,
+  ClaimDailyChallengeRewardsResponse,
+  ClaimedDailyChallengeRewardSummary,
 } from '@top-x/shared/types/user';
 import type {
   Game,
@@ -549,6 +554,7 @@ export const submitGameScore = functions.https.onCall(async (
       let challengeSolvedAtIso: string | undefined;
       let challengeAttemptMetadata: DailyChallengeAttemptMetadata | undefined;
       let challengeStatsUpdate: (Partial<GameStats> & { totalAttempts?: number; correctAttempts?: number }) | undefined;
+      let pendingRewardRecord: DailyChallengeRewardRecord | undefined;
 
       if (isDailyChallengeSubmission && rawDailyChallengeId && challengeRef) {
         const previousChallengeGameData = previousGameData?.dailyChallenges?.[rawDailyChallengeId];
@@ -631,6 +637,41 @@ export const submitGameScore = functions.https.onCall(async (
               : {}),
           custom: challengeBaseCustom,
         } satisfies UserGameData;
+
+        const resolvedRevealAt = typeof payload.challengeMetadata?.revealAt === 'string'
+          ? payload.challengeMetadata.revealAt
+          : challengeData?.schedule?.revealAt;
+
+        if (resolvedDailyChallengeDate && resolvedRevealAt) {
+          const rewardRef = userRef.collection('dailyChallengeRewards').doc(rawDailyChallengeId);
+          const existingRewardDoc = await tx.get(rewardRef);
+          const existingReward = existingRewardDoc.exists
+            ? (existingRewardDoc.data() as DailyChallengeRewardRecord)
+            : undefined;
+          const nowIso = new Date(serverLastPlayed).toISOString();
+          const solveState: DailyChallengeSolveState = challengeProgressUpdate?.solved ? 'solved' : 'failed';
+
+          const nextReward: DailyChallengeRewardRecord = {
+            gameId,
+            gameTypeId,
+            dailyChallengeId: rawDailyChallengeId,
+            dailyChallengeDate: resolvedDailyChallengeDate,
+            revealAt: resolvedRevealAt,
+            createdAt: existingReward?.createdAt ?? nowIso,
+            updatedAt: nowIso,
+            pendingScore: challengeScoreToPersist,
+            pendingStreak: challengeProgressUpdate?.solved ? 1 : 0,
+            solveState,
+            status: existingReward?.status === 'claimed' ? 'claimed' : 'pending',
+            attemptMetadata: challengeAttemptMetadata,
+            claimedAt: existingReward?.claimedAt,
+            aggregatedScore: existingReward?.aggregatedScore,
+            aggregatedStreak: existingReward?.aggregatedStreak,
+          } satisfies DailyChallengeRewardRecord;
+
+          tx.set(rewardRef, nextReward, { merge: true });
+          pendingRewardRecord = nextReward;
+        }
 
         if (challengeStatsRef) {
           const previousChallengeStats = challengeStatsDoc?.exists
@@ -915,6 +956,7 @@ export const submitGameScore = functions.https.onCall(async (
         challengeBestScore,
         dailyChallengeId: isDailyChallengeSubmission ? rawDailyChallengeId ?? undefined : undefined,
         dailyChallengeDate: isDailyChallengeSubmission ? resolvedDailyChallengeDate ?? undefined : undefined,
+        ...(pendingRewardRecord ? { pendingReward: pendingRewardRecord } : {}),
       } satisfies SubmitGameScoreResponse;
     });
 
@@ -925,6 +967,146 @@ export const submitGameScore = functions.https.onCall(async (
       throw error;
     }
     throw new functions.https.HttpsError('internal', 'Failed to submit game score');
+  }
+});
+
+export const claimDailyChallengeRewards = functions.https.onCall(async (
+  request: functions.https.CallableRequest<ClaimDailyChallengeRewardsRequest>,
+): Promise<ClaimDailyChallengeRewardsResponse> => {
+  const { auth, data } = request;
+
+  if (!auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const uid = auth.uid;
+  const payload = (data ?? {}) as ClaimDailyChallengeRewardsRequest;
+  const nowMillis = Date.now();
+  const processed: ClaimedDailyChallengeRewardSummary[] = [];
+  const deferred: string[] = [];
+  const alreadyClaimed: string[] = [];
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const userRef = db.collection('users').doc(uid);
+      const userDoc = await tx.get(userRef);
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('failed-precondition', 'User profile not found');
+      }
+
+      const userData = userDoc.data() as User;
+      const rewardsCollection = userRef.collection('dailyChallengeRewards');
+      const rewardRefs: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>[] = [];
+
+      if (payload.dailyChallengeId) {
+        rewardRefs.push(rewardsCollection.doc(payload.dailyChallengeId));
+      } else {
+        const pendingQuery = rewardsCollection.where('status', '==', 'pending');
+        const pendingSnapshot = await tx.get(pendingQuery);
+        pendingSnapshot.forEach((docSnapshot) => {
+          rewardRefs.push(docSnapshot.ref);
+        });
+      }
+
+      if (rewardRefs.length === 0 && payload.dailyChallengeId) {
+        deferred.push(payload.dailyChallengeId);
+        return;
+      }
+
+      for (const rewardRef of rewardRefs) {
+        const rewardSnapshot = await tx.get(rewardRef);
+        if (!rewardSnapshot.exists) {
+          deferred.push(rewardRef.id);
+          continue;
+        }
+
+        const rewardData = rewardSnapshot.data() as DailyChallengeRewardRecord;
+
+        if (payload.gameId && rewardData.gameId !== payload.gameId) {
+          continue;
+        }
+
+        if (rewardData.status !== 'pending') {
+          alreadyClaimed.push(rewardRef.id);
+          continue;
+        }
+
+        const revealAtMillis = Date.parse(rewardData.revealAt);
+        if (Number.isNaN(revealAtMillis) || revealAtMillis > nowMillis) {
+          deferred.push(rewardRef.id);
+          continue;
+        }
+
+        let aggregatedScore: number | undefined = rewardData.aggregatedScore;
+        let aggregatedStreak: number | undefined = rewardData.aggregatedStreak;
+
+        if (rewardData.solveState === 'solved') {
+          const leaderboardRef = db.collection('games').doc(rewardData.gameId).collection('leaderboard').doc(uid);
+          const leaderboardSnapshot = await tx.get(leaderboardRef);
+          const previousLeaderboard = leaderboardSnapshot.exists
+            ? (leaderboardSnapshot.data() as { score?: number; streak?: number; custom?: Record<string, unknown> })
+            : undefined;
+
+          const previousScore = typeof previousLeaderboard?.score === 'number' ? previousLeaderboard.score : 0;
+          const previousStreak = typeof previousLeaderboard?.streak === 'number' ? previousLeaderboard.streak : 0;
+
+          const pendingScoreDelta = Math.max(0, rewardData.pendingScore);
+          const pendingStreakDelta = Math.max(0, rewardData.pendingStreak);
+
+          aggregatedScore = previousScore + pendingScoreDelta;
+          aggregatedStreak = previousStreak + pendingStreakDelta;
+
+          const leaderboardUpdate: Record<string, unknown> = {
+            uid,
+            displayName: userData.displayName,
+            username: userData.username,
+            photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
+            score: aggregatedScore,
+            streak: aggregatedStreak,
+            updatedAt: Date.now(),
+          };
+
+          if (previousLeaderboard?.custom) {
+            leaderboardUpdate.custom = previousLeaderboard.custom;
+          }
+
+          tx.set(leaderboardRef, leaderboardUpdate, { merge: true });
+        }
+
+        const claimTimestampIso = new Date(nowMillis).toISOString();
+
+        tx.set(rewardRef, {
+          status: 'claimed',
+          claimedAt: claimTimestampIso,
+          aggregatedScore,
+          aggregatedStreak,
+          updatedAt: claimTimestampIso,
+        }, { merge: true });
+
+        processed.push({
+          id: rewardRef.id,
+          dailyChallengeId: rewardData.dailyChallengeId,
+          solveState: rewardData.solveState,
+          status: 'claimed',
+          aggregatedScore,
+          aggregatedStreak,
+        });
+      }
+    });
+
+    return {
+      success: true,
+      processed,
+      deferred,
+      alreadyClaimed,
+    } satisfies ClaimDailyChallengeRewardsResponse;
+  } catch (error: any) {
+    console.error('claimDailyChallengeRewards error:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError('internal', 'Failed to claim daily challenge rewards');
   }
 });
 

@@ -30,6 +30,39 @@ export interface DailyChallengeUserProgress {
   counters?: Record<string, boolean>;
 }
 
+export type DailyChallengeSolveState = 'solved' | 'failed' | 'skipped' | 'timeout';
+
+export type DailyChallengeRewardStatus = 'pending' | 'claimed' | 'expired';
+
+export interface DailyChallengeRewardRecord {
+  gameId: string;
+  gameTypeId: string;
+  dailyChallengeId: string;
+  dailyChallengeDate: string;
+  /** ISO timestamp for when the challenge reveal unlocks rewards. */
+  revealAt: string;
+  /** ISO timestamp for when the queue entry was first created. */
+  createdAt: string;
+  /** ISO timestamp for the latest submission that updated this entry. */
+  updatedAt: string;
+  /** Score awaiting aggregation once the reward is claimed. */
+  pendingScore: number;
+  /** Streak delta awaiting aggregation once the reward is claimed. */
+  pendingStreak: number;
+  /** Outcome of the user's solve attempt for messaging context. */
+  solveState: DailyChallengeSolveState;
+  /** Lifecycle state for the reward entry. */
+  status: DailyChallengeRewardStatus;
+  /** Snapshot of the last submission metadata used for messaging. */
+  attemptMetadata?: DailyChallengeAttemptMetadata;
+  /** ISO timestamp recorded when the reward was claimed. */
+  claimedAt?: string;
+  /** Aggregated leaderboard score after processing. */
+  aggregatedScore?: number;
+  /** Aggregated leaderboard streak after processing. */
+  aggregatedStreak?: number;
+}
+
 export interface UserGameCustomData {
   /** Challenge-specific metadata captured for the latest attempt. */
   dailyChallengeProgress?: DailyChallengeUserProgress;
@@ -99,4 +132,26 @@ export interface SubmitGameScoreResponse {
   challengeBestScore?: number;
   dailyChallengeId?: string;
   dailyChallengeDate?: string;
+  pendingReward?: DailyChallengeRewardRecord;
+}
+
+export interface ClaimDailyChallengeRewardsRequest {
+  dailyChallengeId?: string;
+  gameId?: string;
+}
+
+export interface ClaimedDailyChallengeRewardSummary {
+  id: string;
+  dailyChallengeId: string;
+  solveState: DailyChallengeSolveState;
+  status: DailyChallengeRewardStatus;
+  aggregatedScore?: number;
+  aggregatedStreak?: number;
+}
+
+export interface ClaimDailyChallengeRewardsResponse {
+  success: boolean;
+  processed: ClaimedDailyChallengeRewardSummary[];
+  deferred: string[];
+  alreadyClaimed: string[];
 }
