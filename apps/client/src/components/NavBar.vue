@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { analytics, trackEvent } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
@@ -132,6 +132,13 @@ const toggleMenu = () => {
 const closeMenu = () => {
   isMenuActive.value = false;
 };
+
+watch(
+  () => router.currentRoute.value.fullPath,
+  () => {
+    userStore.clearError();
+  },
+);
 </script>
 
 <style scoped>
