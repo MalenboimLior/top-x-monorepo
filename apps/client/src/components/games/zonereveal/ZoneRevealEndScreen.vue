@@ -35,7 +35,22 @@
         <p class="mb-3">Take your best guess at what you've revealed!</p>
         <div v-if="!hasSubmitted">
           <input v-model="answer" placeholder="Your guess..." @keydown.stop />
-          <button class="button is-success" @click="handleSubmit">Submit Answer</button>
+          <div class="action-buttons">
+            <button
+              class="button is-success"
+              :disabled="isSubmitting || isChallengePending || !answer.trim()"
+              @click="handleSubmit"
+            >
+              Submit Answer
+            </button>
+            <button
+              class="button is-text has-text-white"
+              :disabled="isSubmitting || isChallengePending"
+              @click="handleReplayWithoutAnswer"
+            >
+              I don’t know—play again
+            </button>
+          </div>
         </div>
         <div v-else>
           <p v-if="submissionMessage" :class="submissionMessageClass">{{ submissionMessage }}</p>
@@ -49,7 +64,14 @@
           <p>Good luck! 🤞🏻</p>
           <p v-if="submissionResult" class="submitted-answer">Your guess: "{{ submissionResult.originalAnswer }}"</p>
         </div>
-        <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
+        <button
+          v-if="!isFirstAttempt || hasSubmitted"
+          class="button is-text has-text-white"
+          :disabled="isSubmitting"
+          @click="handleTryAgain"
+        >
+          🔁 Try Again
+        </button>
         <div v-if="hasDailyChallenge" class="challenge-meta">
           <h3 class="challenge-meta__title">Daily challenge context</h3>
           <p class="challenge-meta__item"><strong>ID:</strong> {{ dailyChallengeId }}</p>
@@ -60,7 +82,7 @@
             <strong>Closes:</strong> {{ challengeClosesAt }}
           </p>
         </div>
-        <div class="leaderboards">
+        <div v-if="!isFirstAttempt || hasSubmitted" class="leaderboards">
           <Leaderboard
             v-if="hasDailyChallenge"
             :game-id="gameId"
@@ -78,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { logEvent } from 'firebase/analytics'
 import { analytics } from '@top-x/shared'
@@ -111,8 +133,11 @@ const userStore = useUserStore()
 const answer = ref('')
 const hasSubmitted = ref(false)
 const submissionResult = ref<ZoneRevealAnswerEvaluation | null>(null)
-const lastAutoSaveKey = ref<string | null>(null)
 const pendingSave = ref<Record<string, unknown> | null>(null)
+const isSubmitting = ref(false)
+
+let pendingResolve: (() => void) | null = null
+let pendingReject: ((error: unknown) => void) | null = null
 
 const revealImage = computed(() => props.answerConfig?.image ?? '')
 const dailyChallengeId = computed(() => props.challengeContext?.id ?? null)
@@ -121,7 +146,36 @@ const dailyChallengeDate = computed(() => props.challengeContext?.dailyDate ?? n
 const challengeAvailableAt = computed(() => formatChallengeDate(props.challengeContext?.availableAt))
 const challengeClosesAt = computed(() => formatChallengeDate(props.challengeContext?.closesAt))
 const hasDailyChallenge = computed(() => Boolean(dailyChallengeId.value))
-const isChallengeContextResolved = computed(() => props.challengeContext !== undefined)
+
+const isChallengePending = computed(() => Boolean(props.challengeContext) && !dailyChallengeId.value)
+
+const gameProgress = computed(() => userStore.profile?.games?.ZoneReveal?.[props.gameId] ?? null)
+const challengeProgress = computed(() => {
+  const challengeId = dailyChallengeId.value
+  if (!challengeId) return null
+
+  return gameProgress.value?.dailyChallenges?.[challengeId] ?? null
+})
+
+const challengeAttemptProgress = computed(
+  () => challengeProgress.value?.custom?.dailyChallengeProgress ?? null
+)
+
+const isFirstAttempt = computed(() => {
+  if (!userStore.user) {
+    return true
+  }
+
+  if (dailyChallengeId.value) {
+    const progress = challengeAttemptProgress.value
+    if (!progress) return true
+    if ((progress.attemptCount ?? 0) > 0) return false
+    if (progress.played) return false
+    return true
+  }
+
+  return !gameProgress.value
+})
 
 const formattedRevealDate = computed(() => {
   if (!props.revealAt) return ''
@@ -145,44 +199,52 @@ const submissionMessageClass = computed(() =>
   submissionResult.value?.isMatch ? 'has-text-success' : 'has-text-warning'
 )
 
-onMounted(() => {
-  void attemptAutoSave()
-})
-
 watch(
   [
     () => userStore.user,
-    () => dailyChallengeId.value,
-    () => props.score,
-    () => props.challengeContext
+    () => dailyChallengeId.value
   ],
   () => {
-    void attemptAutoSave()
+    if (pendingSave.value !== null) {
+      void flushPendingSave()
+    }
   }
 )
 
-async function attemptAutoSave() {
+async function persistScore(custom: Record<string, unknown> = {}) {
+  return new Promise<void>((resolve, reject) => {
+    pendingSave.value = custom
+    pendingResolve = resolve
+    pendingReject = reject
+    void flushPendingSave()
+  })
+}
+
+async function flushPendingSave() {
   if (!userStore.user) return
-  if (!isChallengeContextResolved.value) return
 
   const challengeId = dailyChallengeId.value
 
   if (props.challengeContext && !challengeId) {
-    if (pendingSave.value === null) {
-      pendingSave.value = {}
-    }
+    console.warn('Daily challenge context present without id; delaying score save until id is available')
     return
   }
 
-  const customPayload = pendingSave.value ?? {}
-  const saveKey = `${challengeId ?? 'global'}::${props.score}`
-  if (pendingSave.value === null && lastAutoSaveKey.value === saveKey) {
-    return
-  }
+  const customPayload = pendingSave.value
+  if (customPayload === null) return
 
   pendingSave.value = null
-  await saveScore(customPayload)
-  lastAutoSaveKey.value = saveKey
+
+  try {
+    await saveScore(customPayload)
+    pendingResolve?.()
+  } catch (err) {
+    pendingSave.value = customPayload
+    pendingReject?.(err)
+  } finally {
+    pendingResolve = null
+    pendingReject = null
+  }
 }
 
 async function saveScore(custom: Record<string, unknown> = {}) {
@@ -203,12 +265,9 @@ async function saveScore(custom: Record<string, unknown> = {}) {
     userStore.profile?.games?.[gameTypeId]?.[props.gameId]?.score ?? null
 
   if (props.challengeContext && !challengeId) {
-    pendingSave.value = custom
     console.warn('Daily challenge context present without id; skipping score save until id is available')
     return
   }
-
-  pendingSave.value = null
 
   if (!isDailyChallenge && previousScore !== null && props.score <= previousScore) {
     console.log(
@@ -245,29 +304,40 @@ async function saveScore(custom: Record<string, unknown> = {}) {
 }
 
 async function handleSubmit() {
+  if (isSubmitting.value) return
   if (!answer.value.trim()) {
     return
   }
 
   const evaluation = evaluateSubmission(answer.value)
-  await saveScore(evaluation)
-  hasSubmitted.value = true
-  submissionResult.value = evaluation
-  if (analytics) {
-    logEvent(analytics, 'user_action', {
-      action: 'submit_answer',
-      game_id: props.gameId,
-      answer: evaluation.originalAnswer,
-      normalized_answer: evaluation.normalizedAnswer,
-      distance: evaluation.distance,
-      is_match: evaluation.isMatch,
-      daily_challenge_id: dailyChallengeId.value ?? undefined,
-      daily_challenge_date: dailyChallengeDate.value ?? undefined
-    })
+  isSubmitting.value = true
+
+  try {
+    await persistScore(evaluation)
+    hasSubmitted.value = true
+    submissionResult.value = evaluation
+    if (analytics) {
+      logEvent(analytics, 'user_action', {
+        action: 'submit_answer',
+        game_id: props.gameId,
+        answer: evaluation.originalAnswer,
+        normalized_answer: evaluation.normalizedAnswer,
+        distance: evaluation.distance,
+        is_match: evaluation.isMatch,
+        daily_challenge_id: dailyChallengeId.value ?? undefined,
+        daily_challenge_date: dailyChallengeDate.value ?? undefined
+      })
+    }
+  } catch (err) {
+    console.error('Failed to submit answer:', err)
+    alert('Failed to submit your answer. Please try again.')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 function handleTryAgain() {
+  if (isSubmitting.value) return
   // Blur any focused input
   const active = document.activeElement as HTMLElement | null
   if (active && typeof active.blur === 'function') {
@@ -286,6 +356,33 @@ function handleTryAgain() {
   }, 100)
 }
 
+async function handleReplayWithoutAnswer() {
+  if (isSubmitting.value) return
+
+  const evaluation = evaluateSubmission('')
+  isSubmitting.value = true
+
+  try {
+    await persistScore(evaluation)
+    if (analytics) {
+      logEvent(analytics, 'user_action', {
+        action: 'skip_answer',
+        game_id: props.gameId,
+        daily_challenge_id: dailyChallengeId.value ?? undefined,
+        daily_challenge_date: dailyChallengeDate.value ?? undefined
+      })
+    }
+  } catch (err) {
+    console.error("Failed to record skip-and-replay action:", err)
+    alert('Failed to record your attempt. Please try again.')
+    isSubmitting.value = false
+    return
+  }
+
+  isSubmitting.value = false
+  handleTryAgain()
+}
+
 async function handleLogin() {
   localStorage.setItem(
     `zonereveal_${props.gameId}`,
@@ -300,11 +397,11 @@ async function handleLogin() {
       if (pending.answer) {
         answer.value = pending.answer
         const evaluation = evaluateSubmission(pending.answer)
-        await saveScore(evaluation)
+        await persistScore(evaluation)
         hasSubmitted.value = true
         submissionResult.value = evaluation
       } else {
-        await saveScore()
+        await persistScore()
       }
       localStorage.removeItem(`zonereveal_${props.gameId}`)
       if (analytics) {
@@ -379,6 +476,14 @@ input {
 .button.is-success {
   background-color: var(--bulma-success, #c4ff00);
   color: #000;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 0.75rem;
 }
 
 .score-preview {
