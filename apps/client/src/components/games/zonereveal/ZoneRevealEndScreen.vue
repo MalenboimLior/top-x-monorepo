@@ -35,7 +35,7 @@
         </div>
       </template>
       <template v-else>
-        <p class="mb-3">Take your best guess at what you've revealed!</p>
+        <p class="mb-3">{{ statusIntroMessage }}</p>
         <div class="answer-panel">
           <input
             v-model="answer"
@@ -55,17 +55,40 @@
           </p>
         </div>
         <div class="submission-status">
+          <div
+            v-if="isChallengeOpen && closesCountdown"
+            class="submission-status__countdown"
+          >
+            <span class="submission-status__countdown-label">Challenge closes in</span>
+            <span class="submission-status__countdown-timer">{{ closesCountdown }}</span>
+          </div>
           <p v-if="submissionMessage" :class="submissionMessageClass">{{ submissionMessage }}</p>
+          <p v-else-if="isChallengeClosed && !hasAnswered">
+            Challenge is closed—you can still answer to see how you stacked up when we reveal.
+          </p>
+          <p v-else-if="isChallengeClosed && hasAnswered">
+            Your answer was
+            <span class="submitted-answer__text">"{{ submissionResult?.originalAnswer || answer }}"</span>
+            — we'll reveal soon!
+          </p>
+          <p v-else-if="isChallengeRevealed">
+            Answer is available! Submit to see if you are right.
+          </p>
           <p v-else-if="hasSubmitted">Wonder if you got it right? 🤔</p>
           <p v-else>Share your best guess to see if you nailed it!</p>
-          <p>The answer will be announced at {{ formattedRevealDate }}</p>
+          <p v-if="!isChallengeRevealed && formattedRevealDate">
+            The answer will be announced at {{ formattedRevealDate }}
+          </p>
+          <p v-else-if="isChallengeRevealed">
+            The answer has been announced—see how you did!
+          </p>
           <p>
             Follow
             <a href="https://x.com/Topxisrael" target="_blank">@Topxisrael</a>
             to see the answer and the winners!
           </p>
           <p>Good luck! 🤞🏻</p>
-          <p v-if="hasSubmitted" class="submitted-answer">
+          <p v-if="hasAnswered" class="submitted-answer">
             Your guess:
             <span class="submitted-answer__text">"{{ submissionResult?.originalAnswer || answer }}"</span>
           </p>
@@ -152,6 +175,75 @@ const hasDailyChallenge = computed(() => Boolean(dailyChallengeId.value))
 const isChallengeContextResolved = computed(() => props.challengeContext !== undefined)
 const rawChallengeAvailableAt = computed(() => props.challengeContext?.availableAt ?? null)
 const rawChallengeClosesAt = computed(() => props.challengeContext?.closesAt ?? null)
+const rawChallengeRevealAt = computed(
+  () => props.challengeContext?.revealAt ?? props.revealAt ?? null
+)
+
+const challengeAvailableDate = computed(() => parseChallengeDate(rawChallengeAvailableAt.value))
+const challengeClosesDate = computed(() => parseChallengeDate(rawChallengeClosesAt.value))
+const challengeRevealDate = computed(() => parseChallengeDate(rawChallengeRevealAt.value))
+
+const ChallengeStatus = {
+  Upcoming: 'upcoming',
+  Open: 'open',
+  Closed: 'closed',
+  Revealed: 'revealed'
+} as const
+
+type ChallengeStatus = (typeof ChallengeStatus)[keyof typeof ChallengeStatus]
+
+const challengeStatus = computed<ChallengeStatus>(() => {
+  if (!props.challengeContext) {
+    return ChallengeStatus.Revealed
+  }
+
+  const current = now.value
+  const revealAt = challengeRevealDate.value
+  if (revealAt && current >= revealAt) {
+    return ChallengeStatus.Revealed
+  }
+
+  const closesAt = challengeClosesDate.value
+  if (closesAt && current >= closesAt) {
+    return ChallengeStatus.Closed
+  }
+
+  const availableAt = challengeAvailableDate.value
+  if (availableAt && current < availableAt) {
+    return ChallengeStatus.Upcoming
+  }
+
+  return ChallengeStatus.Open
+})
+
+const isChallengeOpen = computed(() => challengeStatus.value === ChallengeStatus.Open)
+const isChallengeClosed = computed(() => challengeStatus.value === ChallengeStatus.Closed)
+const isChallengeRevealed = computed(() => challengeStatus.value === ChallengeStatus.Revealed)
+const hasAnswered = computed(() => hasSubmitted.value || Boolean(submissionResult.value))
+
+const closesCountdown = computed(() => {
+  if (!isChallengeOpen.value) return ''
+  const closesAt = challengeClosesDate.value
+  if (!closesAt) return ''
+
+  let diffSeconds = Math.floor(closesAt.diff(now.value, 'seconds').seconds ?? 0)
+  if (diffSeconds <= 0) {
+    return '00:00:00'
+  }
+
+  const days = Math.floor(diffSeconds / 86_400)
+  diffSeconds %= 86_400
+  const hours = Math.floor(diffSeconds / 3_600)
+  diffSeconds %= 3_600
+  const minutes = Math.floor(diffSeconds / 60)
+  const seconds = diffSeconds % 60
+
+  const baseTime = `${hours.toString().padStart(2, '0')}:${minutes
+    .toString()
+    .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+
+  return days > 0 ? `${days}d ${baseTime}` : baseTime
+})
 
 const storedGameData = computed(() => userStore.profile?.games?.ZoneReveal?.[props.gameId] ?? null)
 
@@ -164,64 +256,41 @@ const storedChallengeProgress = computed(
   () => storedChallengeGameData.value?.custom?.dailyChallengeProgress ?? null
 )
 
-const canSubmitAnswer = computed(() => {
-  if (!props.challengeContext) return true
-  const availableAtIso = rawChallengeAvailableAt.value
-  const closesAtIso = rawChallengeClosesAt.value
-  const current = now.value
-
-  if (availableAtIso) {
-    const available = DateTime.fromISO(availableAtIso, { zone: 'utc' })
-    if (available.isValid && current < available) {
-      return false
-    }
-  }
-
-  if (closesAtIso) {
-    const closes = DateTime.fromISO(closesAtIso, { zone: 'utc' })
-    if (closes.isValid && current >= closes) {
-      return false
-    }
-  }
-
-  return true
-})
+const canSubmitAnswer = computed(() => challengeStatus.value !== ChallengeStatus.Upcoming)
 
 const challengeInputRestrictionMessage = computed(() => {
-  if (!props.challengeContext) {
-    return ''
+  if (challengeStatus.value === ChallengeStatus.Upcoming) {
+    return 'This challenge opens soon. Check back when it starts to submit your answer.'
   }
-
-  const availableAtIso = rawChallengeAvailableAt.value
-  const closesAtIso = rawChallengeClosesAt.value
-  const current = now.value
-
-  if (availableAtIso) {
-    const available = DateTime.fromISO(availableAtIso, { zone: 'utc' })
-    if (available.isValid && current < available) {
-      return 'This challenge opens soon. Check back when it starts to submit your answer.'
-    }
-  }
-
-  if (closesAtIso) {
-    const closes = DateTime.fromISO(closesAtIso, { zone: 'utc' })
-    if (closes.isValid && current >= closes) {
-      return 'This challenge is now closed to new submissions.'
-    }
-  }
-
   return ''
 })
 
 const formattedRevealDate = computed(() => {
-  if (!props.revealAt) return ''
+  const reveal = challengeRevealDate.value
+  if (!reveal) return ''
 
-  const reveal = DateTime.fromISO(props.revealAt, { zone: 'utc' })
   if (reveal.isValid) {
     return reveal.toLocal().toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)
   }
 
-  return new Date(props.revealAt).toLocaleString()
+  return rawChallengeRevealAt.value ? new Date(rawChallengeRevealAt.value).toLocaleString() : ''
+})
+
+const statusIntroMessage = computed(() => {
+  switch (challengeStatus.value) {
+    case ChallengeStatus.Upcoming:
+      return "This challenge isn't open just yet—hang tight!"
+    case ChallengeStatus.Open:
+      return "Take your best guess at what you've revealed!"
+    case ChallengeStatus.Closed:
+      return hasAnswered.value
+        ? 'Thanks for locking in your answer!'
+        : 'Challenge closed—drop an answer before the reveal to see how you stack up.'
+    case ChallengeStatus.Revealed:
+      return 'Answer is available! Submit to see if you are right.'
+    default:
+      return "Take your best guess at what you've revealed!"
+  }
 })
 
 const submissionMessage = computed(() => {
@@ -239,7 +308,7 @@ onMounted(() => {
   void attemptAutoSave()
   nowInterval = window.setInterval(() => {
     now.value = DateTime.now()
-  }, 30_000)
+  }, 1_000)
 })
 
 onBeforeUnmount(() => {
@@ -485,6 +554,12 @@ async function handleLogin() {
   }
 
   hydrateFromProfile()
+}
+
+function parseChallengeDate(value?: string | null): DateTime | null {
+  if (!value) return null
+  const parsed = DateTime.fromISO(value, { zone: 'utc' })
+  return parsed.isValid ? parsed : null
 }
 
 function formatChallengeDate(value?: string | null): string {
@@ -733,6 +808,30 @@ input {
   flex-direction: column;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+}
+
+.submission-status__countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(196, 255, 0, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.submission-status__countdown-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.submission-status__countdown-timer {
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .submitted-answer {
