@@ -33,7 +33,7 @@
         <router-link class="navbar-item" to="/faq" @click="closeMenu">{{ t('nav.faq') }}</router-link>
         <router-link  class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
         <router-link
-          v-if="user?.isAdmin"
+         
           class="navbar-item"
           to="/build"
           @click="closeMenu"

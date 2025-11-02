@@ -976,12 +976,12 @@ export default function createPacmanScene(
 
         const newDirection = Phaser.Utils.Array.GetRandom(frightenedOptions)
         if (currentDirection !== newDirection) {
-          console.debug('[PacmanScene] Ghost direction updated (frightened)', {
-            ghost: ghostId,
-            from: currentDirection,
-            to: newDirection,
-            state
-          })
+          // console.debug('[PacmanScene] Ghost direction updated (frightened)', {
+          //   ghost: ghostId,
+          //   from: currentDirection,
+          //   to: newDirection,
+          //   state
+          // })
         }
         ghost.setData('direction', newDirection)
         this.snapSpriteToGrid(ghost, newDirection) // <<< snap to avoid being off-grid
@@ -1001,12 +1001,12 @@ export default function createPacmanScene(
       if (!target) {
         const fallbackDirection = Phaser.Utils.Array.GetRandom(candidates)
         if (currentDirection !== fallbackDirection) {
-          console.debug('[PacmanScene] Ghost direction fallback', {
-            ghost: ghostId,
-            from: currentDirection,
-            to: fallbackDirection,
-            state
-          })
+          // console.debug('[PacmanScene] Ghost direction fallback', {
+          //   ghost: ghostId,
+          //   from: currentDirection,
+          //   to: fallbackDirection,
+          //   state
+          // })
         }
         ghost.setData('direction', fallbackDirection)
         this.snapSpriteToGrid(ghost, fallbackDirection)
@@ -1026,13 +1026,13 @@ export default function createPacmanScene(
       }
 
       if (currentDirection !== bestDirection) {
-        console.debug('[PacmanScene] Ghost direction updated', {
-          ghost: ghostId,
-          from: currentDirection,
-          to: bestDirection,
-          state,
-          target: { x: target.x, y: target.y }
-        })
+        // console.debug('[PacmanScene] Ghost direction updated', {
+        //   ghost: ghostId,
+        //   from: currentDirection,
+        //   to: bestDirection,
+        //   state,
+        //   target: { x: target.x, y: target.y }
+        // })
       }
 
       ghost.setData('direction', bestDirection)

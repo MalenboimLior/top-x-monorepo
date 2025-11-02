@@ -421,6 +421,9 @@ export const submitGameScore = functions.https.onCall(async (
         : null;
       const challengeLeaderboardRef = challengeRef ? challengeRef.collection('leaderboard').doc(uid) : null;
       const challengeStatsRef = challengeRef ? challengeRef.collection('stats').doc('general') : null;
+      const rewardRef = isDailyChallengeSubmission && rawDailyChallengeId
+        ? userRef.collection('dailyChallengeRewards').doc(rawDailyChallengeId)
+        : null;
 
       const userDoc = await tx.get(userRef);
       if (!userDoc.exists) {
@@ -453,18 +456,21 @@ export const submitGameScore = functions.https.onCall(async (
         } satisfies SubmitGameScoreResponse;
       }
 
-      const [statsDoc, gameDoc] = await Promise.all([
-        tx.get(statsRef),
-        tx.get(gameRef),
-      ]);
+      const statsDoc = await tx.get(statsRef);
+      const gameDoc = await tx.get(gameRef);
       let challengeDoc: FirebaseFirestore.DocumentSnapshot | null = null;
       let challengeStatsDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+      let existingRewardDoc: FirebaseFirestore.DocumentSnapshot | null = null;
 
       if (challengeRef && challengeStatsRef) {
         [challengeDoc, challengeStatsDoc] = await Promise.all([
           tx.get(challengeRef),
           tx.get(challengeStatsRef),
         ]);
+      }
+
+      if (rewardRef) {
+        existingRewardDoc = await tx.get(rewardRef);
       }
 
       if (!gameDoc.exists) {
@@ -643,9 +649,7 @@ export const submitGameScore = functions.https.onCall(async (
           : challengeData?.schedule?.revealAt;
 
         if (resolvedDailyChallengeDate && resolvedRevealAt) {
-          const rewardRef = userRef.collection('dailyChallengeRewards').doc(rawDailyChallengeId);
-          const existingRewardDoc = await tx.get(rewardRef);
-          const existingReward = existingRewardDoc.exists
+          const existingReward = existingRewardDoc?.exists
             ? (existingRewardDoc.data() as DailyChallengeRewardRecord)
             : undefined;
           const nowIso = new Date(serverLastPlayed).toISOString();
@@ -669,7 +673,7 @@ export const submitGameScore = functions.https.onCall(async (
             aggregatedStreak: existingReward?.aggregatedStreak,
           } satisfies DailyChallengeRewardRecord;
 
-          tx.set(rewardRef, nextReward, { merge: true });
+          tx.set(rewardRef!, nextReward, { merge: true });
           pendingRewardRecord = nextReward;
         }
 
@@ -788,7 +792,7 @@ export const submitGameScore = functions.https.onCall(async (
         const challengeDatePayload = createLeaderboardDatePayload(challengeRecordedAt);
         const challengePlayedAt = challengePlayedAtIso ?? new Date(serverLastPlayed).toISOString();
         const challengeCustom: Record<string, unknown> = {
-          ...challengeCustomFromSubmission,
+          ...customFromSubmission,
           id: rawDailyChallengeId!,
           date: resolvedDailyChallengeDate!,
           playedAt: challengePlayedAt,
@@ -996,54 +1000,80 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
 
       const userData = userDoc.data() as User;
       const rewardsCollection = userRef.collection('dailyChallengeRewards');
-      const rewardRefs: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>[] = [];
+
+      let rewardSnapshots: FirebaseFirestore.DocumentSnapshot[] = [];
 
       if (payload.dailyChallengeId) {
-        rewardRefs.push(rewardsCollection.doc(payload.dailyChallengeId));
+        const rewardRef = rewardsCollection.doc(payload.dailyChallengeId);
+        const snap = await tx.get(rewardRef);
+        if (snap.exists) {
+          rewardSnapshots = [snap];
+        } else {
+          deferred.push(payload.dailyChallengeId);
+          return;
+        }
       } else {
         const pendingQuery = rewardsCollection.where('status', '==', 'pending');
         const pendingSnapshot = await tx.get(pendingQuery);
-        pendingSnapshot.forEach((docSnapshot) => {
-          rewardRefs.push(docSnapshot.ref);
-        });
+        rewardSnapshots = pendingSnapshot.docs;
       }
 
-      if (rewardRefs.length === 0 && payload.dailyChallengeId) {
-        deferred.push(payload.dailyChallengeId);
+      if (rewardSnapshots.length === 0) {
         return;
       }
 
-      for (const rewardRef of rewardRefs) {
-        const rewardSnapshot = await tx.get(rewardRef);
-        if (!rewardSnapshot.exists) {
-          deferred.push(rewardRef.id);
-          continue;
-        }
+      // Collect unique leaderboard refs for solved rewards that qualify
+      const leaderboardMap: Map<string, FirebaseFirestore.DocumentSnapshot> = new Map(); // gameId -> snapshot
+      const toFetchLeaderboards: FirebaseFirestore.DocumentReference[] = [];
+      const qualifiedSnapshots: FirebaseFirestore.DocumentSnapshot[] = [];
 
-        const rewardData = rewardSnapshot.data() as DailyChallengeRewardRecord;
+      for (const snap of rewardSnapshots) {
+        const rewardData = snap.data() as DailyChallengeRewardRecord;
 
         if (payload.gameId && rewardData.gameId !== payload.gameId) {
           continue;
         }
 
         if (rewardData.status !== 'pending') {
-          alreadyClaimed.push(rewardRef.id);
+          alreadyClaimed.push(snap.id);
           continue;
         }
 
         const revealAtMillis = Date.parse(rewardData.revealAt);
         if (Number.isNaN(revealAtMillis) || revealAtMillis > nowMillis) {
-          deferred.push(rewardRef.id);
+          deferred.push(snap.id);
           continue;
         }
+
+        qualifiedSnapshots.push(snap);
+
+        if (rewardData.solveState === 'solved') {
+          const lbRef = db.collection('games').doc(rewardData.gameId).collection('leaderboard').doc(uid);
+          const gameId = rewardData.gameId;
+          if (!leaderboardMap.has(gameId)) {
+            toFetchLeaderboards.push(lbRef);
+          }
+        }
+      }
+
+      // Fetch all required leaderboard snapshots
+      const leaderboardSnapshots = await Promise.all(toFetchLeaderboards.map(ref => tx.get(ref)));
+      toFetchLeaderboards.forEach((ref, index) => {
+        const gameId = ref.parent.parent!.id; // games/{gameId}/leaderboard/uid -> gameId
+        leaderboardMap.set(gameId, leaderboardSnapshots[index]);
+      });
+
+      // Now process writes for qualified snapshots
+      for (const snap of qualifiedSnapshots) {
+        const rewardData = snap.data() as DailyChallengeRewardRecord;
+        const rewardRef = snap.ref;
 
         let aggregatedScore: number | undefined = rewardData.aggregatedScore;
         let aggregatedStreak: number | undefined = rewardData.aggregatedStreak;
 
         if (rewardData.solveState === 'solved') {
-          const leaderboardRef = db.collection('games').doc(rewardData.gameId).collection('leaderboard').doc(uid);
-          const leaderboardSnapshot = await tx.get(leaderboardRef);
-          const previousLeaderboard = leaderboardSnapshot.exists
+          const leaderboardSnapshot = leaderboardMap.get(rewardData.gameId);
+          const previousLeaderboard = leaderboardSnapshot?.exists
             ? (leaderboardSnapshot.data() as { score?: number; streak?: number; custom?: Record<string, unknown> })
             : undefined;
 
@@ -1070,7 +1100,7 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
             leaderboardUpdate.custom = previousLeaderboard.custom;
           }
 
-          tx.set(leaderboardRef, leaderboardUpdate, { merge: true });
+          tx.set(leaderboardSnapshot!.ref, leaderboardUpdate, { merge: true });
         }
 
         const claimTimestampIso = new Date(nowMillis).toISOString();
