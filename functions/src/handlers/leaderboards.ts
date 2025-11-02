@@ -4,7 +4,7 @@ import cors from 'cors';
 import type { LeaderboardEntry } from '@top-x/shared/types/game';
 import type { User } from '@top-x/shared/types/user';
 import type { UserGameData } from '@top-x/shared/types/user';
-import './utils/firebaseAdmin';
+import '../utils/firebaseAdmin';
 import {
   getLeaderboardCollectionRef,
   mapLeaderboardDoc,
