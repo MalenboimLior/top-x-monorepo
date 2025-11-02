@@ -124,6 +124,7 @@ const challengeContext = ref<{
   closesAt?: string
   revealAt?: string
   dailyDate?: string
+  allowAnswerUpdates?: boolean
 } | null>(null)
 const gameTitle = ref('')
 const gameDescription = ref('')
