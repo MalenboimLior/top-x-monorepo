@@ -365,11 +365,10 @@ function formatRevealAtTimestamp(value: string): string {
 
 function describeSolveState(reward: ChallengeReward): string {
   if (reward.solveState === 'solved') {
-    const points = typeof reward.pendingScore === 'number' ? reward.pendingScore : 0;
-    return points > 0 ? `Solved · ${points} pts pending` : 'Solved · review the answer';
+    return 'Solved · claim +1 score';
   }
   if (reward.solveState === 'failed') {
-    return 'Attempt logged · see how close you were';
+    return 'Attempt logged · claim +1 streak';
   }
   if (reward.solveState === 'skipped') {
     return 'Skipped · answer available';

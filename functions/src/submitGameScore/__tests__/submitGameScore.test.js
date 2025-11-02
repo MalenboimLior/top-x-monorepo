@@ -478,17 +478,17 @@ test('enqueues pending reward metadata for daily challenge submissions', async (
   assert.equal(response.success, true);
   assert.ok(response.pendingReward);
   assert.equal(response.pendingReward?.status, 'pending');
-  assert.equal(response.pendingReward?.pendingScore, 175);
   assert.equal(response.pendingReward?.solveState, 'solved');
+  assert.equal('pendingScore' in (response.pendingReward ?? {}), false);
 
   const rewardDoc = firestore.getDocument(challengeRewardPath);
   assert.ok(rewardDoc);
   assert.equal(rewardDoc.status, 'pending');
-  assert.equal(rewardDoc.pendingScore, 175);
-  assert.equal(rewardDoc.pendingStreak, 1);
   assert.equal(rewardDoc.solveState, 'solved');
   assert.equal(rewardDoc.dailyChallengeDate, '2024-01-01');
   assert.equal(rewardDoc.revealAt, revealAt);
+  assert.equal('pendingScore' in rewardDoc, false);
+  assert.equal('pendingStreak' in rewardDoc, false);
 });
 
 test('claimDailyChallengeRewards processes solved entries and updates leaderboard', async () => {
@@ -537,23 +537,22 @@ test('claimDailyChallengeRewards processes solved entries and updates leaderboar
   const processedSummary = claimResponse.processed[0];
   assert.equal(processedSummary.solveState, 'solved');
   assert.equal(processedSummary.status, 'claimed');
-  assert.equal(processedSummary.aggregatedScore, 210);
-  assert.equal(processedSummary.aggregatedStreak, 1);
   assert.deepEqual(claimResponse.deferred, []);
 
   const leaderboardDoc = firestore.getDocument(leaderboardPath);
   assert.ok(leaderboardDoc);
-  assert.equal(leaderboardDoc.score, 210);
-  assert.equal(leaderboardDoc.streak, 1);
+  assert.equal(leaderboardDoc.score, 1);
+  assert.equal(leaderboardDoc.streak, 0);
 
   const rewardDoc = firestore.getDocument(challengeRewardPath);
   assert.ok(rewardDoc);
   assert.equal(rewardDoc.status, 'claimed');
-  assert.equal(rewardDoc.aggregatedScore, 210);
-  assert.equal(rewardDoc.aggregatedStreak, 1);
+  assert.equal(rewardDoc.solveState, 'solved');
+  assert.equal('aggregatedScore' in rewardDoc, false);
+  assert.equal('aggregatedStreak' in rewardDoc, false);
 });
 
-test('claimDailyChallengeRewards resolves failed attempts without updating leaderboard', async () => {
+test('claimDailyChallengeRewards resolves failed attempts and increments streak', async () => {
   const revealAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { submitGameScore, claimDailyChallengeRewards, firestore } = createSubmitGameScore({
     [userPath]: clone(baseUser),
@@ -599,16 +598,18 @@ test('claimDailyChallengeRewards resolves failed attempts without updating leade
   const processedSummary = claimResponse.processed[0];
   assert.equal(processedSummary.solveState, 'failed');
   assert.equal(processedSummary.status, 'claimed');
-  assert.equal(processedSummary.aggregatedScore, undefined);
-  assert.equal(processedSummary.aggregatedStreak, undefined);
 
   const leaderboardDoc = firestore.getDocument(leaderboardPath);
-  assert.equal(leaderboardDoc, undefined);
+  assert.ok(leaderboardDoc);
+  assert.equal(leaderboardDoc.score, 0);
+  assert.equal(leaderboardDoc.streak, 1);
 
   const rewardDoc = firestore.getDocument(challengeRewardPath);
   assert.ok(rewardDoc);
   assert.equal(rewardDoc.status, 'claimed');
   assert.equal(rewardDoc.solveState, 'failed');
+  assert.equal('aggregatedScore' in rewardDoc, false);
+  assert.equal('aggregatedStreak' in rewardDoc, false);
 });
 
 test('claimDailyChallengeRewards defers rewards when reveal time has not passed', async () => {
