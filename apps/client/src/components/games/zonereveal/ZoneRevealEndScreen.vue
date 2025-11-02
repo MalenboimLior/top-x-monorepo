@@ -89,6 +89,11 @@
           <p v-if="isChallengeRevealed && submissionResult" class="reveal-followup">
             The answer has been announced—see how you did!
           </p>
+          <div v-if="challengeReward" class="reveal-claim">
+            <button class="button is-primary is-small" @click="handleRevealClaim">
+              Show answer
+            </button>
+          </div>
           <p>
             Follow
             <a href="https://x.com/Topxisrael" target="_blank">@Topxisrael</a>
@@ -147,6 +152,7 @@ import { analytics } from '@top-x/shared'
 import Leaderboard from '@/components/Leaderboard.vue'
 import { DateTime } from 'luxon'
 import type { ZoneRevealAnswer } from '@top-x/shared/types/zoneReveal'
+import type { DailyChallengeRewardRecord } from '@top-x/shared/types/user'
 import {
   evaluateZoneRevealAnswer,
   normalizeZoneRevealAnswer,
@@ -192,6 +198,21 @@ const dailyChallengeDate = computed(() => props.challengeContext?.dailyDate ?? n
 const challengeAvailableAt = computed(() => formatChallengeDate(props.challengeContext?.availableAt))
 const challengeClosesAt = computed(() => formatChallengeDate(props.challengeContext?.closesAt))
 const hasDailyChallenge = computed(() => Boolean(dailyChallengeId.value))
+
+type ChallengeReward = DailyChallengeRewardRecord & { id: string }
+
+const challengeReward = computed<ChallengeReward | null>(() => {
+  if (!dailyChallengeId.value) {
+    return null
+  }
+
+  const rewards = userStore.readyDailyChallengeRewards as ChallengeReward[] | undefined
+  if (!Array.isArray(rewards)) {
+    return null
+  }
+
+  return rewards.find((reward) => reward.dailyChallengeId === dailyChallengeId.value && reward.gameId === props.gameId) || null
+})
 const isChallengeContextResolved = computed(() => props.challengeContext !== undefined)
 const rawChallengeAvailableAt = computed(() => props.challengeContext?.availableAt ?? null)
 const rawChallengeClosesAt = computed(() => props.challengeContext?.closesAt ?? null)
@@ -569,6 +590,17 @@ async function handleSkipSubmission() {
   }
 
   await finalizeBlankSubmissionAndRestart()
+}
+
+async function handleRevealClaim() {
+  if (!challengeReward.value) {
+    return
+  }
+
+  await userStore.claimDailyChallengeReward({
+    dailyChallengeId: challengeReward.value.dailyChallengeId,
+    gameId: challengeReward.value.gameId,
+  })
 }
 
 async function handleLogin() {
@@ -1017,6 +1049,14 @@ input {
 .reveal-date,
 .reveal-followup {
   color: rgba(255, 255, 255, 0.75);
+}
+
+.reveal-claim {
+  margin-top: 1rem;
+}
+
+.reveal-claim .button {
+  min-width: 140px;
 }
 
 @media (min-width: 768px) {

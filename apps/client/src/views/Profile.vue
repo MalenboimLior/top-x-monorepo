@@ -47,6 +47,43 @@
 
     <section class="profile-body">
       <div class="profile-surface" :class="{ 'is-blurred': isOwnProfile && !isLoggedIn }">
+        <div
+          v-if="hasRewardQueue"
+          class="challenge-reward-panel"
+        >
+          <h3 class="challenge-reward-panel__title">Daily challenge updates</h3>
+          <p class="challenge-reward-panel__subtitle">Reveal results and claim your streak rewards.</p>
+          <div v-if="readyRewards.length" class="challenge-reward-panel__list">
+            <article
+              v-for="reward in readyRewards"
+              :key="reward.id"
+              class="challenge-reward-card"
+            >
+              <div class="challenge-reward-card__details">
+                <p class="challenge-reward-card__headline">
+                  {{ reward.dailyChallengeDate }} · {{ reward.gameId }}
+                </p>
+                <p class="challenge-reward-card__status">
+                  {{ describeSolveState(reward) }}
+                </p>
+                <p class="challenge-reward-card__meta">
+                  Reveal unlocked · tap below to see the answer.
+                </p>
+              </div>
+              <CustomButton
+                type="is-primary is-small"
+                label="Show answer"
+                @click="handleClaimReward(reward)"
+              />
+            </article>
+          </div>
+          <p v-else class="challenge-reward-panel__empty">No reveal-ready rewards yet. We'll ping you when they're live.</p>
+          <div v-if="upcomingRewards.length" class="challenge-reward-panel__hint">
+            <p v-for="reward in upcomingRewards" :key="reward.id">
+              {{ reward.dailyChallengeDate }} reveal at {{ formatRevealAtTimestamp(reward.revealAt) }}
+            </p>
+          </div>
+        </div>
         <nav class="profile-tabs" role="tablist">
           <button
             type="button"
@@ -214,7 +251,7 @@ import { db } from '@top-x/shared';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidView from '@/components/games/pyramid/PyramidView.vue';
-import type { User } from '@top-x/shared/types/user';
+import type { User, DailyChallengeRewardRecord } from '@top-x/shared/types/user';
 import type { PyramidSlot, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 import { analytics, trackEvent } from '@top-x/shared';
 
@@ -259,6 +296,30 @@ const activeTab = ref('games');
 const loadedFrenemies = ref(false);
 const loadedAddedBy = ref(false);
 
+type ChallengeReward = DailyChallengeRewardRecord & { id: string };
+
+const readyRewards = computed<ChallengeReward[]>(() => {
+  const raw = userStore.readyDailyChallengeRewards as ChallengeReward[] | undefined;
+  return Array.isArray(raw) ? raw : [];
+});
+
+const upcomingRewards = computed<ChallengeReward[]>(() => {
+  const source = userStore.dailyChallengeRewards as ChallengeReward[] | undefined;
+  if (!Array.isArray(source)) {
+    return [];
+  }
+  const now = Date.now();
+  return source.filter((reward) => {
+    if (reward.status !== 'pending') {
+      return false;
+    }
+    const revealAtMillis = Date.parse(reward.revealAt);
+    return !Number.isNaN(revealAtMillis) && revealAtMillis > now;
+  });
+});
+
+const hasRewardQueue = computed(() => isOwnProfile.value && (readyRewards.value.length > 0 || upcomingRewards.value.length > 0));
+
 const filteredGames = computed(() => {
   if (!profile.value?.games) return {};
   const games = { ...profile.value.games } as Record<string, any>;
@@ -292,6 +353,35 @@ function formatLastPlayed(value: unknown): string {
   if (Number.isNaN(date.getTime())) return '—';
 
   return date.toLocaleString();
+}
+
+function formatRevealAtTimestamp(value: string): string {
+  const millis = Date.parse(value);
+  if (Number.isNaN(millis)) {
+    return 'TBD';
+  }
+  return new Date(millis).toLocaleString();
+}
+
+function describeSolveState(reward: ChallengeReward): string {
+  if (reward.solveState === 'solved') {
+    const points = typeof reward.pendingScore === 'number' ? reward.pendingScore : 0;
+    return points > 0 ? `Solved · ${points} pts pending` : 'Solved · review the answer';
+  }
+  if (reward.solveState === 'failed') {
+    return 'Attempt logged · see how close you were';
+  }
+  if (reward.solveState === 'skipped') {
+    return 'Skipped · answer available';
+  }
+  return 'Reveal ready';
+}
+
+async function handleClaimReward(reward: ChallengeReward) {
+  await userStore.claimDailyChallengeReward({
+    dailyChallengeId: reward.dailyChallengeId,
+    gameId: reward.gameId,
+  });
 }
 
 async function loadProfile() {
@@ -554,6 +644,76 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+.challenge-reward-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(0, 232, 224, 0.06);
+  border: 1px solid rgba(0, 232, 224, 0.18);
+  border-radius: 18px;
+}
+
+.challenge-reward-panel__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.challenge-reward-panel__subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.challenge-reward-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.challenge-reward-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.challenge-reward-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.challenge-reward-card__headline {
+  margin: 0;
+  font-weight: 600;
+}
+
+.challenge-reward-card__status {
+  margin: 0;
+  color: rgba(0, 232, 224, 0.85);
+  font-size: 0.9rem;
+}
+
+.challenge-reward-card__meta {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.challenge-reward-panel__empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.challenge-reward-panel__hint {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .profile-tabs {

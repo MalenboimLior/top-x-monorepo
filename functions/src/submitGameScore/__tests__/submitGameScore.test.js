@@ -257,11 +257,11 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
     delete require.cache[statsManagerPath];
   }
 
-  const { submitGameScore } = require(indexPath);
+  const { submitGameScore, claimDailyChallengeRewards } = require(indexPath);
 
   Module._load = originalLoad;
 
-  return { submitGameScore, firestore };
+  return { submitGameScore, claimDailyChallengeRewards, firestore };
 };
 
 const baseUser = {
@@ -288,6 +288,7 @@ const gamePath = `games/${gameId}`;
 const leaderboardPath = `${gamePath}/leaderboard/${baseUser.uid}`;
 const challengePath = `${gamePath}/daily_challenges/${challengeId}`;
 const challengeLeaderboardPath = `${challengePath}/leaderboard/${baseUser.uid}`;
+const challengeRewardPath = `${userPath}/dailyChallengeRewards/${challengeId}`;
 
 const getWriteDelta = (firestore, pathValue, callback) => {
   const before = firestore.getWriteCount(pathValue);
@@ -439,4 +440,283 @@ test('merges challenge submissions without aggregated fields and persists best s
   assert.equal('aggregatedScore' in leaderboardDoc, false);
   assert.equal('aggregatedStreak' in leaderboardDoc, false);
   assert.equal(writes, 1);
+});
+
+test('enqueues pending reward metadata for daily challenge submissions', async () => {
+  const revealAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const { submitGameScore, firestore } = createSubmitGameScore({
+    [userPath]: clone(baseUser),
+    [gamePath]: clone(baseGame),
+    [challengePath]: {
+      date: '2024-01-01',
+      custom: { answer: 'correct-answer' },
+      schedule: {
+        availableAt: '2023-12-31T00:00:00Z',
+        closesAt: '2024-01-01T23:59:59Z',
+        revealAt,
+      },
+    },
+  }, [
+    () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
+  ]);
+
+  const response = await submitGameScore({
+    auth: { uid: baseUser.uid },
+    data: {
+      gameTypeId,
+      gameId,
+      gameData: {
+        score: 175,
+        streak: 2,
+        lastPlayed: Date.now(),
+        custom: { answer: 'correct-answer' },
+      },
+      dailyChallengeId: challengeId,
+    },
+  });
+
+  assert.equal(response.success, true);
+  assert.ok(response.pendingReward);
+  assert.equal(response.pendingReward?.status, 'pending');
+  assert.equal(response.pendingReward?.pendingScore, 175);
+  assert.equal(response.pendingReward?.solveState, 'solved');
+
+  const rewardDoc = firestore.getDocument(challengeRewardPath);
+  assert.ok(rewardDoc);
+  assert.equal(rewardDoc.status, 'pending');
+  assert.equal(rewardDoc.pendingScore, 175);
+  assert.equal(rewardDoc.pendingStreak, 1);
+  assert.equal(rewardDoc.solveState, 'solved');
+  assert.equal(rewardDoc.dailyChallengeDate, '2024-01-01');
+  assert.equal(rewardDoc.revealAt, revealAt);
+});
+
+test('claimDailyChallengeRewards processes solved entries and updates leaderboard', async () => {
+  const revealAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { submitGameScore, claimDailyChallengeRewards, firestore } = createSubmitGameScore({
+    [userPath]: clone(baseUser),
+    [gamePath]: clone(baseGame),
+    [challengePath]: {
+      date: '2024-01-01',
+      custom: { answer: 'correct-answer' },
+      schedule: {
+        availableAt: '2023-12-31T00:00:00Z',
+        closesAt: '2024-01-01T23:59:59Z',
+        revealAt,
+      },
+    },
+  }, [
+    () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
+  ]);
+
+  await submitGameScore({
+    auth: { uid: baseUser.uid },
+    data: {
+      gameTypeId,
+      gameId,
+      gameData: {
+        score: 210,
+        streak: 3,
+        lastPlayed: Date.now(),
+        custom: { answer: 'correct-answer' },
+      },
+      dailyChallengeId: challengeId,
+    },
+  });
+
+  const claimResponse = await claimDailyChallengeRewards({
+    auth: { uid: baseUser.uid },
+    data: {
+      dailyChallengeId: challengeId,
+      gameId,
+    },
+  });
+
+  assert.equal(claimResponse.success, true);
+  assert.equal(claimResponse.processed.length, 1);
+  const processedSummary = claimResponse.processed[0];
+  assert.equal(processedSummary.solveState, 'solved');
+  assert.equal(processedSummary.status, 'claimed');
+  assert.equal(processedSummary.aggregatedScore, 210);
+  assert.equal(processedSummary.aggregatedStreak, 1);
+  assert.deepEqual(claimResponse.deferred, []);
+
+  const leaderboardDoc = firestore.getDocument(leaderboardPath);
+  assert.ok(leaderboardDoc);
+  assert.equal(leaderboardDoc.score, 210);
+  assert.equal(leaderboardDoc.streak, 1);
+
+  const rewardDoc = firestore.getDocument(challengeRewardPath);
+  assert.ok(rewardDoc);
+  assert.equal(rewardDoc.status, 'claimed');
+  assert.equal(rewardDoc.aggregatedScore, 210);
+  assert.equal(rewardDoc.aggregatedStreak, 1);
+});
+
+test('claimDailyChallengeRewards resolves failed attempts without updating leaderboard', async () => {
+  const revealAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { submitGameScore, claimDailyChallengeRewards, firestore } = createSubmitGameScore({
+    [userPath]: clone(baseUser),
+    [gamePath]: clone(baseGame),
+    [challengePath]: {
+      date: '2024-01-02',
+      custom: { answer: 'correct-answer' },
+      schedule: {
+        availableAt: '2024-01-01T00:00:00Z',
+        closesAt: '2024-01-02T23:59:59Z',
+        revealAt,
+      },
+    },
+  }, [
+    () => ({ normalizedAnswer: 'wrong', distance: 1, isMatch: false }),
+  ]);
+
+  await submitGameScore({
+    auth: { uid: baseUser.uid },
+    data: {
+      gameTypeId,
+      gameId,
+      gameData: {
+        score: 0,
+        streak: 0,
+        lastPlayed: Date.now(),
+        custom: { answer: 'wrong' },
+      },
+      dailyChallengeId: challengeId,
+    },
+  });
+
+  const claimResponse = await claimDailyChallengeRewards({
+    auth: { uid: baseUser.uid },
+    data: {
+      dailyChallengeId: challengeId,
+      gameId,
+    },
+  });
+
+  assert.equal(claimResponse.success, true);
+  assert.equal(claimResponse.processed.length, 1);
+  const processedSummary = claimResponse.processed[0];
+  assert.equal(processedSummary.solveState, 'failed');
+  assert.equal(processedSummary.status, 'claimed');
+  assert.equal(processedSummary.aggregatedScore, undefined);
+  assert.equal(processedSummary.aggregatedStreak, undefined);
+
+  const leaderboardDoc = firestore.getDocument(leaderboardPath);
+  assert.equal(leaderboardDoc, undefined);
+
+  const rewardDoc = firestore.getDocument(challengeRewardPath);
+  assert.ok(rewardDoc);
+  assert.equal(rewardDoc.status, 'claimed');
+  assert.equal(rewardDoc.solveState, 'failed');
+});
+
+test('claimDailyChallengeRewards defers rewards when reveal time has not passed', async () => {
+  const revealAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const { submitGameScore, claimDailyChallengeRewards, firestore } = createSubmitGameScore({
+    [userPath]: clone(baseUser),
+    [gamePath]: clone(baseGame),
+    [challengePath]: {
+      date: '2024-01-03',
+      custom: { answer: 'correct-answer' },
+      schedule: {
+        availableAt: '2024-01-02T00:00:00Z',
+        closesAt: '2024-01-03T23:59:59Z',
+        revealAt,
+      },
+    },
+  }, [
+    () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
+  ]);
+
+  await submitGameScore({
+    auth: { uid: baseUser.uid },
+    data: {
+      gameTypeId,
+      gameId,
+      gameData: {
+        score: 195,
+        streak: 2,
+        lastPlayed: Date.now(),
+        custom: { answer: 'correct-answer' },
+      },
+      dailyChallengeId: challengeId,
+    },
+  });
+
+  const claimResponse = await claimDailyChallengeRewards({
+    auth: { uid: baseUser.uid },
+    data: {
+      dailyChallengeId: challengeId,
+      gameId,
+    },
+  });
+
+  assert.equal(claimResponse.success, true);
+  assert.equal(claimResponse.processed.length, 0);
+  assert.deepEqual(claimResponse.alreadyClaimed, []);
+  assert.deepEqual(claimResponse.deferred, [challengeId]);
+
+  const rewardDoc = firestore.getDocument(challengeRewardPath);
+  assert.ok(rewardDoc);
+  assert.equal(rewardDoc.status, 'pending');
+});
+
+test('claimDailyChallengeRewards reports already claimed rewards on subsequent calls', async () => {
+  const revealAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { submitGameScore, claimDailyChallengeRewards, firestore } = createSubmitGameScore({
+    [userPath]: clone(baseUser),
+    [gamePath]: clone(baseGame),
+    [challengePath]: {
+      date: '2024-01-04',
+      custom: { answer: 'correct-answer' },
+      schedule: {
+        availableAt: '2024-01-03T00:00:00Z',
+        closesAt: '2024-01-04T23:59:59Z',
+        revealAt,
+      },
+    },
+  }, [
+    () => ({ normalizedAnswer: 'correct-answer', distance: 0, isMatch: true }),
+  ]);
+
+  await submitGameScore({
+    auth: { uid: baseUser.uid },
+    data: {
+      gameTypeId,
+      gameId,
+      gameData: {
+        score: 220,
+        streak: 4,
+        lastPlayed: Date.now(),
+        custom: { answer: 'correct-answer' },
+      },
+      dailyChallengeId: challengeId,
+    },
+  });
+
+  await claimDailyChallengeRewards({
+    auth: { uid: baseUser.uid },
+    data: {
+      dailyChallengeId: challengeId,
+      gameId,
+    },
+  });
+
+  const secondClaim = await claimDailyChallengeRewards({
+    auth: { uid: baseUser.uid },
+    data: {
+      dailyChallengeId: challengeId,
+      gameId,
+    },
+  });
+
+  assert.equal(secondClaim.success, true);
+  assert.equal(secondClaim.processed.length, 0);
+  assert.deepEqual(secondClaim.deferred, []);
+  assert.deepEqual(secondClaim.alreadyClaimed, [challengeId]);
+
+  const rewardDoc = firestore.getDocument(challengeRewardPath);
+  assert.ok(rewardDoc);
+  assert.equal(rewardDoc.status, 'claimed');
 });

@@ -59,10 +59,16 @@
                 to="/profile"
                 @click="closeMenu"
                 class="navbar-item profile-link"
+                :title="hasRewardNotification ? 'Daily challenge results ready' : undefined"
               >
                 <figure class="image is-48x48">
                   <img :src="user.photoURL || 'https://www.top-x.co/assets/profile.png'" alt="Profile" class="is-rounded" />
                 </figure>
+                <span
+                  v-if="hasRewardNotification"
+                  class="challenge-reward-indicator"
+                  aria-hidden="true"
+                ></span>
               </router-link>
             </div>
           </div>
@@ -95,6 +101,7 @@ const user = computed(() => {
   return userStore.user;
 });
 const error = computed(() => userStore.error);
+const hasRewardNotification = computed(() => userStore.readyDailyChallengeRewards.length > 0);
 
 const handleLogin = async () => {
   console.log('Initiating login with X');
@@ -161,6 +168,21 @@ const closeMenu = () => {
 .navbar-item:hover,
 .navbar-item.router-link-active {
   color: var(--bulma-primary);
+}
+
+.profile-link {
+  position: relative;
+}
+
+.challenge-reward-indicator {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bulma-primary);
+  box-shadow: 0 0 8px rgba(0, 232, 224, 0.6);
 }
 
 .navbar-brand .navbar-item {
