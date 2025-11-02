@@ -132,7 +132,23 @@
               :worst-show="worstShow"
             />
           </div>
-          <div v-else class="profile-table-wrapper">
+          <div v-if="isOwnProfile" class="profile-daily-challenges-section">
+            <h3 class="section-title">Daily Challenge History</h3>
+            <div class="game-selector">
+              <label for="selectedGameId">Select Game:</label>
+              <select id="selectedGameId" v-model="selectedGameId" class="game-select">
+                <option value="">-- Select a Game --</option>
+                <option v-for="game in availableGames" :key="game.id" :value="game.id">
+                  {{ game.name }}
+                </option>
+              </select>
+            </div>
+            <div v-if="selectedGameId" class="calendar-container">
+              <DailyChallengeCalendar :game-id="selectedGameId" />
+            </div>
+            <p v-else class="calendar-hint">Select a game to view your daily challenge history</p>
+          </div>
+          <div v-if="!pyramid" class="profile-table-wrapper">
             <table class="profile-table">
               <thead>
                 <tr>
@@ -246,13 +262,15 @@ import { computed, ref, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter, useRoute } from 'vue-router';
 import { RouterLink } from 'vue-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidView from '@/components/games/pyramid/PyramidView.vue';
+import DailyChallengeCalendar from '@/components/DailyChallengeCalendar.vue';
 import type { User, DailyChallengeRewardRecord } from '@top-x/shared/types/user';
 import type { PyramidSlot, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
+import type { Game } from '@top-x/shared/types/game';
 import { analytics, trackEvent } from '@top-x/shared';
 
 const userStore = useUserStore();
@@ -295,6 +313,8 @@ const showLoginTab = ref(false);
 const activeTab = ref('games');
 const loadedFrenemies = ref(false);
 const loadedAddedBy = ref(false);
+const selectedGameId = ref('');
+const availableGames = ref<Game[]>([]);
 
 type ChallengeReward = DailyChallengeRewardRecord & { id: string };
 
@@ -500,6 +520,32 @@ function searchMoreFrenemies() {
   router.push('/frenemies');
 }
 
+async function loadAvailableGames() {
+  try {
+    const snapshot = await getDocs(collection(db, 'games'));
+    const games = snapshot.docs
+      .map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      } as Game))
+      .filter((g) => g.active && g.dailyChallengeActive);
+    
+    // Sort by name
+    games.sort((a, b) => a.name.localeCompare(b.name));
+    availableGames.value = games;
+
+    // Auto-select first game if available and no selection
+    if (!selectedGameId.value && games.length > 0) {
+      // Try to find a game the user has played
+      const userGames = profile.value?.games ? Object.keys(profile.value.games) : [];
+      const playedGame = games.find((g) => userGames.includes(g.id));
+      selectedGameId.value = playedGame?.id || games[0].id;
+    }
+  } catch (err) {
+    console.error('Error loading available games:', err);
+  }
+}
+
 watch(
   [() => route.query.user, () => userStore.user?.uid],
   async () => {
@@ -512,6 +558,9 @@ watch(
     }
     if (!isOwnProfile.value) {
       activeTab.value = 'games';
+    }
+    if (isOwnProfile.value && isLoggedIn.value) {
+      await loadAvailableGames();
     }
   },
   { immediate: true },
@@ -825,6 +874,65 @@ onMounted(() => {
 .profile-panel__cta {
   display: flex;
   justify-content: center;
+}
+
+.profile-daily-challenges-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--bulma-primary);
+}
+
+.game-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.game-selector label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.game-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: inherit;
+  font-size: 1rem;
+  min-width: 200px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.game-select:hover,
+.game-select:focus {
+  border-color: rgba(0, 232, 224, 0.4);
+  outline: none;
+}
+
+.calendar-container {
+  width: 100%;
+}
+
+.calendar-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  padding: 2rem;
 }
 
 .profile-login-banner {
