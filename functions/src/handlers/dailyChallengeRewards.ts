@@ -22,9 +22,8 @@ const db = admin.firestore();
  * Business Rules:
  * - Only rewards with status 'pending' can be claimed
  * - Rewards must have passed their revealAt timestamp to be claimable
- * - Score is aggregated for both solved and failed challenges
- * - Streak is only aggregated for solved challenges
- * - Failed challenges still contribute to overall score but not streak
+ * - Correct answers add 1 point to the main leaderboard score
+ * - Incorrect answers add 1 to the main leaderboard streak counter
  * 
  * @returns Response containing processed, deferred, and already-claimed reward IDs
  */
@@ -89,8 +88,6 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
             status: rewardData.status,
             solveState: rewardData.solveState,
             revealAt: rewardData.revealAt,
-            pendingScore: rewardData.pendingScore,
-            pendingStreak: rewardData.pendingStreak,
           });
         } else {
           console.log('claimDailyChallengeRewards: specific reward not found, deferring', {
@@ -141,8 +138,6 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
           status: rewardData.status,
           solveState: rewardData.solveState,
           revealAt: rewardData.revealAt,
-          pendingScore: rewardData.pendingScore,
-          pendingStreak: rewardData.pendingStreak,
         });
 
         // Filter by gameId if specified in payload
@@ -261,20 +256,16 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
           dailyChallengeId: rewardData.dailyChallengeId,
           gameId: rewardData.gameId,
           solveState: rewardData.solveState,
-          pendingScore: rewardData.pendingScore,
-          pendingStreak: rewardData.pendingStreak,
         });
 
-        // Initialize aggregated values (may already exist if reward was partially processed)
-        let aggregatedScore: number | undefined = rewardData.aggregatedScore;
-        let aggregatedStreak: number | undefined = rewardData.aggregatedStreak;
+        // Determine leaderboard increments for this reward
+        const scoreIncrement = rewardData.solveState === 'solved' ? 1 : 0;
+        const streakIncrement = rewardData.solveState !== 'solved' ? 1 : 0;
 
-        // Determine if this reward should update the leaderboard
-        // Business rule: both solved and failed challenges contribute to score
-        const shouldUpdateLeaderboard = rewardData.solveState === 'solved' || rewardData.solveState === 'failed';
-        
+        // Update leaderboard when applicable
+        const shouldUpdateLeaderboard = scoreIncrement > 0 || streakIncrement > 0;
+
         if (shouldUpdateLeaderboard) {
-          // Get current leaderboard state
           const leaderboardSnapshot = leaderboardMap.get(rewardData.gameId);
           const previousLeaderboard = leaderboardSnapshot?.exists
             ? (leaderboardSnapshot.data() as { score?: number; streak?: number; custom?: Record<string, unknown> })
@@ -283,81 +274,49 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
           const previousScore = typeof previousLeaderboard?.score === 'number' ? previousLeaderboard.score : 0;
           const previousStreak = typeof previousLeaderboard?.streak === 'number' ? previousLeaderboard.streak : 0;
 
-          // Calculate deltas from the pending reward
-          const pendingScoreDelta = Math.max(0, rewardData.pendingScore ?? 0);
-          // Business rule: Only add streak for solved challenges (failed challenges don't increase streak)
-          const pendingStreakDelta = rewardData.solveState === 'solved' 
-            ? Math.max(0, rewardData.pendingStreak ?? 0)
-            : 0;
+          const nextScore = previousScore + scoreIncrement;
+          const nextStreak = previousStreak + streakIncrement;
 
-          // Aggregate the pending values with current leaderboard values
-          aggregatedScore = previousScore + pendingScoreDelta;
-          aggregatedStreak = previousStreak + pendingStreakDelta;
-
-          console.log('claimDailyChallengeRewards: calculating aggregated values', {
+          console.log('claimDailyChallengeRewards: updating leaderboard totals', {
             uid,
             rewardId: rewardRef.id,
-            solveState: rewardData.solveState,
             previousScore,
             previousStreak,
-            pendingScoreDelta,
-            pendingStreakDelta,
-            aggregatedScore,
-            aggregatedStreak,
+            scoreIncrement,
+            streakIncrement,
+            nextScore,
+            nextStreak,
           });
 
-          // Build leaderboard update payload
           const leaderboardUpdate: Record<string, unknown> = {
             uid,
             displayName: userData.displayName,
             username: userData.username,
             photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
-            score: aggregatedScore,
-            streak: aggregatedStreak,
+            score: nextScore,
+            streak: nextStreak,
             updatedAt: Date.now(),
           };
 
-          // Preserve existing custom data if present
           if (previousLeaderboard?.custom) {
             leaderboardUpdate.custom = previousLeaderboard.custom;
           }
 
-          console.log('claimDailyChallengeRewards: updating leaderboard', {
-            uid,
-            rewardId: rewardRef.id,
-            gameId: rewardData.gameId,
-            solveState: rewardData.solveState,
-            newScore: aggregatedScore,
-            newStreak: aggregatedStreak,
-          });
-
-          // Update leaderboard with aggregated scores
           tx.set(leaderboardSnapshot!.ref, leaderboardUpdate, { merge: true });
-        } else {
-          // Reward doesn't affect leaderboard (e.g., solveState is not 'solved' or 'failed')
-          console.log('claimDailyChallengeRewards: reward not eligible for leaderboard update', {
-            uid,
-            rewardId: rewardRef.id,
-            solveState: rewardData.solveState,
-          });
         }
 
-        // Mark reward as claimed with aggregated values
+        // Mark reward as claimed
         const claimTimestampIso = new Date(nowMillis).toISOString();
 
         console.log('claimDailyChallengeRewards: marking reward as claimed', {
           uid,
           rewardId: rewardRef.id,
           claimTimestampIso,
-          aggregatedScore,
-          aggregatedStreak,
         });
 
         tx.set(rewardRef, {
           status: 'claimed',
           claimedAt: claimTimestampIso,
-          aggregatedScore,
-          aggregatedStreak,
           updatedAt: claimTimestampIso,
         }, { merge: true });
 
@@ -367,8 +326,6 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
           dailyChallengeId: rewardData.dailyChallengeId,
           solveState: rewardData.solveState,
           status: 'claimed',
-          aggregatedScore,
-          aggregatedStreak,
         });
       }
 
@@ -391,8 +348,6 @@ export const claimDailyChallengeRewards = functions.https.onCall(async (
           id: p.id,
           dailyChallengeId: p.dailyChallengeId,
           solveState: p.solveState,
-          aggregatedScore: p.aggregatedScore,
-          aggregatedStreak: p.aggregatedStreak,
         })),
         deferred,
         alreadyClaimed,
