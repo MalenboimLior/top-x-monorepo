@@ -40,7 +40,8 @@
           <input
             v-model="answer"
             placeholder="Your guess..."
-            :disabled="!canSubmitAnswer"
+            :disabled="isAnswerFieldDisabled"
+            :readonly="isAnswerReadOnly"
             @keydown.stop
           />
           <button
@@ -48,38 +49,44 @@
             :disabled="!canSubmitAnswer || !answer.trim()"
             @click="handleSubmit"
           >
-            {{ hasSubmitted ? 'Update Answer' : 'Submit Answer' }}
+            {{ submitButtonLabel }}
           </button>
-          <p v-if="!canSubmitAnswer" class="help is-warning">
+          <p v-if="challengeInputRestrictionMessage" class="help is-warning">
             {{ challengeInputRestrictionMessage }}
           </p>
         </div>
         <div class="submission-status">
-          <div
-            v-if="isChallengeOpen && closesCountdown"
-            class="submission-status__countdown"
-          >
+          <div v-if="isChallengeOpen && closesCountdown" class="submission-status__countdown">
             <span class="submission-status__countdown-label">Challenge closes in</span>
             <span class="submission-status__countdown-timer">{{ closesCountdown }}</span>
           </div>
-          <p v-if="submissionMessage" :class="submissionMessageClass">{{ submissionMessage }}</p>
-          <p v-else-if="isChallengeClosed && !hasAnswered">
-            Challenge is closed—you can still answer to see how you stacked up when we reveal.
-          </p>
-          <p v-else-if="isChallengeClosed && hasAnswered">
-            Your answer was
-            <span class="submitted-answer__text">"{{ submissionResult?.originalAnswer || answer }}"</span>
-            — we'll reveal soon!
-          </p>
-          <p v-else-if="isChallengeRevealed">
-            Answer is available! Submit to see if you are right.
-          </p>
-          <p v-else-if="hasSubmitted">Wonder if you got it right? 🤔</p>
-          <p v-else>Share your best guess to see if you nailed it!</p>
-          <p v-if="!isChallengeRevealed && formattedRevealDate">
-            The answer will be announced at {{ formattedRevealDate }}
-          </p>
-          <p v-else-if="isChallengeRevealed">
+          <template v-if="isChallengeRevealed">
+            <p v-if="revealedAnswer" class="reveal-answer">
+              Correct answer:
+              <span class="reveal-answer__text">"{{ revealedAnswer }}"</span>
+            </p>
+            <p v-if="submissionMessage" :class="['reveal-outcome', submissionMessageClass]">
+              {{ submissionMessage }}
+            </p>
+            <p v-if="revealedDistanceMessage" class="reveal-distance">{{ revealedDistanceMessage }}</p>
+            <p v-if="!submissionResult">Answer is available! Submit to see how you compare.</p>
+            <p v-if="formattedRevealDate" class="reveal-date">Revealed on {{ formattedRevealDate }}</p>
+          </template>
+          <template v-else>
+            <p v-if="submissionMessage" :class="submissionMessageClass">{{ submissionMessage }}</p>
+            <p v-else-if="isChallengeClosed && !hasAnswered">
+              Challenge is closed—you can still answer to see how you stacked up when we reveal.
+            </p>
+            <p v-else-if="isChallengeClosed && hasAnswered">
+              Your answer was
+              <span class="submitted-answer__text">"{{ submissionResult?.originalAnswer || answer }}"</span>
+              — we'll reveal soon!
+            </p>
+            <p v-else-if="hasSubmitted">Wonder if you got it right? 🤔</p>
+            <p v-else>Share your best guess to see if you nailed it!</p>
+            <p v-if="formattedRevealDate">The answer will be announced at {{ formattedRevealDate }}</p>
+          </template>
+          <p v-if="isChallengeRevealed && submissionResult" class="reveal-followup">
             The answer has been announced—see how you did!
           </p>
           <p>
@@ -157,6 +164,7 @@ const props = defineProps<{
     closesAt?: string
     revealAt?: string
     dailyDate?: string
+    allowAnswerUpdates?: boolean
   } | null
 }>()
 
@@ -236,6 +244,17 @@ const shouldShowLeaderboards = computed(
   () => showLeaderboards.value || hasAnswered.value
 )
 
+const allowAnswerUpdates = computed(() => {
+  if (props.challengeContext?.allowAnswerUpdates !== undefined) {
+    return Boolean(props.challengeContext.allowAnswerUpdates)
+  }
+  return isChallengeOpen.value
+})
+
+const isAnswerLocked = computed(() => hasAnswered.value && !allowAnswerUpdates.value)
+const isAnswerFieldDisabled = computed(() => challengeStatus.value === ChallengeStatus.Upcoming)
+const isAnswerReadOnly = computed(() => isAnswerLocked.value)
+
 const closesCountdown = computed(() => {
   if (!isChallengeOpen.value) return ''
   const closesAt = challengeClosesDate.value
@@ -271,11 +290,28 @@ const storedChallengeProgress = computed(
   () => storedChallengeGameData.value?.custom?.dailyChallengeProgress ?? null
 )
 
-const canSubmitAnswer = computed(() => challengeStatus.value !== ChallengeStatus.Upcoming)
+const canSubmitAnswer = computed(() => {
+  if (challengeStatus.value === ChallengeStatus.Upcoming) {
+    return false
+  }
+  if (isAnswerLocked.value) {
+    return false
+  }
+  return true
+})
 
 const challengeInputRestrictionMessage = computed(() => {
   if (challengeStatus.value === ChallengeStatus.Upcoming) {
     return 'This challenge opens soon. Check back when it starts to submit your answer.'
+  }
+  if (isAnswerLocked.value) {
+    if (isChallengeRevealed.value) {
+      return 'This challenge has been revealed and your answer is locked.'
+    }
+    if (isChallengeClosed.value) {
+      return 'The challenge is closed and your submitted answer is locked in.'
+    }
+    return 'Answer updates are disabled for this challenge.'
   }
   return ''
 })
@@ -302,7 +338,9 @@ const statusIntroMessage = computed(() => {
         ? 'Thanks for locking in your answer!'
         : 'Challenge closed—drop an answer before the reveal to see how you stack up.'
     case ChallengeStatus.Revealed:
-      return 'Answer is available! Submit to see if you are right.'
+      return hasAnswered.value
+        ? "The results are in—here's how you did."
+        : 'Answer is available! Submit to see how you compare.'
     default:
       return "Take your best guess at what you've revealed!"
   }
@@ -310,14 +348,46 @@ const statusIntroMessage = computed(() => {
 
 const submissionMessage = computed(() => {
   if (!submissionResult.value) return ''
+  if (isChallengeRevealed.value) {
+    return submissionResult.value.isMatch
+      ? 'You nailed it! 🎯 Correct answer locked in.'
+      : "Close! We didn't auto-accept that answer—check the reveal to compare."
+  }
   return submissionResult.value.isMatch
     ? 'Your answer was accepted! 🎉'
     : "Thanks! We didn't auto-accept that answer, but we'll review it alongside the reveal."
 })
 
-const submissionMessageClass = computed(() =>
-  submissionResult.value?.isMatch ? 'has-text-success' : 'has-text-warning'
-)
+const submissionMessageClass = computed(() => {
+  if (!submissionResult.value) return ''
+  if (submissionResult.value.isMatch) {
+    return 'has-text-success'
+  }
+  return isChallengeRevealed.value ? 'has-text-danger' : 'has-text-warning'
+})
+
+const revealedAnswer = computed(() => props.answerConfig?.solution?.trim() ?? '')
+
+const revealedDistanceMessage = computed(() => {
+  if (!isChallengeRevealed.value || !submissionResult.value) {
+    return ''
+  }
+  const distance = submissionResult.value.distance
+  if (distance === null || distance === undefined) {
+    return ''
+  }
+  if (distance === 0) {
+    return 'Perfect match—spot on!'
+  }
+  return `Edit distance from the accepted answer: ${distance}`
+})
+
+const submitButtonLabel = computed(() => {
+  if (isAnswerLocked.value) {
+    return 'Answer Locked'
+  }
+  return hasSubmitted.value ? 'Update Answer' : 'Submit Answer'
+})
 
 onMounted(() => {
   void attemptAutoSave()
@@ -928,6 +998,25 @@ input {
 
 .new-best-indicator {
   margin-bottom: 1rem;
+}
+
+.reveal-answer {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.reveal-answer__text {
+  font-weight: 700;
+}
+
+.reveal-outcome {
+  font-weight: 600;
+}
+
+.reveal-distance,
+.reveal-date,
+.reveal-followup {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 @media (min-width: 768px) {
