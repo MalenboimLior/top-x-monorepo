@@ -93,7 +93,18 @@
             <span class="submitted-answer__text">"{{ submissionResult?.originalAnswer || answer }}"</span>
           </p>
         </div>
-        <button class="button is-text has-text-white" @click="handleTryAgain">🔁 Try Again</button>
+        <div class="action-buttons">
+          <button
+            class="button is-warning is-light"
+            :disabled="!canSubmitAnswer"
+            @click="handleSkipSubmission"
+          >
+            I don't know – play again
+          </button>
+          <button class="button is-text has-text-white" @click="handleTryAgain">
+            🔁 Try Again
+          </button>
+        </div>
         <div v-if="hasDailyChallenge" class="challenge-meta">
           <h3 class="challenge-meta__title">Daily challenge context</h3>
           <p class="challenge-meta__item"><strong>ID:</strong> {{ dailyChallengeId }}</p>
@@ -104,7 +115,7 @@
             <strong>Closes:</strong> {{ challengeClosesAt }}
           </p>
         </div>
-        <div class="leaderboards">
+        <div v-if="shouldShowLeaderboards" class="leaderboards">
           <Leaderboard
             v-if="hasDailyChallenge"
             :game-id="gameId"
@@ -162,6 +173,7 @@ const globalBestScore = ref<number | null>(null)
 const challengeBestScore = ref<number | null>(null)
 const lastHydratedAnswer = ref('')
 const hasUserEditedAnswer = ref(false)
+const showLeaderboards = ref(false)
 const now = ref<DateTime>(DateTime.now())
 let nowInterval: number | null = null
 
@@ -220,6 +232,9 @@ const isChallengeOpen = computed(() => challengeStatus.value === ChallengeStatus
 const isChallengeClosed = computed(() => challengeStatus.value === ChallengeStatus.Closed)
 const isChallengeRevealed = computed(() => challengeStatus.value === ChallengeStatus.Revealed)
 const hasAnswered = computed(() => hasSubmitted.value || Boolean(submissionResult.value))
+const shouldShowLeaderboards = computed(
+  () => showLeaderboards.value || hasAnswered.value
+)
 
 const closesCountdown = computed(() => {
   if (!isChallengeOpen.value) return ''
@@ -453,56 +468,37 @@ async function handleSubmit() {
   }
 
   const evaluation = evaluateSubmission(answer.value)
-  await saveScore(evaluation)
-  hasSubmitted.value = true
-  submissionResult.value = evaluation
-  lastHydratedAnswer.value = evaluation.originalAnswer
-  hasUserEditedAnswer.value = false
-  if (globalBestScore.value === null || props.score > globalBestScore.value) {
-    globalBestScore.value = props.score
-  }
-  if (
-    hasDailyChallenge.value &&
-    (challengeBestScore.value === null || props.score > challengeBestScore.value)
-  ) {
-    challengeBestScore.value = props.score
-  }
-  evaluateBestScoreFlag()
-  if (analytics) {
-    logEvent(analytics, 'user_action', {
-      action: 'submit_answer',
-      game_id: props.gameId,
-      answer: evaluation.originalAnswer,
-      normalized_answer: evaluation.normalizedAnswer,
-      distance: evaluation.distance,
-      is_match: evaluation.isMatch,
-      daily_challenge_id: dailyChallengeId.value ?? undefined,
-      daily_challenge_date: dailyChallengeDate.value ?? undefined
-    })
-  }
-
-  hydrateFromProfile()
+  await processSubmission(evaluation, 'submit_answer')
 }
 
-function handleTryAgain() {
+async function handleTryAgain() {
   // Blur any focused input
   const active = document.activeElement as HTMLElement | null
   if (active && typeof active.blur === 'function') {
     active.blur()
   }
 
-  answer.value = ''
-  hasSubmitted.value = false
-  submissionResult.value = null
-  lastHydratedAnswer.value = ''
-  hasUserEditedAnswer.value = false
+  if (!userStore.user) {
+    resetStateForNewAttempt()
+    restartGame()
+    return
+  }
 
-  emit('close')
+  if (!hasSubmitted.value) {
+    await finalizeBlankSubmissionAndRestart()
+    return
+  }
 
-  // Slight delay to allow modal to unmount smoothly before restarting
-  setTimeout(() => {
-    window.dispatchEvent(new Event('restartGame'))
-  }, 100)
+  resetStateForNewAttempt()
+  restartGame()
+}
+
+async function handleSkipSubmission() {
+  if (!canSubmitAnswer.value) {
+    return
+  }
+
+  await finalizeBlankSubmissionAndRestart()
 }
 
 async function handleLogin() {
@@ -626,6 +622,7 @@ function hydrateFromProfile() {
     }
     submissionResult.value = null
     hasSubmitted.value = false
+    showLeaderboards.value = false
     evaluateBestScoreFlag()
     return
   }
@@ -650,7 +647,81 @@ function hydrateFromProfile() {
     hasUserEditedAnswer.value = false
   }
 
+  showLeaderboards.value = true
   evaluateBestScoreFlag()
+}
+
+function resetStateForNewAttempt() {
+  answer.value = ''
+  hasSubmitted.value = false
+  submissionResult.value = null
+  lastHydratedAnswer.value = ''
+  hasUserEditedAnswer.value = false
+  showLeaderboards.value = false
+}
+
+function restartGame() {
+  emit('close')
+
+  // Slight delay to allow modal to unmount smoothly before restarting
+  setTimeout(() => {
+    window.dispatchEvent(new Event('restartGame'))
+  }, 100)
+}
+
+async function processSubmission(
+  evaluation: ZoneRevealAnswerEvaluation,
+  analyticsAction: 'submit_answer' | 'skip_answer'
+) {
+  await saveScore(evaluation)
+  hasSubmitted.value = true
+  submissionResult.value = evaluation
+  lastHydratedAnswer.value = evaluation.originalAnswer
+  hasUserEditedAnswer.value = false
+  showLeaderboards.value = true
+  if (globalBestScore.value === null || props.score > globalBestScore.value) {
+    globalBestScore.value = props.score
+  }
+  if (
+    hasDailyChallenge.value &&
+    (challengeBestScore.value === null || props.score > challengeBestScore.value)
+  ) {
+    challengeBestScore.value = props.score
+  }
+  evaluateBestScoreFlag()
+  if (analytics) {
+    logEvent(analytics, 'user_action', {
+      action: analyticsAction,
+      game_id: props.gameId,
+      answer: evaluation.originalAnswer,
+      normalized_answer: evaluation.normalizedAnswer,
+      distance: evaluation.distance,
+      is_match: evaluation.isMatch,
+      daily_challenge_id: dailyChallengeId.value ?? undefined,
+      daily_challenge_date: dailyChallengeDate.value ?? undefined
+    })
+  }
+
+  hydrateFromProfile()
+}
+
+async function finalizeBlankSubmissionAndRestart() {
+  if (!userStore.user) {
+    resetStateForNewAttempt()
+    restartGame()
+    return
+  }
+
+  if (!canSubmitAnswer.value) {
+    resetStateForNewAttempt()
+    restartGame()
+    return
+  }
+
+  const blankEvaluation = evaluateSubmission('')
+  await processSubmission(blankEvaluation, 'skip_answer')
+  resetStateForNewAttempt()
+  restartGame()
 }
 
 function extractStringField(
@@ -789,6 +860,17 @@ input {
   display: grid;
   gap: 1.5rem;
   margin-top: 2.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.action-buttons .button {
+  width: 100%;
 }
 
 .answer-panel {
