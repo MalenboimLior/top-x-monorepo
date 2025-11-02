@@ -89,13 +89,10 @@ const route = useRoute();
 const router = useRouter();
 const gameId = ref<string>((route.query.game as string) || '');
 const initialChallenge = route.query.challenge as string | undefined;
-if (initialChallenge) {
-  selectedChallengeId.value = initialChallenge;
-}
+const selectedChallengeId = ref<string | null>(initialChallenge ?? null);
 const challenges = ref<any[]>([]);
 const gameTitle = ref('');
 const hasLoaded = ref(false);
-const selectedChallengeId = ref<string | null>(null);
 
 const selectedChallenge = computed(() =>
   challenges.value.find((challenge) => challenge.id === selectedChallengeId.value) || null,
