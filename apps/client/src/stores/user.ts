@@ -1,14 +1,28 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { auth, db, functions, analytics, trackEvent } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 import { httpsCallable, HttpsCallable } from 'firebase/functions';
 import {
   User,
   SubmitGameScoreRequest,
   SubmitGameScoreResponse,
   UserGameDataSubmission,
+  DailyChallengeRewardRecord,
+  ClaimDailyChallengeRewardsRequest,
+  ClaimDailyChallengeRewardsResponse,
 } from '@top-x/shared/types/user';
 import type { SetGameFavoriteRequest, SetGameFavoriteResponse } from '@top-x/shared/types/favorites';
 
@@ -23,7 +37,21 @@ export const useUserStore = defineStore('user', () => {
   const user = ref<SanitizedUser | null>(null);
   const profile = ref<User | null>(null);
   const error = ref<string | null>(null);
+  const dailyChallengeRewards = ref<Array<DailyChallengeRewardRecord & { id: string }>>([]);
+  const rewardClock = ref(Date.now());
+  const readyDailyChallengeRewards = computed(() => {
+    const now = rewardClock.value;
+    return dailyChallengeRewards.value.filter((reward) => {
+      if (reward.status !== 'pending') {
+        return false;
+      }
+      const revealAtMillis = Date.parse(reward.revealAt);
+      return !Number.isNaN(revealAtMillis) && revealAtMillis <= now;
+    });
+  });
   let unsubscribeProfile: (() => void) | null = null;
+  let unsubscribeRewards: (() => void) | null = null;
+  let rewardClockInterval: number | null = null;
 
   onAuthStateChanged(auth, (currentUser) => {
     console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
@@ -32,6 +60,18 @@ export const useUserStore = defineStore('user', () => {
       unsubscribeProfile();
       unsubscribeProfile = null;
     }
+
+    if (unsubscribeRewards) {
+      unsubscribeRewards();
+      unsubscribeRewards = null;
+    }
+
+    if (rewardClockInterval !== null && typeof window !== 'undefined') {
+      window.clearInterval(rewardClockInterval);
+      rewardClockInterval = null;
+    }
+
+    dailyChallengeRewards.value = [];
 
     if (currentUser) {
       // Sanitize Firebase User object to avoid unsafe properties
@@ -58,6 +98,28 @@ export const useUserStore = defineStore('user', () => {
           error.value = err.message;
         },
       );
+
+      const rewardsRef = collection(db, 'users', currentUser.uid, 'dailyChallengeRewards');
+      const rewardsQuery = query(rewardsRef, orderBy('updatedAt', 'desc'));
+      unsubscribeRewards = onSnapshot(
+        rewardsQuery,
+        (snapshot) => {
+          dailyChallengeRewards.value = snapshot.docs.map((docSnapshot) => ({
+            id: docSnapshot.id,
+            ...(docSnapshot.data() as DailyChallengeRewardRecord),
+          }));
+          rewardClock.value = Date.now();
+        },
+        (err) => {
+          console.error('Daily challenge rewards subscription error:', err);
+        },
+      );
+
+      if (typeof window !== 'undefined') {
+        rewardClockInterval = window.setInterval(() => {
+          rewardClock.value = Date.now();
+        }, 60 * 1000);
+      }
     } else {
       user.value = null;
       profile.value = null;
@@ -369,10 +431,33 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function claimDailyChallengeReward(
+    options?: ClaimDailyChallengeRewardsRequest,
+  ): Promise<ClaimDailyChallengeRewardsResponse | void> {
+    if (!user.value) {
+      error.value = 'You need to be logged in to view challenge answers';
+      return;
+    }
+
+    try {
+      const callable = httpsCallable<ClaimDailyChallengeRewardsRequest, ClaimDailyChallengeRewardsResponse>(
+        functions,
+        'claimDailyChallengeRewards',
+      );
+      const { data } = await callable(options ?? {});
+      return data;
+    } catch (err: any) {
+      console.error('Error claiming daily challenge rewards:', err);
+      error.value = err.message;
+    }
+  }
+
   return {
     user,
     profile,
     error,
+    dailyChallengeRewards,
+    readyDailyChallengeRewards,
     loginWithX,
     logout,
     addFrenemy,
@@ -380,5 +465,6 @@ export const useUserStore = defineStore('user', () => {
     updateGameProgress,
     toggleFavorite,
     isGameFavorite,
+    claimDailyChallengeReward,
   };
 }, { persist: true });
