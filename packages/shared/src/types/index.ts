@@ -9,3 +9,4 @@ export * from './stats';
 export * from './pacman';
 export * from './home';
 export * from './favorites';
+export * from './content';
