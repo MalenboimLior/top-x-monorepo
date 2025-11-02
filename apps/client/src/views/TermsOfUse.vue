@@ -3,41 +3,21 @@
     <section class="terms-hero">
       <div class="terms-hero__glow"></div>
       <div class="terms-hero__content">
-        <span class="terms-hero__pill">Legal</span>
-        <h1 class="terms-hero__title">Terms of Use</h1>
-        <p class="terms-hero__subtitle">Effective Date: July 17, 2025</p>
+        <span class="terms-hero__pill">{{ content.hero.pill }}</span>
+        <h1 class="terms-hero__title">{{ content.hero.title }}</h1>
+        <p class="terms-hero__subtitle">{{ content.hero.subtitle }}</p>
       </div>
     </section>
 
     <section class="terms-body">
       <div class="terms-surface">
-        <article class="terms-section">
-          <h2>Welcome to TOP-X</h2>
-          <p>
-            By using our games and services, you agree to follow these terms. TOP-X is built for friendly competition and shared
-            entertainment. Users must be 18+ (or have guardian approval) and comply with local laws when creating or sharing
-            content.
-          </p>
-        </article>
-
-        <article class="terms-section">
-          <h2>Player responsibilities</h2>
-          <p>
-            Keep your account secure, respect community guidelines, and avoid harmful or offensive submissions. We reserve the
-            right to moderate, remove content, or suspend accounts that violate the vibe.
-          </p>
-        </article>
-
-        <article class="terms-section">
-          <h2>Updates to the terms</h2>
-          <p>
-            We may update these terms as the platform evolves. Significant changes will be announced through the app or email.
-            Continued use after updates indicates acceptance.
-          </p>
+        <article v-for="section in content.sections" :key="section.title" class="terms-section">
+          <h2>{{ section.title }}</h2>
+          <p>{{ section.body }}</p>
         </article>
 
         <div class="terms-cta">
-          <CustomButton label="Back to home" type="is-primary" @click="$router.push('/')" />
+          <CustomButton :label="content.cta.label" type="is-primary" @click="handleCtaClick" />
         </div>
       </div>
     </section>
@@ -45,18 +25,133 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useHead } from '@vueuse/head';
+import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import { usePageContentDoc } from '@top-x/shared';
+import { useLocaleStore } from '@/stores/locale';
 
-useHead({
-  title: 'TOP-X Terms of Use',
+const router = useRouter();
+const localeStore = useLocaleStore();
+const locale = computed(() => localeStore.language || 'en');
+const t = (key: string) => localeStore.translate(key);
+
+const defaultContent = computed(() => ({
+  hero: {
+    pill: t('terms.hero.pill'),
+    title: t('terms.hero.title'),
+    subtitle: t('terms.hero.subtitle'),
+  },
+  sections: [
+    {
+      title: t('terms.sections.1.title'),
+      body: t('terms.sections.1.body'),
+    },
+    {
+      title: t('terms.sections.2.title'),
+      body: t('terms.sections.2.body'),
+    },
+    {
+      title: t('terms.sections.3.title'),
+      body: t('terms.sections.3.body'),
+    },
+  ],
+  cta: {
+    label: t('terms.cta.label'),
+    href: t('terms.cta.href'),
+  },
+}));
+
+const defaultSeo = computed(() => ({
+  title: t('terms.meta.title'),
+  description: t('terms.meta.description'),
+  keywords: t('terms.meta.keywords'),
+}));
+
+const { content: remoteContent, seo: remoteSeo } = usePageContentDoc('terms', locale);
+
+const content = computed(() => {
+  const defaults = defaultContent.value;
+  const data = remoteContent.value;
+
+  const sections: { title: string; body: string }[] = [];
+  let index = 1;
+  while (true) {
+    const titleKey = `sections.${index}.title`;
+    const bodyKey = `sections.${index}.body`;
+    const defaultSection = defaults.sections[index - 1];
+    const title = data[titleKey] ?? defaultSection?.title;
+    const body = data[bodyKey] ?? defaultSection?.body;
+    if (!title && !body) {
+      if (!defaultSection) {
+        break;
+      }
+    }
+    if (title || body) {
+      sections.push({
+        title: title ?? '',
+        body: body ?? '',
+      });
+    }
+    if (!defaultSection && !data[titleKey] && !data[bodyKey]) {
+      break;
+    }
+    index += 1;
+  }
+
+  return {
+    hero: {
+      pill: data['hero.pill'] ?? defaults.hero.pill,
+      title: data['hero.title'] ?? defaults.hero.title,
+      subtitle: data['hero.subtitle'] ?? defaults.hero.subtitle,
+    },
+    sections: sections.length ? sections : defaults.sections,
+    cta: {
+      label: data['cta.label'] ?? defaults.cta.label,
+      href: data['cta.href'] ?? defaults.cta.href,
+    },
+  };
+});
+
+const seo = computed(() => {
+  const defaults = defaultSeo.value;
+  const overrides = remoteSeo.value;
+  return {
+    title: overrides.title || defaults.title,
+    description: overrides.description || defaults.description,
+    keywords: overrides.keywords || defaults.keywords,
+  };
+});
+
+useHead(() => ({
+  title: seo.value.title,
   meta: [
     {
       name: 'description',
-      content: 'Terms of Use for the TOP-X gaming platform, covering player responsibilities and policies.',
+      content: seo.value.description,
     },
-  ],
-});
+    seo.value.keywords
+      ? {
+          name: 'keywords',
+          content: seo.value.keywords,
+        }
+      : undefined,
+  ].filter(Boolean) as { name: string; content: string }[],
+}));
+
+function handleCtaClick() {
+  const href = content.value.cta.href;
+  if (!href) {
+    void router.push('/');
+    return;
+  }
+  if (href.startsWith('http') || href.startsWith('mailto:')) {
+    window.location.href = href;
+    return;
+  }
+  void router.push(href);
+}
 </script>
 
 <style scoped>

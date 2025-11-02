@@ -45,7 +45,7 @@
           >
             <a href="#" @click.prevent="setTab(section.id)">
               <span>{{ section.label }}</span>
-              <span class="tag is-light" aria-hidden="true">{{ section.data.value.length }}</span>
+              <span class="tag is-light" aria-hidden="true">{{ section.data ? section.data.value.length : 0 }}</span>
             </a>
           </li>
         </ul>
@@ -53,21 +53,23 @@
 
       <p class="content-manager__description">{{ activeSection?.description }}</p>
 
-      <div v-if="activeSection?.error.value" class="notification is-danger is-light">
+      <div v-if="activeSection?.error?.value" class="notification is-danger is-light">
         <p class="has-text-weight-semibold">We couldn’t load this collection.</p>
-        <p>{{ activeSection.error.value.message }}</p>
+        <p>{{ activeSection.error?.value?.message }}</p>
       </div>
 
       <div v-else>
-        <div v-if="activeSection?.isLoading.value" class="has-text-centered">
+        <div v-if="activeSection?.isLoading?.value" class="has-text-centered">
           <progress class="progress is-small is-link" max="100">Loading</progress>
         </div>
+
+        <component v-else-if="activeSection?.component" :is="activeSection.component" />
 
         <TableView
           v-else-if="activeSection"
           :key="activeSection.id"
-          :data="activeSection.data.value"
-          :columns="activeSection.columns"
+          :data="activeSection.data?.value ?? []"
+          :columns="activeSection.columns ?? []"
           :view-mode="activeView"
           :card-layout="activeSection.cardLayout"
           :enable-search="activeSection.enableSearch ?? true"
@@ -81,13 +83,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from 'vue';
+import { computed, h, ref, type Component } from 'vue';
 import TableView from '@/components/content/TableView.vue';
 import { useCollection, type UseCollectionResult } from '@top-x/shared/api/useCollection';
 import type { PyramidItem } from '@top-x/shared/types/pyramid';
 import type { TriviaQuestion } from '@top-x/shared/types/trivia';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import type { TableColumn, CardLayout } from '@/components/content/tableTypes';
+import PageContentManager from '@/components/content/PageContentManager.vue';
 
 interface CommunitySubmission {
   id: string;
@@ -102,18 +105,19 @@ interface SectionConfig {
   id: ContentTab;
   label: string;
   description: string;
-  data: UseCollectionResult<ContentEntry>['data'];
-  isLoading: UseCollectionResult<ContentEntry>['isLoading'];
-  error: UseCollectionResult<ContentEntry>['error'];
-  refresh: UseCollectionResult<ContentEntry>['refresh'];
-  columns: TableColumn<ContentEntry>[];
-  cardLayout: CardLayout;
+  data?: UseCollectionResult<ContentEntry>['data'];
+  isLoading?: UseCollectionResult<ContentEntry>['isLoading'];
+  error?: UseCollectionResult<ContentEntry>['error'];
+  refresh?: UseCollectionResult<ContentEntry>['refresh'];
+  columns?: TableColumn<ContentEntry>[];
+  cardLayout?: CardLayout;
   enableSearch?: boolean;
   enableFilters?: boolean;
   enableSorting?: boolean;
+  component?: Component;
 }
 
-type ContentTab = 'pyramids' | 'trivia' | 'community' | 'daily';
+type ContentTab = 'pyramids' | 'trivia' | 'community' | 'daily' | 'pages';
 
 type ContentEntry = Record<string, unknown> & { id: string };
 
@@ -430,6 +434,15 @@ const sections: Record<ContentTab, SectionConfig> = {
       metadata: ['scheduleAvailableAt', 'scheduleClosesAt', 'scheduleRevealAt', 'type'],
     },
   },
+  pages: {
+    id: 'pages',
+    label: 'Client Pages',
+    description: 'Manage marketing copy, localized text, and SEO for public-facing pages.',
+    component: PageContentManager,
+    enableFilters: false,
+    enableSearch: false,
+    enableSorting: false,
+  },
 };
 
 const contentSections = computed(() => Object.values(sections));
@@ -440,6 +453,7 @@ const emptyStates: Record<ContentTab, ReturnType<typeof h>> = {
   trivia: h('p', { class: 'has-text-grey' }, 'No trivia questions have been added.'),
   community: h('p', { class: 'has-text-grey' }, 'Community submissions will appear here once players contribute.'),
   daily: h('p', { class: 'has-text-grey' }, 'No daily challenges scheduled. Create one to populate this list.'),
+  pages: h('p', { class: 'has-text-grey' }, 'Select a page to edit its content.'),
 };
 
 function setTab(tab: ContentTab) {
@@ -451,7 +465,7 @@ function setView(view: 'table' | 'cards') {
 }
 
 function refreshActive() {
-  void activeSection.value?.refresh();
+  void activeSection.value?.refresh?.();
 }
 
 function getField<T>(item: ContentEntry, key: string): T | undefined {
