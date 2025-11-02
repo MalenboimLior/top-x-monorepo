@@ -747,6 +747,7 @@ export const submitGameScore = functions.https.onCall(async (
         const challengeDatePayload = createLeaderboardDatePayload(challengeRecordedAt);
         const challengePlayedAt = challengePlayedAtIso ?? new Date(serverLastPlayed).toISOString();
         const challengeCustom: Record<string, unknown> = {
+          ...challengeCustomFromSubmission,
           id: rawDailyChallengeId!,
           date: resolvedDailyChallengeDate!,
           playedAt: challengePlayedAt,
