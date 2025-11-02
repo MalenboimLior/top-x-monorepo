@@ -18,7 +18,7 @@ import type { GameStats } from '@top-x/shared/types/stats';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import { evaluateZoneRevealAnswer } from '@top-x/shared/utils/zoneRevealAnswer';
-import './utils/firebaseAdmin';
+import '../utils/firebaseAdmin';
 import {
   applyChallengeCounterUpdates,
   applyGameCounterUpdates,

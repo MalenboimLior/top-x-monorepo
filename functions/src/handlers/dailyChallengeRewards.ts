@@ -8,7 +8,7 @@ import {
   ClaimedDailyChallengeRewardSummary,
 } from '@top-x/shared/types/user';
 import { DEFAULT_LEADERBOARD_PHOTO } from '../utils/leaderboardHelpers';
-import './utils/firebaseAdmin';
+import '../utils/firebaseAdmin';
 
 const db = admin.firestore();
 
