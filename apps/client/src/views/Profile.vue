@@ -378,6 +378,7 @@ function describeSolveState(reward: ChallengeReward): string {
 }
 
 async function handleClaimReward(reward: ChallengeReward) {
+  console.log('Claiming reward for', reward);
   await userStore.claimDailyChallengeReward({
     dailyChallengeId: reward.dailyChallengeId,
     gameId: reward.gameId,
