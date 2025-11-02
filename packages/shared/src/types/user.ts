@@ -45,10 +45,6 @@ export interface DailyChallengeRewardRecord {
   createdAt: string;
   /** ISO timestamp for the latest submission that updated this entry. */
   updatedAt: string;
-  /** Score awaiting aggregation once the reward is claimed. */
-  pendingScore: number;
-  /** Streak delta awaiting aggregation once the reward is claimed. */
-  pendingStreak: number;
   /** Outcome of the user's solve attempt for messaging context. */
   solveState: DailyChallengeSolveState;
   /** Lifecycle state for the reward entry. */
@@ -57,10 +53,6 @@ export interface DailyChallengeRewardRecord {
   attemptMetadata?: DailyChallengeAttemptMetadata;
   /** ISO timestamp recorded when the reward was claimed. */
   claimedAt?: string;
-  /** Aggregated leaderboard score after processing. */
-  aggregatedScore?: number;
-  /** Aggregated leaderboard streak after processing. */
-  aggregatedStreak?: number;
 }
 
 export interface UserGameCustomData {
@@ -127,8 +119,6 @@ export interface SubmitGameScoreResponse {
   message?: string;
   previousScore?: number | null;
   newScore?: number;
-  aggregatedScore?: number;
-  aggregatedStreak?: number;
   challengeBestScore?: number;
   dailyChallengeId?: string;
   dailyChallengeDate?: string;
@@ -145,8 +135,6 @@ export interface ClaimedDailyChallengeRewardSummary {
   dailyChallengeId: string;
   solveState: DailyChallengeSolveState;
   status: DailyChallengeRewardStatus;
-  aggregatedScore?: number;
-  aggregatedStreak?: number;
 }
 
 export interface ClaimDailyChallengeRewardsResponse {
