@@ -34,6 +34,19 @@ export default defineConfig({
       '@top-x/shared': path.resolve(__dirname, '../../packages/shared/src'),
       '@top-x/shared/types': path.resolve(__dirname, '../../packages/shared/src/types')
     },
+    dedupe: [
+      'firebase',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/functions',
+      'firebase/analytics',
+      '@firebase/app',
+      '@firebase/auth',
+      '@firebase/firestore',
+      '@firebase/functions',
+      '@firebase/analytics',
+    ],
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
   },
 
@@ -50,7 +63,11 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics']
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics'],
+    esbuildOptions: {
+      // Ensure a single optimized instance of Firebase
+      keepNames: true,
+    },
   },
 
   build: {
