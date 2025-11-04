@@ -45,6 +45,25 @@
 
 
         <div class="navbar-end">
+          <div class="navbar-item language-toggle">
+            <div class="language-toggle-inner" role="group" aria-label="Language toggle">
+              <button
+                v-for="option in languageOptions"
+                :key="option.code"
+                type="button"
+                class="language-button"
+                :class="{ 'is-active': currentLanguage === option.code }"
+                :aria-pressed="(currentLanguage === option.code).toString()"
+                @click="localeStore.setLanguage(option.code)"
+              >
+                <img
+                  :src="option.flag"
+                  class="language-flag"
+                  :alt="option.label"
+                />
+              </button>
+            </div>
+          </div>
           <div class="navbar-item profile-div">
             <div class="buttons">
               <CustomButton
@@ -82,12 +101,14 @@
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '@/stores/user';
-import { useRouter } from 'vue-router';
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { analytics, trackEvent } from '@top-x/shared';
+import usFlagUrl from '@/assets/flags/us.svg';
+import ilFlagUrl from '@/assets/flags/il.svg';
 import { useLocaleStore } from '@/stores/locale';
+import { useUserStore } from '@/stores/user';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -95,6 +116,11 @@ const router = useRouter();
 const isMenuActive = ref(false);
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
+const currentLanguage = computed(() => localeStore.language);
+const languageOptions = [
+  { code: 'en' as const, label: 'English', flag: usFlagUrl },
+  { code: 'il' as const, label: 'Hebrew', flag: ilFlagUrl },
+];
 
 const user = computed(() => {
   console.log('NavBar user state:', userStore.user);
@@ -232,6 +258,58 @@ watch(
   margin-left: auto;
 }
 
+.language-toggle-inner {
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+.language-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.language-button:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 232, 224, 0.1);
+}
+
+.language-button.is-active {
+  background: rgba(0, 232, 224, 0.16);
+  box-shadow: 0 0 0 2px rgba(0, 232, 224, 0.45);
+}
+
+.language-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 232, 224, 0.65);
+}
+
+.language-flag {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+:global([dir='rtl']) .language-toggle-inner {
+  flex-direction: row-reverse;
+}
+
 .navbar-burger {
   display: none;
   color: var(--bulma-primary);
@@ -299,6 +377,14 @@ watch(
   .navbar-end {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .language-toggle {
+    width: 100%;
+  }
+
+  .language-toggle-inner {
+    justify-content: center;
   }
 
   .navbar-item {
