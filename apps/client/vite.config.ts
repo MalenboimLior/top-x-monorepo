@@ -1,14 +1,32 @@
 // Vite configuration for the client application
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import dotenv from 'dotenv';
+import vue from '@vitejs/plugin-vue';
+import prerender from 'vite-plugin-prerender';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
+const prerenderedRoutes = [
+  '/',
+  '/about',
+  '/faq',
+  '/ContactUs',
+  '/profile',
+  '/build',
+  '/TermsOfUse',
+  '/PrivacyPolicy',
+];
+
 export default defineConfig({
   base: '/',
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    prerender({
+      routes: prerenderedRoutes,
+      outDir: 'dist',
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
