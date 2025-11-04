@@ -42,12 +42,13 @@
     "@types/node": "^22.14.1",
     "@types/vue": "^2.0.0",
     "@vitejs/plugin-vue": "^5.2.3",
-    "vite-plugin-prerender": "file:../../packages/vite-plugin-prerender",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",
     "jsdom": "^26.0.0",
+    "puppeteer": "^24.28.0",
     "typescript": "^5.7.2",
     "vite": "^6.2.0",
+    "vite-plugin-prerender": "file:../../packages/vite-plugin-prerender",
     "vitest": "^2.1.8",
     "vue-tsc": "^2.2.4"
   }
