@@ -23,19 +23,23 @@
           <div v-if="uploadError" class="uploader-error">
             {{ uploadError }}
           </div>
-          <div
-            ref="cropFrame"
-            class="uploader-crop-frame"
-            :style="{
-              width: props.cropWidth + 'px',
-              height: props.cropHeight + 'px',
-              transform: `scale(${previewScale})`,
-              transformOrigin: 'top left',
-              boxShadow: previewScale < 1 ? '0 0 0 2px #00d1b2' : 'none'
-            }"
-            @mousedown="onMouseDownPreview"
-            @wheel.prevent="onWheelPreview"
-          >
+          <div class="uploader-crop-wrapper" :style="{
+            width: (props.cropWidth * previewScale) + 'px',
+            height: (props.cropHeight * previewScale) + 'px'
+          }">
+            <div
+              ref="cropFrame"
+              class="uploader-crop-frame"
+              :style="{
+                width: props.cropWidth + 'px',
+                height: props.cropHeight + 'px',
+                transform: `scale(${previewScale})`,
+                transformOrigin: 'top left',
+                boxShadow: previewScale < 1 ? '0 0 0 2px #00d1b2' : 'none'
+              }"
+              @mousedown="onMouseDownPreview"
+              @wheel.prevent="onWheelPreview"
+            >
             <img
               v-if="selectedImage"
               ref="image"
@@ -54,6 +58,7 @@
               }"
               draggable="false"
             />
+            </div>
           </div>
           <div class="uploader-zoom-controls">
             <button
@@ -328,9 +333,12 @@ const cancel = () => {
 
 /* Current image */
 .uploader-current-image {
-  max-width: 200px;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
   display: block;
+  object-fit: contain;
 }
 
 /* Modal */
@@ -363,6 +371,7 @@ const cancel = () => {
 
 .uploader-modal-content {
   display: block;
+  width: fit-content;
   max-width: 90vw;
   max-height: 90vh;
   position: relative;
@@ -379,6 +388,8 @@ const cancel = () => {
   color: #ffffff;
   z-index: 1002;
   pointer-events: auto;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 /* Error */
@@ -391,11 +402,16 @@ const cancel = () => {
   margin-bottom: 1rem;
 }
 
+/* Crop wrapper */
+.uploader-crop-wrapper {
+  position: relative;
+  margin: 0 auto;
+}
+
 /* Crop frame */
 .uploader-crop-frame {
   position: relative;
   overflow: hidden;
-  margin: 0 auto;
   border: 2px solid #00d1b2;
   background: #222222;
   cursor: grab;

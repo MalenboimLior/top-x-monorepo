@@ -1,11 +1,586 @@
-<DOCUMENT filename="DailyChallengesList.vue">
+<template>
+  <div class="add-zone-reveal">
+    <h3 class="title is-4">Zone Reveal Configuration</h3>
 
+    <div class="field">
+      <label class="label">Background Image</label>
+      <ImageUploader v-model="config.backgroundImage" uploadFolder="zonereveal" :cropWidth="800" :cropHeight="600" />
+    </div>
 
-</DOCUMENT>
+    <details class="collapsible">
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">🧠</span>
+        <span>Answer</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
+      <div class="collapsible-content">
+        <div class="field">
+          <label class="label">Answer</label>
+          <p class="help">Enter the canonical spelling that should be revealed to players.</p>
+          <input class="input" v-model="config.answer.solution" placeholder="Canonical answer (e.g., Mount Everest)" />
+        </div>
 
-<DOCUMENT filename="AddZoneReveal.vue">
+        <div class="field">
+          <label class="label">Accepted Variants</label>
+          <p class="help">Optional alternate spellings, nicknames, or abbreviations that should also count.</p>
+          <div class="field has-addons">
+            <div class="control is-expanded">
+              <input
+                class="input"
+                v-model="newAcceptedVariant"
+                placeholder="Add an alternate answer and press enter"
+                @keyup.enter.prevent="addAcceptedVariant"
+              />
+            </div>
+            <div class="control">
+              <button class="button is-link" @click.prevent="addAcceptedVariant">Add</button>
+            </div>
+          </div>
+          <div class="tags">
+            <span v-for="(variant, variantIndex) in config.answer.accepted" :key="variant" class="tag is-info is-light">
+              {{ variant }}
+              <button class="delete is-small" @click="removeAcceptedVariant(variantIndex)" aria-label="Remove variant"></button>
+            </span>
+          </div>
+        </div>
 
-<!-- Component for editing ZoneRevealConfig -->
+        <div class="field">
+          <label class="label">Reveal Image</label>
+          <p class="help">Optional image that appears with the revealed answer.</p>
+          <ImageUploader v-model="config.answer.image" uploadFolder="zonereveal" :cropWidth="800" :cropHeight="600" />
+        </div>
+      </div>
+    </details>
 
+    <details class="collapsible">
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">🎯</span>
+        <span>Levels</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
+      <div class="collapsible-content">
+        <div class="levels-wrapper">
+          <details v-for="(level, levelIndex) in config.levelsConfig" :key="levelIndex" class="level-collapsible">
+            <summary class="level-summary">
+              <span class="summary-icon" aria-hidden="true">🗺️</span>
+              <span>Level {{ levelIndex + 1 }}</span>
+              <span class="summary-arrow" aria-hidden="true">▸</span>
+            </summary>
+            <div class="level-box">
+              <div class="level-content">
+                <div class="level-media">
+                  <label class="label">Hidden Image</label>
+                  <div class="image-uploader-frame">
+                    <ImageUploader
+                      v-model="level.hiddenImage"
+                      uploadFolder="zonereveal"
+                      :cropWidth="400"
+                      :cropHeight="480"
+                    />
+                  </div>
+                </div>
+                <div class="level-details">
+                  <div class="level-meta">
+                     <div class="field">
+                      <label class="label">Level Header</label>
+                      <input class="input" v-model="level.levelHeader" placeholder="Level Header" />
+                    </div>
+                    <div class="field">
+                      <label class="label">Time Limit</label>
+                      <input class="input" width="50px" type="number" v-model.number="level.timeLimit" placeholder="Time Limit" />
+                    </div>
+                   
+                  </div>
 
-</DOCUMENT>
+                  <div class="level-subsections">
+                    <!-- Enemy Config -->
+                    <div class="field">
+                      <label class="label">Enemies</label>
+                      <div v-for="(enemy, enemyIndex) in level.enemyConfig" :key="enemyIndex" class="columns mb-1">
+                        <div class="column">
+                          <div class="select is-fullwidth">
+                            <select v-model="enemy.type">
+                              <option value="">Select Type</option>
+                              <option v-for="t in enemyTypes" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="column">
+                          <input class="input" type="number" v-model.number="enemy.count" placeholder="Count" />
+                        </div>
+                        <div class="column is-narrow">
+                          <button class="button is-danger is-small" @click="removeEnemy(levelIndex, enemyIndex)">Remove</button>
+                        </div>
+                      </div>
+                      <CustomButton type="is-success is-small" label="Add Enemy" @click="addEnemy(levelIndex)" />
+                    </div>
+
+                    <!-- Powerup Config -->
+                    <div class="field">
+                      <label class="label">Powerups</label>
+                      <div v-for="(powerup, powerupIndex) in level.powerupConfig" :key="powerupIndex" class="columns mb-1">
+                        <div class="column">
+                          <div class="select is-fullwidth">
+                            <select v-model="powerup.type">
+                              <option value="">Select Type</option>
+                              <option v-for="t in powerupTypes" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="column">
+                          <input class="input" type="number" v-model.number="powerup.count" placeholder="Count" />
+                        </div>
+                        <div class="column is-narrow">
+                          <button class="button is-danger is-small" @click="removePowerup(levelIndex, powerupIndex)">Remove</button>
+                        </div>
+                      </div>
+                      <CustomButton type="is-success is-small" label="Add Powerup" @click="addPowerup(levelIndex)" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="level-actions">
+                <button class="button is-danger" @click="removeLevel(levelIndex)">Remove Level</button>
+                <button class="button is-primary" @click="duplicateLevel(levelIndex)">Duplicate Level</button>
+              </div>
+            </div>
+          </details>
+          <div class="level-add">
+            <CustomButton type="is-success" label="Add Level" @click="addLevel" />
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Spritesheets -->
+    <details v-if="config.spritesheets" class="collapsible">
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">❤️</span>
+        <span>Spritesheets</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
+      <div class="collapsible-content">
+        <div class="field">
+          <label class="label">Heart Icon</label>
+          <input class="input" v-model="config.heartIcon" placeholder="Heart Icon URL" />
+        </div>
+        <div v-for="(value, key) in config.spritesheets" :key="key" class="columns mb-1">
+          <div class="column">
+            <input class="input" :value="key" disabled />
+          </div>
+          <div class="column">
+            <ImageUploaderCircleSprite v-model="config.spritesheets[key]" uploadFolder="zonereveal" :cropSize="512" />
+          </div>
+          <div class="column is-narrow">
+            <button class="button is-danger is-small" @click="removeSpritesheet(key)">Remove</button>
+          </div>
+        </div>
+        <div class="columns">
+          <div class="column">
+            <div class="select is-fullwidth">
+              <select v-model="newSpriteKey">
+                <option value="">Select Key</option>
+                <option v-for="k in spriteKeys" :key="k" :value="k">{{ k }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="column">
+            <ImageUploaderCircleSprite v-model="newSpriteValue" uploadFolder="zonereveal" :cropSize="512" />
+          </div>
+          <div class="column is-narrow">
+            <CustomButton type="is-success is-small" label="Add" @click="addSpritesheet" :disabled="!newSpriteKey || !newSpriteValue" />
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="collapsible">
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">⚙️</span>
+        <span>Settings</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
+      <div class="collapsible-content">
+        <div class="field">
+          <label class="label">Player Speed</label>
+          <input class="input" type="number" v-model.number="config.playerSpeed" placeholder="Player Speed" />
+        </div>
+
+        <!-- Enemies Speed Array -->
+        <div class="field" v-if="config.enemiesSpeedArray">
+          <label class="label">Enemies Speeds</label>
+          <div v-for="(value, key) in config.enemiesSpeedArray" :key="key" class="columns mb-1">
+            <div class="column">
+              <input class="input" :value="key" disabled />
+            </div>
+            <div class="column">
+              <input class="input" type="number" v-model.number="config.enemiesSpeedArray[key]" placeholder="Speed" />
+            </div>
+            <div class="column is-narrow">
+              <button class="button is-danger is-small" @click="removeEnemySpeed(key)">Remove</button>
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column">
+              <div class="select is-fullwidth">
+                <select v-model="newEnemyKey">
+                  <option value="">Select Key</option>
+                  <option v-for="t in enemyTypes" :key="t" :value="t">{{ t }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="column">
+              <input class="input" type="number" v-model.number="newEnemyValue" placeholder="Speed" />
+            </div>
+            <div class="column is-narrow">
+              <CustomButton type="is-success is-small" label="Add" @click="addEnemySpeed" :disabled="!newEnemyKey || newEnemyValue === null" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Finish Percent</label>
+          <input class="input" type="number" v-model.number="config.finishPercent" placeholder="Finish Percent" />
+        </div>
+      </div>
+    </details>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { nextTick, ref, watch } from 'vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
+import ImageUploaderCircleSprite from '@top-x/shared/components/ImageUploaderCircleSprite.vue';
+import type { ZoneRevealConfig, LevelConfig, EnemyConfig, PowerupConfig } from '@top-x/shared/types/zoneReveal';
+
+const props = defineProps<{ modelValue: ZoneRevealConfig }>();
+const emit = defineEmits(['update:modelValue']);
+
+const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
+
+const defaultConfig = (): ZoneRevealConfig => ({
+  levelsConfig: [],
+  backgroundImage: '',
+  spritesheets: {},
+  playerSpeed: 0,
+  enemiesSpeedArray: {},
+  finishPercent: 0,
+  heartIcon: '',
+  answer: createDefaultAnswer(),
+});
+
+const config = ref<ZoneRevealConfig>(defaultConfig());
+let isSyncingFromProps = false;
+
+const enemyTypes = ['bouncing', 'robot', 'microbe', 'straightUp', 'straightLeft'];
+const powerupTypes = ['extralive', 'extratime', 'extraspeed', 'extrafreeze'];
+const spriteKeys = ['player', 'enemy', 'robot', 'microbe', 'straightUp', 'straightLeft', 'heart', 'clock', 'speed', 'freeze'];
+
+const newSpriteKey = ref('');
+const newSpriteValue = ref('');
+const newEnemyKey = ref('');
+const newEnemyValue = ref<number | null>(null);
+const newAcceptedVariant = ref('');
+
+watch(
+  () => props.modelValue,
+  (val) => {
+    isSyncingFromProps = true;
+    const next = val ? JSON.parse(JSON.stringify(val)) : defaultConfig();
+    if (!next.answer) {
+      next.answer = createDefaultAnswer();
+    } else {
+      next.answer.accepted = next.answer.accepted ?? [];
+    }
+    config.value = next;
+    nextTick(() => {
+      isSyncingFromProps = false;
+    });
+  },
+  { deep: true, immediate: true },
+);
+
+watch(
+  config,
+  (val) => {
+    if (isSyncingFromProps) return;
+    emit('update:modelValue', JSON.parse(JSON.stringify(val)));
+  },
+  { deep: true },
+);
+
+function addLevel() {
+  config.value.levelsConfig.push({
+    timeLimit: 0,
+    hiddenImage: '',
+    levelHeader: '',
+    enemyConfig: [],
+    powerupConfig: [],
+  } as LevelConfig);
+}
+
+function duplicateLevel(index: number) {
+  const level = config.value.levelsConfig[index];
+  config.value.levelsConfig.splice(index + 1, 0, JSON.parse(JSON.stringify(level)));
+}
+
+function removeLevel(index: number) {
+  config.value.levelsConfig.splice(index, 1);
+}
+
+function addEnemy(levelIndex: number) {
+  config.value.levelsConfig[levelIndex].enemyConfig.push({ type: '', count: 0 } as EnemyConfig);
+}
+
+function removeEnemy(levelIndex: number, enemyIndex: number) {
+  config.value.levelsConfig[levelIndex].enemyConfig.splice(enemyIndex, 1);
+}
+
+function addPowerup(levelIndex: number) {
+  config.value.levelsConfig[levelIndex].powerupConfig.push({ type: '', count: 0 } as PowerupConfig);
+}
+
+function removePowerup(levelIndex: number, powerupIndex: number) {
+  config.value.levelsConfig[levelIndex].powerupConfig.splice(powerupIndex, 1);
+}
+
+function addSpritesheet() {
+  if (!config.value.spritesheets || !newSpriteKey.value || !newSpriteValue.value) return;
+  config.value.spritesheets[newSpriteKey.value] = newSpriteValue.value;
+  newSpriteKey.value = '';
+  newSpriteValue.value = '';
+}
+
+function removeSpritesheet(key: string) {
+  if (!config.value.spritesheets) return;
+  delete config.value.spritesheets[key];
+}
+
+function addEnemySpeed() {
+  if (!config.value.enemiesSpeedArray || !newEnemyKey.value || newEnemyValue.value === null) return;
+  config.value.enemiesSpeedArray[newEnemyKey.value] = newEnemyValue.value;
+  newEnemyKey.value = '';
+  newEnemyValue.value = null;
+}
+
+function removeEnemySpeed(key: string) {
+  if (!config.value.enemiesSpeedArray) return;
+  delete config.value.enemiesSpeedArray[key];
+}
+
+function addAcceptedVariant() {
+  const variant = newAcceptedVariant.value.trim();
+  if (!variant) return;
+  if (!config.value.answer.accepted.includes(variant)) {
+    config.value.answer.accepted.push(variant);
+  }
+  newAcceptedVariant.value = '';
+}
+
+function removeAcceptedVariant(index: number) {
+  config.value.answer.accepted.splice(index, 1);
+}
+</script>
+
+<style scoped>
+.add-zone-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.collapsible {
+  border: 1px solid #dbdbdb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+}
+
+.collapsible + .collapsible {
+  margin-top: 1rem;
+}
+
+.collapsible-summary {
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.summary-icon {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-arrow {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.collapsible[open] .collapsible-summary {
+  margin-bottom: 1rem;
+}
+
+.collapsible[open] > .collapsible-summary .summary-arrow {
+  transform: rotate(90deg);
+}
+
+.collapsible-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.levels-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.level-collapsible {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fdfdfd;
+}
+
+.level-summary {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.level-collapsible[open] .level-summary {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.level-collapsible[open] > .level-summary .summary-arrow {
+  transform: rotate(90deg);
+}
+
+.level-box {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+}
+
+.level-content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.level-media {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-right: 10px;
+}
+
+.image-uploader-frame {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.image-uploader-frame :deep(.image-uploader) {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-uploader-frame :deep(.image-uploader > div) {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.image-uploader-frame :deep(.uploader-current-image) {
+  max-width: 100%;
+  max-height: calc(100% - 3rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 1;
+}
+
+.image-uploader-frame :deep(.uploader-button) {
+  margin-top: 0.5rem;
+  flex-shrink: 0;
+}
+
+.level-details {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.level-meta {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.level-subsections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.level-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.level-add {
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+  .level-content {
+    flex-direction: column;
+  }
+
+  .level-media {
+    flex: 1 1 auto;
+  }
+}
+</style>
