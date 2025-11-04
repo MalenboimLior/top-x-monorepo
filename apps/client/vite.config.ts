@@ -17,9 +17,10 @@ export default defineConfig({
         '/profile', '/build', '/termsofuse', '/privacypolicy'
       ],
       staticDir: path.resolve(__dirname, 'dist'),
-      timeout: 90_000,                     // correct option
-      renderAfterDocumentEvent: 'prerender-ready',
-      postProcess({ html }) {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+      settleDelay: 800,
+      postProcess({ html }: { html: string }) {
         return {
           html: html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
           route: undefined
