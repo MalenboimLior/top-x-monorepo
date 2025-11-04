@@ -105,7 +105,7 @@ async function handleLogin() {
 }
 
 .meta-block {
-  text-align: right;
+  text-align: end;
   font-size: 0.9rem;
 }
 

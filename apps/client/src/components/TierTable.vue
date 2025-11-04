@@ -277,7 +277,7 @@ function toRoman(num: number): string {
 <style scoped>
 .theme-toggle {
   margin-bottom: 1rem;
-  text-align: right;
+  text-align: end;
 }
 .dark {
   background-color: #000000;

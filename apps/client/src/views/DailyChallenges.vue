@@ -278,7 +278,7 @@ function formatDateTime(value?: string) {
   border-radius: 24px;
   padding: 1.5rem;
   border: 1px solid transparent;
-  text-align: left;
+  text-align: start;
   color: inherit;
   display: flex;
   flex-direction: column;
