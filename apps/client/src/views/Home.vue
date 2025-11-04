@@ -3,11 +3,15 @@
   <div class="home-page section-stack">
     <section class="hero layout-container">
       <div class="hero-content">
+             <h1 class="hero-title">{{ t('home.heroTitle') }}</h1>
+        <p class="hero-subtitle">{{ t('home.heroSubtitle') }}</p>
+</div>
+      <!--  <div class="hero-content">
         <div class="hero-eyebrow">
           <span class="hero-pill">TOP-X</span>
           <span class="hero-eyebrow-text">{{ t('home.heroEyebrow') }}</span>
         </div>
-        <h1 class="hero-title">{{ t('home.heroTitle') }}</h1>
+       <h1 class="hero-title">{{ t('home.heroTitle') }}</h1>
         <p class="hero-subtitle">{{ t('home.heroSubtitle') }}</p>
         <div class="hero-actions">
           <CustomButton
@@ -37,7 +41,7 @@
       <div class="hero-visual">
         <div class="hero-glow"></div>
         <img src="../assets/topx-logo.png" alt="TOP-X" class="hero-logo" />
-      </div>
+      </div> -->
     </section>
 
     <section ref="gamesSection" class="game-section layout-container section-stack">
