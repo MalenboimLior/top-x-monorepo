@@ -9,6 +9,7 @@ declare module 'vite-plugin-prerender' {
     puppeteer?: unknown;
     timeout?: number;
     settleDelay?: number;
+    debug?: boolean;
     renderAfterDocumentEvent?: string;
     postProcess?: (args: { html: string; route?: string }) =>
       | { html: string; route?: string }

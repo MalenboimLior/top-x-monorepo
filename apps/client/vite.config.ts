@@ -11,22 +11,20 @@ export default defineConfig({
   plugins: [
     vue(),
 
-    prerender({
-      routes: [
-        '/', '/about', '/faq', '/contactus',
-        '/profile', '/build', '/termsofuse', '/privacypolicy'
-      ],
-      staticDir: path.resolve(__dirname, 'dist'),
-      waitUntil: 'domcontentloaded',
-      timeout: 90_000,
-      settleDelay: 800,
-      postProcess({ html }: { html: string }) {
-        return {
-          html: html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-          route: undefined
-        };
-      }
-    })
+    // Enable prerender only when explicitly requested
+    ...(process.env.PRERENDER === '1'
+      ? [prerender({
+          routes: [
+            '/', '/about', '/faq', '/contactus',
+            '/profile', '/build', '/termsofuse', '/privacypolicy'
+          ],
+          staticDir: path.resolve(__dirname, 'dist'),
+          waitUntil: 'domcontentloaded',
+          timeout: 90_000,
+          settleDelay: 800,
+          debug: process.env.PRERENDER_DEBUG === '1',
+        })]
+      : [])
   ],
 
   resolve: {
