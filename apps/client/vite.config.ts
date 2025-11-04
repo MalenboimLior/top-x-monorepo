@@ -11,11 +11,11 @@ const prerenderedRoutes = [
   '/',
   '/about',
   '/faq',
-  '/ContactUs',
+  '/contactus',
   '/profile',
   '/build',
-  '/TermsOfUse',
-  '/PrivacyPolicy',
+  '/termsofuse',
+  '/privacypolicy',
 ];
 
 export default defineConfig({
