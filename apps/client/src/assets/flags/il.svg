@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 480" role="img" aria-label="Israel flag">
+  <rect width="660" height="480" fill="#fff" />
+  <rect width="660" height="60" y="60" fill="#0038b8" />
+  <rect width="660" height="60" y="360" fill="#0038b8" />
+  <g fill="#0038b8" transform="translate(330 240)">
+    <polygon points="0,-90 78,45 -78,45" fill="none" stroke="#0038b8" stroke-width="18" />
+    <polygon points="0,90 -78,-45 78,-45" fill="none" stroke="#0038b8" stroke-width="18" />
+  </g>
+</svg>
