@@ -18,6 +18,10 @@ body {
   background: #f8fafc;
 }
 
+input.input[type='number'] {
+  width: min(100%, 6rem);
+}
+
 a {
   color: inherit;
 }
