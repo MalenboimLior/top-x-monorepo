@@ -1,6 +1,6 @@
-// Firebase initialization shared across Top-X applications
+// packages/shared/src/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { initializeAuth, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getAnalytics } from 'firebase/analytics';
@@ -20,15 +20,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-const auth = getAuth(app);
-const analytics = getAnalytics(app);
-const storage = getStorage(app);
-
-setPersistence(auth, browserLocalPersistence)
-  .then(() => console.log('Auth persistence set to local'))
-  .catch((error) => console.error('Error setting persistence:', error));
+// Safe init with persistence
+const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence
+});
 
 const db = getFirestore(app);
 const functions = getFunctions(app);
+const analytics = getAnalytics(app);
+const storage = getStorage(app);
 
 export { app, auth, db, functions, analytics, storage };
