@@ -20,6 +20,9 @@ function persistLanguage(language: string) {
   try {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(LOCAL_STORAGE_KEY, language);
+      if (import.meta.env.DEV) {
+        console.info('[locale] Saved preferred language to cache', language);
+      }
     }
   } catch (error) {
     if (import.meta.env.DEV) {
@@ -34,7 +37,15 @@ function loadPersistedLanguage(): string | null {
   }
 
   try {
-    return window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    const cachedLanguage = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (import.meta.env.DEV) {
+      if (cachedLanguage) {
+        console.info('[locale] Loaded preferred language from cache', cachedLanguage);
+      } else {
+        console.info('[locale] No cached language found');
+      }
+    }
+    return cachedLanguage;
   } catch (error) {
     if (import.meta.env.DEV) {
       console.warn('[locale] Unable to load persisted language preference', error);
@@ -65,7 +76,7 @@ const fallbackMessages = staticLocaleMessages[FALLBACK_LANGUAGE] ?? {};
 interface LocaleState {
   language: string;
   direction: Direction;
-    messages: LocaleMessages;
+  messages: LocaleMessages;
   initialized: boolean;
 }
 
@@ -85,7 +96,13 @@ async function detectPreferredLanguage(): Promise<string> {
     if (response.ok) {
       const data = await response.json() as { country_code?: string };
       if (data.country_code === 'IL') {
+        if (import.meta.env.DEV) {
+          console.info('[locale] Detected IL country code from device location');
+        }
         return 'il';
+      }
+      if (import.meta.env.DEV) {
+        console.info('[locale] Device location returned country', data.country_code ?? 'unknown');
       }
     }
   } catch (error) {
@@ -93,6 +110,9 @@ async function detectPreferredLanguage(): Promise<string> {
   }
 
   const browserLanguage = navigator.languages?.[0] || navigator.language || 'en';
+  if (import.meta.env.DEV) {
+    console.info('[locale] Falling back to browser language', browserLanguage);
+  }
   return normalizeLanguage(browserLanguage);
 }
 
@@ -102,7 +122,7 @@ async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
 
   if (staticLocaleMessages[localeId]) {
     if (import.meta.env.DEV) {
-      console.info('[locale] Using cached locale messages for', localeId);
+      console.info('[locale] Using bundled locale file', `${localeId}.json`);
     }
     return staticLocaleMessages[localeId];
   }
@@ -145,6 +165,9 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
 
       const cachedLanguage = loadPersistedLanguage();
       if (!this.language && cachedLanguage) {
+        if (import.meta.env.DEV) {
+          console.info('[locale] Using cached language during initialization', cachedLanguage);
+        }
         this.language = normalizeLanguage(cachedLanguage);
       }
 
@@ -163,6 +186,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       this.direction = this.language === 'il' ? 'rtl' : 'ltr';
       if (import.meta.env.DEV) {
         console.info('[locale] Setting language to', this.language, 'direction', this.direction);
+        console.info('[locale] Applying text direction', this.direction === 'rtl' ? 'right-to-left' : 'left-to-right');
       }
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('dir', this.direction);
