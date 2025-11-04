@@ -16,6 +16,7 @@ const ZoneReveal = () => import('@/views/games/ZoneReveal.vue');
 const Build = () => import('@/views/Build.vue');
 const DailyChallenges = () => import('@/views/DailyChallenges.vue');
 const GameInfo = () => import('@/views/GameInfo.vue');
+import FisherGame from '@/views/games/FisherGame.vue';
 
 const routes = [
   // {
@@ -40,6 +41,11 @@ const routes = [
     name: 'Home',
     component: () => import(/* webpackChunkName: "home" */ '@/views/Home.vue'),
   },
+  {
+  path: '/games/FisherGame',
+  name: 'FisherGame',
+  component: FisherGame,
+},
   {
     path: '/games/info',
     name: 'GameInfo',

@@ -216,6 +216,7 @@
       />
       <AddZoneReveal v-else-if="gameType.custom === 'ZoneRevealConfig'" v-model="game.custom as ZoneRevealConfig" />
       <AddPacman v-else-if="gameType.custom === 'PacmanConfig'" v-model="game.custom as PacmanConfig" />
+      <AddFisherGame v-else-if="gameType.custom === 'FisherGameConfig'" v-model="game.custom as FisherGameConfig" />
       <p v-else class="has-text-grey">Custom configuration for this game type is not yet supported.</p>
     </div>
 
@@ -236,10 +237,12 @@ import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import AddPyramid from '@/components/games/AddPyramid.vue';
 import AddZoneReveal from '@/components/games/AddZoneReveal.vue';
 import AddPacman from '@/components/games/AddPacman.vue';
+import AddFisherGame from './AddFisherGame.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { PacmanConfig } from '@top-x/shared/types/pacman';
+import type { FisherGameConfig } from '@top-x/shared/types/fisherGame';
 
 const props = defineProps<{
   gameType: GameType;
@@ -423,7 +426,7 @@ function withDefaultPacmanConfig(config: PacmanConfig): PacmanConfig {
   };
 }
 
-function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | PacmanConfig | Record<string, unknown> {
+function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | PacmanConfig | FisherGameConfig | Record<string, unknown> {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -452,6 +455,15 @@ function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig
   }
   if (customType === 'PacmanConfig') {
     return withDefaultPacmanConfig(defaultPacmanConfig());
+  }
+  if (customType === 'FisherGameConfig') {
+    return {
+      levelsConfig: [],
+      backgroundImage: '',
+      fishermanImage: '',
+      hookSpeed: 100,
+      offlineRate: 1,
+    } as FisherGameConfig;
   }
   return {};
 }

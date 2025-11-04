@@ -1,14 +1,15 @@
+// packages/shared/src/types/game.ts
 import { PyramidConfig } from "./pyramid";
 import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
 import { PacmanConfig } from "./pacman";
-
+import { FisherGameConfig } from "./fisherGame";
 
 export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig'; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig'; // String to specify config type
   availableToBuild: boolean;
 }
 
@@ -28,7 +29,7 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
-  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig | PacmanConfig; // Union of possible config types
+  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig | PacmanConfig | FisherGameConfig; // Union of possible config types
   creator?: { userid: string; username: string };
   community?: boolean;
   hideFromHome?: boolean;
@@ -73,5 +74,5 @@ export interface LeaderboardEntry {
   custom?: Record<string, any>;
 }
 
-export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig';
-export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'ZoneRevealConfig', 'PacmanConfig'];
+export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig';
+export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'ZoneRevealConfig', 'PacmanConfig', 'FisherGameConfig'];
