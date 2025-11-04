@@ -52,44 +52,22 @@
         </div>
       </header>
       <div class="game-grid game-grid--featured">
-        <article
+        <GameCard
           v-for="game in featuredGames"
           :key="game.id"
-          class="game-card"
-          @click="navigateToGame(game.id, game.gameTypeId)"
-        >
-          <div class="game-card__media">
-            <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
-          </div>
-          <div class="game-card__content">
-            <div class="game-card__meta responsive-flex-row">
-              <span class="game-card__badge">{{ t('home.featuredGames.badge') }}</span>
-            </div>
-            <h3 class="game-card__title">{{ game.name }}</h3>
-            <p class="game-card__description">{{ game.description }}</p>
-            <div class="game-card__stats" v-if="gameStats[game.id]">
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.totalPlayers || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.players') }}</span>
-              </div>
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.favorites || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.favorites') }}</span>
-              </div>
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.sessionsPlayed || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.sessions') }}</span>
-              </div>
-            </div>
-            <div class="game-card__footer">
-              <CustomButton
-                type="is-primary is-small"
-                :label="t('home.playNow')"
-                @click.stop="navigateToGame(game.id, game.gameTypeId)"
-              />
-            </div>
-          </div>
-        </article>
+          :game="game"
+          :stats="gameStats[game.id]"
+          size="featured"
+          :badge="t('home.featuredGames.badge')"
+          show-featured-label
+          :featured-label="t('home.labels.featured')"
+          :daily-challenge-active="Boolean(game.dailyChallengeActive)"
+          :daily-challenge-label="t('home.labels.dailyChallenge')"
+          :play-label="t('home.playNow')"
+          button-type="is-primary is-small"
+          @select="navigateToGame"
+          @play="navigateToGame"
+        />
       </div>
       <p v-if="!featuredGames.length" class="empty-state">{{ t('home.featuredGames.empty') }}</p>
     </section>
@@ -113,44 +91,19 @@
         </div>
       </header>
       <div class="game-grid game-grid--quad">
-        <article
+        <GameCard
           v-for="game in topXGames"
           :key="game.id"
-          class="game-card"
-          @click="navigateToGame(game.id, game.gameTypeId)"
-        >
-          <div class="game-card__media">
-            <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
-          </div>
-          <div class="game-card__content">
-            <div class="game-card__meta responsive-flex-row">
-              <span class="game-card__badge">{{ t('home.topxGames.badge') }}</span>
-            </div>
-            <h3 class="game-card__title">{{ game.name }}</h3>
-            <p class="game-card__description">{{ game.description }}</p>
-            <div class="game-card__stats" v-if="gameStats[game.id]">
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.totalPlayers || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.players') }}</span>
-              </div>
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.favorites || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.favorites') }}</span>
-              </div>
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.sessionsPlayed || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.sessions') }}</span>
-              </div>
-            </div>
-            <div class="game-card__footer">
-              <CustomButton
-                type="is-primary is-small"
-                :label="t('home.playNow')"
-                @click.stop="navigateToGame(game.id, game.gameTypeId)"
-              />
-            </div>
-          </div>
-        </article>
+          :game="game"
+          :stats="gameStats[game.id]"
+          :badge="t('home.topxGames.badge')"
+          :daily-challenge-active="Boolean(game.dailyChallengeActive)"
+          :daily-challenge-label="t('home.labels.dailyChallenge')"
+          :play-label="t('home.playNow')"
+          button-type="is-primary is-small"
+          @select="navigateToGame"
+          @play="navigateToGame"
+        />
       </div>
       <p v-if="!topXGames.length" class="empty-state">{{ t('home.topxGames.empty') }}</p>
     </section>
@@ -163,47 +116,21 @@
         </div>
       </header>
       <div class="game-grid game-grid--quad">
-        <article
+        <GameCard
           v-for="game in communityGames"
           :key="game.id"
-          class="game-card"
-          @click="navigateToGame(game.id, game.gameTypeId)"
-        >
-          <div class="game-card__media">
-            <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
-          </div>
-          <div class="game-card__content">
-            <div class="game-card__meta responsive-flex-row">
-              <span class="game-card__badge game-card__badge--alt">{{ t('home.communityGames.badge') }}</span>
-              <span class="game-card__creator">
-                {{ t('home.createdBy') }}: {{ game.creator?.username || t('home.unknownCreator') }}
-              </span>
-            </div>
-            <h3 class="game-card__title">{{ game.name }}</h3>
-            <p class="game-card__description">{{ game.description }}</p>
-            <div class="game-card__stats" v-if="gameStats[game.id]">
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.totalPlayers || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.players') }}</span>
-              </div>
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.favorites || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.favorites') }}</span>
-              </div>
-              <div class="game-card__stat">
-                <span class="game-card__stat-value">{{ formatNumber(gameStats[game.id]?.sessionsPlayed || 0) }}</span>
-                <span class="game-card__stat-label">{{ t('home.stats.sessions') }}</span>
-              </div>
-            </div>
-            <div class="game-card__footer">
-              <CustomButton
-                type="is-primary is-small"
-                :label="t('home.playNow')"
-                @click.stop="navigateToGame(game.id, game.gameTypeId)"
-              />
-            </div>
-          </div>
-        </article>
+          :game="game"
+          :stats="gameStats[game.id]"
+          :badge="t('home.communityGames.badge')"
+          badge-variant="alt"
+          :creator-label="`${t('home.createdBy')}: ${game.creator?.username || t('home.unknownCreator')}`"
+          :daily-challenge-active="Boolean(game.dailyChallengeActive)"
+          :daily-challenge-label="t('home.labels.dailyChallenge')"
+          :play-label="t('home.playNow')"
+          button-type="is-primary is-small"
+          @select="navigateToGame"
+          @play="navigateToGame"
+        />
       </div>
       <p v-if="!communityGames.length" class="empty-state">{{ t('home.communityGames.empty') }}</p>
     </section>
@@ -249,6 +176,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import GameCard from '@/components/GameCard.vue';
 import fallbackImg from '@/assets/images/fallback.png';
 import { analytics, trackEvent } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
