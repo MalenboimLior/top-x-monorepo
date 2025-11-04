@@ -80,6 +80,12 @@ export default function prerenderPlugin(options = {}) {
   const outDir = options.outDir ?? 'dist';
   const waitUntil = options.waitUntil ?? 'networkidle0';
   const puppeteerOptions = options.puppeteer ?? { headless: 'new' };
+  const timeoutMs = typeof options.timeout === 'number' ? options.timeout : 90_000;
+  const renderAfterDocumentEvent = typeof options.renderAfterDocumentEvent === 'string'
+    ? options.renderAfterDocumentEvent
+    : null;
+  const postProcess = typeof options.postProcess === 'function' ? options.postProcess : null;
+  const staticDir = options.staticDir ?? null;
 
   return {
     name: 'vite-plugin-prerender-local',
@@ -89,7 +95,7 @@ export default function prerenderPlugin(options = {}) {
         return;
       }
 
-      const resolvedOutDir = path.resolve(rootDir, outDir);
+      const resolvedOutDir = staticDir ? path.resolve(staticDir) : path.resolve(rootDir, outDir);
       const indexHtmlPath = path.join(resolvedOutDir, 'index.html');
 
       try {
@@ -122,10 +128,41 @@ export default function prerenderPlugin(options = {}) {
 
         for (const route of routes) {
           const page = await browser.newPage();
+          page.setDefaultNavigationTimeout(timeoutMs);
+          page.setDefaultTimeout(timeoutMs);
           const targetUrl = new URL(route, origin).toString();
 
+          if (renderAfterDocumentEvent) {
+            await page.evaluateOnNewDocument(() => {
+              // Signal to the app that it runs in a prerender context
+              // eslint-disable-next-line no-undef
+              window.__PRERENDER_INJECTED = true;
+            });
+          }
+
           await page.goto(targetUrl, { waitUntil });
-          const html = await page.content();
+
+          if (renderAfterDocumentEvent) {
+            await page.evaluate((eventName) => {
+              return new Promise((resolve) => {
+                const done = () => resolve(true);
+                document.addEventListener(eventName, done, { once: true });
+              });
+            }, renderAfterDocumentEvent);
+          }
+
+          let html = await page.content();
+
+          if (postProcess) {
+            try {
+              const processed = await postProcess({ html, route });
+              if (processed && typeof processed.html === 'string') {
+                html = processed.html;
+              }
+            } catch (e) {
+              // swallow postProcess errors but continue writing original html
+            }
+          }
 
           const normalized = normalizeRoute(route);
           const destination = normalized
