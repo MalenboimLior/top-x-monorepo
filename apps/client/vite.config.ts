@@ -1,4 +1,3 @@
-// apps/client/vite.config.ts
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import prerender from 'vite-plugin-prerender';
@@ -12,26 +11,21 @@ export default defineConfig({
   plugins: [
     vue(),
 
-   prerender({
-  routes: [
-    '/', '/about', '/faq', '/contactus',
-    '/profile', '/build', '/termsofuse', '/privacypolicy'
-  ],
-  staticDir: path.resolve(__dirname, 'dist'),
-
-  // 90 seconds per page
-  timeout: 90_000,
-
-  // Wait for our custom event
-  renderAfterDocumentEvent: 'prerender-ready',
-
-  postProcess({ html }) {
-    return {
-      html: html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-      route: undefined
-    };
-  }
-}),
+    prerender({
+      routes: [
+        '/', '/about', '/faq', '/contactus',
+        '/profile', '/build', '/termsofuse', '/privacypolicy'
+      ],
+      staticDir: path.resolve(__dirname, 'dist'),
+      timeout: 90_000,                     // correct option
+      renderAfterDocumentEvent: 'prerender-ready',
+      postProcess({ html }) {
+        return {
+          html: html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+          route: undefined
+        };
+      }
+    })
   ],
 
   resolve: {
@@ -44,7 +38,6 @@ export default defineConfig({
   },
 
   define: {
-    // (your Firebase env vars – unchanged)
     'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY),
     'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN),
     'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID),
@@ -53,7 +46,7 @@ export default defineConfig({
     'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify(process.env.VITE_FIREBASE_APP_ID),
     'import.meta.env.VITE_FIREBASE_MEASUREMENT_ID': JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID),
     'import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_CLIENT_ID),
-    'import.meta.env.VITE_GOOGLE_ADS_SLOT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_SLOT_ID),
+    'import.meta.env.VITE_GOOGLE_ADS_SLOT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_SLOT_ID)
   },
 
   optimizeDeps: {

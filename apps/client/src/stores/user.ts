@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch, computed } from 'vue';
 import { auth, db, functions, analytics, trackEvent } from '@top-x/shared';
+
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
   doc,
