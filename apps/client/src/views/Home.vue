@@ -40,25 +40,6 @@
       </div>
     </section>
 
-    <section class="filter-panel layout-container" v-show="false" aria-hidden="true">
-      <div class="filter-card surface">
-        <p class="filter-label">{{ t('home.filterLabel') }}</p>
-        <div class="language-toggle responsive-flex-row" role="tablist" aria-label="Language filter">
-          <button
-            v-for="option in languageOptions"
-            :key="option.value"
-            type="button"
-            class="language-chip"
-            :class="{ active: selectedLanguage === option.value }"
-            :aria-pressed="selectedLanguage === option.value"
-            @click="selectLanguage(option.value)"
-          >
-            {{ option.label }}
-          </button>
-        </div>
-      </div>
-    </section>
-
     <section ref="gamesSection" class="game-section layout-container section-stack">
       <header class="section-header">
         <div>
@@ -250,7 +231,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick, reactive } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, reactive } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import {
@@ -281,7 +262,6 @@ const gameStats = reactive<Record<string, Partial<GameStats>>>({});
 const gameTypes = ref<GameType[]>([]);
 const homeConfig = ref<HomePageConfig>({ ...defaultHomePageConfig });
 const configLoaded = ref(false);
-const selectedLanguage = ref('');
 const gamesSection = ref<HTMLElement | null>(null);
 const adSlotRef = ref<HTMLElement | null>(null);
 const hasInitializedAd = ref(false);
@@ -292,12 +272,6 @@ const t = (key: string) => localeStore.translate(key);
 const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
 const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 const shouldDisplayAds = computed(() => Boolean(adClient && adSlot));
-
-const languageOptions = computed(() => [
-  { label: t('home.filter.all'), value: '' },
-  { label: t('home.filter.english'), value: 'en' },
-  { label: t('home.filter.hebrew'), value: 'il' },
-]);
 
 useHead({
   title: 'TOP-X',
@@ -533,12 +507,6 @@ onMounted(() => {
   }
 });
 
-watch(selectedLanguage, (language) => {
-  if (language === 'il' || language === 'en') {
-    void localeStore.setLanguage(language);
-  }
-});
-
 const hiddenGameIds = computed(() => {
   const hidden = new Set<string>();
   for (const id of homeConfig.value.hiddenGameIds) {
@@ -552,15 +520,10 @@ const hiddenGameIds = computed(() => {
   return hidden;
 });
 
-const filteredGames = computed(() =>
-  games.value.filter(
-    (game) =>
-      (!selectedLanguage.value || game.language === selectedLanguage.value) && !hiddenGameIds.value.has(game.id),
-  ),
-);
+const visibleGames = computed(() => games.value.filter((game) => !hiddenGameIds.value.has(game.id)));
 
-const topXLibrary = computed(() => filteredGames.value.filter((game) => !game.community));
-const communityLibrary = computed(() => filteredGames.value.filter((game) => game.community));
+const topXLibrary = computed(() => visibleGames.value.filter((game) => !game.community));
+const communityLibrary = computed(() => visibleGames.value.filter((game) => game.community));
 
 const communityLibraryCount = computed(() => communityLibrary.value.length);
 const heroTopXCount = computed(() => topXLibrary.value.length);
@@ -573,7 +536,7 @@ const featuredGames = computed(() => {
   if (!order.length) {
     return [] as Game[];
   }
-  const lookup = new Map(filteredGames.value.map((game) => [game.id, game]));
+  const lookup = new Map(visibleGames.value.map((game) => [game.id, game]));
   return order.map((id) => lookup.get(id)).filter((game): game is Game => Boolean(game));
 });
 
@@ -653,10 +616,6 @@ const orderedGameTypes = computed(() => {
 function navigateToGame(gameId: string, gameTypeId: string) {
   trackEvent(analytics, 'select_game', { game_id: gameId });
   router.push(`/games/info?game=${gameId}`);
-}
-
-function selectLanguage(language: string) {
-  selectedLanguage.value = language;
 }
 
 function scrollToGames() {
