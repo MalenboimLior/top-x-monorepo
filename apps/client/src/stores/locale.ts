@@ -19,14 +19,19 @@ function normalizeLanguage(language: string | null | undefined): 'en' | 'il' {
 function persistLanguage(language: string) {
   try {
     if (typeof window !== 'undefined') {
+      const previousCached = window.localStorage.getItem(LOCAL_STORAGE_KEY);
       window.localStorage.setItem(LOCAL_STORAGE_KEY, language);
       if (import.meta.env.DEV) {
-        console.info('[locale] Saved preferred language to cache', language);
+        if (previousCached !== language) {
+          console.info('[locale] 💾 SAVED language to cache:', language, previousCached ? `(was: ${previousCached})` : '(new)');
+        } else {
+          console.info('[locale] 💾 Language already in cache:', language);
+        }
       }
     }
   } catch (error) {
     if (import.meta.env.DEV) {
-      console.warn('[locale] Unable to persist language preference', error);
+      console.warn('[locale] ❌ Unable to persist language preference', error);
     }
   }
 }
@@ -40,15 +45,15 @@ function loadPersistedLanguage(): string | null {
     const cachedLanguage = window.localStorage.getItem(LOCAL_STORAGE_KEY);
     if (import.meta.env.DEV) {
       if (cachedLanguage) {
-        console.info('[locale] Loaded preferred language from cache', cachedLanguage);
+        console.info('[locale] 📦 LOADED language from localStorage cache:', cachedLanguage);
       } else {
-        console.info('[locale] No cached language found');
+        console.info('[locale] 📦 No cached language found in localStorage');
       }
     }
     return cachedLanguage;
   } catch (error) {
     if (import.meta.env.DEV) {
-      console.warn('[locale] Unable to load persisted language preference', error);
+      console.warn('[locale] ❌ Unable to load persisted language preference', error);
     }
     return null;
   }
@@ -91,45 +96,57 @@ async function detectPreferredLanguage(): Promise<string> {
     return 'en';
   }
 
+  if (import.meta.env.DEV) {
+    console.info('[locale] 🌍 Detecting language from device...');
+  }
+
   try {
+    if (import.meta.env.DEV) {
+      console.info('[locale] 🌍 Fetching device location from ipapi.co...');
+    }
     const response = await fetch('https://ipapi.co/json/');
     if (response.ok) {
       const data = await response.json() as { country_code?: string };
       if (data.country_code === 'IL') {
         if (import.meta.env.DEV) {
-          console.info('[locale] Detected IL country code from device location');
+          console.info('[locale] 🌍 ✓ Detected IL country code from device location → Hebrew');
         }
         return 'il';
       }
       if (import.meta.env.DEV) {
-        console.info('[locale] Device location returned country', data.country_code ?? 'unknown');
+        console.info('[locale] 🌍 Device location returned country:', data.country_code ?? 'unknown', '→ English');
       }
     }
   } catch (error) {
-    console.warn('Locale detection fallback due to error:', error);
+    if (import.meta.env.DEV) {
+      console.warn('[locale] 🌍 Device location detection failed, falling back to browser language:', error);
+    }
   }
 
   const browserLanguage = navigator.languages?.[0] || navigator.language || 'en';
+  const normalizedBrowserLang = normalizeLanguage(browserLanguage);
   if (import.meta.env.DEV) {
-    console.info('[locale] Falling back to browser language', browserLanguage);
+    console.info('[locale] 🌍 Using browser language:', browserLanguage, '→ normalized:', normalizedBrowserLang);
   }
-  return normalizeLanguage(browserLanguage);
+  return normalizedBrowserLang;
 }
 
 async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
   const normalized = language.toLowerCase();
   const localeId = normalized === 'il' ? 'il' : 'en';
+  const fileName = localeId === 'en' ? 'en.json' : 'il.json';
 
   if (staticLocaleMessages[localeId]) {
     if (import.meta.env.DEV) {
-      console.info('[locale] Using bundled locale file', `${localeId}.json`);
+      console.info('[locale] 📄 Loading locale file:', fileName);
+      console.info('[locale] 📄 ✓ Loaded from bundled assets:', fileName);
     }
     return staticLocaleMessages[localeId];
   }
 
   try {
     if (import.meta.env.DEV) {
-      console.info('[locale] Fetching locale messages for', localeId);
+      console.info('[locale] 📄 Fetching locale file from server:', fileName);
     }
     const response = await fetch(`/locales/${localeId}.json?_=${Date.now()}`);
     if (!response.ok) {
@@ -138,11 +155,13 @@ async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
     const data = await response.json() as LocaleMessages;
     staticLocaleMessages[localeId] = data;
     if (import.meta.env.DEV) {
-      console.info('[locale] Loaded locale messages for', localeId, 'with', Object.keys(data).length, 'entries');
+      console.info('[locale] 📄 ✓ Loaded locale file from server:', fileName, 'with', Object.keys(data).length, 'entries');
     }
     return data;
   } catch (error) {
-    console.error('Failed to load locale messages:', error);
+    if (import.meta.env.DEV) {
+      console.error('[locale] ❌ Failed to load locale messages for', fileName, ':', error);
+    }
     return {};
   }
 }
@@ -157,37 +176,101 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
   actions: {
     async initialize() {
       if (import.meta.env.DEV) {
-        console.info('[locale] initialize called. Already initialized?', this.initialized);
+        console.info('[locale] ===== INITIALIZE START =====');
+        console.info('[locale] Already initialized?', this.initialized);
+        console.info('[locale] Current state - language:', this.language || '(empty)', 'direction:', this.direction);
       }
-      if (this.initialized) {
-        return;
-      }
-
-      const cachedLanguage = loadPersistedLanguage();
-      if (!this.language && cachedLanguage) {
-        if (import.meta.env.DEV) {
-          console.info('[locale] Using cached language during initialization', cachedLanguage);
+      
+      // If already initialized, ensure direction matches language (Pinia persist might have restored language but not direction)
+      if (this.initialized && this.language) {
+        const expectedDirection: Direction = this.language === 'il' ? 'rtl' : 'ltr';
+        if (this.direction !== expectedDirection) {
+          if (import.meta.env.DEV) {
+            console.warn('[locale] ⚠️ Direction mismatch detected! Language:', this.language, 'Direction:', this.direction, 'Expected:', expectedDirection);
+            console.info('[locale] Fixing direction to match language...');
+          }
+          // Sync direction with language
+          await this.setLanguage(this.language);
+          if (import.meta.env.DEV) {
+            console.info('[locale] ===== INITIALIZE COMPLETE (direction fixed) =====');
+          }
+          return;
+        } else {
+          if (import.meta.env.DEV) {
+            console.info('[locale] Already initialized, direction is correct, skipping');
+          }
+          return;
         }
-        this.language = normalizeLanguage(cachedLanguage);
       }
 
-      const preferredLanguage = this.language || await detectPreferredLanguage();
-      if (import.meta.env.DEV) {
-        console.info('[locale] Preferred language detected as', preferredLanguage);
+      // First time initialization
+      // Check localStorage cache first
+      const cachedLanguage = loadPersistedLanguage();
+      
+      // Determine preferred language: cached > Pinia restored > device detection
+      let preferredLanguage: string;
+      
+      if (cachedLanguage) {
+        // Use cached language from localStorage
+        preferredLanguage = normalizeLanguage(cachedLanguage);
+        if (import.meta.env.DEV) {
+          console.info('[locale] ✓ Using language from localStorage cache:', preferredLanguage);
+        }
+      } else if (this.language) {
+        // Language was restored by Pinia persist plugin
+        preferredLanguage = normalizeLanguage(this.language);
+        if (import.meta.env.DEV) {
+          console.info('[locale] ✓ Using language from Pinia persistence:', preferredLanguage);
+        }
+      } else {
+        // No cached language, detect from device
+        preferredLanguage = await detectPreferredLanguage();
+        if (import.meta.env.DEV) {
+          console.info('[locale] ✓ Detected language from device/browser:', preferredLanguage);
+        }
       }
+
+      if (import.meta.env.DEV) {
+        console.info('[locale] Final preferred language:', preferredLanguage);
+      }
+      
       await this.setLanguage(preferredLanguage);
       this.initialized = true;
       if (import.meta.env.DEV) {
-        console.info('[locale] Initialization complete');
+        console.info('[locale] ===== INITIALIZE COMPLETE =====');
       }
     },
     async setLanguage(language: string) {
-      this.language = normalizeLanguage(language);
-      this.direction = this.language === 'il' ? 'rtl' : 'ltr';
+      const normalizedLang = normalizeLanguage(language);
+      const previousLanguage = this.language;
+      const previousDirection = this.direction;
+      
+      // Determine direction based on language
+      const newDirection: Direction = normalizedLang === 'il' ? 'rtl' : 'ltr';
+      
       if (import.meta.env.DEV) {
-        console.info('[locale] Setting language to', this.language, 'direction', this.direction);
-        console.info('[locale] Applying text direction', this.direction === 'rtl' ? 'right-to-left' : 'left-to-right');
+        console.info('[locale] ===== SET LANGUAGE START =====');
+        console.info('[locale] Previous language:', previousLanguage || '(none)', 'direction:', previousDirection);
+        console.info('[locale] New language:', normalizedLang, 'direction:', newDirection);
       }
+      
+      this.language = normalizedLang;
+      
+      // Apply direction change if it changed
+      if (this.direction !== newDirection) {
+        this.direction = newDirection;
+        if (import.meta.env.DEV) {
+          console.info('[locale] 🔄 DIRECTION CHANGED:', previousDirection, '→', newDirection);
+          console.info('[locale] Direction:', newDirection === 'rtl' ? 'RTL (Right-to-Left)' : 'LTR (Left-to-Right)');
+        }
+      } else {
+        this.direction = newDirection;
+        if (import.meta.env.DEV) {
+          console.info('[locale] Direction unchanged:', newDirection);
+        }
+      }
+      
+      // Update DOM attributes
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('dir', this.direction);
         document.documentElement.setAttribute('lang', this.language === 'il' ? 'he' : 'en');
@@ -200,11 +283,20 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
             }, { once: true });
           }
         }
+        if (import.meta.env.DEV) {
+          console.info('[locale] Updated DOM: dir="' + this.direction + '", lang="' + (this.language === 'il' ? 'he' : 'en') + '"');
+        }
       }
+      
+      // Load locale messages
       this.messages = await loadLocaleMessages(this.language);
+      
+      // Save to cache
       persistLanguage(this.language);
+      
       if (import.meta.env.DEV) {
-        console.info('[locale] Locale messages ready for', this.language);
+        console.info('[locale] Locale messages loaded for:', this.language);
+        console.info('[locale] ===== SET LANGUAGE COMPLETE =====');
       }
     },
     translate(key: string): string {
