@@ -1,5 +1,20 @@
+import http from 'http';
 import { promises as fs } from 'fs';
 import path from 'path';
+import puppeteer from 'puppeteer';
+
+const MIME_TYPES = {
+  '.css': 'text/css',
+  '.html': 'text/html; charset=utf-8',
+  '.ico': 'image/x-icon',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+};
 
 function normalizeRoute(route) {
   if (route === '/') {
@@ -8,16 +23,63 @@ function normalizeRoute(route) {
   return route.replace(/^\/+|\/+$/g, '');
 }
 
-async function copyIndexHtml(indexHtmlPath, outputPath) {
-  const html = await fs.readFile(indexHtmlPath, 'utf-8');
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(outputPath, html, 'utf-8');
+function getContentType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return MIME_TYPES[ext] ?? 'application/octet-stream';
+}
+
+function createStaticServer(rootDir) {
+  const resolvedRoot = path.resolve(rootDir);
+
+  return http.createServer((req, res) => {
+    const handleRequest = async () => {
+      try {
+        const requestUrl = new URL(req.url ?? '/', 'http://localhost');
+        const decodedPath = decodeURIComponent(requestUrl.pathname);
+        const joinedPath = path.join(resolvedRoot, decodedPath);
+
+        if (!joinedPath.startsWith(resolvedRoot)) {
+          res.writeHead(403);
+          res.end('Forbidden');
+          return;
+        }
+
+        let filePath = joinedPath;
+        let stats;
+
+        try {
+          stats = await fs.stat(filePath);
+        } catch (error) {
+          filePath = path.join(resolvedRoot, 'index.html');
+          stats = await fs.stat(filePath);
+        }
+
+        if (stats.isDirectory()) {
+          filePath = path.join(filePath, 'index.html');
+        }
+
+        const data = await fs.readFile(filePath);
+        res.writeHead(200, { 'Content-Type': getContentType(filePath) });
+        res.end(data);
+      } catch (error) {
+        res.writeHead(404);
+        res.end('Not Found');
+      }
+    };
+
+    handleRequest().catch(() => {
+      res.writeHead(500);
+      res.end('Internal Server Error');
+    });
+  });
 }
 
 export default function prerenderPlugin(options = {}) {
   const routes = Array.isArray(options.routes) ? options.routes : [];
   const rootDir = options.root ?? process.cwd();
   const outDir = options.outDir ?? 'dist';
+  const waitUntil = options.waitUntil ?? 'networkidle0';
+  const puppeteerOptions = options.puppeteer ?? { headless: 'new' };
 
   return {
     name: 'vite-plugin-prerender-local',
@@ -37,18 +99,53 @@ export default function prerenderPlugin(options = {}) {
         return;
       }
 
-      for (const route of routes) {
-        const normalized = normalizeRoute(route);
-        const destination = normalized
-          ? path.join(resolvedOutDir, normalized, 'index.html')
-          : path.join(resolvedOutDir, 'index.html');
+      let server;
+      let browser;
 
-        if (!normalized) {
-          // Skip duplicating the root index.html if it already exists.
-          continue;
+      try {
+        server = createStaticServer(resolvedOutDir);
+
+        await new Promise((resolve) => {
+          server.listen(0, '127.0.0.1', resolve);
+        });
+
+        const address = server.address();
+        const port = typeof address === 'object' && address ? address.port : null;
+
+        if (!port) {
+          throw new Error('Failed to determine prerender server port');
         }
 
-        await copyIndexHtml(indexHtmlPath, destination);
+        const origin = `http://127.0.0.1:${port}`;
+
+        browser = await puppeteer.launch(puppeteerOptions);
+
+        for (const route of routes) {
+          const page = await browser.newPage();
+          const targetUrl = new URL(route, origin).toString();
+
+          await page.goto(targetUrl, { waitUntil });
+          const html = await page.content();
+
+          const normalized = normalizeRoute(route);
+          const destination = normalized
+            ? path.join(resolvedOutDir, normalized, 'index.html')
+            : path.join(resolvedOutDir, 'index.html');
+
+          await fs.mkdir(path.dirname(destination), { recursive: true });
+          await fs.writeFile(destination, html, 'utf-8');
+          await page.close();
+        }
+      } catch (error) {
+        console.error('[vite-plugin-prerender] Failed to prerender routes:', error);
+      } finally {
+        if (browser) {
+          await browser.close();
+        }
+
+        if (server) {
+          await new Promise((resolve) => server.close(resolve));
+        }
       }
     },
   };
