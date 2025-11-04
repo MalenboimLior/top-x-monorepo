@@ -61,9 +61,16 @@ async function detectPreferredLanguage(): Promise<string> {
   return 'en';
 }
 
+function normalizeLanguage(language: string | undefined | null): 'en' | 'il' {
+  const normalized = (language || '').toLowerCase();
+  if (normalized === 'il' || normalized.startsWith('he') || normalized.startsWith('iw')) {
+    return 'il';
+  }
+  return 'en';
+}
+
 async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
-  const normalized = language.toLowerCase();
-  const localeId = normalized === 'il' ? 'il' : 'en';
+  const localeId = normalizeLanguage(language);
 
   if (staticLocaleMessages[localeId]) {
     if (import.meta.env.DEV) {
@@ -119,8 +126,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       }
     },
     async setLanguage(language: string) {
-      const normalized = (language || 'en').toLowerCase();
-      this.language = normalized === 'il' ? 'il' : 'en';
+      this.language = normalizeLanguage(language);
       this.direction = this.language === 'il' ? 'rtl' : 'ltr';
       if (import.meta.env.DEV) {
         console.info('[locale] Setting language to', this.language, 'direction', this.direction);
