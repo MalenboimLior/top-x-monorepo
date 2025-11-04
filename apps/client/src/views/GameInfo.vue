@@ -6,22 +6,41 @@
       <div class="game-hero">
         <div class="game-image-wrapper">
           <img :src="game.image" :alt="`${game.name} image`" class="game-image" />
+          <div v-if="gamePills.length" class="game-image-labels">
+            <span
+              v-for="pill in gamePills"
+              :key="pill.text + pill.variant"
+              class="game-image-badge"
+              :class="`game-image-badge--${pill.variant}`"
+            >
+              <font-awesome-icon v-if="pill.icon" :icon="pill.icon" />
+              <span>{{ pill.text }}</span>
+            </span>
+          </div>
         </div>
         <div class="game-details">
-          <p class="game-pill">Top Pick</p>
           <h1 class="game-title">{{ game.name }}</h1>
           <p class="game-description">{{ game.description }}</p>
           <div class="game-meta-grid">
             <div class="meta-card">
-              <h3>Game Type</h3>
+              <div class="meta-card__header">
+                <font-awesome-icon :icon="['fas', 'gamepad']" class="meta-card__icon" />
+                <h3>Game Type</h3>
+              </div>
               <p>{{ game.gameTypeId || 'Coming Soon' }}</p>
             </div>
             <div class="meta-card" v-if="game.gameHeader">
-              <h3>Header</h3>
+              <div class="meta-card__header">
+                <font-awesome-icon :icon="['fas', 'table']" class="meta-card__icon" />
+                <h3>Header</h3>
+              </div>
               <p>{{ game.gameHeader }}</p>
             </div>
             <div class="meta-card" v-if="game.gameInstruction">
-              <h3>How to play</h3>
+              <div class="meta-card__header">
+                <font-awesome-icon :icon="['fas', 'circle-info']" class="meta-card__icon" />
+                <h3>How to play</h3>
+              </div>
               <p>{{ game.gameInstruction }}</p>
             </div>
           </div>
@@ -30,9 +49,15 @@
               v-for="counter in counterList"
               :key="counter.key"
               class="stat-pill"
+              :title="counter.label"
             >
-              <span class="stat-value">{{ formatCounter(counter.value) }}</span>
-              <span class="stat-label">{{ counter.label }}</span>
+              <span class="stat-icon" role="img" :aria-label="counter.label">
+                <font-awesome-icon :icon="counter.icon" />
+              </span>
+              <div class="stat-content">
+                <span class="stat-value">{{ formatCounter(counter.value) }}</span>
+                <span class="stat-label">{{ counter.label }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -53,6 +78,7 @@
         :aria-pressed="isFavorite"
         @click="toggleFavoriteStatus"
       >
+        <font-awesome-icon :icon="['fas', 'heart']" />
         {{ isFavorite ? 'Remove Favorite' : 'Add to Favorites' }}
       </button>
       <button class="ghost-button" type="button" @click="backToGames">
@@ -63,7 +89,10 @@
     <!-- Section 3: Leaderboard -->
     <section class="leaderboard-section">
       <div class="section-heading">
-        <h2 class="section-title">Leaderboard</h2>
+        <h2 class="section-title">
+          <font-awesome-icon :icon="['fas', 'trophy']" />
+          Leaderboard
+        </h2>
         <p class="section-subtitle">See who is dominating this challenge.</p>
       </div>
       <div class="section-surface">
@@ -74,7 +103,10 @@
     <!-- Section 4: Daily Challenges -->
     <section v-if="game.dailyChallengeActive" class="daily-challenges-section">
       <div class="section-heading">
-        <h2 class="section-title">Daily Challenges</h2>
+        <h2 class="section-title">
+          <font-awesome-icon :icon="['fas', 'bolt']" />
+          Daily Challenges
+        </h2>
         <p class="section-subtitle">A fresh leaderboard every 24 hours.</p>
       </div>
       <div class="section-surface">
@@ -87,7 +119,10 @@
     <section class="build-section">
       <div class="section-surface build-card">
         <div class="build-copy">
-          <h3>Build your own game</h3>
+          <h3>
+            <font-awesome-icon :icon="['fas', 'edit']" />
+            Build your own game
+          </h3>
           <p>Design custom experiences and share them with the community.</p>
         </div>
         <CustomButton
@@ -135,13 +170,52 @@ const game = ref<Game>({
 const stats = ref<Partial<GameStats>>({});
 
 const isFavorite = computed(() => (gameId.value ? userStore.isGameFavorite(gameId.value) : false));
+
+type GamePillVariant = 'featured' | 'daily';
+
+type GamePill = {
+  text: string;
+  variant: GamePillVariant;
+  icon: [string, string];
+};
+
+const gamePills = computed<GamePill[]>(() => {
+  const pills: GamePill[] = [];
+  // You can add logic here to determine if it's featured
+  pills.push({ text: 'Top Pick', variant: 'featured', icon: ['fas', 'trophy'] });
+  if (game.value.dailyChallengeActive) {
+    pills.push({ text: 'Daily Challenge', variant: 'daily', icon: ['fas', 'bolt'] });
+  }
+  return pills;
+});
+
 const counterList = computed(() => {
   const counters = stats.value;
   return [
-    { key: 'players', label: 'Players', value: counters.totalPlayers },
-    { key: 'favorites', label: 'Favorites', value: counters.favorites },
-    { key: 'sessions', label: 'Sessions', value: counters.sessionsPlayed },
-    { key: 'submissions', label: 'Submissions', value: counters.uniqueSubmitters },
+    { 
+      key: 'players', 
+      label: 'Players', 
+      value: counters.totalPlayers,
+      icon: ['fas', 'user-group'] as [string, string],
+    },
+    { 
+      key: 'favorites', 
+      label: 'Favorites', 
+      value: counters.favorites,
+      icon: ['fas', 'heart'] as [string, string],
+    },
+    { 
+      key: 'sessions', 
+      label: 'Sessions', 
+      value: counters.sessionsPlayed,
+      icon: ['fas', 'gamepad'] as [string, string],
+    },
+    { 
+      key: 'submissions', 
+      label: 'Submissions', 
+      value: counters.uniqueSubmitters,
+      icon: ['fas', 'share'] as [string, string],
+    },
   ].filter((entry) => typeof entry.value === 'number' && entry.value !== undefined);
 });
 const hasCounters = computed(() => counterList.value.length > 0);
@@ -258,9 +332,9 @@ function buildGame() {
 .game-hero {
   display: grid;
   width: min(1200px, 100%);
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2.5rem;
-  align-items: center;
+  align-items: start;
 }
 
 .game-image-wrapper {
@@ -279,21 +353,59 @@ function buildGame() {
   object-fit: cover;
 }
 
+.game-image-labels {
+  position: absolute;
+  top: var(--space-3, 1rem);
+  left: var(--space-3, 1rem);
+  right: var(--space-3, 1rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  z-index: 3;
+}
+
+.game-image-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  border-radius: 12px;
+  font-size: var(--font-size-200, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-image-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.game-image-badge svg {
+  font-size: 0.9rem;
+}
+
+.game-image-badge--featured {
+  background: linear-gradient(135deg, rgba(255, 201, 20, 0.35), rgba(255, 215, 0, 0.25));
+  color: #ffd85c;
+  border: 1.5px solid rgba(255, 201, 20, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.game-image-badge--daily {
+  background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.25));
+  color: #00e8e0;
+  border: 1.5px solid rgba(0, 232, 224, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 .game-details {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-}
-
-.game-pill {
-  align-self: flex-start;
-  padding: 0.35rem 1.1rem;
-  border-radius: 999px;
-  background: rgba(0, 232, 224, 0.16);
-  color: var(--bulma-primary);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .game-title {
@@ -315,37 +427,6 @@ function buildGame() {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
-.game-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.stat-pill {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 232, 224, 0.25);
-  background: rgba(255, 255, 255, 0.05);
-  min-width: 120px;
-}
-
-.stat-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.6);
-}
-
 .meta-card {
   background: rgba(0, 232, 224, 0.05);
   border: 1px solid rgba(0, 232, 224, 0.18);
@@ -353,8 +434,26 @@ function buildGame() {
   padding: 1.2rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
   min-height: 140px;
+  transition: all 0.2s ease;
+}
+
+.meta-card:hover {
+  background: rgba(0, 232, 224, 0.08);
+  border-color: rgba(0, 232, 224, 0.3);
+  transform: translateY(-2px);
+}
+
+.meta-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.meta-card__icon {
+  color: var(--bulma-primary);
+  font-size: 1rem;
 }
 
 .meta-card h3 {
@@ -370,6 +469,66 @@ function buildGame() {
   font-size: 1rem;
   color: #ffffff;
   line-height: 1.5;
+}
+
+.game-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 232, 224, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  min-width: 140px;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.stat-pill:hover {
+  background: rgba(0, 232, 224, 0.12);
+  border-color: rgba(0, 232, 224, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 232, 224, 0.2);
+}
+
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 232, 224, 0.3), rgba(0, 232, 224, 0.2));
+  color: var(--bulma-primary);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .action-buttons-section {
@@ -389,6 +548,14 @@ function buildGame() {
   font-weight: 600;
   letter-spacing: 0.04em;
   transition: background 0.2s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.ghost-button svg {
+  font-size: 0.9rem;
 }
 
 .ghost-button:hover {
@@ -402,6 +569,10 @@ function buildGame() {
   color: #ffffff;
 }
 
+.ghost-button.is-active svg {
+  color: var(--bulma-primary);
+}
+
 .section-heading {
   display: flex;
   flex-direction: column;
@@ -413,6 +584,15 @@ function buildGame() {
 .section-title {
   margin: 0;
   font-size: clamp(1.8rem, 1vw + 1.2rem, 2.4rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.section-title svg {
+  color: var(--bulma-primary);
+  font-size: 1.5rem;
 }
 
 .section-subtitle {
@@ -446,6 +626,13 @@ function buildGame() {
 .build-copy h3 {
   margin: 0;
   font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.build-copy h3 svg {
+  color: var(--bulma-primary);
 }
 
 .build-copy p {
@@ -473,12 +660,12 @@ function buildGame() {
   }
 
   .game-details {
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
   }
 
-  .game-pill {
-    align-self: center;
+  .game-meta-grid {
+    grid-template-columns: 1fr;
   }
 
   .section-surface {
@@ -487,6 +674,24 @@ function buildGame() {
 
   .build-card {
     align-items: stretch;
+  }
+
+  .game-stats {
+    justify-content: center;
+  }
+
+  .stat-pill {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: auto;
+  }
+
+  .section-title {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .section-title svg {
+    font-size: 1.25rem;
   }
 }
 
@@ -510,6 +715,26 @@ function buildGame() {
 
   .meta-card {
     min-height: auto;
+  }
+
+  .stat-pill {
+    flex: 1 1 100%;
+    min-width: auto;
+  }
+
+  .game-image-labels {
+    top: var(--space-2, 0.5rem);
+    left: var(--space-2, 0.5rem);
+    right: var(--space-2, 0.5rem);
+  }
+
+  .game-image-badge {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .ghost-button {
+    justify-content: center;
   }
 }
 </style>

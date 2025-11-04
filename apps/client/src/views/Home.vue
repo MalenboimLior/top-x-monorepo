@@ -71,16 +71,17 @@
       <p v-if="!featuredGames.length" class="empty-state">{{ t('home.featuredGames.empty') }}</p>
     </section>
 
-    <ins
-      v-if="shouldDisplayAds"
-      ref="adSlotRef"
-      class="adsbygoogle"
-      style="display:block; width: 100%; min-height: 250px; margin: 2rem auto;"
-      :data-ad-client="adClient"
-      :data-ad-slot="adSlot"
-      data-ad-format="auto"
-      data-full-width-responsive="true"
-    ></ins>
+    <template v-if="shouldDisplayAds">
+      <ins
+        ref="adSlotRef"
+        class="adsbygoogle"
+        style="display:block; width: 100%; min-height: 250px; margin: 2rem auto;"
+        :data-ad-client="adClient"
+        :data-ad-slot="adSlot"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+    </template>
 
     <section class="game-section layout-container section-stack">
       <header class="section-header">
