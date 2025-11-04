@@ -86,11 +86,18 @@ export default function prerenderPlugin(options = {}) {
     : null;
   const postProcess = typeof options.postProcess === 'function' ? options.postProcess : null;
   const staticDir = options.staticDir ?? null;
+  const settleDelay = typeof options.settleDelay === 'number' ? options.settleDelay : 0;
+  const debug = options.debug === true;
 
   return {
     name: 'vite-plugin-prerender-local',
     apply: 'build',
     async closeBundle() {
+      if (process.env.PRERENDER !== '1') {
+        if (debug) console.log('[vite-plugin-prerender] Skipping prerender (PRERENDER env not set).');
+        return;
+      }
+
       if (routes.length === 0) {
         return;
       }
@@ -124,7 +131,10 @@ export default function prerenderPlugin(options = {}) {
 
         const origin = `http://127.0.0.1:${port}`;
 
-        browser = await puppeteer.launch(puppeteerOptions);
+        browser = await puppeteer.launch({
+          protocolTimeout: timeoutMs,
+          ...puppeteerOptions,
+        });
 
         for (const route of routes) {
           const page = await browser.newPage();
@@ -140,7 +150,27 @@ export default function prerenderPlugin(options = {}) {
             });
           }
 
-          await page.goto(targetUrl, { waitUntil });
+          // Block third-party requests to avoid timeouts
+          await page.setRequestInterception(true);
+          page.on('request', (req) => {
+            try {
+              const url = new URL(req.url());
+              if (url.origin !== origin) {
+                return req.abort();
+              }
+              return req.continue();
+            } catch (_) {
+              return req.abort();
+            }
+          });
+
+          if (debug) {
+            page.on('console', (msg) => console.log('[prerender:console]', msg.type(), msg.text()));
+            page.on('pageerror', (err) => console.warn('[prerender:pageerror]', err?.message || err));
+            page.on('requestfailed', (req) => console.warn('[prerender:requestfailed]', req.url()));
+          }
+
+          const navigate = page.goto(targetUrl, { waitUntil });
 
           if (renderAfterDocumentEvent) {
             await page.evaluate((eventName) => {
@@ -149,6 +179,18 @@ export default function prerenderPlugin(options = {}) {
                 document.addEventListener(eventName, done, { once: true });
               });
             }, renderAfterDocumentEvent);
+          }
+
+          // Per-route max wait guard
+          await Promise.race([
+            navigate,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('route-timeout')), timeoutMs)),
+          ]).catch((e) => {
+            if (debug) console.warn('[vite-plugin-prerender] navigation guard:', route, e?.message || e);
+          });
+
+          if (settleDelay > 0) {
+            await page.waitForTimeout(settleDelay);
           }
 
           let html = await page.content();
@@ -165,9 +207,10 @@ export default function prerenderPlugin(options = {}) {
           }
 
           const normalized = normalizeRoute(route);
+          // Do not overwrite the SPA root index.html; write root prerender to /build/index.html instead
           const destination = normalized
             ? path.join(resolvedOutDir, normalized, 'index.html')
-            : path.join(resolvedOutDir, 'index.html');
+            : path.join(resolvedOutDir, 'build', 'index.html');
 
           await fs.mkdir(path.dirname(destination), { recursive: true });
           await fs.writeFile(destination, html, 'utf-8');
