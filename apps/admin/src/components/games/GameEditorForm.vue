@@ -62,8 +62,8 @@
           <ImageUploader
             v-model="game.image"
             :uploadFolder="`images/games/${validatedGameId}`"
-            :cropWidth="1920"
-            :cropHeight="1080"
+            :cropWidth="1200"
+            :cropHeight="800"
           />
         </div>
       </div>
