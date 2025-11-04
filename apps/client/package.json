@@ -48,7 +48,7 @@
     "puppeteer": "^24.28.0",
     "typescript": "^5.7.2",
     "vite": "^6.2.0",
-    "vite-plugin-prerender": "file:../../packages/vite-plugin-prerender",
+    "vite-plugin-prerender": "^0.0.0",
     "vitest": "^2.1.8",
     "vue-tsc": "^2.2.4"
   }

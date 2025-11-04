@@ -38,10 +38,16 @@ app
 const localeStore = useLocaleStore(pinia);
 
 loadAdSenseScript(import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID);
-
+router.isReady().then(() => {
 localeStore.initialize().finally(() => {
   app.mount('#app');
-
+// ---- PRERENDER SIGNAL ----
+    if (import.meta.env.PROD && (window as any).__PRERENDER_INJECTED) {
+      // Give any Firebase/Pinia async data a moment
+      setTimeout(() => {
+        document.dispatchEvent(new Event('prerender-ready'));
+      }, 1200);   // 1.2 s is enough for your current init
+    }
   window.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     const name = target.getAttribute('data-analytics-name') || target.tagName;
@@ -50,4 +56,4 @@ localeStore.initialize().finally(() => {
       page_path: window.location.pathname,
     });
   });
-});
+});});

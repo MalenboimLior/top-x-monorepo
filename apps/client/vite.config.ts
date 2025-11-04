@@ -1,41 +1,50 @@
-// Vite configuration for the client application
+// apps/client/vite.config.ts
 import { defineConfig } from 'vite';
-import path from 'path';
-import dotenv from 'dotenv';
 import vue from '@vitejs/plugin-vue';
 import prerender from 'vite-plugin-prerender';
+import path from 'path';
+import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
-const prerenderedRoutes = [
-  '/',
-  '/about',
-  '/faq',
-  '/contactus',
-  '/profile',
-  '/build',
-  '/termsofuse',
-  '/privacypolicy',
-];
 
 export default defineConfig({
   base: '/',
   plugins: [
     vue(),
-    prerender({
-      routes: prerenderedRoutes,
-      outDir: 'dist',
-    }),
+
+   prerender({
+  routes: [
+    '/', '/about', '/faq', '/contactus',
+    '/profile', '/build', '/termsofuse', '/privacypolicy'
   ],
+  staticDir: path.resolve(__dirname, 'dist'),
+
+  // 90 seconds per page
+  timeout: 90_000,
+
+  // Wait for our custom event
+  renderAfterDocumentEvent: 'prerender-ready',
+
+  postProcess({ html }) {
+    return {
+      html: html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+      route: undefined
+    };
+  }
+}),
+  ],
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@top-x/shared': path.resolve(__dirname, '../../packages/shared/src'),
-      '@top-x/shared/types': path.resolve(__dirname, '../../packages/shared/src/types'),
+      '@top-x/shared/types': path.resolve(__dirname, '../../packages/shared/src/types')
     },
-    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
   },
+
   define: {
+    // (your Firebase env vars – unchanged)
     'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY),
     'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN),
     'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID),
@@ -46,12 +55,20 @@ export default defineConfig({
     'import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_CLIENT_ID),
     'import.meta.env.VITE_GOOGLE_ADS_SLOT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_SLOT_ID),
   },
+
   optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics'],
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics']
   },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: './vitest.setup.ts',
-  },
+
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'index.html'),
+      onwarn(warning, handler) {
+        if (warning.message.includes('.DS_Store')) return;
+        handler(warning);
+      }
+    }
+  }
 });
