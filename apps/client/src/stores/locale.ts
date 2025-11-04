@@ -4,6 +4,45 @@ type Direction = 'ltr' | 'rtl';
 
 type LocaleMessages = Record<string, string>;
 
+const LOCAL_STORAGE_KEY = 'topx.locale.preferredLanguage';
+
+function normalizeLanguage(language: string | null | undefined): 'en' | 'il' {
+  const value = (language || '').toLowerCase();
+
+  if (value === 'il' || value.startsWith('he') || value.startsWith('iw')) {
+    return 'il';
+  }
+
+  return 'en';
+}
+
+function persistLanguage(language: string) {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, language);
+    }
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[locale] Unable to persist language preference', error);
+    }
+  }
+}
+
+function loadPersistedLanguage(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return window.localStorage.getItem(LOCAL_STORAGE_KEY);
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[locale] Unable to load persisted language preference', error);
+    }
+    return null;
+  }
+}
+
 const localeModules = import.meta.glob<{ default: LocaleMessages }>(
   '../locales/*.json',
   { eager: true },
@@ -54,11 +93,7 @@ async function detectPreferredLanguage(): Promise<string> {
   }
 
   const browserLanguage = navigator.languages?.[0] || navigator.language || 'en';
-  if (browserLanguage.toLowerCase().startsWith('he') || browserLanguage.toLowerCase().startsWith('iw')) {
-    return 'il';
-  }
-
-  return 'en';
+  return normalizeLanguage(browserLanguage);
 }
 
 async function loadLocaleMessages(language: string): Promise<LocaleMessages> {
@@ -108,6 +143,11 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         return;
       }
 
+      const cachedLanguage = loadPersistedLanguage();
+      if (!this.language && cachedLanguage) {
+        this.language = normalizeLanguage(cachedLanguage);
+      }
+
       const preferredLanguage = this.language || await detectPreferredLanguage();
       if (import.meta.env.DEV) {
         console.info('[locale] Preferred language detected as', preferredLanguage);
@@ -119,8 +159,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       }
     },
     async setLanguage(language: string) {
-      const normalized = (language || 'en').toLowerCase();
-      this.language = normalized === 'il' ? 'il' : 'en';
+      this.language = normalizeLanguage(language);
       this.direction = this.language === 'il' ? 'rtl' : 'ltr';
       if (import.meta.env.DEV) {
         console.info('[locale] Setting language to', this.language, 'direction', this.direction);
@@ -139,6 +178,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         }
       }
       this.messages = await loadLocaleMessages(this.language);
+      persistLanguage(this.language);
       if (import.meta.env.DEV) {
         console.info('[locale] Locale messages ready for', this.language);
       }
