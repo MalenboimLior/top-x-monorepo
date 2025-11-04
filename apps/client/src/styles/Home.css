@@ -296,43 +296,6 @@
   background: rgba(0, 0, 0, 0.6);
 }
 
-.game-card__labels {
-  position: absolute;
-  top: var(--space-3);
-  inset-inline-start: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  z-index: 2;
-}
-
-.game-card__media-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: 999px;
-  font-size: var(--font-size-200);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  backdrop-filter: blur(6px);
-  background: rgba(0, 0, 0, 0.55);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.game-card__media-label--featured {
-  background: rgba(255, 201, 20, 0.28);
-  color: #ffd85c;
-  border-color: rgba(255, 201, 20, 0.4);
-}
-
-.game-card__media-label--daily {
-  background: rgba(0, 232, 224, 0.28);
-  color: var(--bulma-primary);
-  border-color: rgba(0, 232, 224, 0.4);
-}
 
 .game-card__media img {
   position: absolute;
@@ -359,42 +322,6 @@
 }
 
 
-.game-card__meta {
-  --responsive-gap: 0.75rem;
-  --responsive-item-flex: 0 1 200px;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  font-size: var(--font-size-300);
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.game-card__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: 999px;
-  background: rgba(0, 232, 224, 0.18);
-  color: var(--bulma-primary);
-  font-weight: 600;
-  font-size: var(--font-size-200);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  flex: 0 0 auto;
-}
-
-.game-card__badge--alt {
-  background: rgba(196, 255, 0, 0.16);
-  color: var(--bulma-link-text);
-}
-
-.game-card__creator {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
-  flex: 1 1 auto;
-  text-align: end;
-}
 
 .game-card__title {
   font-size: 1.35rem;
@@ -412,59 +339,62 @@
 
 .game-card__stats {
   display: flex;
+  flex-direction: row;
   flex-wrap: nowrap;
-  align-items: stretch;
+  align-items: center;
   gap: var(--space-3);
-  margin: var(--space-3) 0 var(--space-2);
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border-radius: 14px;
+  background: rgba(0, 232, 224, 0.08);
+  border: 1px solid rgba(0, 232, 224, 0.2);
   overflow-x: auto;
-  padding-bottom: 0.25rem;
 }
 
 .game-card__stat {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-radius: 14px;
-  border: 1px solid rgba(0, 232, 224, 0.18);
-  background: rgba(0, 232, 224, 0.08);
-  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 10px;
+  background: rgba(0, 232, 224, 0.12);
+  border: 1px solid rgba(0, 232, 224, 0.25);
+  transition: all 0.2s ease;
+  cursor: default;
+  flex-shrink: 0;
   white-space: nowrap;
+}
+
+.game-card__stat:hover {
+  background: rgba(0, 232, 224, 0.18);
+  border-color: rgba(0, 232, 224, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 232, 224, 0.2);
 }
 
 .game-card__stat-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 999px;
-  background: rgba(0, 232, 224, 0.15);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 232, 224, 0.3), rgba(0, 232, 224, 0.2));
   color: var(--bulma-primary);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .game-card__stat-value {
   color: #ffffff;
   font-weight: 700;
-  font-size: 1rem;
-}
-
-.game-card__stat-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .game-card__footer {
   margin-top: auto;
+  padding-top: var(--space-2);
 }
 
 
@@ -578,14 +508,6 @@
     justify-content: center;
   }
 
-  .game-card__meta {
-    justify-content: center;
-    text-align: center;
-  }
-
-  .game-card__creator {
-    text-align: center;
-  }
 
   .game-card__content {
     padding: var(--space-5);
