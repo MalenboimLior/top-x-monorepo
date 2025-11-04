@@ -81,14 +81,15 @@
                 </div>
                 <div class="level-details">
                   <div class="level-meta">
-                    <div class="field">
-                      <label class="label">Time Limit</label>
-                      <input class="input" type="number" v-model.number="level.timeLimit" placeholder="Time Limit" />
-                    </div>
-                    <div class="field">
+                     <div class="field">
                       <label class="label">Level Header</label>
                       <input class="input" v-model="level.levelHeader" placeholder="Level Header" />
                     </div>
+                    <div class="field">
+                      <label class="label">Time Limit</label>
+                      <input class="input" width="50px" type="number" v-model.number="level.timeLimit" placeholder="Time Limit" />
+                    </div>
+                   
                   </div>
 
                   <div class="level-subsections">
@@ -494,6 +495,7 @@ function removeAcceptedVariant(index: number) {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  margin-right: 10px;
 }
 
 .image-uploader-frame {
