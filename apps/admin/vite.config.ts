@@ -14,6 +14,19 @@ export default defineConfig({
       '@top-x/shared': path.resolve(__dirname, '../../packages/shared/src'),
       '@top-x/shared/types': path.resolve(__dirname, '../../packages/shared/src/types'),
     },
+    dedupe: [
+      'firebase',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/functions',
+      'firebase/analytics',
+      '@firebase/app',
+      '@firebase/auth',
+      '@firebase/firestore',
+      '@firebase/functions',
+      '@firebase/analytics',
+    ],
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },
   define: {
@@ -28,6 +41,9 @@ export default defineConfig({
     'import.meta.env.VITE_GOOGLE_ADS_SLOT_ID': JSON.stringify(process.env.VITE_GOOGLE_ADS_SLOT_ID),
   },
   optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions'],
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics'],
+    esbuildOptions: {
+      keepNames: true,
+    },
   },
 });

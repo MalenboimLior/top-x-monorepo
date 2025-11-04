@@ -6,10 +6,11 @@ import router from './router';
 import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable, faMedal, faSortUp, faSortDown, faCircleInfo, faDownload, faEdit, faSquarePollVertical, faCheckCircle, faTimesCircle, faQuestionCircle, faClock } from '@fortawesome/free-solid-svg-icons';
+import {faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable, faMedal, faSortUp, faSortDown, faCircleInfo, faDownload, faEdit, faSquarePollVertical, faCheckCircle, faTimesCircle, faQuestionCircle, faClock } from '@fortawesome/free-solid-svg-icons';
+import {  faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
-library.add(faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable, faMedal, faSortUp, faSortDown, faCircleInfo, faDownload, faEdit, faSquarePollVertical, faCheckCircle, faTimesCircle, faQuestionCircle, faClock);
+library.add(faXTwitter,faShare, faSave, faUserPlus, faRedo, faPlay, faSearch, faTable, faMedal, faSortUp, faSortDown, faCircleInfo, faDownload, faEdit, faSquarePollVertical, faCheckCircle, faTimesCircle, faQuestionCircle, faClock);
 
 import 'bulma/css/bulma.min.css';
 import './styles/tokens.css';
