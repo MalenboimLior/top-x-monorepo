@@ -7,123 +7,146 @@
       <ImageUploader v-model="config.backgroundImage" uploadFolder="zonereveal" :cropWidth="800" :cropHeight="600" />
     </div>
 
-    <div class="field">
-      <label class="label">Answer</label>
-      <p class="help">Enter the canonical spelling that should be revealed to players.</p>
-      <input class="input" v-model="config.answer.solution" placeholder="Canonical answer (e.g., Mount Everest)" />
-    </div>
-
-    <div class="field">
-      <label class="label">Accepted Variants</label>
-      <p class="help">Optional alternate spellings, nicknames, or abbreviations that should also count.</p>
-      <div class="field has-addons">
-        <div class="control is-expanded">
-          <input
-            class="input"
-            v-model="newAcceptedVariant"
-            placeholder="Add an alternate answer and press enter"
-            @keyup.enter.prevent="addAcceptedVariant"
-          />
-        </div>
-        <div class="control">
-          <button class="button is-link" @click.prevent="addAcceptedVariant">Add</button>
-        </div>
-      </div>
-      <div class="tags">
-        <span v-for="(variant, variantIndex) in config.answer.accepted" :key="variant" class="tag is-info is-light">
-          {{ variant }}
-          <button class="delete is-small" @click="removeAcceptedVariant(variantIndex)" aria-label="Remove variant"></button>
-        </span>
-      </div>
-    </div>
-
     <details class="collapsible">
-      <summary class="collapsible-summary">Reveal Image</summary>
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">🧠</span>
+        <span>Answer</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
       <div class="collapsible-content">
+        <div class="field">
+          <label class="label">Answer</label>
+          <p class="help">Enter the canonical spelling that should be revealed to players.</p>
+          <input class="input" v-model="config.answer.solution" placeholder="Canonical answer (e.g., Mount Everest)" />
+        </div>
+
+        <div class="field">
+          <label class="label">Accepted Variants</label>
+          <p class="help">Optional alternate spellings, nicknames, or abbreviations that should also count.</p>
+          <div class="field has-addons">
+            <div class="control is-expanded">
+              <input
+                class="input"
+                v-model="newAcceptedVariant"
+                placeholder="Add an alternate answer and press enter"
+                @keyup.enter.prevent="addAcceptedVariant"
+              />
+            </div>
+            <div class="control">
+              <button class="button is-link" @click.prevent="addAcceptedVariant">Add</button>
+            </div>
+          </div>
+          <div class="tags">
+            <span v-for="(variant, variantIndex) in config.answer.accepted" :key="variant" class="tag is-info is-light">
+              {{ variant }}
+              <button class="delete is-small" @click="removeAcceptedVariant(variantIndex)" aria-label="Remove variant"></button>
+            </span>
+          </div>
+        </div>
+
         <div class="field">
           <label class="label">Reveal Image</label>
           <p class="help">Optional image that appears with the revealed answer.</p>
           <ImageUploader v-model="config.answer.image" uploadFolder="zonereveal" :cropWidth="800" :cropHeight="600" />
         </div>
+      </div>
+    </details>
 
-        <!-- Levels Config list -->
-        <div class="field">
-          <label class="label">Levels</label>
-          <div class="levels-wrapper">
-            <details v-for="(level, levelIndex) in config.levelsConfig" :key="levelIndex" class="level-collapsible">
-              <summary class="level-summary">Level {{ levelIndex + 1 }}</summary>
-              <div class="level-box">
-                <div class="field">
-                  <label class="label">Time Limit</label>
-                  <input class="input" type="number" v-model.number="level.timeLimit" placeholder="Time Limit" />
-                </div>
-                <div class="field">
+    <details class="collapsible">
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">🎯</span>
+        <span>Levels</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
+      <div class="collapsible-content">
+        <div class="levels-wrapper">
+          <details v-for="(level, levelIndex) in config.levelsConfig" :key="levelIndex" class="level-collapsible">
+            <summary class="level-summary">
+              <span class="summary-icon" aria-hidden="true">🗺️</span>
+              <span>Level {{ levelIndex + 1 }}</span>
+              <span class="summary-arrow" aria-hidden="true">▸</span>
+            </summary>
+            <div class="level-box">
+              <div class="level-content">
+                <div class="level-media">
                   <label class="label">Hidden Image</label>
-                  <ImageUploader
-                    v-model="level.hiddenImage"
-                    uploadFolder="zonereveal"
-                    :cropWidth="400"
-                    :cropHeight="480"
-                  />
+                  <div class="image-uploader-frame">
+                    <ImageUploader
+                      v-model="level.hiddenImage"
+                      uploadFolder="zonereveal"
+                      :cropWidth="400"
+                      :cropHeight="480"
+                    />
+                  </div>
                 </div>
-                <div class="field">
-                  <label class="label">Level Header</label>
-                  <input class="input" v-model="level.levelHeader" placeholder="Level Header" />
-                </div>
-
-                <!-- Enemy Config -->
-                <div class="field">
-                  <label class="label">Enemies</label>
-                  <div v-for="(enemy, enemyIndex) in level.enemyConfig" :key="enemyIndex" class="columns mb-1">
-                    <div class="column">
-                      <div class="select is-fullwidth">
-                        <select v-model="enemy.type">
-                          <option value="">Select Type</option>
-                          <option v-for="t in enemyTypes" :key="t" :value="t">{{ t }}</option>
-                        </select>
-                      </div>
+                <div class="level-details">
+                  <div class="level-meta">
+                    <div class="field">
+                      <label class="label">Time Limit</label>
+                      <input class="input" type="number" v-model.number="level.timeLimit" placeholder="Time Limit" />
                     </div>
-                    <div class="column">
-                      <input class="input" type="number" v-model.number="enemy.count" placeholder="Count" />
-                    </div>
-                    <div class="column is-narrow">
-                      <button class="button is-danger is-small" @click="removeEnemy(levelIndex, enemyIndex)">Remove</button>
+                    <div class="field">
+                      <label class="label">Level Header</label>
+                      <input class="input" v-model="level.levelHeader" placeholder="Level Header" />
                     </div>
                   </div>
-                  <CustomButton type="is-success is-small" label="Add Enemy" @click="addEnemy(levelIndex)" />
-                </div>
 
-                <!-- Powerup Config -->
-                <div class="field">
-                  <label class="label">Powerups</label>
-                  <div v-for="(powerup, powerupIndex) in level.powerupConfig" :key="powerupIndex" class="columns mb-1">
-                    <div class="column">
-                      <div class="select is-fullwidth">
-                        <select v-model="powerup.type">
-                          <option value="">Select Type</option>
-                          <option v-for="t in powerupTypes" :key="t" :value="t">{{ t }}</option>
-                        </select>
+                  <div class="level-subsections">
+                    <!-- Enemy Config -->
+                    <div class="field">
+                      <label class="label">Enemies</label>
+                      <div v-for="(enemy, enemyIndex) in level.enemyConfig" :key="enemyIndex" class="columns mb-1">
+                        <div class="column">
+                          <div class="select is-fullwidth">
+                            <select v-model="enemy.type">
+                              <option value="">Select Type</option>
+                              <option v-for="t in enemyTypes" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="column">
+                          <input class="input" type="number" v-model.number="enemy.count" placeholder="Count" />
+                        </div>
+                        <div class="column is-narrow">
+                          <button class="button is-danger is-small" @click="removeEnemy(levelIndex, enemyIndex)">Remove</button>
+                        </div>
                       </div>
+                      <CustomButton type="is-success is-small" label="Add Enemy" @click="addEnemy(levelIndex)" />
                     </div>
-                    <div class="column">
-                      <input class="input" type="number" v-model.number="powerup.count" placeholder="Count" />
-                    </div>
-                    <div class="column is-narrow">
-                      <button class="button is-danger is-small" @click="removePowerup(levelIndex, powerupIndex)">Remove</button>
+
+                    <!-- Powerup Config -->
+                    <div class="field">
+                      <label class="label">Powerups</label>
+                      <div v-for="(powerup, powerupIndex) in level.powerupConfig" :key="powerupIndex" class="columns mb-1">
+                        <div class="column">
+                          <div class="select is-fullwidth">
+                            <select v-model="powerup.type">
+                              <option value="">Select Type</option>
+                              <option v-for="t in powerupTypes" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="column">
+                          <input class="input" type="number" v-model.number="powerup.count" placeholder="Count" />
+                        </div>
+                        <div class="column is-narrow">
+                          <button class="button is-danger is-small" @click="removePowerup(levelIndex, powerupIndex)">Remove</button>
+                        </div>
+                      </div>
+                      <CustomButton type="is-success is-small" label="Add Powerup" @click="addPowerup(levelIndex)" />
                     </div>
                   </div>
-                  <CustomButton type="is-success is-small" label="Add Powerup" @click="addPowerup(levelIndex)" />
-                </div>
-
-                <div class="level-actions">
-                  <button class="button is-danger" @click="removeLevel(levelIndex)">Remove Level</button>
-                  <button class="button is-primary" @click="duplicateLevel(levelIndex)">Duplicate Level</button>
                 </div>
               </div>
-            </details>
-            <div class="level-add">
-              <CustomButton type="is-success" label="Add Level" @click="addLevel" />
+
+              <div class="level-actions">
+                <button class="button is-danger" @click="removeLevel(levelIndex)">Remove Level</button>
+                <button class="button is-primary" @click="duplicateLevel(levelIndex)">Duplicate Level</button>
+              </div>
             </div>
+          </details>
+          <div class="level-add">
+            <CustomButton type="is-success" label="Add Level" @click="addLevel" />
           </div>
         </div>
       </div>
@@ -132,10 +155,9 @@
     <!-- Spritesheets -->
     <details v-if="config.spritesheets" class="collapsible">
       <summary class="collapsible-summary">
-        <span class="icon-text">
-          <span class="icon">❤️</span>
-          <span>Spritesheets</span>
-        </span>
+        <span class="summary-icon" aria-hidden="true">❤️</span>
+        <span>Spritesheets</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
       </summary>
       <div class="collapsible-content">
         <div class="field">
@@ -173,7 +195,11 @@
     </details>
 
     <details class="collapsible">
-      <summary class="collapsible-summary">Settings</summary>
+      <summary class="collapsible-summary">
+        <span class="summary-icon" aria-hidden="true">⚙️</span>
+        <span>Settings</span>
+        <span class="summary-arrow" aria-hidden="true">▸</span>
+      </summary>
       <div class="collapsible-content">
         <div class="field">
           <label class="label">Player Speed</label>
@@ -388,8 +414,26 @@ function removeAcceptedVariant(index: number) {
   list-style: none;
 }
 
+.summary-icon {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-arrow {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
 .collapsible[open] .collapsible-summary {
   margin-bottom: 1rem;
+}
+
+.collapsible[open] > .collapsible-summary .summary-arrow {
+  transform: rotate(90deg);
 }
 
 .collapsible-content {
@@ -418,10 +462,15 @@ function removeAcceptedVariant(index: number) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .level-collapsible[open] .level-summary {
   border-bottom: 1px solid #e5e5e5;
+}
+
+.level-collapsible[open] > .level-summary .summary-arrow {
+  transform: rotate(90deg);
 }
 
 .level-box {
@@ -433,6 +482,55 @@ function removeAcceptedVariant(index: number) {
   background: #fff;
 }
 
+.level-content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.level-media {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.image-uploader-frame {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-uploader-frame :deep(*) {
+  width: 100%;
+}
+
+.level-details {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.level-meta {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.level-subsections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .level-actions {
   display: flex;
   flex-wrap: wrap;
@@ -442,5 +540,15 @@ function removeAcceptedVariant(index: number) {
 .level-add {
   display: flex;
   justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+  .level-content {
+    flex-direction: column;
+  }
+
+  .level-media {
+    flex: 1 1 auto;
+  }
 }
 </style>
