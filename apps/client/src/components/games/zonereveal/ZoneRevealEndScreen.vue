@@ -898,7 +898,7 @@ function evaluateBestScoreFlag() {
 .delete {
   position: absolute;
   top: 10px;
-  right: 10px;
+  inset-inline-end: 10px;
 }
 
 input {
@@ -943,7 +943,7 @@ input {
   padding: 1rem;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
-  text-align: left;
+  text-align: start;
 }
 
 .challenge-meta__title {

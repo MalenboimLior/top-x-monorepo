@@ -805,7 +805,7 @@ onMounted(() => {
 .profile-table th,
 .profile-table td {
   padding: 0.75rem 1rem;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -937,8 +937,8 @@ onMounted(() => {
 
 .profile-login-banner {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   bottom: 0;
   display: flex;
   justify-content: center;

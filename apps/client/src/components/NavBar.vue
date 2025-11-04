@@ -184,7 +184,7 @@ watch(
 .challenge-reward-indicator {
   position: absolute;
   top: 6px;
-  right: 4px;
+  inset-inline-end: 4px;
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -229,7 +229,7 @@ watch(
 }
 
 .navbar-end {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .navbar-burger {
@@ -238,7 +238,7 @@ watch(
   background: rgba(0, 232, 224, 0.08);
   border-radius: 999px;
   padding: var(--space-2) var(--space-3);
-  margin-left: var(--space-3);
+  margin-inline-start: var(--space-3);
   transition: background 0.2s ease, color 0.2s ease;
 }
 
