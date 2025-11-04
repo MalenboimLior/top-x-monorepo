@@ -19,7 +19,6 @@ import './styles/responsive-utils.css';
 
 // Import Firebase from shared package (initializes once)
 import { analytics, auth } from '@top-x/shared';
-import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 import { logEvent } from 'firebase/analytics';
 import { useLocaleStore } from './stores/locale';

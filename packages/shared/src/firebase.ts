@@ -1,9 +1,10 @@
 // packages/shared/src/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, browserLocalPersistence } from 'firebase/auth';
+import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getAnalytics } from 'firebase/analytics';
+import type { Analytics } from 'firebase/analytics';
 import { getStorage } from 'firebase/storage';
 
 const detectedHost = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -20,14 +21,41 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Safe init with persistence
-const auth = initializeAuth(app, {
-  persistence: browserLocalPersistence
-});
+const isBrowser = typeof window !== 'undefined';
+
+const auth = getAuth(app);
+
+if (isBrowser) {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.warn('Failed to set Firebase auth persistence:', error);
+  });
+}
 
 const db = getFirestore(app);
 const functions = getFunctions(app);
-const analytics = getAnalytics(app);
+
+const fallbackAnalytics: Analytics = {
+  app,
+  logEvent: () => undefined,
+  setAnalyticsCollectionEnabled: () => undefined,
+  setCurrentScreen: () => undefined,
+  setUserId: () => undefined,
+  setUserProperties: () => undefined,
+} as unknown as Analytics;
+
+const analytics: Analytics = (() => {
+  if (!isBrowser) {
+    return fallbackAnalytics;
+  }
+
+  try {
+    return getAnalytics(app);
+  } catch (error) {
+    console.warn('Firebase analytics unavailable:', error);
+    return fallbackAnalytics;
+  }
+})();
+
 const storage = getStorage(app);
 
 export { app, auth, db, functions, analytics, storage };
