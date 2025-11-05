@@ -90,6 +90,12 @@
       <div v-else-if="gameType.custom === 'ZoneRevealConfig'">
         <AddZoneReveal v-model="game.custom as ZoneRevealConfig" />
       </div>
+      <div v-else-if="gameType.custom === 'TriviaConfig'">
+        <AddTrivia
+          v-model="game.custom as TriviaConfig"
+          :gameId="props.existingGame?.id || 'temp-' + Date.now()"
+        />
+      </div>
     </div>
 
     <div class="field is-grouped">
@@ -111,10 +117,12 @@ import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import AddPyramid from '@/components/build/AddPyramid.vue';
 import AddZoneReveal from '@/components/build/AddZoneReveal.vue';
+import AddTrivia from '@/components/build/AddTrivia.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
+import type { TriviaConfig } from '@top-x/shared/types/trivia';
 
 const props = defineProps<{
   gameType: GameType;
@@ -156,6 +164,10 @@ if (props.existingGame?.custom && 'levelsConfig' in props.existingGame.custom) {
   game.value.custom = withDefaultZoneRevealAnswer(
     JSON.parse(JSON.stringify(props.existingGame.custom)) as ZoneRevealConfig,
   );
+} else if (props.existingGame?.custom && 'questions' in props.existingGame.custom) {
+  game.value.custom = withDefaultTriviaConfig(
+    JSON.parse(JSON.stringify(props.existingGame.custom)) as TriviaConfig,
+  );
 }
 
 const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
@@ -169,7 +181,7 @@ function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig
   return config;
 }
 
-function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig {
+function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig | TriviaConfig {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -194,9 +206,35 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       finishPercent: 0,
       heartIcon: '',
     });
+  } else if (customType === 'TriviaConfig') {
+    return withDefaultTriviaConfig({
+      mode: 'fixed',
+      questions: [],
+      language: 'en',
+      globalTimer: { enabled: false },
+      powerUps: [],
+      theme: {},
+      showCorrectAnswers: true,
+    } as TriviaConfig);
   } else {
     throw new Error('Unknown custom type');
   }
+}
+
+function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
+  const clone = JSON.parse(JSON.stringify(config)) as TriviaConfig;
+  clone.globalTimer = clone.globalTimer ?? { enabled: false };
+  clone.theme = clone.theme ?? {};
+  clone.powerUps = clone.powerUps ?? [];
+  clone.questions = clone.questions ?? [];
+  clone.language = clone.language ?? 'en';
+  if (clone.mode === 'endless') {
+    clone.questionBatchSize = clone.questionBatchSize ?? 10;
+    clone.lives = clone.lives ?? 3;
+  } else {
+    clone.mode = 'fixed';
+  }
+  return clone;
 }
 
 async function saveGame() {

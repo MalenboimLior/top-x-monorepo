@@ -120,6 +120,9 @@
     <div v-else-if="customType === 'ZoneRevealConfig'" class="box mt-4">
       <AddZoneReveal v-model="localChallenge.custom as ZoneRevealConfig" :gameId="game.id" />
     </div>
+    <div v-else-if="customType === 'TriviaConfig'" class="box mt-4">
+      <AddTrivia v-model="localChallenge.custom as TriviaConfig" :gameId="game.id" />
+    </div>
 
     <div class="buttons is-right mt-5">
       <button class="button" type="button" @click="emit('cancel')">Cancel</button>
@@ -136,9 +139,11 @@ import type { Game } from '@top-x/shared/types/game';
 import type { DailyChallenge, DailyChallengeSchedule } from '@top-x/shared/types/dailyChallenge';
 import AddPyramid from '@/components/games/AddPyramid.vue';
 import AddZoneReveal from '@/components/games/AddZoneReveal.vue';
+import AddTrivia from '@/components/games/AddTrivia.vue';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { PacmanConfig } from '@top-x/shared/types/pacman';
+import type { TriviaConfig } from '@top-x/shared/types/trivia';
 
 const props = defineProps<{
   game: Game;
@@ -155,6 +160,7 @@ const customType = computed(() => {
   const custom = props.game.custom;
   if (isPacmanConfig(custom)) return 'PacmanConfig';
   if (isZoneRevealConfig(custom)) return 'ZoneRevealConfig';
+  if (isTriviaConfig(custom)) return 'TriviaConfig';
   if (custom && typeof custom === 'object' && 'items' in custom) return 'PyramidConfig';
   return '';
 });
@@ -214,6 +220,10 @@ function isPacmanConfig(value: unknown): value is PacmanConfig {
   return Boolean(value && typeof value === 'object' && 'levels' in value && 'defaultScoring' in value);
 }
 
+function isTriviaConfig(value: unknown): value is TriviaConfig {
+  return Boolean(value && typeof value === 'object' && 'questions' in value);
+}
+
 function defaultPacmanConfig(): PacmanConfig {
   return {
     version: 1,
@@ -263,6 +273,22 @@ function withDefaultPacmanConfig(config: PacmanConfig): PacmanConfig {
   };
 }
 
+function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
+  const clone = JSON.parse(JSON.stringify(config)) as TriviaConfig;
+  clone.globalTimer = clone.globalTimer ?? { enabled: false };
+  clone.theme = clone.theme ?? {};
+  clone.powerUps = clone.powerUps ?? [];
+  clone.questions = clone.questions ?? [];
+  clone.language = clone.language ?? 'en';
+  if (clone.mode === 'endless') {
+    clone.questionBatchSize = clone.questionBatchSize ?? 10;
+    clone.lives = clone.lives ?? 3;
+  } else {
+    clone.mode = 'fixed';
+  }
+  return clone;
+}
+
 function mapChallenge(challenge: (DailyChallenge & { id?: string }) | null): DailyChallenge {
   if (!challenge) {
     return createDefaultChallenge();
@@ -273,6 +299,8 @@ function mapChallenge(challenge: (DailyChallenge & { id?: string }) | null): Dai
   let customConfig = challenge.custom || getDefaultCustom(customType.value);
   if (isZoneRevealConfig(customConfig)) {
     customConfig = withDefaultZoneRevealAnswer(customConfig);
+  } else if (isTriviaConfig(customConfig)) {
+    customConfig = withDefaultTriviaConfig(customConfig);
   } else if (isPacmanConfig(customConfig)) {
     customConfig = withDefaultPacmanConfig(customConfig);
   }
@@ -335,7 +363,7 @@ function updateDirty(value: boolean) {
   emit('dirty-change', value);
 }
 
-function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig | PacmanConfig {
+function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig | TriviaConfig | PacmanConfig {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -361,6 +389,17 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       finishPercent: 0,
       heartIcon: '',
     });
+  }
+  if (customType === 'TriviaConfig') {
+    return withDefaultTriviaConfig({
+      mode: 'fixed',
+      questions: [],
+      language: 'en',
+      globalTimer: { enabled: false },
+      powerUps: [],
+      theme: {},
+      showCorrectAnswers: true,
+    } as TriviaConfig);
   }
   if (customType === 'PacmanConfig') {
     return withDefaultPacmanConfig(defaultPacmanConfig());
