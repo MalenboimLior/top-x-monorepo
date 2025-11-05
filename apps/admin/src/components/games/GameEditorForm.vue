@@ -499,6 +499,7 @@ function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
   clone.powerUps = clone.powerUps ?? [];
   clone.questions = clone.questions ?? [];
   clone.language = clone.language ?? 'en';
+  clone.questionSource = clone.questionSource ?? 'pool';
   if (clone.mode === 'endless') {
     clone.questionBatchSize = clone.questionBatchSize ?? 10;
     clone.lives = clone.lives ?? 3;
