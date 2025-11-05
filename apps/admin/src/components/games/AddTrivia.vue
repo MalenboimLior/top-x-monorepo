@@ -397,6 +397,7 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
 
 function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
   const hydrated: TriviaQuestion = JSON.parse(JSON.stringify(question));
+  hydrated.id = hydrated.id?.trim() || createQuestionId();
   hydrated.options = hydrated.options ?? [];
   if (!hydrated.media) {
     hydrated.media = {} as TriviaQuestionMedia;
