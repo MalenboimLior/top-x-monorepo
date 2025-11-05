@@ -21,6 +21,8 @@
               <th class="has-text-white">Rank</th>
               <th class="has-text-white">Player</th>
               <th class="has-text-white">Score</th>
+              <th class="has-text-white">Streak</th>
+              <th class="has-text-white">Attempts</th>
               <th class="has-text-white">Recorded</th>
               <th class="has-text-white" v-if="showActions">Action</th>
             </tr>
@@ -47,6 +49,8 @@
                 </div>
               </td>
               <td>{{ entry.score }}</td>
+              <td>{{ entry.streak }}</td>
+              <td>{{ getAttemptCount(entry) }}</td>
               <td class="timestamp-cell">
                 <span v-if="getRecordedLabel(entry)" class="timestamp">
                   {{ getRecordedLabel(entry) }}
@@ -169,6 +173,30 @@ const getSliceBadges = (entry: LeaderboardEntry): SliceBadge[] => {
     }
     return badges;
   }, []);
+};
+
+const getAttemptCount = (entry: LeaderboardEntry): number => {
+  const custom = entry.custom ?? {};
+  const triviaData = custom?.trivia as { attemptCount?: number; attempts?: unknown[] } | undefined;
+
+  if (triviaData) {
+    if (typeof triviaData.attemptCount === 'number') {
+      return triviaData.attemptCount;
+    }
+    if (Array.isArray(triviaData.attempts)) {
+      return triviaData.attempts.length;
+    }
+  }
+
+  if (typeof custom?.attemptCount === 'number') {
+    return custom.attemptCount;
+  }
+
+  if (Array.isArray(custom?.attempts)) {
+    return custom.attempts.length;
+  }
+
+  return 0;
 };
 
 interface Props {
