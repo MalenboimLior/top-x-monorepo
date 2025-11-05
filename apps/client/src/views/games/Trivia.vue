@@ -1,90 +1,123 @@
 <!-- Container page for the trivia game -->
 <template>
-  <div class="trivia-container">
-    <div v-if="error" class="notification is-danger">
-      {{ error }}
-    </div>
+  <div
+    class="trivia-container"
+    :class="{ 'is-rtl': isRtl }"
+    :dir="direction"
+    :style="themeStyles"
+  >
+    <video
+      v-if="theme.backgroundVideoUrl"
+      class="trivia-background-video"
+      autoplay
+      muted
+      loop
+      playsinline
+    >
+      <source :src="theme.backgroundVideoUrl" type="video/mp4" />
+    </video>
+    <div class="trivia-overlay" :style="overlayStyles"></div>
 
-    <div class="hud responsive-flex-row">
-      <div class="hud-item">
-        <span class="label">Score: {{ score }}</span>
+    <div class="trivia-content">
+      <div v-if="error" class="notification is-danger">
+        {{ error }}
       </div>
-      <div class="hud-item">
-        <span class="label">Best: {{ bestScore }}</span>
-      </div>
-      <div class="hud-item" :class="{ 'streak-glow': streakIncreased }">
-        <span class="label">Streak: {{ streak }}</span>
-      </div>
-      <div v-if="isLoggedIn" class="hud-item">
-        <figure class="image is-32x32">
-          <img :src="userImage" alt="User image" class="is-rounded" />
-        </figure>
-      </div>
-    </div>
 
-    <StartTrivia
-      v-if="currentScreen === 'start'"
-      :best-score="bestScore"
-      :best-streak="bestStreak"
-      :inviter="inviter"
-      @start-game="startGame"
-    />
+      <TriviaSceneFixed
+        v-if="mode === 'fixed' && currentScreen !== 'gameover'"
+        :screen="currentScreen"
+        :best-score="bestScore"
+        :best-streak="bestStreak"
+        :score="score"
+        :streak="streak"
+        :session-best-streak="sessionBestStreak"
+        :lives="lives"
+        :total-lives="configLives"
+        :current-question="currentQuestion"
+        :selected-answer="selectedAnswer"
+        :is-correct="isCorrect"
+        :correct-answer-index="correctAnswerIndex"
+        :time-left="timeLeft"
+        :question-timer-duration="questionTimerDuration"
+        :global-time-left="globalTimeLeft"
+        :power-ups="powerUps"
+        :is-loading="isLoading"
+        :question-number="currentQuestionNumber"
+        :total-questions="totalQuestions"
+        :show-correct-answers="showCorrectAnswers"
+        :direction="direction"
+        :inviter="inviter"
+        :theme="theme"
+        :language="language"
+        @start-game="startGame"
+        @answer-question="answerQuestion"
+      />
 
-    <TriviaGame
-      v-else-if="currentScreen === 'playing'"
-      :lives="lives"
-      :time-left="timeLeft"
-      :question-timer-duration="questionTimerDuration"
-      :global-time-left="globalTimeLeft"
-      :current-question="currentQuestion"
-      :selected-answer="selectedAnswer"
-      :is-correct="isCorrect"
-      :correct-answer-index="correctAnswerIndex"
-      :is-loading="isLoading"
-      :power-ups="powerUps"
-      @answer-question="answerQuestion"
-    />
+      <TriviaSceneEndless
+        v-else-if="mode === 'endless' && currentScreen !== 'gameover'"
+        :screen="currentScreen"
+        :best-score="bestScore"
+        :best-streak="bestStreak"
+        :score="score"
+        :streak="streak"
+        :session-best-streak="sessionBestStreak"
+        :lives="lives"
+        :total-lives="configLives"
+        :current-question="currentQuestion"
+        :selected-answer="selectedAnswer"
+        :is-correct="isCorrect"
+        :correct-answer-index="correctAnswerIndex"
+        :time-left="timeLeft"
+        :question-timer-duration="questionTimerDuration"
+        :global-time-left="globalTimeLeft"
+        :power-ups="powerUps"
+        :is-loading="isLoading"
+        :show-correct-answers="showCorrectAnswers"
+        :direction="direction"
+        :inviter="inviter"
+        :theme="theme"
+        :language="language"
+        @start-game="startGame"
+        @answer-question="answerQuestion"
+      />
 
-    <div v-else>
-      <EndScreenLoggedIn
-        v-if="isLoggedIn"
+      <TriviaEndScreen
+        v-else
+        :is-logged-in="isLoggedIn"
         :score="score"
         :best-score="bestScore"
         :session-best-streak="sessionBestStreak"
         :best-streak="bestStreak"
+        :streak="streak"
+        :attempt-count="attemptCount"
+        :correct-attempt-count="correctAttemptCount"
+        :theme="theme"
+        :inviter="inviter"
+        :leaderboard="leaderboard"
         :percentile-rank="percentileRank"
         :users-topped="usersTopped"
         :user-image="userImage"
-        :inviter="inviter"
-        :leaderboard="leaderboard"
-        @reset-game="resetGame"
-        @add-to-frenemies="addToFrenemies"
-      />
-      <EndScreenLoggedOut
-        v-else
-        :score="score"
-        :best-score="bestScore"
-        :session-best-streak="sessionBestStreak"
-        :best-streak="bestStreak"
-        :inviter="inviter"
-        @reset-game="resetGame"
-        @share-score="shareScore"
+        :share-url="shareUrl"
+        :share-text="shareText"
+        :language="language"
+        @play-again="resetGame"
+        @share="shareScore"
         @login="login"
+        @add-frenemy="addToFrenemies"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useHead } from '@vueuse/head';
+import TriviaSceneEndless from '@/components/games/trivia/TriviaSceneEndless.vue';
+import TriviaSceneFixed from '@/components/games/trivia/TriviaSceneFixed.vue';
+import TriviaEndScreen from '@/components/games/trivia/TriviaEndScreen.vue';
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
-import { computed, watch, ref, onMounted } from 'vue';
-import { useHead } from '@vueuse/head';
-import { useRoute } from 'vue-router';
-import StartTrivia from '@/components/StartTrivia.vue';
-import TriviaGame from '@/components/TriviaGame.vue';
-import EndScreenLoggedIn from '@/components/EndScreenLoggedIn.vue';
-import EndScreenLoggedOut from '@/components/EndScreenLoggedOut.vue';
 import { getPercentileRank } from '@/services/leaderboard';
 
 const triviaStore = useTriviaStore();
@@ -120,11 +153,55 @@ const userImage = computed(() => userStore.profile?.photoURL || 'https://via.pla
 const error = computed(() => userStore.error);
 const inviter = computed(() => triviaStore.inviter);
 const powerUps = computed(() => triviaStore.powerUps);
+const attemptCount = computed(() => triviaStore.attemptCount);
+const correctAttemptCount = computed(() => triviaStore.correctAttemptCount);
+const currentQuestionNumber = computed(() => triviaStore.currentQuestionNumber);
+const totalQuestions = computed(() => triviaStore.totalQuestions);
+const mode = computed(() => triviaStore.mode);
+const language = computed(() => triviaStore.language);
+const showCorrectAnswers = computed(() => triviaStore.showCorrectAnswers);
+const configLives = computed(() => triviaStore.configLives);
+const theme = computed(() => triviaStore.theme);
 
-const streakIncreased = ref(false);
+const rtlLangs = ['ar', 'he', 'fa', 'ur'];
+const direction = computed(() => {
+  const lang = language.value?.toLowerCase() ?? 'en';
+  const base = lang.split('-')[0];
+  return rtlLangs.includes(base) ? 'rtl' : 'ltr';
+});
+const isRtl = computed(() => direction.value === 'rtl');
+
+const themeStyles = computed(() => {
+  const styles: Record<string, string> = {
+    '--trivia-primary': theme.value.primaryColor,
+    '--trivia-secondary': theme.value.secondaryColor,
+    '--trivia-background': theme.value.backgroundColor,
+  };
+  styles.backgroundColor = theme.value.backgroundColor;
+  styles['--trivia-background-image'] = theme.value.backgroundImageUrl
+    ? `url(${theme.value.backgroundImageUrl})`
+    : 'none';
+  return styles;
+});
+
+const overlayStyles = computed(() => ({
+  background: theme.value.backgroundOverlayColor,
+}));
+
 const correctAnswerIndex = ref<number | null>(null);
 const percentileRank = ref(0);
 const usersTopped = ref(0);
+
+const shareUrl = computed(() => {
+  if (!userStore.user) {
+    return 'https://top-x.co/games/trivia';
+  }
+  return `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=${gameId}&score=${score.value}`;
+});
+
+const shareText = computed(
+  () => `I scored ${score.value} in the TOP-X Trivia challenge! Can you beat my streak of ${sessionBestStreak.value}?`
+);
 
 onMounted(() => {
   const inviterUid = route.query.inviterUid as string;
@@ -145,24 +222,11 @@ watch(
       const hash = await triviaStore.hashAnswer(i);
       if (hash === newQuestion.correctHash) {
         correctAnswerIndex.value = i;
-        console.log('Correct answer index set:', i);
         break;
       }
     }
   },
   { immediate: true }
-);
-
-watch(
-  () => triviaStore.streak,
-  (newStreak, oldStreak) => {
-    if (newStreak > oldStreak) {
-      streakIncreased.value = true;
-      setTimeout(() => {
-        streakIncreased.value = false;
-      }, 500);
-    }
-  }
 );
 
 watch(
@@ -173,7 +237,6 @@ watch(
         const rankData = await getPercentileRank(gameId, userStore.user.uid);
         percentileRank.value = rankData.percentile;
         usersTopped.value = rankData.usersTopped || 0;
-        console.log('Percentile rank fetched:', percentileRank.value, 'Users topped:', usersTopped.value);
       } catch (err) {
         console.error('Error fetching percentile rank:', err);
         percentileRank.value = 0;
@@ -184,47 +247,35 @@ watch(
 );
 
 const startGame = () => {
-  console.log('Start game clicked for gameId:', gameId);
   triviaStore.startGame();
 };
 
 const answerQuestion = (index: number) => triviaStore.answerQuestion(index);
 
 const resetGame = () => {
-  console.log('Reset game clicked');
   triviaStore.resetGame();
   percentileRank.value = 0;
   usersTopped.value = 0;
 };
 
 const shareScore = () => {
-  console.log('Share score clicked, isLoggedIn:', isLoggedIn.value);
   if (!userStore.user) {
-    console.log('User not logged in, prompting login');
     userStore.loginWithX();
     return;
   }
-  const text = `I scored ${score.value} in the Trivia Game on TOP-X! Can you beat me?`;
-  const url = `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=${gameId}&score=${score.value}`;
-  const shareText = `${text} ${url}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+  const text = `${shareText.value} ${shareUrl.value}`;
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(tweetUrl, '_blank');
-  console.log('Sharing score on X:', score.value, 'streak:', sessionBestStreak.value, 'url:', url);
 };
 
 const login = async () => {
-  console.log('Login with X clicked');
   const success = await userStore.loginWithX();
   if (success) {
-    console.log('Login successful, saving score');
     await triviaStore.saveScoreAfterLogin();
-  } else {
-    console.log('Login failed');
   }
 };
 
 const addToFrenemies = async (uid: string) => {
-  console.log('Add to frenemies clicked for UID:', uid);
   await userStore.addFrenemy(uid);
 };
 </script>
