@@ -215,6 +215,7 @@
         :gameId="existingGame?.id"
       />
       <AddZoneReveal v-else-if="gameType.custom === 'ZoneRevealConfig'" v-model="game.custom as ZoneRevealConfig" />
+      <AddTrivia v-else-if="gameType.custom === 'TriviaConfig'" v-model="game.custom as TriviaConfig" :gameId="existingGame?.id" />
       <AddPacman v-else-if="gameType.custom === 'PacmanConfig'" v-model="game.custom as PacmanConfig" />
       <AddFisherGame v-else-if="gameType.custom === 'FisherGameConfig'" v-model="game.custom as FisherGameConfig" />
       <p v-else class="has-text-grey">Custom configuration for this game type is not yet supported.</p>
@@ -236,6 +237,7 @@ import { db } from '@top-x/shared';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import AddPyramid from '@/components/games/AddPyramid.vue';
 import AddZoneReveal from '@/components/games/AddZoneReveal.vue';
+import AddTrivia from '@/components/games/AddTrivia.vue';
 import AddPacman from '@/components/games/AddPacman.vue';
 import AddFisherGame from './AddFisherGame.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
@@ -243,6 +245,7 @@ import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { PacmanConfig } from '@top-x/shared/types/pacman';
 import type { FisherGameConfig } from '@top-x/shared/types/fisherGame';
+import type { TriviaConfig } from '@top-x/shared/types/trivia';
 
 const props = defineProps<{
   gameType: GameType;
@@ -302,6 +305,8 @@ watch(
       clone.custom = clone.custom || getDefaultCustom(props.gameType.custom);
       if (isZoneRevealConfig(clone.custom)) {
         clone.custom = withDefaultZoneRevealAnswer(clone.custom);
+      } else if (isTriviaConfig(clone.custom)) {
+        clone.custom = withDefaultTriviaConfig(clone.custom);
       } else if (isPacmanConfig(clone.custom)) {
         clone.custom = withDefaultPacmanConfig(clone.custom);
       }
@@ -329,6 +334,8 @@ watch(
         game.value.custom = getDefaultCustom(value.custom);
       } else if (isZoneRevealConfig(game.value.custom)) {
         game.value.custom = withDefaultZoneRevealAnswer(game.value.custom);
+      } else if (isTriviaConfig(game.value.custom)) {
+        game.value.custom = withDefaultTriviaConfig(game.value.custom);
       } else if (isPacmanConfig(game.value.custom)) {
         game.value.custom = withDefaultPacmanConfig(game.value.custom);
       }
@@ -375,6 +382,10 @@ function isZoneRevealConfig(value: unknown): value is ZoneRevealConfig {
 
 function isPacmanConfig(value: unknown): value is PacmanConfig {
   return Boolean(value && typeof value === 'object' && 'levels' in value && 'defaultScoring' in value);
+}
+
+function isTriviaConfig(value: unknown): value is TriviaConfig {
+  return Boolean(value && typeof value === 'object' && 'questions' in value);
 }
 
 function defaultPacmanConfig(): PacmanConfig {
@@ -426,7 +437,9 @@ function withDefaultPacmanConfig(config: PacmanConfig): PacmanConfig {
   };
 }
 
-function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig | PacmanConfig | FisherGameConfig | Record<string, unknown> {
+function getDefaultCustom(
+  customType?: string,
+): PyramidConfig | ZoneRevealConfig | TriviaConfig | PacmanConfig | FisherGameConfig | Record<string, unknown> {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -453,6 +466,17 @@ function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig
       heartIcon: '',
     } as ZoneRevealConfig);
   }
+  if (customType === 'TriviaConfig') {
+    return withDefaultTriviaConfig({
+      mode: 'fixed',
+      questions: [],
+      language: 'en',
+      globalTimer: { enabled: false },
+      powerUps: [],
+      theme: {},
+      showCorrectAnswers: true,
+    } as TriviaConfig);
+  }
   if (customType === 'PacmanConfig') {
     return withDefaultPacmanConfig(defaultPacmanConfig());
   }
@@ -466,6 +490,22 @@ function getDefaultCustom(customType?: string): PyramidConfig | ZoneRevealConfig
     } as FisherGameConfig;
   }
   return {};
+}
+
+function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
+  const clone = JSON.parse(JSON.stringify(config)) as TriviaConfig;
+  clone.globalTimer = clone.globalTimer ?? { enabled: false };
+  clone.theme = clone.theme ?? {};
+  clone.powerUps = clone.powerUps ?? [];
+  clone.questions = clone.questions ?? [];
+  clone.language = clone.language ?? 'en';
+  if (clone.mode === 'endless') {
+    clone.questionBatchSize = clone.questionBatchSize ?? 10;
+    clone.lives = clone.lives ?? 3;
+  } else {
+    clone.mode = 'fixed';
+  }
+  return clone;
 }
 
 function selectCustomTab() {
