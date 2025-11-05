@@ -13,6 +13,13 @@ export interface GameType {
   availableToBuild: boolean;
 }
 
+export type GameCustomConfig =
+  | PyramidConfig
+  | TriviaConfig
+  | ZoneRevealConfig
+  | PacmanConfig
+  | FisherGameConfig;
+
 export interface Game {
   id: string;
   name: string;
@@ -29,7 +36,8 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
-  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig | PacmanConfig | FisherGameConfig; // Union of possible config types
+  /** Union of possible config payloads. TriviaConfig now includes fixed/endless metadata. */
+  custom: GameCustomConfig;
   creator?: { userid: string; username: string };
   community?: boolean;
   hideFromHome?: boolean;

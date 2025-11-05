@@ -7,6 +7,13 @@ import { ZoneRevealConfig } from './zoneReveal';
 import { PacmanConfig } from './pacman';
 import { FisherGameConfig } from './fisherGame';
 
+export type DailyChallengeCustomConfig =
+  | PyramidConfig
+  | TriviaConfig
+  | ZoneRevealConfig
+  | PacmanConfig
+  | FisherGameConfig;
+
 export interface DailyChallengeSchedule {
   availableAt: string; // ISO timestamp — when the level becomes available to play
   closesAt: string;    // ISO timestamp — when the challenge closes/promos next challenge
@@ -21,7 +28,7 @@ export interface DailyChallenge {
   schedule: DailyChallengeSchedule;
 
   // Game content
-  custom: PyramidConfig | TriviaConfig | ZoneRevealConfig | PacmanConfig | FisherGameConfig; // Union of possible config types
+  custom: DailyChallengeCustomConfig; // Union of possible config types (Trivia includes fixed/endless variants)
 
   // Optional display settings
   showCountdown?: boolean;   // Whether to show time until reveal
