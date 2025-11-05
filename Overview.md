@@ -47,6 +47,12 @@ Custom type definition (e.g., vue-smooth-dnd.d.ts) lives alongside other types.
 
 Shared Vue components (Card, CustomButton, ImageUploader*, etc.) are published from the same package and imported by both client and admin apps.
 
+Trivia Schema (shared package)
+The trivia types now include richer metadata consumed by both the admin tooling and the game runtimes:
+
+- `TriviaQuestion` adds optional media payloads (`imageUrl`, `audioUrl`, `videoUrl`), per-question timers, category/difficulty flags, and optional language overrides alongside security fields (`salt`, `hash`).
+- `TriviaConfig` is a discriminated union with `mode: 'fixed' | 'endless'`. The base configuration carries the language, optional global timer, batch size, lives, power-up rules, theming (colors/backgrounds), show-correct-answers toggle, and solve threshold. Endless mode requires both `questionBatchSize` and `lives`, with optional repeat control.
+
 Adding Games Using Game Types
 Define a game type (admin app → GameTypeRecord.vue):
 
