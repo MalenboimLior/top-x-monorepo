@@ -37,6 +37,22 @@ export interface TriviaQuestion {
   hash?: string;
 }
 
+export interface TriviaSanitizedQuestionBase
+  extends Omit<TriviaQuestion, 'correctAnswer' | 'hash' | 'salt'> {
+  /** Salt generated server-side to produce deterministic hashes */
+  salt: string;
+}
+
+export interface TriviaFixedQuestionPayload extends TriviaSanitizedQuestionBase {
+  /** Hash of the correct answer combined with the salt */
+  answerHash: string;
+}
+
+export interface TriviaEndlessQuestionPayload extends TriviaSanitizedQuestionBase {
+  /** Hash of the correct option index combined with the salt */
+  correctIndexHash: string;
+}
+
 export interface TriviaGlobalTimerConfig {
   /** Whether a global timer should run for the session */
   enabled: boolean;
@@ -104,3 +120,45 @@ export interface TriviaEndlessConfig extends TriviaBaseConfig {
 }
 
 export type TriviaConfig = TriviaFixedConfig | TriviaEndlessConfig;
+
+export interface TriviaFixedBatchRequest {
+  gameId: string;
+  batchSize?: number;
+}
+
+export interface TriviaFixedBatchResponse {
+  gameId: string;
+  totalAvailable: number;
+  questions: TriviaFixedQuestionPayload[];
+}
+
+export interface TriviaEndlessBatchRequest {
+  gameId: string;
+  batchSize?: number;
+}
+
+export interface TriviaEndlessBatchResponse {
+  gameId: string;
+  totalAvailable: number;
+  questions: TriviaEndlessQuestionPayload[];
+}
+
+export interface TriviaXaiBackfillRequest {
+  gameId: string;
+  threshold: number;
+  desiredPoolSize?: number;
+  /** Optional override for the xAI endpoint */
+  endpoint?: string;
+  /** Optional model identifier to send to xAI */
+  model?: string;
+  /** Prompt passed to the xAI model */
+  prompt?: string;
+  /** Additional body parameters forwarded to the xAI API */
+  requestBody?: Record<string, unknown>;
+}
+
+export interface TriviaXaiBackfillResponse {
+  triggered: boolean;
+  totalQuestions: number;
+  createdQuestionIds: string[];
+}
