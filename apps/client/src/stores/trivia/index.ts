@@ -60,8 +60,10 @@ export const useTriviaStore = defineStore('trivia', () => {
   const userStore = useUserStore();
 
   const currentScreen = ref<'start' | 'playing' | 'gameover'>('start');
-  const config = ref<TriviaConfig | null>(null);
+  const baseConfig = ref<TriviaConfig | null>(null);
+  const overrideConfig = ref<TriviaConfig | null>(null);
   const configLoaded = ref(false);
+  const activeDailyChallengeId = ref<string | null>(null);
   const modeController = ref<TriviaModeController | null>(null);
 
   const currentQuestion = ref<TriviaQuestionViewModel | null>(null);
@@ -92,6 +94,8 @@ export const useTriviaStore = defineStore('trivia', () => {
   const pendingScore = ref<number | null>(null);
   const pendingBestStreak = ref<number | null>(null);
 
+  const activeConfig = computed(() => overrideConfig.value ?? baseConfig.value);
+
   async function ensureConfig(): Promise<void> {
     if (configLoaded.value) {
       return;
@@ -104,20 +108,20 @@ export const useTriviaStore = defineStore('trivia', () => {
       if (snapshot.exists()) {
         const data = snapshot.data() as Game;
         if (data.custom && typeof data.custom === 'object') {
-          config.value = data.custom as TriviaConfig;
+          baseConfig.value = data.custom as TriviaConfig;
         }
       }
 
-      if (!config.value) {
-        config.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES } as TriviaFixedConfig;
+      if (!baseConfig.value) {
+        baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES } as TriviaFixedConfig;
       }
 
       setupModeController();
-      lives.value = config.value?.lives ?? DEFAULT_LIVES;
+      lives.value = activeConfig.value?.lives ?? DEFAULT_LIVES;
       configLoaded.value = true;
     } catch (error) {
       console.error('Failed to load trivia config', error);
-      config.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES } as TriviaFixedConfig;
+      baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES } as TriviaFixedConfig;
       setupModeController();
       lives.value = DEFAULT_LIVES;
       configLoaded.value = true;
@@ -127,14 +131,15 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function setupModeController(): void {
-    if (!config.value) {
+    const config = activeConfig.value;
+    if (!config) {
       modeController.value = null;
       return;
     }
 
-    if (isEndlessConfig(config.value)) {
+    if (isEndlessConfig(config)) {
       modeController.value = createEndlessModeController({
-        config: config.value,
+        config,
         fetchBatch: async (batchSize, cursor, excludeIds) => {
           const { questions, handle } = await fetchTriviaBatch({
             gameId: GAME_ID,
@@ -147,7 +152,7 @@ export const useTriviaStore = defineStore('trivia', () => {
       });
     } else {
       modeController.value = createFixedModeController({
-        config: config.value as TriviaFixedConfig,
+        config: config as TriviaFixedConfig,
         fetchQuestions: async (limit, excludeIds) =>
           fetchTriviaQuestions({ gameId: GAME_ID, limit, excludeIds }),
       });
@@ -166,7 +171,7 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function startGlobalTimer(): void {
-    if (!config.value?.globalTimer?.enabled) {
+    if (!activeConfig.value?.globalTimer?.enabled) {
       globalTimeLeft.value = null;
       if (globalTimerHandle.value) {
         clearInterval(globalTimerHandle.value);
@@ -175,7 +180,7 @@ export const useTriviaStore = defineStore('trivia', () => {
       return;
     }
 
-    const duration = config.value.globalTimer.durationSeconds ?? 0;
+    const duration = activeConfig.value?.globalTimer?.durationSeconds ?? 0;
     globalTimeLeft.value = duration > 0 ? duration : null;
     if (!globalTimeLeft.value) {
       return;
@@ -254,11 +259,11 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function spawnPowerUp(): void {
-    if (!config.value?.powerUps?.length) {
+    if (!activeConfig.value?.powerUps?.length) {
       return;
     }
 
-    const available = config.value.powerUps.filter((rule) => !powerUps.value.find((p) => p.id === rule.id));
+    const available = activeConfig.value.powerUps.filter((rule) => !powerUps.value.find((p) => p.id === rule.id));
     if (!available.length) {
       return;
     }
@@ -298,8 +303,8 @@ export const useTriviaStore = defineStore('trivia', () => {
 
     correctAttempts.value += 1;
 
-    if (config.value?.lives && streak.value > 0 && streak.value % 5 === 0) {
-      lives.value = Math.min(config.value.lives, lives.value + 1);
+    if (activeConfig.value?.lives && streak.value > 0 && streak.value % 5 === 0) {
+      lives.value = Math.min(activeConfig.value.lives, lives.value + 1);
     }
 
     spawnPowerUp();
@@ -372,7 +377,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     selectedAnswer.value = null;
     isCorrect.value = null;
     score.value = 0;
-    lives.value = config.value?.lives ?? DEFAULT_LIVES;
+    lives.value = activeConfig.value?.lives ?? DEFAULT_LIVES;
     currentQuestion.value = null;
     questionTimerDuration.value = DEFAULT_QUESTION_TIMER;
     questionTimeLeft.value = DEFAULT_QUESTION_TIMER;
@@ -413,7 +418,7 @@ export const useTriviaStore = defineStore('trivia', () => {
         ...(existingGameData?.custom ?? {}),
         trivia: {
           ...existingTriviaCustom,
-          mode: config.value?.mode ?? 'fixed',
+          mode: activeConfig.value?.mode ?? 'fixed',
           lastScore: gameData.score,
           lastAttempts: attempts.value.length,
           lastCorrect: correctAttempts.value,
@@ -446,7 +451,7 @@ export const useTriviaStore = defineStore('trivia', () => {
       lastPlayed: Date.now(),
       custom: {
         trivia: {
-          mode: config.value?.mode ?? 'fixed',
+          mode: activeConfig.value?.mode ?? 'fixed',
           attemptCount: attempts.value.length,
           attempts: attempts.value,
           questionIds: questionOrder.value,
@@ -479,7 +484,8 @@ export const useTriviaStore = defineStore('trivia', () => {
 
   async function fetchLeaderboard(): Promise<void> {
     try {
-      const entries = await getTopLeaderboard('smartest_on_x', 10);
+      const challengeId = activeDailyChallengeId.value ?? undefined;
+      const entries = await getTopLeaderboard('smartest_on_x', 10, challengeId);
       leaderboard.value = entries;
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -547,19 +553,19 @@ export const useTriviaStore = defineStore('trivia', () => {
   );
 
   const timeLeft = computed(() => questionTimeLeft.value);
-  const mode = computed(() => config.value?.mode ?? 'fixed');
+  const mode = computed(() => activeConfig.value?.mode ?? 'fixed');
   const language = computed(
-    () => currentQuestion.value?.language ?? config.value?.language ?? 'en'
+    () => currentQuestion.value?.language ?? activeConfig.value?.language ?? 'en'
   );
-  const showCorrectAnswers = computed(() => Boolean(config.value?.showCorrectAnswers));
-  const configLives = computed(() => config.value?.lives ?? DEFAULT_LIVES);
+  const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers));
+  const configLives = computed(() => activeConfig.value?.lives ?? DEFAULT_LIVES);
   const theme = computed(() => ({
-    primaryColor: config.value?.theme?.primaryColor ?? '#8C52FF',
-    secondaryColor: config.value?.theme?.secondaryColor ?? '#FF9F1C',
-    backgroundColor: config.value?.theme?.backgroundColor ?? '#0B0B0F',
-    backgroundImageUrl: config.value?.theme?.backgroundImageUrl,
-    backgroundVideoUrl: config.value?.theme?.backgroundVideoUrl,
-    backgroundOverlayColor: config.value?.theme?.backgroundOverlayColor ?? 'rgba(0, 0, 0, 0.55)',
+    primaryColor: activeConfig.value?.theme?.primaryColor ?? '#8C52FF',
+    secondaryColor: activeConfig.value?.theme?.secondaryColor ?? '#FF9F1C',
+    backgroundColor: activeConfig.value?.theme?.backgroundColor ?? '#0B0B0F',
+    backgroundImageUrl: activeConfig.value?.theme?.backgroundImageUrl,
+    backgroundVideoUrl: activeConfig.value?.theme?.backgroundVideoUrl,
+    backgroundOverlayColor: activeConfig.value?.theme?.backgroundOverlayColor ?? 'rgba(0, 0, 0, 0.55)',
   }));
   const attemptCount = computed(() => attempts.value.length);
   const correctAttemptCount = computed(() => correctAttempts.value);
@@ -571,17 +577,34 @@ export const useTriviaStore = defineStore('trivia', () => {
     return attempts.value.length + 1;
   });
   const totalQuestions = computed(() => {
-    if (!config.value || config.value.mode !== 'fixed') {
+    if (!activeConfig.value || activeConfig.value.mode !== 'fixed') {
       return null;
     }
-    if (typeof config.value.totalQuestions === 'number' && config.value.totalQuestions > 0) {
-      return config.value.totalQuestions;
+    if (
+      typeof (activeConfig.value as TriviaFixedConfig | null)?.totalQuestions === 'number' &&
+      (activeConfig.value as TriviaFixedConfig).totalQuestions !== undefined &&
+      (activeConfig.value as TriviaFixedConfig).totalQuestions! > 0
+    ) {
+      return (activeConfig.value as TriviaFixedConfig).totalQuestions!;
     }
-    if (config.value.questions?.length) {
-      return config.value.questions.length;
+    if (activeConfig.value?.questions?.length) {
+      return activeConfig.value.questions.length;
     }
     return null;
   });
+
+  const dailyChallengeId = computed(() => activeDailyChallengeId.value);
+
+  async function applyConfigOverride(
+    config: TriviaConfig | null,
+    options?: { dailyChallengeId?: string | null }
+  ): Promise<void> {
+    overrideConfig.value = config;
+    activeDailyChallengeId.value = options?.dailyChallengeId ?? null;
+    setupModeController();
+    lives.value = activeConfig.value?.lives ?? DEFAULT_LIVES;
+    await fetchLeaderboard();
+  }
 
   return {
     currentScreen,
@@ -612,11 +635,13 @@ export const useTriviaStore = defineStore('trivia', () => {
     showCorrectAnswers,
     configLives,
     theme,
+    dailyChallengeId,
     hashAnswer,
     loadInviter,
     startGame,
     answerQuestion,
     resetGame,
     saveScoreAfterLogin,
+    applyConfigOverride,
   };
 });
