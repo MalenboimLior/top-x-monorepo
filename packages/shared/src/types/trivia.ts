@@ -93,6 +93,8 @@ export interface TriviaThemeConfig {
 export interface TriviaBaseConfig {
   /** Question bank to draw from */
   questions: TriviaQuestion[];
+  /** Where questions should be sourced from when presenting gameplay */
+  questionSource?: 'pool' | 'hybrid' | 'inline';
   /** Preferred language for the trivia experience (BCP 47 tag) */
   language?: string;
   /** Optional override when batching questions for presentation */

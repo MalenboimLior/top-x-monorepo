@@ -151,10 +151,14 @@ export const useTriviaStore = defineStore('trivia', () => {
         },
       });
     } else {
+      const fixedConfig = config as TriviaFixedConfig;
       modeController.value = createFixedModeController({
-        config: config as TriviaFixedConfig,
-        fetchQuestions: async (limit, excludeIds) =>
-          fetchTriviaQuestions({ gameId: GAME_ID, limit, excludeIds }),
+        config: fixedConfig,
+        fetchQuestions:
+          fixedConfig.questionSource === 'inline'
+            ? undefined
+            : async (limit, excludeIds) =>
+                fetchTriviaQuestions({ gameId: GAME_ID, limit, excludeIds }),
       });
     }
   }
