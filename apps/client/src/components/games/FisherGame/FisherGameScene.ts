@@ -89,7 +89,7 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     bestScore = 0;
     upgradeLevels: UpgradeLevels = { maxFish: 1, maxDepth: 1, offlineEarnings: 1 };
     maxFish = 3;
-    maxDepthMeters = 9;
+    maxDepthMeters = 20; // Increased default depth
     offlineRate = 25; // $/min
     lastPlayTime = Date.now();
     
@@ -97,10 +97,16 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     gameState: 'idle' | 'casting' | 'dropping' | 'reeling' = 'idle';
     hookX = WIDTH / 2;
     hookY = 0;
+    hookAbsoluteY = 0; // Absolute Y position in the world (not screen)
     hookDepth = 0;
     hookSpeed = 3; // Horizontal movement speed
     caughtFish: Phaser.GameObjects.Container[] = [];
     fishGroup!: Phaser.Physics.Arcade.Group;
+    
+    // Camera and depth system
+    cameraY = 0; // Camera position in world coordinates
+    seaStartY = HEIGHT / 3; // Where water starts (screen position)
+    maxSeaDepth = 5000; // Maximum depth of the sea world
     
     // Current level
     currentLevel = 0;
@@ -169,7 +175,7 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       // Max Depth
       const maxDepthUpgrade = levelConfig.find((u: any) => u.type === 'maxDepth');
       if (maxDepthUpgrade) {
-        this.maxDepthMeters = 9 + (this.upgradeLevels.maxDepth - 1);
+        this.maxDepthMeters = 20 + ((this.upgradeLevels.maxDepth - 1) * 5); // Start at 20m, +5m per upgrade
       }
       
       // Offline Earnings
@@ -220,28 +226,66 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
         boatTexture.refresh();
       }
       
-      // Fish sprites (different colors)
-      const fishColors = ['#FF6B6B', '#4ECDC4', '#95E1D3', '#F38181', '#AA96DA'];
+      // Fish sprites (many different colors and types)
+      const fishColors = [
+        '#FF6B6B', // Red
+        '#4ECDC4', // Teal
+        '#95E1D3', // Light teal
+        '#F38181', // Pink
+        '#AA96DA', // Purple
+        '#FFD93D', // Yellow
+        '#6BCB77', // Green
+        '#4D96FF', // Blue
+        '#FF9F66', // Orange
+        '#C44569', // Dark pink
+        '#F8B500', // Gold
+        '#00D2FF'  // Cyan
+      ];
       fishColors.forEach((color, i) => {
         const fishTexture = this.textures.createCanvas(`fish${i}`, 30, 20);
         if (fishTexture) {
           const fishCtx = fishTexture.getContext();
+          
+          // Vary fish shapes slightly
+          const scaleX = i % 3 === 0 ? 12 : (i % 3 === 1 ? 14 : 10);
+          const scaleY = i % 2 === 0 ? 8 : 6;
+          
           fishCtx.fillStyle = color;
           fishCtx.beginPath();
-          fishCtx.ellipse(15, 10, 12, 8, 0, 0, Math.PI * 2);
+          fishCtx.ellipse(15, 10, scaleX, scaleY, 0, 0, Math.PI * 2);
           fishCtx.fill();
-          // Tail
+          
+          // Tail (varied sizes)
+          const tailSize = i % 4 === 0 ? 3 : (i % 4 === 1 ? 4 : 2);
           fishCtx.beginPath();
-          fishCtx.moveTo(3, 10);
+          fishCtx.moveTo(tailSize, 10);
           fishCtx.lineTo(0, 5);
           fishCtx.lineTo(0, 15);
           fishCtx.closePath();
           fishCtx.fill();
+          
           // Eye
           fishCtx.fillStyle = '#000';
           fishCtx.beginPath();
-          fishCtx.arc(20, 8, 2, 0, Math.PI * 2);
+          const eyeX = i % 3 === 0 ? 20 : (i % 3 === 1 ? 19 : 21);
+          const eyeY = i % 2 === 0 ? 8 : 9;
+          fishCtx.arc(eyeX, eyeY, 2, 0, Math.PI * 2);
           fishCtx.fill();
+          
+          // Some fish have stripes or patterns
+          if (i % 3 === 0) {
+            fishCtx.strokeStyle = '#000';
+            fishCtx.lineWidth = 1;
+            fishCtx.beginPath();
+            fishCtx.moveTo(10, 8);
+            fishCtx.lineTo(10, 12);
+            fishCtx.moveTo(15, 7);
+            fishCtx.lineTo(15, 13);
+            fishCtx.moveTo(20, 8);
+            fishCtx.lineTo(20, 12);
+            fishCtx.stroke();
+          }
+          
           fishTexture.refresh();
         }
       });
@@ -263,8 +307,12 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       // Create sparkles
       this.createSparkles();
       
-      // Create fisherman in boat
+      // Create fisherman in boat (fixed at surface, not scrolling)
       this.createFishermanAndBoat();
+      
+      // Make fisherman and boat fixed to camera (UI layer)
+      this.fisherman.setScrollFactor(0);
+      this.boat.setScrollFactor(0);
       
       // Create fishing line
       this.line = this.add.graphics().setDepth(5);
@@ -283,17 +331,26 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       (this.hook.body as Phaser.Physics.Arcade.Body).setImmovable(true); // Hook doesn't move from physics
       this.hookX = WIDTH / 2; // Initialize hook X position
       
-      // Create UI - Top Bar
+      // Create UI - Top Bar (fixed to camera)
       this.createTopBar();
       
-      // Create UI - Sidebar
+      // Create UI - Sidebar (fixed to camera)
       this.createSidebar();
       
-      // Create UI - Cast Meter (Circular PLAY Button)
+      // Create UI - Cast Meter (Circular PLAY Button) (fixed to camera)
       this.createCastMeter();
       
-      // Create UI - Upgrade Panels
+      // Create UI - Upgrade Panels (fixed to camera)
       this.createUpgradePanels();
+      
+      // Fix all UI elements to camera so they don't scroll
+      [this.settingsButton, this.earningsText, this.earningsLabel, this.bestScoreBanner, 
+       this.aquariumButton, this.hooksButton, this.giftBoxButton, this.timerText,
+       this.playButton, this.maxFishesPanel, this.maxDepthPanel, this.offlineEarningsPanel].forEach(element => {
+        if (element) {
+          element.setScrollFactor(0);
+        }
+      });
       
       // Initialize fish group
       this.fishGroup = this.physics.add.group();
@@ -308,6 +365,13 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       // Resize handling
       this.scale.resize(WIDTH, HEIGHT);
       this.scale.setGameSize(WIDTH, HEIGHT);
+      
+      // Set up camera bounds for scrolling
+      this.cameras.main.setBounds(0, 0, WIDTH, this.maxSeaDepth);
+      this.cameras.main.setScroll(0, 0);
+      
+      // Initialize camera position
+      this.cameraY = 0;
       
       window.addEventListener('resize', () => {
         const w = Math.min(window.innerWidth, 400);
@@ -326,8 +390,11 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     }
     
     createSky() {
-      const skyHeight = HEIGHT / 3;
+      const skyHeight = this.seaStartY;
       this.skyGraphics = this.add.graphics();
+      
+      // Sky is fixed (UI layer)
+      this.skyGraphics.setScrollFactor(0);
       
       // Purple to teal gradient (approximated with rectangles)
       const steps = 20;
@@ -343,9 +410,12 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     }
     
     createTrees() {
-      const horizonY = HEIGHT / 3;
+      const horizonY = this.seaStartY;
       this.treesGraphics = this.add.graphics().setDepth(2);
       this.treesGraphics.fillStyle(0x228B22);
+      
+      // Trees are fixed at horizon (UI layer)
+      this.treesGraphics.setScrollFactor(0);
       
       // Create tree silhouettes
       for (let i = 0; i < 8; i++) {
@@ -368,36 +438,59 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     }
     
     createWater() {
-      const waterStartY = HEIGHT / 3;
-      const waterHeight = HEIGHT - waterStartY;
+      const waterStartY = this.seaStartY;
+      // Create water that extends to max depth
       this.waterGraphics = this.add.graphics().setDepth(1);
+      this.updateWaterGraphics();
+    }
+    
+    updateWaterGraphics() {
+      // Redraw water based on camera position
+      this.waterGraphics.clear();
       
-      // Water gradient (blue shades)
-      const steps = 15;
+      const cameraViewY = this.cameras.main.scrollY;
+      const viewHeight = HEIGHT;
+      const startY = Math.max(this.seaStartY, cameraViewY);
+      const endY = Math.min(this.maxSeaDepth, cameraViewY + viewHeight);
+      const visibleHeight = endY - startY;
+      
+      if (visibleHeight <= 0) return;
+      
+      // Water gradient (blue shades) - deeper = darker
+      const steps = 30;
       for (let i = 0; i < steps; i++) {
-        const ratio = i / steps;
-        const r = Math.floor(0 + (0) * ratio); // 0x00
-        const g = Math.floor(105 + (34 - 105) * ratio); // 0x69 -> 0x22
-        const b = Math.floor(148 + (68 - 148) * ratio); // 0x94 -> 0x44
+        const worldY = startY + (visibleHeight / steps) * i;
+        const depthRatio = (worldY - this.seaStartY) / (this.maxSeaDepth - this.seaStartY);
+        const clampedDepth = Math.min(1, Math.max(0, depthRatio));
+        
+        // Deeper = darker blue
+        const r = Math.floor(0);
+        const g = Math.floor(105 - (clampedDepth * 71)); // 0x69 -> 0x22
+        const b = Math.floor(148 - (clampedDepth * 80)); // 0x94 -> 0x44
         const color = Phaser.Display.Color.GetColor(r, g, b);
+        
         this.waterGraphics.fillStyle(color);
-        this.waterGraphics.fillRect(0, waterStartY + (waterHeight / steps) * i, WIDTH, waterHeight / steps);
+        this.waterGraphics.fillRect(0, worldY, WIDTH, visibleHeight / steps);
       }
       
-      // Wavy water surface line
-      this.waterGraphics.lineStyle(2, 0x004466, 0.8);
-      const wavePoints: { x: number; y: number }[] = [];
-      for (let x = 0; x <= WIDTH; x += 5) {
-        const y = waterStartY + Math.sin(x * 0.02 + Date.now() * 0.001) * 3;
-        wavePoints.push({ x, y });
-      }
-      for (let i = 1; i < wavePoints.length; i++) {
-        this.waterGraphics.lineBetween(wavePoints[i - 1].x, wavePoints[i - 1].y, wavePoints[i].x, wavePoints[i].y);
+      // Wavy water surface line (only draw if surface is visible)
+      if (cameraViewY <= this.seaStartY + 50) {
+        this.waterGraphics.lineStyle(2, 0x004466, 0.8);
+        const wavePoints: { x: number; y: number }[] = [];
+        for (let x = 0; x <= WIDTH; x += 5) {
+          const y = this.seaStartY + Math.sin(x * 0.02 + Date.now() * 0.001) * 3;
+          if (y >= cameraViewY && y <= cameraViewY + viewHeight) {
+            wavePoints.push({ x, y });
+          }
+        }
+        for (let i = 1; i < wavePoints.length; i++) {
+          this.waterGraphics.lineBetween(wavePoints[i - 1].x, wavePoints[i - 1].y, wavePoints[i].x, wavePoints[i].y);
+        }
       }
     }
     
     createSparkles() {
-      const skyHeight = HEIGHT / 3;
+      const skyHeight = this.seaStartY;
       for (let i = 0; i < 5; i++) {
         const sparkle = this.add.ellipse(
           Phaser.Math.Between(0, WIDTH),
@@ -405,6 +498,8 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
           4, 4,
           0xFFD700
         ).setDepth(3);
+        // Sparkles are fixed to sky (UI layer)
+        sparkle.setScrollFactor(0);
         this.sparkles.push(sparkle);
         
         // Animate sparkles
@@ -421,7 +516,7 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     }
     
     createFishermanAndBoat() {
-      const waterStartY = HEIGHT / 3;
+      const waterStartY = this.seaStartY;
       const boatY = waterStartY + 10;
       
       // Boat
@@ -538,7 +633,7 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     }
     
     createCastMeter() {
-      const waterStartY = HEIGHT / 3;
+      const waterStartY = this.seaStartY;
       const playButtonY = waterStartY + 80;
       
       this.playButton = this.add.container(WIDTH / 2, playButtonY);
@@ -702,8 +797,26 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
         this.updateReeling();
       }
       
+      this.updateCamera();
       this.updateLine();
       this.updateFish();
+    }
+    
+    updateCamera() {
+      if (this.gameState === 'dropping' || this.gameState === 'reeling') {
+        // Camera follows the hook downward
+        const targetCameraY = Math.max(0, this.hookAbsoluteY - HEIGHT / 2);
+        // Smooth camera follow
+        this.cameraY = Phaser.Math.Linear(this.cameraY, targetCameraY, 0.1);
+        this.cameras.main.setScroll(0, this.cameraY);
+        this.updateWaterGraphics();
+      } else {
+        // Return camera to surface when idle
+        const targetCameraY = 0;
+        this.cameraY = Phaser.Math.Linear(this.cameraY, targetCameraY, 0.1);
+        this.cameras.main.setScroll(0, this.cameraY);
+        this.updateWaterGraphics();
+      }
     }
     
     updateCastMeter() {
@@ -741,10 +854,14 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       }
       
       // Handle horizontal movement - touch/mouse (drag or tap)
-      if (pointer.isDown && pointer.y > HEIGHT / 3) {
+      const screenY = pointer.y + this.cameraY; // Convert screen Y to world Y
+      if (pointer.isDown && screenY > this.seaStartY) {
         // Only move hook if pointer is in water area
         this.hookX = Phaser.Math.Clamp(pointer.x, 50, WIDTH - 50);
       }
+      
+      // Update hook position (Y is updated by tween, X is manual)
+      this.hook.x = this.hookX;
       
       // Check for overlap with fish while dropping too
       this.physics.overlap(this.hook, this.fishGroup, (hook: any, fish: any) => {
@@ -766,20 +883,22 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       }
       
       // Handle horizontal movement - touch/mouse (drag or tap)
-      if (pointer.isDown && pointer.y > HEIGHT / 3) {
+      const screenY = pointer.y + this.cameraY; // Convert screen Y to world Y
+      if (pointer.isDown && screenY > this.seaStartY) {
         // Only move hook if pointer is in water area
         this.hookX = Phaser.Math.Clamp(pointer.x, 50, WIDTH - 50);
       }
       
-      // Reel up
-      this.hookY -= 3;
+      // Reel up (in world coordinates) - faster reeling
+      this.hookAbsoluteY -= 6; // Doubled speed (was 3, now 6)
+      this.hookY = this.hookAbsoluteY;
       this.hook.x = this.hookX;
-      this.hook.y = this.hookY;
+      this.hook.y = this.hookAbsoluteY;
       
       // Move caught fish with hook
       this.caughtFish.forEach((fish, index) => {
         fish.x = Phaser.Math.Linear(fish.x, this.hookX, 0.15);
-        fish.y = Phaser.Math.Linear(fish.y, this.hookY - 20 - (index * 25), 0.15);
+        fish.y = Phaser.Math.Linear(fish.y, this.hookAbsoluteY - 20 - (index * 25), 0.15);
       });
       
       // Check for overlap with fish while reeling
@@ -788,8 +907,7 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       }, undefined, this);
       
       // Check if hook reached surface
-      const waterStartY = HEIGHT / 3;
-      if (this.hookY <= waterStartY + 20) {
+      if (this.hookAbsoluteY <= this.seaStartY + 20) {
         this.sellCatch();
       }
     }
@@ -797,13 +915,18 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     updateLine() {
       if (!this.hook.visible) return;
       
-      const waterStartY = HEIGHT / 3;
-      const lineStartY = waterStartY + 10;
-      const fishermanX = WIDTH / 2; // Line starts from fisherman
+      const waterStartY = this.seaStartY;
+      const lineStartY = waterStartY + 10; // Fisherman is fixed, so this is world Y = screen Y
+      const fishermanX = WIDTH / 2; // Line starts from fisherman (fixed position)
+      
+      // The fisherman has scrollFactor(0), so its world position equals screen position
+      // But the line graphics draws in world space, so we need to use world coordinates
+      // Since fisherman is fixed, its world Y is just its screen Y (doesn't change with camera)
+      const fishermanWorldY = lineStartY;
       
       this.line.clear();
       this.line.lineStyle(2, 0xFFFFFF, 0.9);
-      this.line.lineBetween(fishermanX, lineStartY, this.hookX, this.hookY);
+      this.line.lineBetween(fishermanX, fishermanWorldY, this.hookX, this.hookAbsoluteY);
     }
     
     updateFish() {
@@ -852,39 +975,48 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
     releaseCast() {
       this.gameState = 'idle';
       
-      // Calculate depth based on cast power
-      const maxDepthPixels = HEIGHT - (HEIGHT / 3) - 100;
-      const targetDepth = (HEIGHT / 3) + 50 + (this.castPower * Math.min(maxDepthPixels, this.maxDepthMeters * 10));
+      // Calculate target depth as percentage (0-100) based on cast power
+      // Higher cast power = deeper dive
+      const targetDepthPercent = this.castPower * 100; // 0-100%
       
-      this.dropHook(targetDepth);
+      this.dropHook(targetDepthPercent);
     }
     
     dropHook(targetDepth: number) {
-      const waterStartY = HEIGHT / 3;
+      const waterStartY = this.seaStartY;
       const fishermanX = WIDTH / 2; // Drop from fisherman position
       
       this.hookX = fishermanX;
+      // Start at water surface in world coordinates
+      this.hookAbsoluteY = waterStartY + 20;
       this.hook.x = fishermanX;
-      this.hook.y = waterStartY + 20;
+      this.hook.y = this.hookAbsoluteY;
       this.hook.setVisible(true);
-      this.hookY = waterStartY + 20;
+      this.hookY = this.hookAbsoluteY;
       this.gameState = 'dropping';
       
       // Hide UI during fishing
       this.hideFishingUI();
       
+      // Calculate target depth in world coordinates (deeper = higher Y value)
+      // Increased depth: 1 meter = 20 pixels (was 10) for deeper dives
+      const maxDepthInWorld = waterStartY + (this.maxDepthMeters * 20); // 1 meter = 20 pixels
+      const targetAbsoluteY = waterStartY + 20 + (targetDepth * (maxDepthInWorld - waterStartY - 20) / 100);
+      const clampedTargetY = Math.min(targetAbsoluteY, this.seaStartY + this.maxSeaDepth - 100);
+      
       this.tweens.add({
         targets: this,
-        hookY: targetDepth,
-        duration: 2000,
+        hookAbsoluteY: clampedTargetY,
+        duration: 1000, // Faster drop (was 2000ms, now 1000ms)
         ease: 'Linear',
         onUpdate: () => {
-          this.hook.y = this.hookY;
+          this.hookY = this.hookAbsoluteY;
+          this.hook.y = this.hookAbsoluteY;
           this.hook.x = this.hookX; // Keep X position from fisherman
         },
         onComplete: () => {
           this.gameState = 'reeling';
-          this.hookDepth = this.hookY;
+          this.hookDepth = this.hookAbsoluteY;
         }
       });
     }
@@ -893,24 +1025,26 @@ export default function createFisherGameScene(Phaser: PhaserNamespace, config?: 
       this.fishGroup.clear(true, true);
       
       const catchConfig = this.levelConfig?.catchConfig || [];
-      const waterStartY = HEIGHT / 3;
-      const fishermanX = WIDTH / 2; // Fisherman position (center)
+      const waterStartY = this.seaStartY;
       
       catchConfig.forEach((config: any, configIndex: number) => {
-        const count = config.rarity * 8; // Spawn more fish (increased from 3 to 8)
+        const count = config.rarity * 15; // Spawn many fish across all depths
         
         for (let i = 0; i < count; i++) {
+          // Calculate depth in world coordinates (deeper = higher Y value)
           const depthPercent = Phaser.Math.FloatBetween(config.depthMin / 100, config.depthMax / 100);
-          // Start fish deeper - at least 100px below water surface, and spread across deeper depths
-          const minDepth = 100; // Minimum depth from water surface
-          const maxDepth = HEIGHT - waterStartY - 80; // Maximum depth (leave some space at bottom)
-          const fishY = waterStartY + minDepth + (depthPercent * (maxDepth - minDepth));
           
-          // Spawn fish vertically under fisherman with some horizontal spread
-          const spread = 80; // Horizontal spread around fisherman
-          const fishX = fishermanX + Phaser.Math.Between(-spread, spread);
+          // Distribute fish throughout the entire sea depth
+          const minDepth = waterStartY + 50; // Start 50px below surface
+          const maxDepth = waterStartY + this.maxSeaDepth - 100; // Up to near max depth
+          const fishY = minDepth + (depthPercent * (maxDepth - minDepth));
           
-          const fishIndex = configIndex % 5; // Cycle through fish colors
+          // Scatter fish across the entire width of the screen
+          const margin = 40; // Leave some margin from screen edges
+          const fishX = Phaser.Math.Between(margin, WIDTH - margin);
+          
+          // Use all 12 fish types, cycling through them
+          const fishIndex = (configIndex + i) % 12; // Cycle through all 12 fish types
           const fish = this.fishGroup.create(fishX, fishY, `fish${fishIndex}`) as Phaser.Physics.Arcade.Sprite;
           
           fish.setScale(0.6).setDepth(4);
