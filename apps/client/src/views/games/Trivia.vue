@@ -113,12 +113,16 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
+import { doc, getDoc } from 'firebase/firestore';
 import TriviaSceneEndless from '@/components/games/trivia/TriviaSceneEndless.vue';
 import TriviaSceneFixed from '@/components/games/trivia/TriviaSceneFixed.vue';
 import TriviaEndScreen from '@/components/games/trivia/TriviaEndScreen.vue';
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
 import { getPercentileRank } from '@/services/leaderboard';
+import { db } from '@top-x/shared';
+import type { TriviaConfig } from '@top-x/shared/types/trivia';
+import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 
 const triviaStore = useTriviaStore();
 const userStore = useUserStore();
@@ -131,7 +135,83 @@ useHead({
   ],
 });
 
-const gameId = 'smartest_on_x';
+const DEFAULT_GAME_ID = 'smartest_on_x';
+const initialGameId =
+  typeof route.query.game === 'string' && route.query.game.trim().length > 0
+    ? (route.query.game as string)
+    : DEFAULT_GAME_ID;
+const resolvedGameId = ref<string>(initialGameId);
+const activeGameId = computed(() => resolvedGameId.value);
+
+const initialChallengeId = typeof route.query.challenge === 'string'
+  ? (route.query.challenge as string)
+  : null;
+const dailyChallengeId = ref<string | null>(initialChallengeId);
+let challengeRequestId = 0;
+
+async function loadDailyChallengeConfig(challengeId: string | null): Promise<void> {
+  const requestId = ++challengeRequestId;
+  if (!challengeId) {
+    if (requestId === challengeRequestId) {
+      await triviaStore.applyConfigOverride(null, { dailyChallengeId: null });
+    }
+    return;
+  }
+
+  try {
+    const challengeRef = doc(
+      db,
+      'games',
+      activeGameId.value,
+      'daily_challenges',
+      challengeId,
+    );
+    const snapshot = await getDoc(challengeRef);
+
+    if (!snapshot.exists()) {
+      console.warn('No trivia daily challenge found for id', challengeId);
+      if (requestId === challengeRequestId) {
+        await triviaStore.applyConfigOverride(null, { dailyChallengeId: null });
+      }
+      return;
+    }
+
+    const data = snapshot.data() as DailyChallenge;
+    const config = (data.custom as TriviaConfig | undefined) ?? null;
+
+    if (requestId === challengeRequestId) {
+      await triviaStore.applyConfigOverride(config, { dailyChallengeId: challengeId });
+    }
+  } catch (error) {
+    console.error('Failed to load trivia daily challenge:', error);
+    if (requestId === challengeRequestId) {
+      await triviaStore.applyConfigOverride(null, { dailyChallengeId: null });
+    }
+  }
+}
+
+watch(
+  () => route.query.game,
+  (nextGame) => {
+    const normalized =
+      typeof nextGame === 'string' && nextGame.trim().length > 0 ? (nextGame as string) : DEFAULT_GAME_ID;
+    if (normalized !== resolvedGameId.value) {
+      resolvedGameId.value = normalized;
+      void loadDailyChallengeConfig(dailyChallengeId.value);
+    }
+  }
+);
+
+watch(
+  () => route.query.challenge,
+  (nextChallenge) => {
+    const normalized = typeof nextChallenge === 'string' && nextChallenge.length ? (nextChallenge as string) : null;
+    if (normalized !== dailyChallengeId.value) {
+      dailyChallengeId.value = normalized;
+      void loadDailyChallengeConfig(normalized);
+    }
+  }
+);
 
 const currentScreen = computed(() => triviaStore.currentScreen);
 const lives = computed(() => triviaStore.lives);
@@ -193,10 +273,17 @@ const percentileRank = ref(0);
 const usersTopped = ref(0);
 
 const shareUrl = computed(() => {
-  if (!userStore.user) {
-    return 'https://top-x.co/games/trivia';
+  const params = new URLSearchParams();
+  params.set('gameId', activeGameId.value);
+  if (dailyChallengeId.value) {
+    params.set('challenge', dailyChallengeId.value);
   }
-  return `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=${gameId}&score=${score.value}`;
+  if (userStore.user) {
+    params.set('inviterUid', userStore.user.uid);
+    params.set('score', String(score.value));
+  }
+  const query = params.toString();
+  return query ? `https://top-x.co/games/trivia?${query}` : 'https://top-x.co/games/trivia';
 });
 
 const shareText = computed(
@@ -204,10 +291,11 @@ const shareText = computed(
 );
 
 onMounted(() => {
+  void loadDailyChallengeConfig(dailyChallengeId.value);
   const inviterUid = route.query.inviterUid as string;
   const routeGameId = route.query.gameId as string;
   const score = parseInt(route.query.score as string);
-  if (inviterUid && routeGameId === gameId && !isNaN(score)) {
+  if (inviterUid && routeGameId === activeGameId.value && !Number.isNaN(score)) {
     triviaStore.loadInviter(inviterUid, score);
   }
 });
@@ -234,7 +322,11 @@ watch(
   async (newScreen) => {
     if (newScreen === 'gameover' && isLoggedIn.value && userStore.user?.uid) {
       try {
-        const rankData = await getPercentileRank(gameId, userStore.user.uid);
+        const rankData = await getPercentileRank(
+          activeGameId.value,
+          userStore.user.uid,
+          triviaStore.dailyChallengeId.value ?? undefined
+        );
         percentileRank.value = rankData.percentile;
         usersTopped.value = rankData.usersTopped || 0;
       } catch (err) {
