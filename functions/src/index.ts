@@ -19,3 +19,8 @@ export {
   getPercentileRank,
   getVipLeaderboard,
 } from './handlers/leaderboards';
+export {
+  getTriviaFixedBatch,
+  streamTriviaEndlessBatch,
+  requestTriviaXaiBackfill,
+} from './handlers/trivia';
