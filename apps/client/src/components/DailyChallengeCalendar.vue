@@ -17,7 +17,19 @@
           <font-awesome-icon :icon="item.icon" />
         </div>
         <div class="calendar-item__id">{{ item.challengeId }}</div>
-        <div class="calendar-item__answer">{{ item.answer }}</div>
+        <div
+          v-if="item.question"
+          class="calendar-item__question"
+          :lang="item.questionLanguage || undefined"
+        >
+          {{ item.question }}
+        </div>
+        <div
+          class="calendar-item__answer"
+          :class="{ 'is-hidden': !item.answerRevealed }"
+        >
+          {{ item.answer }}
+        </div>
         <div class="calendar-item__date">{{ item.date }}</div>
       </div>
     </div>
@@ -29,7 +41,6 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import type { DailyChallengeRewardRecord } from '@top-x/shared/types/user';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
@@ -56,9 +67,25 @@ interface ChallengeItem {
   challengeId: string;
   date: string;
   answer: string;
+  answerRevealed: boolean;
+  question?: string;
+  questionLanguage?: string;
   status: ChallengeStatus;
   icon: string[];
   tooltip: string;
+}
+
+interface ChallengeSummary {
+  answerText: string;
+  answerRevealed: boolean;
+  questionText?: string;
+  questionLanguage?: string;
+}
+
+interface ChallengeStatusInfo {
+  status: ChallengeStatus;
+  icon: string[];
+  label: string;
 }
 
 const challengeItems = computed<ChallengeItem[]>(() => {
@@ -71,7 +98,7 @@ const challengeItems = computed<ChallengeItem[]>(() => {
       const challenge = challengeData.value.get(reward.dailyChallengeId);
       if (!challenge) return null;
 
-      const answer = extractAnswer(challenge);
+      const summary = extractChallengeSummary(challenge);
       const schedule = challenge.schedule;
       const updatedAtMillis = Date.parse(reward.updatedAt);
       const closesAtMillis = Date.parse(schedule.closesAt);
@@ -79,54 +106,39 @@ const challengeItems = computed<ChallengeItem[]>(() => {
 
       // Check if user requested answer check (solveState is solved or failed)
       const requestedCheck = reward.solveState === 'solved' || reward.solveState === 'failed';
-      // For solved/failed, determine correctness: solved = correct, failed with isMatch=true might still be correct (edge case), failed typically = wrong
-      const isCorrect = reward.solveState === 'solved' || (reward.attemptMetadata?.isMatch === true);
+      // Determine correctness based on reward metadata.
+      let isCorrect = reward.solveState === 'solved' || reward.attemptMetadata?.isMatch === true;
+      if (isTriviaConfig(challenge.custom)) {
+        const solveThreshold =
+          typeof challenge.custom.solveThreshold === 'number'
+            ? challenge.custom.solveThreshold
+            : 0.8;
+        const accuracy = reward.attemptMetadata?.trivia?.accuracy;
+        if (typeof accuracy === 'number') {
+          isCorrect = accuracy >= solveThreshold;
+        }
+      }
       const updatedBeforeClose = !Number.isNaN(closesAtMillis) && updatedAtMillis < closesAtMillis;
       const updatedAfterReveal = !Number.isNaN(revealAtMillis) && updatedAtMillis >= revealAtMillis;
 
-      let status: ChallengeStatus;
-      let icon: string[];
-      let tooltip: string;
-
-      if (requestedCheck) {
-        // Status 1-4: User requested answer check
-        if (isCorrect && updatedBeforeClose) {
-          status = 'right-before-close';
-          icon = ['fas', 'check-circle'];
-          tooltip = 'Right answer before close';
-        } else if (!isCorrect && updatedBeforeClose) {
-          status = 'wrong-before-close';
-          icon = ['fas', 'times-circle'];
-          tooltip = 'Wrong answer before close';
-        } else if (isCorrect && !updatedBeforeClose) {
-          status = 'right-after-close';
-          icon = ['fas', 'check-circle'];
-          tooltip = 'Right answer after close';
-        } else {
-          status = 'wrong-after-close';
-          icon = ['fas', 'times-circle'];
-          tooltip = 'Wrong answer after close';
-        }
-      } else {
-        // Status 5-6: User answered but didn't request answer check
-        if (updatedAfterReveal) {
-          status = 'answered-after-reveal';
-          icon = ['fas', 'question-circle'];
-          tooltip = 'Answered after reveal';
-        } else {
-          status = 'answered-before-reveal';
-          icon = ['fas', 'clock'];
-          tooltip = 'Answered before reveal';
-        }
-      }
+      const statusInfo = resolveStatusInfo({
+        requestedCheck,
+        isCorrect,
+        updatedBeforeClose,
+        updatedAfterReveal,
+      });
+      const tooltip = buildTooltip(statusInfo.label, summary);
 
       return {
         dailyChallengeId: reward.dailyChallengeId,
         challengeId: challenge.number?.toString() || reward.dailyChallengeId.slice(0, 8),
         date: reward.dailyChallengeDate || challenge.date,
-        answer,
-        status,
-        icon,
+        answer: summary.answerText,
+        answerRevealed: summary.answerRevealed,
+        question: summary.questionText,
+        questionLanguage: summary.questionLanguage,
+        status: statusInfo.status,
+        icon: statusInfo.icon,
         tooltip,
       };
     })
@@ -137,33 +149,130 @@ const challengeItems = computed<ChallengeItem[]>(() => {
     });
 });
 
-function extractAnswer(challenge: DailyChallenge): string {
+function resolveStatusInfo(options: {
+  requestedCheck: boolean;
+  isCorrect: boolean;
+  updatedBeforeClose: boolean;
+  updatedAfterReveal: boolean;
+}): ChallengeStatusInfo {
+  const { requestedCheck, isCorrect, updatedBeforeClose, updatedAfterReveal } = options;
+
+  if (requestedCheck) {
+    if (isCorrect && updatedBeforeClose) {
+      return {
+        status: 'right-before-close',
+        icon: ['fas', 'check-circle'],
+        label: 'Right answer before close',
+      };
+    }
+
+    if (!isCorrect && updatedBeforeClose) {
+      return {
+        status: 'wrong-before-close',
+        icon: ['fas', 'times-circle'],
+        label: 'Wrong answer before close',
+      };
+    }
+
+    if (isCorrect && !updatedBeforeClose) {
+      return {
+        status: 'right-after-close',
+        icon: ['fas', 'check-circle'],
+        label: 'Right answer after close',
+      };
+    }
+
+    return {
+      status: 'wrong-after-close',
+      icon: ['fas', 'times-circle'],
+      label: 'Wrong answer after close',
+    };
+  }
+
+  if (updatedAfterReveal) {
+    return {
+      status: 'answered-after-reveal',
+      icon: ['fas', 'question-circle'],
+      label: 'Answered after reveal',
+    };
+  }
+
+  return {
+    status: 'answered-before-reveal',
+    icon: ['fas', 'clock'],
+    label: 'Answered before reveal',
+  };
+}
+
+function buildTooltip(statusLabel: string, summary: ChallengeSummary): string {
+  const lines = [statusLabel];
+  if (summary.questionText) {
+    const rawLanguage = summary.questionLanguage?.toLowerCase();
+    const showLanguage = rawLanguage ? !rawLanguage.startsWith('en') : false;
+    const prefix = showLanguage && summary.questionLanguage ? `[${summary.questionLanguage}] ` : '';
+    lines.push(`${prefix}${summary.questionText}`);
+  }
+
+  return lines.join('\n');
+}
+
+function extractChallengeSummary(challenge: DailyChallenge): ChallengeSummary {
   const custom = challenge.custom;
-  
-  if (!custom) return '—';
 
-  // ZoneReveal answer
-  if (typeof custom === 'object' && 'answer' in custom) {
-    const answer = (custom as ZoneRevealConfig).answer;
-    if (answer?.solution) {
-      return answer.solution;
-    }
+  if (!custom) {
+    return { answerText: '—', answerRevealed: true };
   }
 
-  // Trivia answer (first question's correct answer)
-  if (typeof custom === 'object' && 'questions' in custom) {
-    const questions = (custom as TriviaConfig).questions;
-    if (questions && questions.length > 0 && questions[0].correctAnswer) {
-      return questions[0].correctAnswer;
-    }
+  if (isZoneRevealConfig(custom)) {
+    const solution = custom.answer?.solution;
+    return { answerText: solution || '—', answerRevealed: true };
   }
 
-  // Pyramid doesn't have a single answer, show placeholder
+  if (isTriviaConfig(custom)) {
+    const summaryQuestions = custom.summary?.questions ?? [];
+    const summaryEntry = summaryQuestions.find((entry) => {
+      return Boolean(entry?.correctAnswer || (entry?.correctAnswers && entry.correctAnswers.length > 0));
+    }) ?? summaryQuestions[0];
+    const fallbackQuestion = custom.questions?.[0];
+
+    const questionText = summaryEntry?.text ?? fallbackQuestion?.text;
+    const rawLanguage = summaryEntry?.language ?? fallbackQuestion?.language ?? custom.language;
+    const questionLanguage = typeof rawLanguage === 'string' ? rawLanguage : undefined;
+
+    const answerCandidate =
+      summaryEntry?.correctAnswer
+      ?? (summaryEntry?.correctAnswers && summaryEntry.correctAnswers.length > 0
+        ? summaryEntry.correctAnswers[0]
+        : undefined)
+      ?? fallbackQuestion?.correctAnswer
+      ?? null;
+
+    const showCorrectAnswers = custom.showCorrectAnswers ?? true;
+    const showAnswerRecap = custom.summary?.showAnswerRecap ?? true;
+    const answerRevealed = showCorrectAnswers && showAnswerRecap;
+    const answerText = answerRevealed ? answerCandidate || '—' : 'Answer hidden';
+
+    return {
+      answerText,
+      answerRevealed,
+      questionText: questionText || undefined,
+      questionLanguage,
+    };
+  }
+
   if (typeof custom === 'object' && 'items' in custom) {
-    return 'Pyramid';
+    return { answerText: 'Pyramid', answerRevealed: true };
   }
 
-  return '—';
+  return { answerText: '—', answerRevealed: true };
+}
+
+function isTriviaConfig(config: DailyChallenge['custom']): config is TriviaConfig {
+  return Boolean(config && typeof config === 'object' && 'questions' in config);
+}
+
+function isZoneRevealConfig(config: DailyChallenge['custom']): config is ZoneRevealConfig {
+  return Boolean(config && typeof config === 'object' && 'answer' in config);
 }
 
 async function loadChallengeData() {
@@ -284,6 +393,24 @@ watch(
 .calendar-item__answer {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  word-break: break-word;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.calendar-item__answer.is-hidden {
+  color: rgba(255, 255, 255, 0.45);
+  font-style: italic;
+}
+
+.calendar-item__question {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.85);
   text-align: center;
   word-break: break-word;
   max-width: 100%;
