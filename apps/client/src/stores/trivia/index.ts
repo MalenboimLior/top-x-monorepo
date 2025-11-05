@@ -547,6 +547,41 @@ export const useTriviaStore = defineStore('trivia', () => {
   );
 
   const timeLeft = computed(() => questionTimeLeft.value);
+  const mode = computed(() => config.value?.mode ?? 'fixed');
+  const language = computed(
+    () => currentQuestion.value?.language ?? config.value?.language ?? 'en'
+  );
+  const showCorrectAnswers = computed(() => Boolean(config.value?.showCorrectAnswers));
+  const configLives = computed(() => config.value?.lives ?? DEFAULT_LIVES);
+  const theme = computed(() => ({
+    primaryColor: config.value?.theme?.primaryColor ?? '#8C52FF',
+    secondaryColor: config.value?.theme?.secondaryColor ?? '#FF9F1C',
+    backgroundColor: config.value?.theme?.backgroundColor ?? '#0B0B0F',
+    backgroundImageUrl: config.value?.theme?.backgroundImageUrl,
+    backgroundVideoUrl: config.value?.theme?.backgroundVideoUrl,
+    backgroundOverlayColor: config.value?.theme?.backgroundOverlayColor ?? 'rgba(0, 0, 0, 0.55)',
+  }));
+  const attemptCount = computed(() => attempts.value.length);
+  const correctAttemptCount = computed(() => correctAttempts.value);
+  const questionsAnswered = computed(() => attempts.value.length);
+  const currentQuestionNumber = computed(() => {
+    if (!currentQuestion.value) {
+      return attempts.value.length;
+    }
+    return attempts.value.length + 1;
+  });
+  const totalQuestions = computed(() => {
+    if (!config.value || config.value.mode !== 'fixed') {
+      return null;
+    }
+    if (typeof config.value.totalQuestions === 'number' && config.value.totalQuestions > 0) {
+      return config.value.totalQuestions;
+    }
+    if (config.value.questions?.length) {
+      return config.value.questions.length;
+    }
+    return null;
+  });
 
   return {
     currentScreen,
@@ -567,6 +602,16 @@ export const useTriviaStore = defineStore('trivia', () => {
     questionTimerDuration,
     globalTimeLeft,
     attempts,
+    attemptCount,
+    correctAttemptCount,
+    questionsAnswered,
+    currentQuestionNumber,
+    totalQuestions,
+    mode,
+    language,
+    showCorrectAnswers,
+    configLives,
+    theme,
     hashAnswer,
     loadInviter,
     startGame,
