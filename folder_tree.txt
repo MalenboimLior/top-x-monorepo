@@ -1,0 +1,299 @@
+.
+├── apps
+│   ├── admin
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── public
+│   │   │   └── vite.svg
+│   │   ├── src
+│   │   │   ├── App.vue
+│   │   │   ├── assets
+│   │   │   │   ├── topx-icon.png
+│   │   │   │   └── vue.svg
+│   │   │   ├── components
+│   │   │   │   ├── content
+│   │   │   │   │   ├── CardView.css
+│   │   │   │   │   ├── CardView.tsx
+│   │   │   │   │   ├── PageContentManager.vue
+│   │   │   │   │   ├── tableTypes.ts
+│   │   │   │   │   └── TableView.vue
+│   │   │   │   └── games
+│   │   │   │       ├── AddFisherGame.vue
+│   │   │   │       ├── AddPacman.vue
+│   │   │   │       ├── AddPyramid.vue
+│   │   │   │       ├── AddZoneReveal.vue
+│   │   │   │       ├── DailyChallengeForm.vue
+│   │   │   │       ├── DailyChallengesManager.vue
+│   │   │   │       └── GameEditorForm.vue
+│   │   │   ├── layouts
+│   │   │   │   ├── AdminShell.vue
+│   │   │   │   └── AuthLayout.vue
+│   │   │   ├── main.ts
+│   │   │   ├── pages
+│   │   │   │   ├── CommunicationsPage.vue
+│   │   │   │   ├── ContentPage.vue
+│   │   │   │   ├── DashboardPage.vue
+│   │   │   │   ├── GamesPage.vue
+│   │   │   │   ├── GameTypesPage.vue
+│   │   │   │   ├── HomePageManager.vue
+│   │   │   │   ├── LoginPage.vue
+│   │   │   │   └── SettingsPage.vue
+│   │   │   ├── router
+│   │   │   │   ├── guards.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── stores
+│   │   │   │   └── user.ts
+│   │   │   ├── style.css
+│   │   │   ├── types
+│   │   │   ├── vite-env.d.ts
+│   │   │   └── vue-shim.d.ts
+│   │   ├── tsconfig.app.json
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.node.json
+│   │   └── vite.config.ts
+│   └── client
+│       ├── index.html
+│       ├── package.json
+│       ├── project-structure.txt
+│       ├── public
+│       │   ├── ads.txt
+│       │   ├── assets
+│       │   ├── images
+       │   ├── index.html
+│       │   ├── robots.txt
+│       │   ├── share
+│       │   │   └── test
+│       │   ├── sitemap.xml
+│       │   └── vite.svg
+│       ├── README.md
+│       ├── seedQuestions.js
+│       ├── src
+│       │   ├── App.vue
+│       │   ├── assets
+│       │   ├── components
+│       │   │   ├── build
+│       │   │   │   ├── AddPyramid.vue
+│       │   │   │   ├── AddZoneReveal.vue
+│       │   │   │   └── BuildAddNewGame.vue
+│       │   │   ├── CookieBanner.vue
+│       │   │   ├── DailyChallengeCalendar.vue
+│       │   │   ├── EndScreenLoggedIn.vue
+│       │   │   ├── EndScreenLoggedOut.vue
+│       │   │   ├── Footer.vue
+│       │   │   ├── GameCard.vue
+│       │   │   ├── games
+│       │   │   │   ├── FisherGame
+│       │   │   │   │   ├── FisherGameEndScreen.vue
+│       │   │   │   │   └── FisherGameScene.ts
+│       │   │   │   ├── pacman
+│       │   │   │   │   ├── PacmanEndScreen.vue
+│       │   │   │   │   └── PacmanScene.ts
+│       │   │   │   ├── pyramid
+│       │   │   │   │   ├── PyramidAddItemPopup.vue
+│       │   │   │   │   ├── PyramidEdit.vue
+│       │   │   │   │   ├── PyramidImage.vue
+│       │   │   │   │   ├── PyramidLoginPopup.vue
+│       │   │   │   │   ├── PyramidMyVote.vue
+│       │   │   │   │   ├── PyramidNav.vue
+│       │   │   │   │   ├── PyramidResults.vue
+│       │   │   │   │   ├── PyramidStats.vue
+│       │   │   │   │   └── PyramidView.vue
+│       │   │   │   └── zonereveal
+│       │   │   │       ├── __tests__
+│       │   │   │       │   └── ZoneRevealEndScreen.spec.ts
+│       │   │   │       ├── ZoneRevealEndScreen.vue
+│       │   │   │       └── ZoneRevealScene.ts
+│       │   │   ├── Leaderboard.vue
+│       │   │   ├── NavBar.vue
+│       │   │   ├── PercentileRank.vue
+│       │   │   ├── ShareButton.vue
+│       │   │   ├── StartTrivia.vue
+│       │   │   ├── TierTable.vue
+│       │   │   ├── TriviaGame.vue
+│       │   │   └── TriviaQuestion.vue
+│       │   ├── favicon-dark.svg
+│       │   ├── favicon-light.svg
+│       │   ├── favicon.ico
+│       │   ├── locales
+│       │   │   ├── en.json
+│       │   │   └── il.json
+│       │   ├── main.ts
+│       │   ├── project-structure.txt
+│       │   ├── router
+│       │   │   └── index.ts
+│       │   ├── services
+│       │   │   └── leaderboard.ts
+│       │   ├── stores
+│       │   │   ├── locale.ts
+│       │   │   ├── trivia.ts
+│       │   │   └── user.ts
+│       │   ├── styles
+│       │   │   ├── Card.css
+│       │   │   ├── CustomButton.css
+│       │   │   ├── dark-theme.css
+│       │   │   ├── Home.css
+│       │   │   ├── layout.css
+│       │   │   ├── Leaderboard.css
+│       │   │   ├── responsive-utils.css
+│       │   │   ├── tokens.css
+│       │   │   └── Trivia.css
+│       │   ├── types
+│       │   │   ├── luxon.d.ts
+│       │   │   └── vite-plugin-prerender.d.ts
+│       │   ├── utils
+│       │   │   └── googleAdsense.ts
+│       │   ├── views
+│       │   │   ├── About.vue
+│       │   │   ├── Build.vue
+│       │   │   ├── ComingSoon.vue
+│       │   │   ├── ContactUs.vue
+│       │   │   ├── DailyChallenges.vue
+│       │   │   ├── FAQ.vue
+│       │   │   ├── FrenemySearch.vue
+│       │   │   ├── GameInfo.vue
+│       │   │   ├── games
+│       │   │   │   ├── FisherGame.vue
+│       │   │   │   ├── Pacman.vue
+│       │   │   │   ├── PyramidTier.vue
+│       │   │   │   ├── Trivia.vue
+│       │   │   │   └── ZoneReveal.vue
+│       │   │   ├── Home.vue
+│       │   │   ├── PrivacyPolicy.vue
+│       │   │   ├── Profile.vue
+│       │   │   └── TermsOfUse.vue
+│       │   ├── vite-env.d.ts
+│       │   └── vue-shim.d.ts
+│       ├── tsconfig.app.json
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       ├── uploadQuestionsFromCsv.js
+│       ├── vite-plugin-prerender.d.ts
+│       ├── vite.config.ts
+│       └── vitest.setup.ts
+├── cors.json
+├── firebase-debug.1.log
+├── firebase.json
+├── firestore.indexes.json
+├── firestore.rules
+├── folder_tree.txt
+├── functions
+│   ├── lib
+│   │   ├── external
+│   │   │   ├── xApi.d.ts
+│   │   │   ├── xApi.js
+│   │   │   └── xApi.js.map
+│   │   ├── handlers
+│   │   │   ├── dailyChallengeRewards.d.ts
+│   │   │   ├── dailyChallengeRewards.js
+│   │   │   ├── dailyChallengeRewards.js.map
+│   │   │   ├── leaderboards.d.ts
+│   │   │   ├── leaderboards.js
+│   │   │   ├── leaderboards.js.map
+│   │   │   ├── submitGameScore.d.ts
+│   │   │   ├── submitGameScore.js
+│   │   │   ├── submitGameScore.js.map
+│   │   │   ├── xApi.d.ts
+│   │   │   ├── xApi.js
+│   │   │   └── xApi.js.map
+│   │   ├── index.d.ts
+│   │   ├── index.js
+│   │   ├── index.js.map
+│   │   └── utils
+│   │       ├── counterManager.js
+│   │       ├── counterManager.js.map
+│   │       ├── firebaseAdmin.d.ts
+│   │       ├── firebaseAdmin.js
+│   │       ├── firebaseAdmin.js.map
+│   │       ├── gameStatsHelpers.d.ts
+│   │       ├── gameStatsHelpers.js
+│   │       ├── gameStatsHelpers.js.map
+│   │       ├── leaderboardHelpers.d.ts
+│   │       ├── leaderboardHelpers.js
+│   │       ├── leaderboardHelpers.js.map
+│   │       ├── statsManager.d.ts
+│   │       ├── statsManager.js
+│   │       └── statsManager.js.map
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── readme.md
+│   ├── src
+│   │   ├── external
+│   │   │   └── xApi.ts
+│   │   ├── external-types.d.ts
+│   │   ├── handlers
+│   │   │   ├── dailyChallengeRewards.ts
+│   │   │   ├── leaderboards.ts
+│   │   │   ├── submitGameScore.ts
+│   │   │   └── xApi.ts
+│   │   ├── index.ts
+│   │   ├── submitGameScore
+│   │   │   └── __tests__
+│   │   │       └── submitGameScore.test.js
+│   │   └── utils
+│   │       ├── firebaseAdmin.ts
+│   │       ├── gameStatsHelpers.ts
+│   │       ├── leaderboardHelpers.ts
+│   │       └── statsManager.ts
+│   ├── top-x-shared-1.0.0.tgz
+│   ├── tsconfig.build.json
+│   ├── tsconfig.build.tsbuildinfo
+│   ├── tsconfig.dev.json
+│   └── tsconfig.json
+├── Overview.md
+├── package-lock.json
+├── package.json
+├── packages
+│   ├── shared
+│   │   ├── dist-node
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── lib
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── api
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── pageContent.ts
+│   │   │   │   └── useCollection.ts
+│   │   │   ├── components
+│   │   │   │   ├── Card.vue
+│   │   │   │   ├── CustomButton.vue
+│   │   │   │   ├── ImageUploader.vue
+│   │   │   │   └── ImageUploaderCircleSprite.vue
+│   │   │   ├── content
+│   │   │   │   └── defaults.ts
+│   │   │   ├── firebase.ts
+│   │   │   ├── index.ts
+│   │   │   ├── types
+│   │   │   │   ├── content.ts
+│   │   │   │   ├── dailyChallenge.ts
+│   │   │   │   ├── favorites.ts
+│   │   │   │   ├── fisherGame.ts
+│   │   │   │   ├── game.ts
+│   │   │   │   ├── home.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── pacman.ts
+│   │   │   │   ├── pyramid.ts
+│   │   │   │   ├── stats.ts
+│   │   │   │   ├── trivia.ts
+│   │   │   │   ├── user.ts
+│   │   │   │   ├── vue-smooth-dnd.d.ts
+│   │   │   │   └── zoneReveal.ts
+│   │   │   └── utils
+│   │   │       ├── analytics.ts
+│   │   │       ├── format.ts
+│   │   │       └── zoneRevealAnswer.ts
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.tsbuildinfo
+│   │   └── vite-env.d.ts
+│   └── vite-plugin-prerender
+│       ├── index.js
+│       └── package.json
+├── profile.png
+├── project-structure.txt
+├── README.md
+├── temp.txt
+├── TOP-X Project Summary.markdown
+├── top-x-shared-1.0.0.tgz
+└── tsconfig.json

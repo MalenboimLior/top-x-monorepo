@@ -181,26 +181,36 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         console.info('[locale] Current state - language:', this.language || '(empty)', 'direction:', this.direction);
       }
       
-      // If already initialized, ensure direction matches language (Pinia persist might have restored language but not direction)
-      if (this.initialized && this.language) {
+      // Always ensure direction matches language (Pinia persist might have restored language but not direction)
+      // This is critical because direction is derived from language and not persisted
+      if (this.language) {
         const expectedDirection: Direction = this.language === 'il' ? 'rtl' : 'ltr';
         if (this.direction !== expectedDirection) {
           if (import.meta.env.DEV) {
             console.warn('[locale] ⚠️ Direction mismatch detected! Language:', this.language, 'Direction:', this.direction, 'Expected:', expectedDirection);
             console.info('[locale] Fixing direction to match language...');
           }
-          // Sync direction with language
-          await this.setLanguage(this.language);
-          if (import.meta.env.DEV) {
-            console.info('[locale] ===== INITIALIZE COMPLETE (direction fixed) =====');
+          // Sync direction with language immediately
+          this.direction = expectedDirection;
+          if (typeof document !== 'undefined') {
+            document.documentElement.setAttribute('dir', this.direction);
+            document.documentElement.setAttribute('lang', this.language === 'il' ? 'he' : 'en');
+            if (document.body) {
+              document.body.setAttribute('dir', this.direction);
+            }
           }
-          return;
-        } else {
           if (import.meta.env.DEV) {
-            console.info('[locale] Already initialized, direction is correct, skipping');
+            console.info('[locale] ✓ Direction fixed to:', this.direction);
           }
-          return;
         }
+      }
+      
+      // If already initialized and direction is correct, skip full initialization
+      if (this.initialized && this.language) {
+        if (import.meta.env.DEV) {
+          console.info('[locale] Already initialized, skipping full initialization');
+        }
+        return;
       }
 
       // First time initialization
@@ -321,6 +331,6 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
     },
   },
   persist: {
-    paths: ['language'],
+    pick: ['language'],
   },
 });
