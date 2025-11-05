@@ -37,6 +37,26 @@ export interface TriviaQuestion {
   hash?: string;
 }
 
+export interface TriviaSummaryQuestion {
+  /** Identifier linking the summary entry to the source question. */
+  id: string;
+  /** Localized text rendered in recap surfaces. */
+  text: string;
+  /** Optional answer string exposed in recap UIs. */
+  correctAnswer?: string;
+  /** Optional list of acceptable answers for the recap. */
+  correctAnswers?: string[];
+  /** Language tag for the provided text (BCP 47). */
+  language?: string;
+}
+
+export interface TriviaSummaryConfig {
+  /** Whether recaps should surface the correct answers. */
+  showAnswerRecap?: boolean;
+  /** Ordered list of question summaries to display. */
+  questions: TriviaSummaryQuestion[];
+}
+
 export interface TriviaGlobalTimerConfig {
   /** Whether a global timer should run for the session */
   enabled: boolean;
@@ -85,6 +105,8 @@ export interface TriviaBaseConfig {
   showCorrectAnswers?: boolean;
   /** Threshold (0-1) of correct answers required to "solve" */
   solveThreshold?: number;
+  /** Optional summary payload used in recap views. */
+  summary?: TriviaSummaryConfig;
 }
 
 export interface TriviaFixedConfig extends TriviaBaseConfig {

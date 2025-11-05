@@ -1,10 +1,20 @@
 // User and user game data models
 
+export interface DailyChallengeTriviaAttemptMetadata {
+  mode?: string;
+  score?: number;
+  attempts?: number;
+  correct?: number;
+  accuracy?: number;
+  bestStreak?: number;
+}
+
 export interface DailyChallengeAttemptMetadata {
   normalizedAnswer?: string;
   distance?: number | null;
   isMatch?: boolean;
   recordedAt?: string;
+  trivia?: DailyChallengeTriviaAttemptMetadata;
 }
 
 export interface DailyChallengeUserProgress {
