@@ -47,7 +47,7 @@ export interface TriviaModeController {
 
 export interface FixedModeControllerOptions {
   config: TriviaFixedConfig | null;
-  fetchQuestions: (limit: number, excludeIds: string[]) => Promise<TriviaQuestion[]>;
+  fetchQuestions?: (limit: number, excludeIds: string[]) => Promise<TriviaQuestion[]>;
 }
 
 export interface EndlessModeControllerOptions {

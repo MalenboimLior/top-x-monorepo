@@ -7,9 +7,13 @@ export function createFixedModeController(options: FixedModeControllerOptions): 
   const answeredCount = ref(0);
   const requestedIds = new Set<string>();
   const inlineQuestions: TriviaQuestionViewModel[] = options.config?.questions?.map(toViewModel) ?? [];
+  const isInlineOnly = options.config?.questionSource === 'inline';
   let inlineCursor = 0;
 
   function targetTotal(): number {
+    if (isInlineOnly) {
+      return inlineQuestions.length;
+    }
     if (typeof options.config?.totalQuestions === 'number' && options.config.totalQuestions > 0) {
       return options.config.totalQuestions;
     }
@@ -40,7 +44,7 @@ export function createFixedModeController(options: FixedModeControllerOptions): 
       return;
     }
 
-    if (!options.fetchQuestions) {
+    if (isInlineOnly || !options.fetchQuestions) {
       return;
     }
 

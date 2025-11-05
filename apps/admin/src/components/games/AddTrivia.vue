@@ -25,6 +25,17 @@
           <input class="input" type="number" v-model.number="config.totalQuestions" min="1" />
         </div>
 
+        <div v-if="config.mode === 'fixed'" class="column is-half">
+          <label class="label">Question Source</label>
+          <div class="select is-fullwidth">
+            <select v-model="config.questionSource">
+              <option value="pool">Question Pool (remote)</option>
+              <option value="inline">Inline (use configured list)</option>
+              <option value="hybrid">Hybrid (inline + pool)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="column is-half">
           <label class="label">Batch Size</label>
           <input class="input" type="number" v-model.number="config.questionBatchSize" min="1" />
@@ -317,6 +328,8 @@ const themeFields = [
 ] as const;
 
 const difficulties = ['very_easy', 'easy', 'medium', 'hard', 'very_hard', 'expert'];
+const QUESTION_SOURCES = ['pool', 'hybrid', 'inline'] as const;
+type QuestionSource = (typeof QUESTION_SOURCES)[number];
 
 const isSyncing = ref(false);
 const generatedCandidates = ref<GeneratedCandidate[]>([]);
@@ -355,6 +368,10 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   const base: TriviaConfig = value
     ? JSON.parse(JSON.stringify(value))
     : ({ mode: 'fixed', questions: [], language: 'en' } as TriviaConfig);
+
+  if (!QUESTION_SOURCES.includes(base.questionSource as QuestionSource)) {
+    base.questionSource = 'pool';
+  }
 
   if (!base.globalTimer) {
     base.globalTimer = { enabled: false };
@@ -397,6 +414,13 @@ function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
 function sanitizeConfig(value: TriviaConfigWithTheme): TriviaConfig {
   const clone: TriviaConfig = JSON.parse(JSON.stringify(value));
   clone.questions = (clone.questions ?? []).map(sanitizeQuestion);
+
+  if (!QUESTION_SOURCES.includes(clone.questionSource as QuestionSource)) {
+    clone.questionSource = 'pool';
+  }
+  if (clone.mode !== 'fixed' && clone.questionSource === 'inline') {
+    clone.questionSource = 'pool';
+  }
 
   if (clone.mode === 'endless') {
     clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? 10;
