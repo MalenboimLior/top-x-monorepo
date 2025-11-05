@@ -14,6 +14,8 @@ export interface TriviaQuestionMedia {
   audioUrl?: string;
   /** Optional video clip to display for the question */
   videoUrl?: string;
+  /** Optional per-answer image references aligned with the options array */
+  optionImageUrls?: (string | null)[];
 }
 
 export interface TriviaQuestion {
@@ -69,6 +71,8 @@ export interface TriviaPowerUpRule {
   id: string;
   /** Human readable label displayed in clients */
   label: string;
+  /** Relative spawn probability between 0 and 1 */
+  spawnRate?: number;
   /** Maximum number of uses allowed in a session */
   maxUses?: number;
   /** Cooldown (seconds) before the power-up can be reused */
