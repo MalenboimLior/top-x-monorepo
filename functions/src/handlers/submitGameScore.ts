@@ -17,6 +17,7 @@ import type {
 import type { GameStats } from '@top-x/shared/types/stats';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
+import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import { evaluateZoneRevealAnswer } from '@top-x/shared/utils/zoneRevealAnswer';
 import '../utils/firebaseAdmin';
 import {
@@ -38,6 +39,295 @@ import {
 } from '../utils/gameStatsHelpers';
 
 const db = admin.firestore();
+
+const TRIVIA_HASH_VALUE_PATTERN = /^[a-f0-9]{64}$/i;
+
+interface TriviaAttemptSubmission {
+  questionId: string;
+  answerHash: string;
+  answeredAt?: string;
+}
+
+interface TriviaSubmissionPayload {
+  mode?: string;
+  attempts: TriviaAttemptSubmission[];
+  questionIds: string[];
+  attemptCount: number;
+  reportedAttemptCount?: number;
+  bestStreak?: number;
+  currentStreak?: number;
+}
+
+interface TriviaQuestionStatsDelta {
+  counts: Record<string, number>;
+  total: number;
+  correct: number;
+}
+
+interface TriviaProcessingResult {
+  score: number;
+  attemptCount: number;
+  correctCount: number;
+  accuracy: number;
+  bestStreak?: number;
+  currentStreak?: number;
+  mode?: string;
+  questionIds: string[];
+  questionDeltas: Map<string, TriviaQuestionStatsDelta>;
+}
+
+interface TriviaQuestionUpdate {
+  ref: FirebaseFirestore.DocumentReference;
+  data: FirebaseFirestore.DocumentData;
+}
+
+function normalizeTriviaHashValue(hash: string): string {
+  const trimmed = hash.trim();
+  if (!trimmed) {
+    throw new Error('empty hash');
+  }
+
+  const segments = trimmed.split(':');
+  const value = segments[segments.length - 1];
+
+  if (!TRIVIA_HASH_VALUE_PATTERN.test(value)) {
+    throw new Error('hash does not match expected format');
+  }
+
+  return value.toLowerCase();
+}
+
+function normalizeTriviaSubmissionHash(hash: unknown): string {
+  if (typeof hash !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Trivia answer hash must be a string');
+  }
+
+  try {
+    return normalizeTriviaHashValue(hash);
+  } catch {
+    throw new functions.https.HttpsError('invalid-argument', 'Trivia answer hash has an invalid format');
+  }
+}
+
+function tryNormalizeStoredTriviaHash(hash: unknown): string | null {
+  if (typeof hash !== 'string') {
+    return null;
+  }
+
+  try {
+    return normalizeTriviaHashValue(hash);
+  } catch (error) {
+    console.warn('submitGameScore: encountered invalid stored trivia hash', {
+      hash,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+function isTriviaConfig(config: unknown): config is TriviaConfig {
+  if (!config || typeof config !== 'object') {
+    return false;
+  }
+
+  const mode = (config as { mode?: unknown }).mode;
+  return mode === 'fixed' || mode === 'endless';
+}
+
+function collectTriviaHashesFromValue(value: unknown, target: Set<string>): void {
+  if (!value) {
+    return;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = tryNormalizeStoredTriviaHash(value);
+    if (normalized) {
+      target.add(normalized);
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectTriviaHashesFromValue(entry, target));
+    return;
+  }
+
+  if (typeof value === 'object') {
+    Object.values(value as Record<string, unknown>).forEach((entry) => collectTriviaHashesFromValue(entry, target));
+  }
+}
+
+function collectCorrectTriviaHashes(data: FirebaseFirestore.DocumentData | undefined): Set<string> {
+  const hashes = new Set<string>();
+  if (!data) {
+    return hashes;
+  }
+
+  collectTriviaHashesFromValue(data.correctHash, hashes);
+  collectTriviaHashesFromValue((data as Record<string, unknown>).correctHashes, hashes);
+
+  if (data.hash && typeof data.hash === 'object') {
+    const hashField = data.hash as Record<string, unknown>;
+    collectTriviaHashesFromValue(hashField.value ?? hashField.hash ?? hashField.correct, hashes);
+    collectTriviaHashesFromValue(hashField.accepted, hashes);
+  }
+
+  collectTriviaHashesFromValue((data as Record<string, unknown>).acceptedHashes, hashes);
+
+  return hashes;
+}
+
+function extractTriviaSubmission(custom: UserGameCustomData | undefined): TriviaSubmissionPayload | null {
+  if (!custom) {
+    return null;
+  }
+
+  const candidateSources: Array<Record<string, unknown>> = [];
+  const customRecord = custom as Record<string, unknown>;
+
+  ['trivia', 'triviaSession', 'triviaMetadata'].forEach((key) => {
+    const value = customRecord[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      candidateSources.push(value as Record<string, unknown>);
+    }
+  });
+
+  if (typeof customRecord.mode === 'string' || Array.isArray(customRecord.attempts) || Array.isArray(customRecord.questionIds)) {
+    candidateSources.push(customRecord);
+  }
+
+  let candidate: Record<string, unknown> | undefined;
+  for (const source of candidateSources) {
+    if (source && typeof source === 'object') {
+      if ('attempts' in source || 'mode' in source || 'questionIds' in source || 'answeredQuestionIds' in source) {
+        candidate = source;
+        break;
+      }
+    }
+  }
+
+  if (!candidate) {
+    return null;
+  }
+
+  const attempts: TriviaAttemptSubmission[] = [];
+  const rawAttempts = candidate.attempts;
+
+  if (Array.isArray(rawAttempts)) {
+    rawAttempts.forEach((rawAttempt) => {
+      if (!rawAttempt || typeof rawAttempt !== 'object') {
+        return;
+      }
+
+      const attemptRecord = rawAttempt as Record<string, unknown>;
+      const questionId = typeof attemptRecord.questionId === 'string'
+        ? attemptRecord.questionId
+        : typeof attemptRecord.id === 'string'
+          ? attemptRecord.id
+          : undefined;
+
+      const rawHash = typeof attemptRecord.answerHash === 'string'
+        ? attemptRecord.answerHash
+        : typeof attemptRecord.hash === 'string'
+          ? attemptRecord.hash
+          : typeof attemptRecord.answer === 'string'
+            ? attemptRecord.answer
+            : undefined;
+
+      if (!questionId || !rawHash) {
+        return;
+      }
+
+      const normalizedHash = normalizeTriviaSubmissionHash(rawHash);
+      const attempt: TriviaAttemptSubmission = {
+        questionId,
+        answerHash: normalizedHash,
+      };
+
+      if (typeof attemptRecord.answeredAt === 'string') {
+        attempt.answeredAt = attemptRecord.answeredAt;
+      }
+
+      attempts.push(attempt);
+    });
+  }
+
+  const questionIds = new Set<string>();
+  const rawQuestionIds = candidate.questionIds;
+  if (Array.isArray(rawQuestionIds)) {
+    rawQuestionIds.forEach((value) => {
+      if (typeof value === 'string' && value) {
+        questionIds.add(value);
+      }
+    });
+  }
+
+  const answeredQuestionIds = candidate.answeredQuestionIds;
+  if (Array.isArray(answeredQuestionIds)) {
+    answeredQuestionIds.forEach((value) => {
+      if (typeof value === 'string' && value) {
+        questionIds.add(value);
+      }
+    });
+  }
+
+  attempts.forEach((attempt) => questionIds.add(attempt.questionId));
+
+  const mode = typeof candidate.mode === 'string' ? candidate.mode : undefined;
+
+  const reportedAttemptCount = typeof candidate.attemptCount === 'number'
+    ? candidate.attemptCount
+    : typeof candidate.attemptsCount === 'number'
+      ? candidate.attemptsCount
+      : undefined;
+
+  const bestStreakCandidates: number[] = [];
+  if (typeof candidate.bestStreak === 'number') {
+    bestStreakCandidates.push(candidate.bestStreak);
+  }
+  if (typeof candidate.bestSessionStreak === 'number') {
+    bestStreakCandidates.push(candidate.bestSessionStreak);
+  }
+  if (typeof candidate.sessionBestStreak === 'number') {
+    bestStreakCandidates.push(candidate.sessionBestStreak);
+  }
+
+  let currentStreak: number | undefined;
+  if (typeof candidate.currentStreak === 'number') {
+    currentStreak = candidate.currentStreak;
+  }
+
+  const streakField = candidate.streak;
+  if (typeof streakField === 'number') {
+    bestStreakCandidates.push(streakField);
+  } else if (streakField && typeof streakField === 'object') {
+    const streakRecord = streakField as Record<string, unknown>;
+    if (typeof streakRecord.best === 'number') {
+      bestStreakCandidates.push(streakRecord.best);
+    }
+    if (typeof streakRecord.current === 'number') {
+      currentStreak = typeof currentStreak === 'number'
+        ? Math.max(currentStreak, streakRecord.current)
+        : streakRecord.current;
+    }
+  }
+
+  const bestStreak = bestStreakCandidates.length ? Math.max(...bestStreakCandidates) : undefined;
+
+  if (!mode && attempts.length === 0 && questionIds.size === 0) {
+    return null;
+  }
+
+  return {
+    mode,
+    attempts,
+    questionIds: Array.from(questionIds),
+    attemptCount: attempts.length,
+    reportedAttemptCount,
+    bestStreak,
+    currentStreak,
+  };
+}
 
 /**
  * Submits a game score for an authenticated user.
@@ -220,10 +510,164 @@ export const submitGameScore = functions.https.onCall(async (
       let scoreToPersist = previousScore !== null ? Math.max(previousScore, gameData.score) : gameData.score;
       const serverLastPlayed = Date.now();
       const gameSnapshot = gameDoc.data() as Game | undefined;
+      const triviaConfig = gameSnapshot && isTriviaConfig(gameSnapshot.custom)
+        ? (gameSnapshot.custom as TriviaConfig)
+        : undefined;
+      const triviaSubmission = extractTriviaSubmission(gameData.custom);
+      let triviaResult: TriviaProcessingResult | null = null;
+      const triviaQuestionUpdates: TriviaQuestionUpdate[] = [];
 
       // Handle ZoneReveal game answer evaluation
       let enrichedGameData = gameData;
       let attemptMetadata: DailyChallengeAttemptMetadata | undefined;
+      let streakToPersist = typeof gameData.streak === 'number' ? gameData.streak : previousGameData?.streak ?? 0;
+
+      if (triviaSubmission && (triviaSubmission.mode ?? triviaConfig?.mode) === 'fixed') {
+        if (triviaSubmission.attemptCount <= 0) {
+          throw new functions.https.HttpsError('invalid-argument', 'Trivia submissions must include at least one answered question');
+        }
+
+        if (triviaSubmission.questionIds.length === 0) {
+          throw new functions.https.HttpsError('invalid-argument', 'Trivia submissions must include question identifiers');
+        }
+
+        const questionRefs = triviaSubmission.questionIds.map((questionId) => gameRef.collection('questions').doc(questionId));
+        const questionDocs = await Promise.all(questionRefs.map((ref) => tx.get(ref)));
+
+        const questionInfoMap = new Map<string, { doc: FirebaseFirestore.DocumentSnapshot; correctHashes: Set<string> }>();
+
+        questionDocs.forEach((docSnapshot, index) => {
+          const questionId = triviaSubmission.questionIds[index];
+          if (!docSnapshot.exists) {
+            throw new functions.https.HttpsError('failed-precondition', `Trivia question ${questionId} does not exist`);
+          }
+
+          const docData = docSnapshot.data();
+          const correctHashes = collectCorrectTriviaHashes(docData);
+          if (correctHashes.size === 0) {
+            console.warn('submitGameScore: trivia question missing correct hash metadata', {
+              gameId,
+              questionId,
+            });
+          }
+          questionInfoMap.set(questionId, { doc: docSnapshot, correctHashes });
+        });
+
+        const questionDeltas = new Map<string, TriviaQuestionStatsDelta>();
+        let correctCount = 0;
+
+        triviaSubmission.attempts.forEach((attempt) => {
+          const questionInfo = questionInfoMap.get(attempt.questionId);
+          if (!questionInfo) {
+            throw new functions.https.HttpsError('invalid-argument', `Unknown trivia question attempted: ${attempt.questionId}`);
+          }
+
+          const normalizedHash = attempt.answerHash;
+          let delta = questionDeltas.get(attempt.questionId);
+          if (!delta) {
+            delta = { counts: {}, total: 0, correct: 0 };
+            questionDeltas.set(attempt.questionId, delta);
+          }
+
+          delta.counts[normalizedHash] = (delta.counts[normalizedHash] || 0) + 1;
+          delta.total += 1;
+
+          if (questionInfo.correctHashes.has(normalizedHash)) {
+            delta.correct += 1;
+            correctCount += 1;
+          }
+        });
+
+        const attemptCount = triviaSubmission.attempts.length;
+        const accuracy = attemptCount > 0 ? correctCount / attemptCount : 0;
+
+        triviaResult = {
+          score: correctCount,
+          attemptCount,
+          correctCount,
+          accuracy,
+          bestStreak: triviaSubmission.bestStreak,
+          currentStreak: triviaSubmission.currentStreak,
+          mode: triviaSubmission.mode ?? triviaConfig?.mode ?? 'fixed',
+          questionIds: triviaSubmission.questionIds,
+          questionDeltas,
+        } satisfies TriviaProcessingResult;
+
+        questionDeltas.forEach((delta, questionId) => {
+          const info = questionInfoMap.get(questionId);
+          if (!info) {
+            return;
+          }
+
+          const docData = info.doc.data() ?? {};
+          const existingCounts = { ...(docData.answerCounts ?? {}) } as Record<string, number>;
+
+          Object.entries(delta.counts).forEach(([hash, count]) => {
+            existingCounts[hash] = (existingCounts[hash] || 0) + count;
+          });
+
+          const statsRecord = { ...(docData.stats ?? {}) } as Record<string, unknown>;
+          const previousTotalAttempts = typeof statsRecord.totalAttempts === 'number' ? statsRecord.totalAttempts : 0;
+          const previousCorrectAttempts = typeof statsRecord.correctAttempts === 'number' ? statsRecord.correctAttempts : 0;
+          statsRecord.totalAttempts = previousTotalAttempts + delta.total;
+          statsRecord.correctAttempts = previousCorrectAttempts + delta.correct;
+
+          triviaQuestionUpdates.push({
+            ref: info.doc.ref,
+            data: {
+              answerCounts: existingCounts,
+              stats: statsRecord,
+              lastAnsweredAt: new Date(serverLastPlayed).toISOString(),
+              updatedAt: serverLastPlayed,
+            },
+          });
+        });
+
+        const customRecord = { ...(enrichedGameData.custom ?? {}) } as UserGameCustomData & Record<string, unknown>;
+        const previousTrivia = (customRecord.trivia as Record<string, unknown> | undefined) ?? {};
+        const nextTrivia: Record<string, unknown> = {
+          ...previousTrivia,
+          lastScore: triviaResult.score,
+          lastAttemptCount: triviaResult.attemptCount,
+          lastCorrectCount: triviaResult.correctCount,
+          lastAccuracy: triviaResult.accuracy,
+          lastQuestionIds: triviaResult.questionIds,
+          lastMode: triviaResult.mode,
+          reportedAttemptCount: triviaSubmission.reportedAttemptCount,
+          sessionBestStreak: triviaSubmission.bestStreak,
+          sessionCurrentStreak: triviaSubmission.currentStreak,
+        };
+
+        Object.keys(nextTrivia).forEach((key) => {
+          if (nextTrivia[key] === undefined) {
+            delete nextTrivia[key];
+          }
+        });
+
+        customRecord.trivia = nextTrivia;
+
+        const resolvedStreak = Math.max(
+          typeof enrichedGameData.streak === 'number' ? enrichedGameData.streak : 0,
+          triviaSubmission.bestStreak ?? 0,
+          triviaSubmission.currentStreak ?? 0,
+          typeof gameData.streak === 'number' ? gameData.streak : 0,
+        );
+
+        enrichedGameData = {
+          ...enrichedGameData,
+          score: triviaResult.score,
+          streak: resolvedStreak,
+          custom: customRecord,
+        };
+
+        scoreToPersist = previousScore !== null ? Math.max(previousScore, triviaResult.score) : triviaResult.score;
+        streakToPersist = Math.max(
+          streakToPersist,
+          triviaSubmission.bestStreak ?? 0,
+          triviaSubmission.currentStreak ?? 0,
+          resolvedStreak,
+        );
+      }
 
       if (gameTypeId === 'ZoneReveal') {
         // Get ZoneReveal config from challenge or game (challenge config takes precedence)
@@ -272,9 +716,9 @@ export const submitGameScore = functions.https.onCall(async (
       }
 
       // Determine streak value (use provided streak or fall back to previous)
-      let streakToPersist = typeof gameData.streak === 'number'
-        ? gameData.streak
-        : previousGameData?.streak ?? 0;
+      if (typeof gameData.streak === 'number') {
+        streakToPersist = Math.max(streakToPersist, gameData.streak);
+      }
       
       // Daily challenge-specific variables
       let challengeBestScore: number | undefined;
@@ -297,8 +741,19 @@ export const submitGameScore = functions.https.onCall(async (
         // Determine challenge state
         const firstSubmission = !previousChallengeProgress?.played;
         const wasPreviouslySolved = previousChallengeProgress?.solved ?? false;
-        const isCurrentAttemptCorrect = attemptMetadata?.isMatch ?? false;
-        const submissionScore = gameData.score;
+        const challengeTriviaConfig = challengeData && isTriviaConfig(challengeData.custom)
+          ? (challengeData.custom as TriviaConfig)
+          : triviaConfig;
+        const solveThreshold = typeof challengeTriviaConfig?.solveThreshold === 'number'
+          ? challengeTriviaConfig.solveThreshold
+          : 0.8;
+
+        let isCurrentAttemptCorrect = attemptMetadata?.isMatch ?? false;
+        if (triviaResult) {
+          isCurrentAttemptCorrect = triviaResult.accuracy >= solveThreshold;
+        }
+
+        const submissionScore = triviaResult?.score ?? gameData.score;
         
         // Calculate best score (track highest score across all attempts)
         const previousChallengeBestScore = typeof previousChallengeProgress?.bestScore === 'number'
@@ -338,6 +793,17 @@ export const submitGameScore = functions.https.onCall(async (
 
         if (attemptMetadata) {
           challengeAttemptMetadata = { ...attemptMetadata, recordedAt: attemptTimestamp };
+        } else if (triviaResult) {
+          const triviaMetadata: DailyChallengeAttemptMetadata = { recordedAt: attemptTimestamp };
+          (triviaMetadata as Record<string, unknown>).trivia = {
+            mode: triviaResult.mode,
+            score: triviaResult.score,
+            attempts: triviaResult.attemptCount,
+            correct: triviaResult.correctCount,
+            accuracy: triviaResult.accuracy,
+            bestStreak: triviaResult.bestStreak ?? triviaResult.currentStreak ?? streakToPersist,
+          };
+          challengeAttemptMetadata = triviaMetadata;
         }
 
         const solvedAtValue = solved ? solvedAt : undefined;
@@ -431,16 +897,31 @@ export const submitGameScore = functions.https.onCall(async (
             distribution[challengeScore] = (distribution[challengeScore] || 0) + 1;
           }
 
+          const totalAttemptIncrement = triviaResult ? triviaResult.attemptCount : 1;
+          const correctAttemptIncrement = triviaResult ? triviaResult.correctCount : (isCurrentAttemptCorrect ? 1 : 0);
+          const statsCustom = { ...(previousChallengeStats.custom ?? {}) } as Record<string, unknown>;
+
+          if (triviaResult) {
+            const previousTriviaStats = (statsCustom.trivia as Record<string, unknown> | undefined) ?? {};
+            statsCustom.trivia = {
+              ...previousTriviaStats,
+              lastAttempts: triviaResult.attemptCount,
+              lastCorrect: triviaResult.correctCount,
+              lastAccuracy: triviaResult.accuracy,
+              lastScore: triviaResult.score,
+            };
+          }
+
           const nextChallengeStats: (Partial<GameStats> & { totalAttempts?: number; correctAttempts?: number }) = {
             scoreDistribution: distribution,
             totalPlayers: previousChallengeStats.totalPlayers + (firstSubmission ? 1 : 0),
             sessionsPlayed: previousChallengeStats.sessionsPlayed + 1,
             uniqueSubmitters: previousChallengeStats.uniqueSubmitters + (firstSubmission ? 1 : 0),
             favorites: previousChallengeStats.favorites,
-            totalAttempts: (previousChallengeStats.totalAttempts ?? 0) + 1,
-            correctAttempts: (previousChallengeStats.correctAttempts ?? 0) + (isCurrentAttemptCorrect ? 1 : 0),
+            totalAttempts: (previousChallengeStats.totalAttempts ?? 0) + totalAttemptIncrement,
+            correctAttempts: (previousChallengeStats.correctAttempts ?? 0) + correctAttemptIncrement,
             updatedAt: Date.now(),
-            custom: { ...(previousChallengeStats.custom ?? {}) },
+            custom: statsCustom,
           };
 
           if (typeof previousChallengeStats.averageSolveTimeSec === 'number') {
@@ -464,6 +945,40 @@ export const submitGameScore = functions.https.onCall(async (
 
       // Remove nested dailyChallenges from custom (it's stored separately)
       delete (baseCustom as Record<string, unknown>).dailyChallenges;
+
+      if (triviaResult) {
+        const triviaCustom = { ...(baseCustom.trivia as Record<string, unknown> | undefined) } as Record<string, unknown>;
+        const previousTriviaTotals = previousGameData?.custom?.trivia as Record<string, unknown> | undefined;
+        const previousTotalAttemptsValue = previousTriviaTotals?.totalAttempts;
+        const previousBestStreakValue = previousTriviaTotals?.bestStreak;
+        const existingTotalAttempts = typeof triviaCustom.totalAttempts === 'number'
+          ? (triviaCustom.totalAttempts as number)
+          : typeof previousTotalAttemptsValue === 'number'
+            ? previousTotalAttemptsValue
+            : 0;
+        const existingBestStreak = typeof triviaCustom.bestStreak === 'number'
+          ? (triviaCustom.bestStreak as number)
+          : typeof previousBestStreakValue === 'number'
+            ? previousBestStreakValue
+            : 0;
+
+        triviaCustom.totalAttempts = existingTotalAttempts + triviaResult.attemptCount;
+        triviaCustom.bestStreak = Math.max(
+          existingBestStreak,
+          triviaResult.bestStreak ?? 0,
+          triviaResult.currentStreak ?? 0,
+          streakToPersist,
+        );
+        triviaCustom.lastAttemptCount = triviaResult.attemptCount;
+        triviaCustom.lastScore = triviaResult.score;
+        triviaCustom.lastAccuracy = triviaResult.accuracy;
+        triviaCustom.lastQuestionIds = triviaResult.questionIds;
+        if (triviaResult.mode) {
+          triviaCustom.lastMode = triviaResult.mode;
+        }
+
+        baseCustom.trivia = triviaCustom;
+      }
 
       // Build merged game data
       const mergedGameData: UserGameData = {
@@ -496,6 +1011,12 @@ export const submitGameScore = functions.https.onCall(async (
           },
         },
       }, { merge: true });
+
+      if (triviaQuestionUpdates.length > 0) {
+        triviaQuestionUpdates.forEach((update) => {
+          tx.set(update.ref, update.data, { merge: true });
+        });
+      }
 
       // Update game counters (sessions played, total players for first-time players)
       applyGameCounterUpdates({
@@ -554,6 +1075,18 @@ export const submitGameScore = functions.https.onCall(async (
 
         if (payload.challengeMetadata) {
           challengeCustom.metadata = payload.challengeMetadata;
+        }
+
+        if (triviaResult) {
+          const triviaChallengeCustom = (challengeCustom.trivia as Record<string, unknown> | undefined) ?? {};
+          challengeCustom.trivia = {
+            ...triviaChallengeCustom,
+            mode: triviaResult.mode,
+            score: triviaResult.score,
+            attempts: triviaResult.attemptCount,
+            correct: triviaResult.correctCount,
+            accuracy: triviaResult.accuracy,
+          };
         }
 
         const challengeLeaderboardUpdate: Record<string, unknown> = {
