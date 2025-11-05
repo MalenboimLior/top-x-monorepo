@@ -34,11 +34,14 @@
       v-else-if="currentScreen === 'playing'"
       :lives="lives"
       :time-left="timeLeft"
+      :question-timer-duration="questionTimerDuration"
+      :global-time-left="globalTimeLeft"
       :current-question="currentQuestion"
       :selected-answer="selectedAnswer"
       :is-correct="isCorrect"
       :correct-answer-index="correctAnswerIndex"
       :is-loading="isLoading"
+      :power-ups="powerUps"
       @answer-question="answerQuestion"
     />
 
@@ -107,6 +110,8 @@ const currentQuestion = computed(() => triviaStore.currentQuestion);
 const selectedAnswer = computed(() => triviaStore.selectedAnswer);
 const isCorrect = computed(() => triviaStore.isCorrect);
 const timeLeft = computed(() => triviaStore.timeLeft);
+const questionTimerDuration = computed(() => triviaStore.questionTimerDuration);
+const globalTimeLeft = computed(() => triviaStore.globalTimeLeft);
 const streak = computed(() => triviaStore.streak);
 const leaderboard = computed(() => triviaStore.leaderboard);
 const isLoading = computed(() => triviaStore.isLoading);
@@ -114,6 +119,7 @@ const isLoggedIn = computed(() => !!userStore.user);
 const userImage = computed(() => userStore.profile?.photoURL || 'https://via.placeholder.com/32');
 const error = computed(() => userStore.error);
 const inviter = computed(() => triviaStore.inviter);
+const powerUps = computed(() => triviaStore.powerUps);
 
 const streakIncreased = ref(false);
 const correctAnswerIndex = ref<number | null>(null);
