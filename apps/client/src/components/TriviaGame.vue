@@ -9,6 +9,9 @@
       <div class="lives animate-item" style="--animation-delay: 0s;">
         <span v-for="i in 3" :key="i" :class="{ 'is-lost': i > lives }">❤️</span>
       </div>
+      <div v-if="globalTimeLeft !== null" class="global-timer animate-item" style="--animation-delay: 0.1s;">
+        ⏱️ Global Time: {{ formattedGlobalTimer }}
+      </div>
       <div class="timer-bar animate-item" style="--animation-delay: 0.2s;">
         <span v-for="(item, index) in timerItems" :key="index" class="progress-char" :class="{ 'filled': item.isFilled }" :style="{ '--char-delay': `${index * 0.1}s` }">
           {{ item.char }}
@@ -23,6 +26,11 @@
         :correct-answer-index="correctAnswerIndex"
         @answer-question="answerQuestion"
       />
+      <div v-if="powerUps.length" class="power-up-list animate-item" style="--animation-delay: 0.6s;">
+        <span v-for="powerUp in powerUps" :key="powerUp.id" class="tag is-info">
+          ⚡ {{ powerUp.label }} ({{ powerUp.uses }}/{{ powerUp.maxUses ?? '∞' }})
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -40,24 +48,39 @@ interface Question {
   group: string;
 }
 
+interface PowerUpDisplay {
+  id: string;
+  label: string;
+  uses: number;
+  maxUses?: number;
+  availableAt: number;
+  cooldownSeconds?: number;
+}
+
 interface Props {
   lives: number;
   timeLeft: number;
+  questionTimerDuration: number;
+  globalTimeLeft: number | null;
   currentQuestion: Question | null;
   selectedAnswer: number | null;
   isCorrect: boolean | null;
   correctAnswerIndex: number | null;
   isLoading: boolean;
+  powerUps: PowerUpDisplay[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
   lives: 3,
   timeLeft: 10,
+  questionTimerDuration: 10,
+  globalTimeLeft: null,
   currentQuestion: null,
   selectedAnswer: null,
   isCorrect: null,
   correctAnswerIndex: null,
   isLoading: false,
+  powerUps: () => [],
 });
 
 const emit = defineEmits<{
@@ -65,8 +88,9 @@ const emit = defineEmits<{
 }>();
 
 const timerItems = computed(() => {
-  const filled = Math.round(props.timeLeft);
-  const empty = 10 - filled;
+  const total = Math.max(props.questionTimerDuration, 1);
+  const filled = Math.min(total, Math.max(0, Math.round(props.timeLeft)));
+  const empty = Math.max(0, total - filled);
   const items = [];
   for (let i = 0; i < filled; i++) {
     items.push({ char: '■', isFilled: true });
@@ -75,6 +99,15 @@ const timerItems = computed(() => {
     items.push({ char: '□', isFilled: false });
   }
   return items;
+});
+
+const formattedGlobalTimer = computed(() => {
+  if (props.globalTimeLeft === null) {
+    return '';
+  }
+  const minutes = Math.floor(props.globalTimeLeft / 60);
+  const seconds = props.globalTimeLeft % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 });
 
 const isAnimated = ref(false);
@@ -129,6 +162,12 @@ const answerQuestion = (index: number) => {
   text-align: center;
 }
 
+.global-timer {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  color: #fff;
+}
+
 .progress-char {
   display: inline-block;
   opacity: 0;
@@ -179,5 +218,12 @@ const answerQuestion = (index: number) => {
 }
 
 .loading-gif {
+}
+
+.power-up-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 </style>
