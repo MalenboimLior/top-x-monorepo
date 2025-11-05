@@ -794,16 +794,17 @@ export const submitGameScore = functions.https.onCall(async (
         if (attemptMetadata) {
           challengeAttemptMetadata = { ...attemptMetadata, recordedAt: attemptTimestamp };
         } else if (triviaResult) {
-          const triviaMetadata: DailyChallengeAttemptMetadata = { recordedAt: attemptTimestamp };
-          (triviaMetadata as Record<string, unknown>).trivia = {
-            mode: triviaResult.mode,
-            score: triviaResult.score,
-            attempts: triviaResult.attemptCount,
-            correct: triviaResult.correctCount,
-            accuracy: triviaResult.accuracy,
-            bestStreak: triviaResult.bestStreak ?? triviaResult.currentStreak ?? streakToPersist,
-          };
-          challengeAttemptMetadata = triviaMetadata;
+          challengeAttemptMetadata = {
+            recordedAt: attemptTimestamp,
+            trivia: {
+              mode: triviaResult.mode,
+              score: triviaResult.score,
+              attempts: triviaResult.attemptCount,
+              correct: triviaResult.correctCount,
+              accuracy: triviaResult.accuracy,
+              bestStreak: triviaResult.bestStreak ?? triviaResult.currentStreak ?? streakToPersist,
+            },
+          } satisfies DailyChallengeAttemptMetadata;
         }
 
         const solvedAtValue = solved ? solvedAt : undefined;
