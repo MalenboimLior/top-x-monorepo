@@ -1,0 +1,364 @@
+. — Root of the repository containing all project workspaces and configuration.
+├── apps — Directory housing the frontend applications in the monorepo, including the client and admin Vue apps.
+│   ├── admin — Admin SPA workspace built with Vite and Vue 3. It provides management tools for games and content.
+│   │   ├── public — Public static assets served by the admin Vite build. It includes icons and other resources.
+│   │   │   └── vite.svg — Static image asset 'vite.svg' used by the admin application for visual presentation. It is bundled with the project's assets for runtime use.
+│   │   ├── src — Source code for the admin Vue application, including components, layouts, pages, and routing.
+│   │   │   ├── assets — Static assets packaged with the admin app, such as logos or icons.
+│   │   │   │   ├── topx-icon.png — Static image asset 'topx-icon.png' used by the admin application for visual presentation. It is bundled with the project's assets for runtime use.
+│   │   │   │   └── vue.svg — Static image asset 'vue.svg' used by the admin application for visual presentation. It is bundled with the project's assets for runtime use.
+│   │   │   ├── components — Reusable Vue components for the admin app UI, covering content management and game editors.
+│   │   │   │   ├── content — Components dedicated to managing CMS content inside the admin experience.
+│   │   │   │   │   ├── CardView.css — CSS stylesheet defining the look and feel for the Card View component or layout in the admin app. It captures theme and layout rules consumed by the Vue components.
+│   │   │   │   │   ├── CardView.tsx — TypeScript JSX component implementing the Card View view logic within the admin tools. It combines strongly typed React-style code to support the surrounding Vue integration.
+│   │   │   │   │   ├── PageContentManager.vue — Vue 3 single-file component implementing the Page Content Manager interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   │   ├── TableView.vue — Vue 3 single-file component implementing the Table View interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   │   └── tableTypes.ts — TypeScript helper for the Table Types component. It supports the surrounding Vue component with strongly typed logic.
+│   │   │   │   └── games — Admin-side components for creating and editing available games and daily challenges.
+│   │   │   │       ├── AddFisherGame.vue — Vue 3 single-file component implementing the Add Fisher Game interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       ├── AddPacman.vue — Vue 3 single-file component implementing the Add Pacman interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       ├── AddPyramid.vue — Vue 3 single-file component implementing the Add Pyramid interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       ├── AddTrivia.vue — Vue 3 single-file component implementing the Add Trivia interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       ├── AddZoneReveal.vue — Vue 3 single-file component implementing the Add Zone Reveal interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       ├── DailyChallengeForm.vue — Vue 3 single-file component implementing the Daily Challenge Form interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       ├── DailyChallengesManager.vue — Vue 3 single-file component implementing the Daily Challenges Manager interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │       └── GameEditorForm.vue — Vue 3 single-file component implementing the Game Editor Form interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   ├── layouts — Layout shells that wrap admin pages with navigation and common structure.
+│   │   │   │   ├── AdminShell.vue — Vue 3 single-file component implementing the Admin Shell interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   └── AuthLayout.vue — Vue 3 single-file component implementing the Auth Layout interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   ├── pages — Route-level Vue pages for the admin application, each representing a management view.
+│   │   │   │   ├── CommunicationsPage.vue — Vue 3 single-file component implementing the Communications Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── ContentPage.vue — Vue 3 single-file component implementing the Content Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── DashboardPage.vue — Vue 3 single-file component implementing the Dashboard Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── GameTypesPage.vue — Vue 3 single-file component implementing the Game Types Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── GamesPage.vue — Vue 3 single-file component implementing the Games Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── HomePageManager.vue — Vue 3 single-file component implementing the Home Page Manager interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── LoginPage.vue — Vue 3 single-file component implementing the Login Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   └── SettingsPage.vue — Vue 3 single-file component implementing the Settings Page interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   ├── router — Routing logic and guards for the admin SPA, enforcing authentication.
+│   │   │   │   ├── guards.ts — TypeScript router logic configuring navigation for the admin application. It defines routes and guards to control page access.
+│   │   │   │   └── index.ts — TypeScript router logic configuring navigation for the admin application. It defines routes and guards to control page access.
+│   │   │   ├── stores — Pinia stores that manage shared state in the admin interface.
+│   │   │   │   └── user.ts — TypeScript Pinia store module managing user state for the admin app. It centralizes reactive data and actions for related features.
+│   │   │   ├── App.vue — Vue 3 single-file component implementing the App interface in the admin application. It encapsulates template, script, and style logic for that feature.
+│   │   │   ├── main.ts — General TypeScript module related to main functionality. It contributes typed logic to the project.
+│   │   │   ├── style.css — CSS stylesheet defining the look and feel for the Style component or layout in the admin app. It captures theme and layout rules consumed by the Vue components.
+│   │   │   ├── vite-env.d.ts — General TypeScript module related to vite env.d functionality. It contributes typed logic to the project.
+│   │   │   └── vue-shim.d.ts — General TypeScript module related to vue shim.d functionality. It contributes typed logic to the project.
+│   │   ├── .gitignore — Git ignore rules that exclude build artifacts, dependencies, and environment files from version control. It keeps the repository clean of generated content.
+│   │   ├── index.html — File 'index.html' contributing to the project. It should be consulted within its directory for specific usage.
+│   │   ├── package.json — Package manifest for the admin app, listing dependencies, scripts, and metadata. It is consumed by npm during installs and builds.
+│   │   ├── tsconfig.app.json — TypeScript configuration file tsconfig.app.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│   │   ├── tsconfig.json — TypeScript configuration file tsconfig.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│   │   ├── tsconfig.node.json — TypeScript configuration file tsconfig.node.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│   │   └── vite.config.ts — General TypeScript module related to vite.config functionality. It contributes typed logic to the project.
+│   └── client — Player-facing client application workspace built with Vite and Vue 3.
+│       ├── public — Public directory for the client app containing static assets served as-is.
+│       │   ├── assets — Collection of public assets like sprites, images, and metadata used by the games.
+│       │   │   ├── images — Directory grouping the Images resources within the project structure.
+│       │   │   │   ├── background-game.jpg — Static image asset 'background-game.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── enemy1.png — Static image asset 'enemy1.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── enemy2.png — Static image asset 'enemy2.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── fallback.png — Static image asset 'fallback.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   └── player.png — Static image asset 'player.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── levels — Directory grouping the Levels resources within the project structure.
+│       │   │   │   ├── level1.jpeg — Static image asset 'level1.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level1.jpg — Static image asset 'level1.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level2.jpeg — Static image asset 'level2.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level2.jpg — Static image asset 'level2.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level3.jpeg — Static image asset 'level3.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level4.jpeg — Static image asset 'level4.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level5.jpeg — Static image asset 'level5.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level6.jpeg — Static image asset 'level6.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── level7.jpeg — Static image asset 'level7.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   └── level8.jpeg — Static image asset 'level8.jpeg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── Alien_spritesheet.png — Static image asset 'Alien_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── Microbe_spritesheet.png — Static image asset 'Microbe_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── Monocle_spritesheet.png — Static image asset 'Monocle_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── anonymous.png — Static image asset 'anonymous.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── background-pattern.png — Static image asset 'background-pattern.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── bg.png — Static image asset 'bg.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── blinkBug.png — Static image asset 'blinkBug.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── chaosParticle.png — Static image asset 'chaosParticle.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── chaosSphere.png — Static image asset 'chaosSphere.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── coming-soon.jpg — Static image asset 'coming-soon.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── emoji_ Monocle_6x256.png — Static image asset 'emoji_ Monocle_6x256.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── emoji_ Monocle_6x256_g.png — Static image asset 'emoji_ Monocle_6x256_g.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── emoji_ Monocle_8x256.png — Static image asset 'emoji_ Monocle_8x256.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── enemy.png — Static image asset 'enemy.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── freeze_spritesheet.png — Static image asset 'freeze_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── heart_icon.png — Static image asset 'heart_icon.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── heart_spritesheet.png — Static image asset 'heart_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── loading.gif — Static image asset 'loading.gif' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── magal.png — Static image asset 'magal.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── monster_spritesheet.png — Static image asset 'monster_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── player.png — Static image asset 'player.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── profile.png — Top-level image asset representing the default profile image for marketing or documentation. It can be referenced in various contexts.
+│       │   │   ├── reveal.png — Static image asset 'reveal.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── robot_spritesheet.png — Static image asset 'robot_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── sentinel.png — Static image asset 'sentinel.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── smoke.png — Static image asset 'smoke.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── speed_spritesheet.png — Static image asset 'speed_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── spritesheet_monocle_8x256.png — Static image asset 'spritesheet_monocle_8x256.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── test.jpg — Static image asset 'test.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── tierData.json — JSON data file 'tierData.json' providing configuration or structured content for the project. It is read at build or runtime as needed.
+│       │   │   ├── time_spritesheet.png — Static image asset 'time_spritesheet.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── topx-icon.png — Static image asset 'topx-icon.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── trailSplitter.png — Static image asset 'trailSplitter.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   └── trivia.jpg — Static image asset 'trivia.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── images — Additional public imagery for the client application, often duplicated for compatibility.
+│       │   │   ├── background-game.jpg — Static image asset 'background-game.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── enemy1.png — Static image asset 'enemy1.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── enemy2.png — Static image asset 'enemy2.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── fallback.png — Static image asset 'fallback.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   └── player.png — Static image asset 'player.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── ads.txt — Plain text file 'ads.txt' capturing notes or structured references for the project. It assists contributors with supplemental information.
+│       │   ├── favicon-dark.svg — Static image asset 'favicon-dark.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── favicon-light.svg — Static image asset 'favicon-light.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── favicon.ico — Static image asset 'favicon.ico' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── index.html — File 'index.html' contributing to the project. It should be consulted within its directory for specific usage.
+│       │   ├── robots.txt — Plain text file 'robots.txt' capturing notes or structured references for the project. It assists contributors with supplemental information.
+│       │   ├── sitemap.xml — File 'sitemap.xml' contributing to the project. It should be consulted within its directory for specific usage.
+│       │   └── vite.svg — Static image asset 'vite.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       ├── src — Source code for the client Vue application, including games, components, stores, and styles.
+│       │   ├── assets — Bundled static assets used by the client SPA during runtime.
+│       │   │   ├── flags — Directory grouping the Flags resources within the project structure.
+│       │   │   │   ├── il.svg — Static image asset 'il.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   └── us.svg — Static image asset 'us.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── images — Directory grouping the Images resources within the project structure.
+│       │   │   │   ├── background-game.jpg — Static image asset 'background-game.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── enemy1.png — Static image asset 'enemy1.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── enemy2.png — Static image asset 'enemy2.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── fallback.png — Static image asset 'fallback.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   ├── player.png — Static image asset 'player.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   │   └── smoke.png — Static image asset 'smoke.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── background-pattern.png — Static image asset 'background-pattern.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── bg.png — Static image asset 'bg.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── coming-soon.jpg — Static image asset 'coming-soon.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── loading.gif — Static image asset 'loading.gif' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── logo.png — Static image asset 'logo.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── player.png — Static image asset 'player.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── profile.png — Top-level image asset representing the default profile image for marketing or documentation. It can be referenced in various contexts.
+│       │   │   ├── reveal.png — Static image asset 'reveal.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── smoke.png — Static image asset 'smoke.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── tierData.json — JSON data file 'tierData.json' providing configuration or structured content for the project. It is read at build or runtime as needed.
+│       │   │   ├── topx-icon.png — Static image asset 'topx-icon.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── topx-logo.png — Static image asset 'topx-logo.png' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   ├── trivia.jpg — Static image asset 'trivia.jpg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   │   └── vue.svg — Static image asset 'vue.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── components — Vue components used throughout the client experience, from layout to games.
+│       │   │   ├── build — Components powering the Build section where users suggest or assemble games.
+│       │   │   │   ├── AddPyramid.vue — Vue 3 single-file component implementing the Add Pyramid interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   ├── AddTrivia.vue — Vue 3 single-file component implementing the Add Trivia interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   ├── AddZoneReveal.vue — Vue 3 single-file component implementing the Add Zone Reveal interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   └── BuildAddNewGame.vue — Vue 3 single-file component implementing the Build Add New Game interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── games — Client-side game implementations and shared UI for each mini-game.
+│       │   │   │   ├── FisherGame — Components dedicated to the fishing-themed mini-game experience.
+│       │   │   │   │   ├── FisherGameEndScreen.vue — Vue 3 single-file component implementing the Fisher Game End Screen interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   └── FisherGameScene.ts — TypeScript scene implementation powering the Fisher Game Scene mini-game using Phaser. It contains the game loop, assets, and gameplay logic for that experience.
+│       │   │   │   ├── pacman — Pacman-inspired game implementation pieces for the client.
+│       │   │   │   │   ├── PacmanEndScreen.vue — Vue 3 single-file component implementing the Pacman End Screen interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   └── PacmanScene.ts — TypeScript scene implementation powering the Pacman Scene mini-game using Phaser. It contains the game loop, assets, and gameplay logic for that experience.
+│       │   │   │   ├── pyramid — Components supporting the pyramid ranking game and its UI.
+│       │   │   │   │   ├── PyramidAddItemPopup.vue — Vue 3 single-file component implementing the Pyramid Add Item Popup interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidEdit.vue — Vue 3 single-file component implementing the Pyramid Edit interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidImage.vue — Vue 3 single-file component implementing the Pyramid Image interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidLoginPopup.vue — Vue 3 single-file component implementing the Pyramid Login Popup interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidMyVote.vue — Vue 3 single-file component implementing the Pyramid My Vote interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidNav.vue — Vue 3 single-file component implementing the Pyramid Nav interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidResults.vue — Vue 3 single-file component implementing the Pyramid Results interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── PyramidStats.vue — Vue 3 single-file component implementing the Pyramid Stats interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   └── PyramidView.vue — Vue 3 single-file component implementing the Pyramid View interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   ├── trivia — Components handling trivia gameplay and question flow.
+│       │   │   │   │   ├── TriviaEndScreen.vue — Vue 3 single-file component implementing the Trivia End Screen interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── TriviaQuestion.vue — Vue 3 single-file component implementing the Trivia Question interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   ├── TriviaSceneEndless.vue — Vue 3 single-file component implementing the Trivia Scene Endless interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   │   └── TriviaSceneFixed.vue — Vue 3 single-file component implementing the Trivia Scene Fixed interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   └── zonereveal — Zone reveal mini-game components, including tests.
+│       │   │   │       ├── __tests__ — Directory grouping the Tests resources within the project structure.
+│       │   │   │       │   └── ZoneRevealEndScreen.spec.ts — TypeScript helper for the Zone Reveal End Screen.spec component. It supports the surrounding Vue component with strongly typed logic.
+│       │   │   │       ├── ZoneRevealEndScreen.vue — Vue 3 single-file component implementing the Zone Reveal End Screen interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │       └── ZoneRevealScene.ts — TypeScript scene implementation powering the Zone Reveal Scene mini-game using Phaser. It contains the game loop, assets, and gameplay logic for that experience.
+│       │   │   ├── CookieBanner.vue — Vue 3 single-file component implementing the Cookie Banner interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── DailyChallengeCalendar.vue — Vue 3 single-file component implementing the Daily Challenge Calendar interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── Footer.vue — Vue 3 single-file component implementing the Footer interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── GameCard.vue — Vue 3 single-file component implementing the Game Card interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── Leaderboard.vue — Vue 3 single-file component implementing the Leaderboard interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── NavBar.vue — Vue 3 single-file component implementing the Nav Bar interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── PercentileRank.vue — Vue 3 single-file component implementing the Percentile Rank interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── ShareButton.vue — Vue 3 single-file component implementing the Share Button interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   └── TierTable.vue — Vue 3 single-file component implementing the Tier Table interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   ├── locales — Internationalization resource files for the client application.
+│       │   │   ├── en.json — JSON data file 'en.json' providing configuration or structured content for the project. It is read at build or runtime as needed.
+│       │   │   └── il.json — JSON data file 'il.json' providing configuration or structured content for the project. It is read at build or runtime as needed.
+│       │   ├── router — Directory grouping the Router resources within the project structure.
+│       │   │   └── index.ts — TypeScript router logic configuring navigation for the client application. It defines routes and guards to control page access.
+│       │   ├── services — TypeScript modules for interacting with backend services like leaderboards and trivia.
+│       │   │   ├── leaderboard.ts — TypeScript service module providing leaderboard operations for the client app. It wraps Firebase or API calls for reuse across components.
+│       │   │   └── trivia.ts — TypeScript service module providing trivia operations for the client app. It wraps Firebase or API calls for reuse across components.
+│       │   ├── stores — Pinia stores maintaining client-side state for users, trivia, and locale.
+│       │   │   ├── trivia — Directory grouping the Trivia resources within the project structure.
+│       │   │   │   ├── modes — Directory grouping the Modes resources within the project structure.
+│       │   │   │   │   ├── endless.ts — TypeScript Pinia store module managing endless state for the client app. It centralizes reactive data and actions for related features.
+│       │   │   │   │   └── fixed.ts — TypeScript Pinia store module managing fixed state for the client app. It centralizes reactive data and actions for related features.
+│       │   │   │   ├── index.ts — TypeScript Pinia store module managing index state for the client app. It centralizes reactive data and actions for related features.
+│       │   │   │   ├── types.ts — TypeScript Pinia store module managing types state for the client app. It centralizes reactive data and actions for related features.
+│       │   │   │   └── utils.ts — TypeScript Pinia store module managing utils state for the client app. It centralizes reactive data and actions for related features.
+│       │   │   ├── locale.ts — TypeScript Pinia store module managing locale state for the client app. It centralizes reactive data and actions for related features.
+│       │   │   └── user.ts — TypeScript Pinia store module managing user state for the client app. It centralizes reactive data and actions for related features.
+│       │   ├── styles — CSS stylesheets defining the design tokens and layouts for the client UI.
+│       │   │   ├── Card.css — CSS stylesheet defining the look and feel for the Card component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── CustomButton.css — CSS stylesheet defining the look and feel for the Custom Button component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── Home.css — CSS stylesheet defining the look and feel for the Home component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── Leaderboard.css — CSS stylesheet defining the look and feel for the Leaderboard component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── Trivia.css — CSS stylesheet defining the look and feel for the Trivia component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── dark-theme.css — CSS stylesheet defining the look and feel for the Dark Theme component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── layout.css — CSS stylesheet defining the look and feel for the Layout component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   ├── responsive-utils.css — CSS stylesheet defining the look and feel for the Responsive Utils component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   │   └── tokens.css — CSS stylesheet defining the look and feel for the Tokens component or layout in the client app. It captures theme and layout rules consumed by the Vue components.
+│       │   ├── types — Type declaration shims used by the client build.
+│       │   │   ├── luxon.d.ts — TypeScript type definitions for luxon.d data structures. They ensure consistent typing across the project.
+│       │   │   └── vite-plugin-prerender.d.ts — TypeScript type definitions for vite plugin prerender.d data structures. They ensure consistent typing across the project.
+│       │   ├── utils — Directory grouping the Utils resources within the project structure.
+│       │   │   └── googleAdsense.ts — TypeScript utility module supplying google adsense helpers. It offers reusable logic shared across the codebase.
+│       │   ├── views — Route-level views for the client SPA, including main sections and game shells.
+│       │   │   ├── games — View wrappers that host the playable mini-games in the client app.
+│       │   │   │   ├── FisherGame.vue — Vue 3 single-file component implementing the Fisher Game interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   ├── Pacman.vue — Vue 3 single-file component implementing the Pacman interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   ├── PyramidTier.vue — Vue 3 single-file component implementing the Pyramid Tier interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   ├── Trivia.vue — Vue 3 single-file component implementing the Trivia interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   │   └── ZoneReveal.vue — Vue 3 single-file component implementing the Zone Reveal interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── About.vue — Vue 3 single-file component implementing the About interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── Build.vue — Vue 3 single-file component implementing the Build interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── ComingSoon.vue — Vue 3 single-file component implementing the Coming Soon interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── ContactUs.vue — Vue 3 single-file component implementing the Contact Us interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── DailyChallenges.vue — Vue 3 single-file component implementing the Daily Challenges interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── FAQ.vue — Vue 3 single-file component implementing the F A Q interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── FrenemySearch.vue — Vue 3 single-file component implementing the Frenemy Search interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── GameInfo.vue — Vue 3 single-file component implementing the Game Info interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── Home.vue — Vue 3 single-file component implementing the Home interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── PrivacyPolicy.vue — Vue 3 single-file component implementing the Privacy Policy interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   ├── Profile.vue — Vue 3 single-file component implementing the Profile interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   │   └── TermsOfUse.vue — Vue 3 single-file component implementing the Terms Of Use interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   ├── App.vue — Vue 3 single-file component implementing the App interface in the client application. It encapsulates template, script, and style logic for that feature.
+│       │   ├── favicon-dark.svg — Static image asset 'favicon-dark.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── favicon-light.svg — Static image asset 'favicon-light.svg' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── favicon.ico — Static image asset 'favicon.ico' used by the client application for visual presentation. It is bundled with the project's assets for runtime use.
+│       │   ├── main.ts — General TypeScript module related to main functionality. It contributes typed logic to the project.
+│       │   ├── project-structure.txt — Text outline describing parts of the project structure. It serves as quick reference for contributors.
+│       │   ├── vite-env.d.ts — General TypeScript module related to vite env.d functionality. It contributes typed logic to the project.
+│       │   └── vue-shim.d.ts — General TypeScript module related to vue shim.d functionality. It contributes typed logic to the project.
+│       ├── .gitignore — Git ignore rules that exclude build artifacts, dependencies, and environment files from version control. It keeps the repository clean of generated content.
+│       ├── README.md — Primary repository README with setup instructions, commands, and project summary details. It guides developers working on the monorepo.
+│       ├── index.html — File 'index.html' contributing to the project. It should be consulted within its directory for specific usage.
+│       ├── package.json — Package manifest for the client app, listing dependencies, scripts, and metadata. It is consumed by npm during installs and builds.
+│       ├── project-structure.txt — Text outline describing parts of the project structure. It serves as quick reference for contributors.
+│       ├── seedQuestions.js — JavaScript module implementing seed questions functionality. It can run in Node.js as part of build or tooling scripts.
+│       ├── tsconfig.app.json — TypeScript configuration file tsconfig.app.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│       ├── tsconfig.json — TypeScript configuration file tsconfig.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│       ├── tsconfig.node.json — TypeScript configuration file tsconfig.node.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│       ├── uploadQuestionsFromCsv.js — JavaScript module implementing upload questions from csv functionality. It can run in Node.js as part of build or tooling scripts.
+│       ├── vite-plugin-prerender.d.ts — General TypeScript module related to vite plugin prerender.d functionality. It contributes typed logic to the project.
+│       ├── vite.config.ts — General TypeScript module related to vite.config functionality. It contributes typed logic to the project.
+│       └── vitest.setup.ts — General TypeScript module related to vitest.setup functionality. It contributes typed logic to the project.
+├── functions — Firebase Cloud Functions workspace handling backend logic for the platform.
+│   ├── lib — Compiled type definitions generated from the Cloud Functions TypeScript build.
+│   │   ├── external — Directory grouping the External resources within the project structure.
+│   │   │   └── xApi.d.ts — TypeScript source file for Firebase Functions handling x api.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   ├── handlers — Directory grouping the Handlers resources within the project structure.
+│   │   │   ├── dailyChallengeRewards.d.ts — TypeScript source file for Firebase Functions handling daily challenge rewards.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   │   ├── leaderboards.d.ts — TypeScript source file for Firebase Functions handling leaderboards.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   │   ├── submitGameScore.d.ts — TypeScript source file for Firebase Functions handling submit game score.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   │   └── xApi.d.ts — TypeScript source file for Firebase Functions handling x api.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   ├── utils — Directory grouping the Utils resources within the project structure.
+│   │   │   ├── firebaseAdmin.d.ts — TypeScript utility module supplying firebase admin.d helpers. It offers reusable logic shared across the codebase.
+│   │   │   ├── gameStatsHelpers.d.ts — TypeScript utility module supplying game stats helpers.d helpers. It offers reusable logic shared across the codebase.
+│   │   │   ├── leaderboardHelpers.d.ts — TypeScript utility module supplying leaderboard helpers.d helpers. It offers reusable logic shared across the codebase.
+│   │   │   └── statsManager.d.ts — TypeScript utility module supplying stats manager.d helpers. It offers reusable logic shared across the codebase.
+│   │   └── index.d.ts — TypeScript source file for Firebase Functions handling index.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   ├── src — TypeScript source for Cloud Functions handlers, utilities, and external integrations.
+│   │   ├── external — Directory grouping the External resources within the project structure.
+│   │   │   └── xApi.ts — TypeScript source file for Firebase Functions handling x api behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   ├── handlers — HTTP callable and REST handlers implementing backend operations.
+│   │   │   ├── dailyChallengeRewards.ts — TypeScript source file for Firebase Functions handling daily challenge rewards behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   │   ├── leaderboards.ts — TypeScript source file for Firebase Functions handling leaderboards behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   │   ├── submitGameScore.ts — TypeScript source file for Firebase Functions handling submit game score behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   │   └── xApi.ts — TypeScript source file for Firebase Functions handling x api behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   ├── submitGameScore — Directory grouping the Submit Game Score resources within the project structure.
+│   │   │   └── __tests__ — Directory grouping the Tests resources within the project structure.
+│   │   │       └── submitGameScore.test.js — JavaScript module implementing submit game score.test functionality. It can run in Node.js as part of build or tooling scripts.
+│   │   ├── utils — Utility modules shared across Cloud Functions, including Firebase admin helpers.
+│   │   │   ├── firebaseAdmin.ts — TypeScript utility module supplying firebase admin helpers. It offers reusable logic shared across the codebase.
+│   │   │   ├── gameStatsHelpers.ts — TypeScript utility module supplying game stats helpers helpers. It offers reusable logic shared across the codebase.
+│   │   │   ├── leaderboardHelpers.ts — TypeScript utility module supplying leaderboard helpers helpers. It offers reusable logic shared across the codebase.
+│   │   │   └── statsManager.ts — TypeScript utility module supplying stats manager helpers. It offers reusable logic shared across the codebase.
+│   │   ├── external-types.d.ts — TypeScript source file for Firebase Functions handling external types.d behavior. It executes backend logic when deployed to Cloud Functions.
+│   │   └── index.ts — TypeScript source file for Firebase Functions handling index behavior. It executes backend logic when deployed to Cloud Functions.
+│   ├── .eslintrc.js — JavaScript module implementing .eslintrc functionality. It can run in Node.js as part of build or tooling scripts.
+│   ├── .gitignore — Git ignore rules that exclude build artifacts, dependencies, and environment files from version control. It keeps the repository clean of generated content.
+│   ├── .npmrc — Configuration or metadata file '.npmrc' supporting tooling in the repository. It customizes behavior for this project.
+│   ├── package-lock.json — Lockfile preserving resolved dependency versions for the functions workspace. It ensures repeatable installs for collaborators.
+│   ├── package.json — Package manifest for the functions workspace, listing dependencies, scripts, and metadata. It is consumed by npm during installs and builds.
+│   ├── readme.md — File 'readme.md' contributing to the project. It should be consulted within its directory for specific usage.
+│   ├── top-x-shared-1.0.0.tgz — Archived tarball of the shared package distribution. It can be used for offline installs or references.
+│   ├── tsconfig.build.json — TypeScript configuration file tsconfig.build.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│   ├── tsconfig.dev.json — TypeScript configuration file tsconfig.dev.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│   └── tsconfig.json — TypeScript configuration file tsconfig.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+├── packages — Reusable packages shared across the monorepo, including shared UI and utilities.
+│   ├── shared — The @top-x/shared package containing common types, Firebase setup, and Vue components.
+│   │   ├── src — Source for the shared package, including APIs, components, and utilities.
+│   │   │   ├── api — Shared API helper modules that abstract Firestore interactions.
+│   │   │   │   ├── index.ts — TypeScript API helper exposing index operations for shared consumption. It abstracts Firestore or HTTP calls behind a simple interface.
+│   │   │   │   ├── pageContent.ts — TypeScript API helper exposing page content operations for shared consumption. It abstracts Firestore or HTTP calls behind a simple interface.
+│   │   │   │   └── useCollection.ts — TypeScript API helper exposing use collection operations for shared consumption. It abstracts Firestore or HTTP calls behind a simple interface.
+│   │   │   ├── components — Reusable Vue components provided by the shared package.
+│   │   │   │   ├── Card.vue — Vue 3 single-file component implementing the Card interface in the client application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── CustomButton.vue — Vue 3 single-file component implementing the Custom Button interface in the client application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   ├── ImageUploader.vue — Vue 3 single-file component implementing the Image Uploader interface in the client application. It encapsulates template, script, and style logic for that feature.
+│   │   │   │   └── ImageUploaderCircleSprite.vue — Vue 3 single-file component implementing the Image Uploader Circle Sprite interface in the client application. It encapsulates template, script, and style logic for that feature.
+│   │   │   ├── content — Default content configuration exported by the shared package.
+│   │   │   │   └── defaults.ts — General TypeScript module related to defaults functionality. It contributes typed logic to the project.
+│   │   │   ├── types — TypeScript type definitions shared across apps for games and content.
+│   │   │   │   ├── content.ts — TypeScript type definitions for content data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── dailyChallenge.ts — TypeScript type definitions for daily challenge data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── favorites.ts — TypeScript type definitions for favorites data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── fisherGame.ts — TypeScript type definitions for fisher game data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── game.ts — TypeScript type definitions for game data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── home.ts — TypeScript type definitions for home data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── index.ts — TypeScript type definitions for index data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── pacman.ts — TypeScript type definitions for pacman data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── pyramid.ts — TypeScript type definitions for pyramid data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── stats.ts — TypeScript type definitions for stats data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── trivia.ts — TypeScript type definitions for trivia data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── user.ts — TypeScript type definitions for user data structures. They ensure consistent typing across the project.
+│   │   │   │   ├── vue-smooth-dnd.d.ts — TypeScript type definitions for vue smooth dnd.d data structures. They ensure consistent typing across the project.
+│   │   │   │   └── zoneReveal.ts — TypeScript type definitions for zone reveal data structures. They ensure consistent typing across the project.
+│   │   │   ├── utils — Utility helpers used across apps, such as analytics and formatting.
+│   │   │   │   ├── analytics.ts — TypeScript utility module supplying analytics helpers. It offers reusable logic shared across the codebase.
+│   │   │   │   ├── format.ts — TypeScript utility module supplying format helpers. It offers reusable logic shared across the codebase.
+│   │   │   │   └── zoneRevealAnswer.ts — TypeScript utility module supplying zone reveal answer helpers. It offers reusable logic shared across the codebase.
+│   │   │   ├── firebase.ts — General TypeScript module related to firebase functionality. It contributes typed logic to the project.
+│   │   │   └── index.ts — General TypeScript module related to index functionality. It contributes typed logic to the project.
+│   │   ├── package.json — Package manifest for the shared package, listing dependencies, scripts, and metadata. It is consumed by npm during installs and builds.
+│   │   ├── tsconfig.json — TypeScript configuration file tsconfig.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
+│   │   └── vite-env.d.ts — General TypeScript module related to vite env.d functionality. It contributes typed logic to the project.
+│   └── vite-plugin-prerender — Custom Vite plugin package for prerendering routes.
+│       ├── index.js — JavaScript module implementing index functionality. It can run in Node.js as part of build or tooling scripts.
+│       └── package.json — Package manifest for the plugin package, listing dependencies, scripts, and metadata. It is consumed by npm during installs and builds.
+├── .firebaserc — Firebase project selector that tells the CLI which Firebase project to target during deploys. It keeps environment-specific aliases.
+├── .gitignore — Git ignore rules that exclude build artifacts, dependencies, and environment files from version control. It keeps the repository clean of generated content.
+├── Overview.md — High-level overview document summarizing the monorepo and its structure. It gives newcomers a quick orientation.
+├── README.md — Primary repository README with setup instructions, commands, and project summary details. It guides developers working on the monorepo.
+├── TOP-X Project Summary.markdown — Narrative summary of the TOP-X project, including goals and structure descriptions. It captures contextual background for the codebase.
+├── cors.json — Firebase Hosting configuration for CORS rules used during emulation or deployment. It ensures proper cross-origin access for hosted functions.
+├── firebase.json — Firebase project configuration specifying hosting, functions, and rewrites. It drives Firebase CLI deployments for the monorepo.
+├── firestore.indexes.json — Firestore composite index definitions required for queries. Firebase uses this file to manage indexes during deploy.
+├── firestore.rules — Firestore security rules controlling access to database resources. They enforce backend security for the app.
+├── folder_tree.txt — Existing folder tree overview listing directories and files. It offers a snapshot of the repo layout.
+├── package-lock.json — Lockfile preserving resolved dependency versions for the root workspace. It ensures repeatable installs for collaborators.
+├── package.json — Package manifest for the root workspace, listing dependencies, scripts, and metadata. It is consumed by npm during installs and builds.
+├── profile.png — Top-level image asset representing the default profile image for marketing or documentation. It can be referenced in various contexts.
+├── project-structure.txt — Text outline describing parts of the project structure. It serves as quick reference for contributors.
+├── temp.txt — Temporary note file currently stored in the repository. It likely holds scratch information.
+├── top-x-shared-1.0.0.tgz — Archived tarball of the shared package distribution. It can be used for offline installs or references.
+└── tsconfig.json — TypeScript configuration file tsconfig.json that tunes compiler options for its workspace. It directs how TypeScript sources are transpiled.
