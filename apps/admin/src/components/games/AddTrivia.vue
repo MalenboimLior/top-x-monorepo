@@ -21,19 +21,11 @@
         </div>
 
         <div v-if="config.mode === 'fixed'" class="column is-half">
-          <label class="label">Total Questions</label>
-          <input class="input" type="number" v-model.number="config.totalQuestions" min="1" />
-        </div>
-
-        <div v-if="config.mode === 'fixed'" class="column is-half">
-          <label class="label">Question Source</label>
-          <div class="select is-fullwidth">
-            <select v-model="config.questionSource">
-              <option value="pool">Question Pool (remote)</option>
-              <option value="inline">Inline (use configured list)</option>
-              <option value="hybrid">Hybrid (inline + pool)</option>
-            </select>
-          </div>
+          <label class="label">Unlimited Lives</label>
+          <label class="checkbox">
+            <input type="checkbox" v-model="config.unlimitedLives" />
+            No lives limit, no timer
+          </label>
         </div>
 
         <div class="column is-half">
@@ -145,7 +137,6 @@
             @click="requestAiQuestions"
             :disabled="isRequestingAi"
           />
-          <CustomButton type="is-success" label="Add Question" @click="addQuestion" />
         </div>
       </div>
 
@@ -184,98 +175,102 @@
             {{ candidate.lastAction === 'game' ? 'Stored in game question pool.' : 'Stored in shared pool.' }}
           </p>
           <ul class="candidate-options">
-            <li v-for="(option, index) in candidate.question.options" :key="index">
-              <span :class="{ 'has-text-success': option === candidate.question.correctAnswer }">
-                {{ option }}
+            <li v-for="(answer, index) in candidate.question.answers" :key="index">
+              <span :class="{ 'has-text-success': answer.text === candidate.question.correctAnswer }">
+                {{ answer.text }}
               </span>
             </li>
           </ul>
         </div>
       </div>
 
-      <VueDraggable v-model="config.questions" item-key="id" handle=".drag-handle" class="draggable-list">
-        <template #item="{ element: question, index }">
-          <div class="box question-card">
-            <header class="question-header">
-              <span class="drag-handle" aria-label="Drag question">⠿</span>
-              <h5 class="title is-6">Question {{ index + 1 }}</h5>
-              <div class="question-actions">
-                <button class="button is-small" @click="duplicateQuestion(index)">Duplicate</button>
-                <button class="button is-small is-danger" @click="removeQuestion(index)">Remove</button>
+      <div class="questions-wrapper">
+        <details v-for="(question, index) in config.questions" :key="question.id || index" class="question-collapsible">
+          <summary class="question-summary">
+            <span class="summary-icon" aria-hidden="true">❓</span>
+            <span class="question-title-text">
+              {{ question.text || `Question ${index + 1}` }}
+            </span>
+            <span class="summary-arrow" aria-hidden="true">▸</span>
+          </summary>
+          <div class="question-box">
+            <div class="question-content">
+              <div class="field">
+                <label class="label">Identifier</label>
+                <input class="input" v-model="question.id" placeholder="question-id" />
               </div>
-            </header>
 
-            <div class="field">
-              <label class="label">Identifier</label>
-              <input class="input" v-model="question.id" placeholder="question-id" />
-            </div>
-
-            <div class="field">
-              <label class="label">Prompt</label>
-              <textarea class="textarea" v-model="question.text" placeholder="Ask your question"></textarea>
-            </div>
-
-            <div class="columns is-multiline">
-              <div class="column is-half">
-                <label class="label">Category</label>
-                <input class="input" v-model="question.category" placeholder="general" />
+              <div class="field">
+                <label class="label">Question Text</label>
+                <textarea class="textarea" v-model="question.text" placeholder="Ask your question"></textarea>
               </div>
-              <div class="column is-one-quarter">
-                <label class="label">Difficulty</label>
-                <div class="select is-fullwidth">
-                  <select v-model="question.difficulty">
-                    <option value="">Unset</option>
-                    <option v-for="level in difficulties" :key="level" :value="level">{{ level }}</option>
-                  </select>
+
+              <div class="columns is-multiline">
+                <div class="column is-half">
+                  <label class="label">Category</label>
+                  <input class="input" v-model="question.category" placeholder="general" />
                 </div>
-              </div>
-              <div class="column is-one-quarter">
-                <label class="label">Timer (seconds)</label>
-                <input class="input" type="number" min="0" v-model.number="question.timerSeconds" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label">Question Image</label>
-              <ImageUploader
-                v-model="question.media.imageUrl"
-                :uploadFolder="`trivia/${validatedGameId}/questions/${question.id}`"
-                :cropWidth="512"
-                :cropHeight="512"
-              />
-            </div>
-
-            <div class="answers">
-              <h6 class="subtitle is-6">Answers</h6>
-              <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="box answer-option">
-                <div class="columns is-multiline">
-                  <div class="column is-three-fifths">
-                    <label class="label">Answer {{ optionIndex + 1 }}</label>
-                    <input class="input" v-model="question.options[optionIndex]" placeholder="Answer text" />
-                  </div>
-                  <div class="column is-two-fifths">
-                    <label class="label">Image</label>
-                    <ImageUploader
-                      v-model="question.media.optionImageUrls[optionIndex]"
-                      :uploadFolder="`trivia/${validatedGameId}/options/${question.id}/${optionIndex}`"
-                      :cropWidth="256"
-                      :cropHeight="256"
-                    />
-                  </div>
-                  <div class="column is-full answer-footer">
-                    <label class="radio">
-                      <input type="radio" :name="`correct-${question.id}`" :value="option" v-model="question.correctAnswer" />
-                      Correct Answer
-                    </label>
-                    <button class="button is-text is-small" @click="removeOption(question, optionIndex)">Remove</button>
+                <div class="column is-half">
+                  <label class="label">Difficulty</label>
+                  <div class="select is-fullwidth">
+                    <select v-model="question.difficulty">
+                      <option value="">Unset</option>
+                      <option v-for="level in difficulties" :key="level" :value="level">{{ level }}</option>
+                    </select>
                   </div>
                 </div>
               </div>
-              <CustomButton type="is-success is-small" label="Add Answer" @click="addOption(question)" />
+
+              <div class="field">
+                <label class="label">Question Image</label>
+                <ImageUploader
+                  v-model="question.imageUrl"
+                  :uploadFolder="`trivia/${validatedGameId}/questions/${question.id}`"
+                  :cropWidth="512"
+                  :cropHeight="512"
+                />
+              </div>
+
+              <div class="answers">
+                <h6 class="subtitle is-6">Answers</h6>
+                <div v-for="(answer, answerIndex) in question.answers" :key="answerIndex" class="box answer-option">
+                  <div class="columns is-multiline">
+                    <div class="column is-three-fifths">
+                      <label class="label">Answer {{ answerIndex + 1 }}</label>
+                      <input class="input" v-model="answer.text" placeholder="Answer text" />
+                    </div>
+                    <div class="column is-two-fifths">
+                      <label class="label">Image</label>
+                      <ImageUploader
+                        v-model="answer.imageUrl"
+                        :uploadFolder="`trivia/${validatedGameId}/answers/${question.id}/${answerIndex}`"
+                        :cropWidth="256"
+                        :cropHeight="256"
+                      />
+                    </div>
+                    <div class="column is-full answer-footer">
+                      <label class="radio">
+                        <input type="radio" :name="`correct-${question.id}`" :value="answer.text" v-model="question.correctAnswer" />
+                        Correct Answer
+                      </label>
+                      <button class="button is-text is-small" @click="removeAnswer(question, answerIndex)">Remove</button>
+                    </div>
+                  </div>
+                </div>
+                <CustomButton type="is-success is-small" label="Add Answer" @click="addAnswer(question)" />
+              </div>
+            </div>
+
+            <div class="question-actions">
+              <button class="button is-danger" @click="removeQuestion(index)">Remove Question</button>
+              <button class="button is-primary" @click="duplicateQuestion(index)">Duplicate Question</button>
             </div>
           </div>
-        </template>
-      </VueDraggable>
+        </details>
+        <div class="question-add">
+          <CustomButton type="is-success" label="Add Question" @click="addQuestion" />
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -283,7 +278,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { httpsCallable } from 'firebase/functions';
-import { VueDraggable } from 'vue-draggable-plus';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import { db, functions } from '@top-x/shared';
@@ -291,7 +285,7 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import type {
   TriviaConfig,
   TriviaQuestion,
-  TriviaQuestionMedia,
+  TriviaAnswer,
   TriviaPowerUpRule,
 } from '@top-x/shared/types/trivia';
 
@@ -300,7 +294,7 @@ interface TriviaConfigWithTheme extends TriviaConfig {
   globalTimer: NonNullable<TriviaConfig['globalTimer']>;
   powerUps: TriviaPowerUpRule[];
   allowRepeats?: boolean;
-  totalQuestions?: number;
+  unlimitedLives?: boolean;
 }
 
 interface GeneratedCandidate {
@@ -328,8 +322,6 @@ const themeFields = [
 ] as const;
 
 const difficulties = ['very_easy', 'easy', 'medium', 'hard', 'very_hard', 'expert'];
-const QUESTION_SOURCES = ['pool', 'hybrid', 'inline'] as const;
-type QuestionSource = (typeof QUESTION_SOURCES)[number];
 
 const isSyncing = ref(false);
 const generatedCandidates = ref<GeneratedCandidate[]>([]);
@@ -361,17 +353,13 @@ watch(
     if (isSyncing.value) return;
     emit('update:modelValue', sanitizeConfig(value));
   },
-  { deep: true },
+  { deep: true, immediate: false },
 );
 
 function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   const base: TriviaConfig = value
     ? JSON.parse(JSON.stringify(value))
     : ({ mode: 'fixed', questions: [], language: 'en' } as TriviaConfig);
-
-  if (!QUESTION_SOURCES.includes(base.questionSource as QuestionSource)) {
-    base.questionSource = 'pool';
-  }
 
   if (!base.globalTimer) {
     base.globalTimer = { enabled: false };
@@ -390,6 +378,7 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   } else {
     base.questionBatchSize = base.questionBatchSize ?? undefined;
     base.lives = base.lives ?? undefined;
+    base.unlimitedLives = base.unlimitedLives ?? false;
   }
 
   return base as TriviaConfigWithTheme;
@@ -398,17 +387,39 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
 function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
   const hydrated: TriviaQuestion = JSON.parse(JSON.stringify(question));
   hydrated.id = hydrated.id?.trim() || createQuestionId();
-  hydrated.options = hydrated.options ?? [];
-  if (!hydrated.media) {
-    hydrated.media = {} as TriviaQuestionMedia;
+  
+  // Migrate from old format if needed
+  if ((question as any).options && !question.answers) {
+    // Convert old options array to answers array
+    const oldOptions = (question as any).options as string[];
+    const oldImages = (question as any).media?.optionImageUrls as (string | null)[] | undefined;
+    hydrated.answers = oldOptions.map((text, index) => ({
+      text: text || '',
+      imageUrl: oldImages?.[index] ?? undefined,
+    }));
+    // Migrate question image
+    if ((question as any).media?.imageUrl) {
+      hydrated.imageUrl = (question as any).media.imageUrl;
+    }
+  } else {
+    // Ensure answers array exists and is properly formatted
+    hydrated.answers = (hydrated.answers ?? []).map((ans) => ({
+      text: ans?.text?.trim() || '',
+      imageUrl: ans?.imageUrl || undefined,
+    }));
   }
-  const media = hydrated.media as TriviaQuestionMedia;
-  const options = hydrated.options ?? [];
-  const images = media.optionImageUrls ? [...media.optionImageUrls] : [];
-  media.optionImageUrls = options.map((_, index) => images[index] ?? null);
-  if (!hydrated.correctAnswer && options.length > 0) {
-    hydrated.correctAnswer = options[0];
+  
+  // Ensure at least 2 answers exist
+  if (hydrated.answers.length === 0) {
+    hydrated.answers = [{ text: '' }, { text: '' }];
   }
+  
+  // Set correct answer if missing or invalid
+  const answerTexts = hydrated.answers.map((a) => a.text);
+  if (!hydrated.correctAnswer || !answerTexts.includes(hydrated.correctAnswer)) {
+    hydrated.correctAnswer = hydrated.answers[0]?.text || '';
+  }
+  
   return hydrated;
 }
 
@@ -416,21 +427,15 @@ function sanitizeConfig(value: TriviaConfigWithTheme): TriviaConfig {
   const clone: TriviaConfig = JSON.parse(JSON.stringify(value));
   clone.questions = (clone.questions ?? []).map(sanitizeQuestion);
 
-  if (!QUESTION_SOURCES.includes(clone.questionSource as QuestionSource)) {
-    clone.questionSource = 'pool';
-  }
-  if (clone.mode !== 'fixed' && clone.questionSource === 'inline') {
-    clone.questionSource = 'pool';
-  }
-
   if (clone.mode === 'endless') {
     clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? 10;
     clone.lives = sanitizePositiveInteger(clone.lives) ?? 3;
     (clone as TriviaConfigWithTheme).allowRepeats = Boolean((clone as TriviaConfigWithTheme).allowRepeats);
+    delete (clone as any).unlimitedLives;
   } else {
-    clone.totalQuestions = sanitizePositiveInteger(clone.totalQuestions);
     clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? undefined;
     clone.lives = sanitizePositiveInteger(clone.lives) ?? undefined;
+    clone.unlimitedLives = Boolean((clone as TriviaConfigWithTheme).unlimitedLives);
     delete (clone as any).allowRepeats;
   }
 
@@ -451,23 +456,34 @@ function sanitizeQuestion(question: TriviaQuestion): TriviaQuestion {
   const sanitized = JSON.parse(JSON.stringify(question)) as TriviaQuestion;
   sanitized.text = sanitized.text?.trim() ?? '';
   sanitized.id = sanitized.id?.trim() || createQuestionId();
-  sanitized.options = (sanitized.options ?? []).map((option: string) => option?.trim() ?? '').filter(Boolean);
-  if (sanitized.options.length === 0) {
-    sanitized.options = ['Answer'];
+  
+  // Sanitize answers
+  sanitized.answers = (sanitized.answers ?? []).map((answer) => ({
+    text: answer.text?.trim() ?? '',
+    imageUrl: answer.imageUrl?.trim() || undefined,
+  })).filter((ans) => ans.text.length > 0);
+  
+  if (sanitized.answers.length === 0) {
+    sanitized.answers = [{ text: 'Answer' }];
   }
-  if (!sanitized.correctAnswer || !sanitized.options.includes(sanitized.correctAnswer)) {
-    sanitized.correctAnswer = sanitized.options[0];
+  
+  // Validate correct answer
+  const answerTexts = sanitized.answers.map((a) => a.text);
+  if (!sanitized.correctAnswer || !answerTexts.includes(sanitized.correctAnswer)) {
+    sanitized.correctAnswer = sanitized.answers[0]?.text || '';
   }
-  if (sanitized.media) {
-    const media = sanitized.media;
-    if (media.optionImageUrls) {
-      media.optionImageUrls = sanitized.options.map((_, index) => media.optionImageUrls?.[index] ?? null);
-    }
-  }
-  sanitized.timerSeconds = sanitizePositiveInteger(sanitized.timerSeconds) ?? undefined;
+  
+  // Clean up imageUrl (question image)
+  sanitized.imageUrl = sanitized.imageUrl?.trim() || undefined;
+  
+  // Remove old media structure if it exists
+  delete (sanitized as any).media;
+  
   sanitized.category = sanitized.category?.trim() || undefined;
   sanitized.difficulty = sanitized.difficulty || undefined;
-  sanitized.language = sanitized.language?.trim() || undefined;
+  sanitized.salt = sanitized.salt?.trim() || undefined;
+  sanitized.hash = sanitized.hash?.trim() || undefined;
+  
   return sanitized;
 }
 
@@ -518,28 +534,24 @@ function removeQuestion(index: number) {
   config.value.questions.splice(index, 1);
 }
 
-function addOption(question: TriviaQuestion) {
-  question.options = question.options ?? [];
-  question.options.push('');
-  ensureOptionImages(question);
+function addAnswer(question: TriviaQuestion) {
+  question.answers = question.answers ?? [];
+  question.answers.push({ text: '' });
 }
 
-function removeOption(question: TriviaQuestion, index: number) {
-  question.options.splice(index, 1);
-  ensureOptionImages(question);
-  if (!question.options.includes(question.correctAnswer)) {
-    question.correctAnswer = question.options[0] ?? '';
+function removeAnswer(question: TriviaQuestion, index: number) {
+  const removedAnswer = question.answers[index];
+  question.answers.splice(index, 1);
+  
+  // Update correct answer if the removed one was correct
+  if (removedAnswer && removedAnswer.text === question.correctAnswer) {
+    question.correctAnswer = question.answers[0]?.text || '';
   }
-}
-
-function ensureOptionImages(question: TriviaQuestion) {
-  if (!question.media) {
-    question.media = {};
+  
+  // Ensure at least one answer remains
+  if (question.answers.length === 0) {
+    question.answers.push({ text: '' });
   }
-  const media = question.media;
-  const options = question.options ?? [];
-  const existing = media.optionImageUrls ? [...media.optionImageUrls] : [];
-  media.optionImageUrls = options.map((_, index) => existing[index] ?? null);
 }
 
 function removePowerUp(index: number) {
@@ -554,9 +566,8 @@ function createEmptyQuestion(): TriviaQuestion {
   return hydrateQuestion({
     id: createQuestionId(),
     text: '',
-    options: ['', ''],
+    answers: [{ text: '' }, { text: '' }],
     correctAnswer: '',
-    media: { optionImageUrls: [null, null] },
   } as TriviaQuestion);
 }
 
@@ -743,5 +754,85 @@ async function persistCandidateToPool(
 
 .candidate-options li + li {
   margin-top: 0.25rem;
+}
+
+.questions-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.question-collapsible {
+  border: 1px solid #dbdbdb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.question-summary {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.summary-icon {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-arrow {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.question-collapsible[open] .question-summary {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.question-collapsible[open] > .question-summary .summary-arrow {
+  transform: rotate(90deg);
+}
+
+.question-title-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.question-box {
+  padding: 1.25rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.question-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e5e5;
+}
+
+.question-add {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.5rem;
 }
 </style>

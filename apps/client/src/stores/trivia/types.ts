@@ -1,23 +1,31 @@
 import type {
   TriviaConfig,
-  TriviaFixedConfig,
-  TriviaEndlessConfig,
   TriviaQuestion,
   TriviaPowerUpRule,
   TriviaDifficulty,
+  TriviaAnswer,
 } from '@top-x/shared/types/trivia';
 
 export interface TriviaQuestionViewModel {
   id: string;
-  prompt: string;
+  /** The question text/prompt */
   question: string;
-  options: string[];
+  /** Array of answer options (can be strings or objects with text/imageUrl) */
+  options: (string | { text: string; imageUrl?: string })[];
+  /** Hash of the correct answer for validation */
   correctHash?: string;
+  /** Difficulty level */
   difficulty?: TriviaDifficulty;
-  media?: TriviaQuestion['media'];
+  /** Optional media (image) for the question */
+  media?: {
+    imageUrl?: string;
+  };
+  /** Optional timer duration in seconds */
   timerSeconds?: number;
+  /** Salt used for hashing */
   salt?: string;
-  group?: string;
+  /** Category/group */
+  category?: string;
 }
 
 export interface TriviaAttemptPayload {

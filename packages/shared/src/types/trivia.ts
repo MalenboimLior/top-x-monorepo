@@ -7,56 +7,37 @@ export type TriviaDifficulty =
   | 'expert'
   | (string & {});
 
-export interface TriviaQuestionMedia {
-  /** Optional image associated with the question */
-  imageUrl?: string;
-  /** Optional audio clip to play with the question */
-  audioUrl?: string;
-  /** Optional video clip to display for the question */
-  videoUrl?: string;
-  /** Optional per-answer image references aligned with the options array */
-  optionImageUrls?: (string | null)[];
-}
+  export interface TriviaAnswer {
+    text: string;
+    imageUrl?: string;
+  }
 
 export interface TriviaQuestion {
   id: string;
+  /** The question text/prompt */
   text: string;
-  options: string[];
+  /** Optional image URL for the question */
+  imageUrl?: string;
+  /** Array of possible answers */
+  answers: TriviaAnswer[];
+  /** The correct answer text (matches one of the answers' text) */
   correctAnswer: string;
   /** Optional categorization for filtering/analytics */
   category?: string;
   /** Difficulty flag used for sequencing or scoring */
   difficulty?: TriviaDifficulty;
-  /** Per-question language override (BCP 47 tag). Defaults to config language. */
-  language?: string;
-  /** Optional asset references displayed alongside the prompt */
-  media?: TriviaQuestionMedia;
-  /** Custom timer (in seconds) overriding global timers */
-  timerSeconds?: number;
-  /** Salt applied before hashing answer payloads */
+  /** 
+   * Salt applied before hashing answer payloads.
+   * Used to prevent rainbow table attacks. Each question should have a unique salt.
+   * The hash is computed as: HMAC-SHA256(questionId|answerText|salt, secretKey)
+   */
   salt?: string;
-  /** Hash of the answer payload used to validate submissions */
+  /** 
+   * Hash of the correct answer payload used to validate submissions.
+   * Computed server-side as: HMAC-SHA256(questionId|correctAnswer|salt, secretKey)
+   * Client never sees the correctAnswer directly, only hashes each option and compares.
+   */
   hash?: string;
-}
-
-export interface TriviaSummaryQuestion {
-  /** Identifier linking the summary entry to the source question. */
-  id: string;
-  /** Localized text rendered in recap surfaces. */
-  text: string;
-  /** Optional answer string exposed in recap UIs. */
-  correctAnswer?: string;
-  /** Optional list of acceptable answers for the recap. */
-  correctAnswers?: string[];
-  /** Language tag for the provided text (BCP 47). */
-  language?: string;
-}
-
-export interface TriviaSummaryConfig {
-  /** Whether recaps should surface the correct answers. */
-  showAnswerRecap?: boolean;
-  /** Ordered list of question summaries to display. */
-  questions: TriviaSummaryQuestion[];
 }
 
 export interface TriviaGlobalTimerConfig {
@@ -90,45 +71,47 @@ export interface TriviaThemeConfig {
   backgroundOverlayColor?: string;
 }
 
-export interface TriviaBaseConfig {
+export interface TriviaConfig {
+  /** The mode of the trivia, fixed means the questions are fixed and endless means the questions are endless */
+  /** we don't need questions-source because questions from fixed mode are from "questions" array and in endless mode are from "pool" - sub collection*/
+  /** pool is a subcollection of the game document - for now lets not develop it yet */
+  /** we will do only develop fixed game mode with the questions from the  TriviaQuestion[] array and not subcollection*/
+  mode: 'fixed'|'endless';
   /** Question bank to draw from */
   questions: TriviaQuestion[];
-  /** Where questions should be sourced from when presenting gameplay */
-  questionSource?: 'pool' | 'hybrid' | 'inline';
   /** Preferred language for the trivia experience (BCP 47 tag) */
   language?: string;
-  /** Optional override when batching questions for presentation */
-  questionBatchSize?: number;
-  /** Global session timer configuration */
-  globalTimer?: TriviaGlobalTimerConfig;
-  /** Number of lives/strikes allowed before the run ends */
-  lives?: number;
+  powerUpsActive?: boolean;
   /** Available power-ups and their constraints */
   powerUps?: TriviaPowerUpRule[];
   /** Visual look & feel for trivia screens */
   theme?: TriviaThemeConfig;
-  /** Whether to reveal the correct answers after each question */
+  /** Whether to reveal the correct answers after each question - only for unlimitedLives true (in fixed mode)*/
   showCorrectAnswers?: boolean;
+
+  /** Whether to show the correct answers on the end screen - only for fixed mode with unlimitedLives true */
+  showCorrectAnswersOnEnd?: boolean;
+
   /** Threshold (0-1) of correct answers required to "solve" */
   solveThreshold?: number;
-  /** Optional summary payload used in recap views. */
-  summary?: TriviaSummaryConfig;
-}
 
-export interface TriviaFixedConfig extends TriviaBaseConfig {
-  mode: 'fixed';
-  /** Total questions presented in a fixed session */
-  totalQuestions?: number;
-}
-
-export interface TriviaEndlessConfig extends TriviaBaseConfig {
-  mode: 'endless';
-  /** Batch size is required for endless rotation */
-  questionBatchSize: number;
-  /** Endless mode requires lives to determine failure */
-  lives: number;
-  /** Whether questions can repeat during an endless session */
+  /** Whether user must login to play */
+  mustLogin?: boolean;
+    /** Whether user can play more then one time */
   allowRepeats?: boolean;
+
+  /** Whether lives are unlimited - in fixed mode only */
+  unlimitedLives?: boolean; // in fixed mode only
+  /** Number of lives/strikes allowed before the run ends */
+  lives?: number;
+  /** Global session timer configuration */
+  globalTimer?: TriviaGlobalTimerConfig;
+  /** Optional override when batching questions for presentation */
+  questionBatchSize?: number;
+  /** endless only: **/
+  /** Whether the trivia is hybrid, meaning if the pool is empty get from xAi - if not - don't featch form xAI*/
+  isHybrid?: boolean;
+  
+  
 }
 
-export type TriviaConfig = TriviaFixedConfig | TriviaEndlessConfig;

@@ -2,7 +2,6 @@
   <Card v-if="question" class="trivia-question-card" :class="{ 'has-media': hasQuestionImage }">
     <div class="question-header">
       <div class="question-text">
-        <p v-if="question.prompt" class="question-prompt">{{ question.prompt }}</p>
         <h2 class="question-title">{{ question.question }}</h2>
         <span v-if="question.difficulty" class="question-difficulty">{{ question.difficulty }}</span>
       </div>

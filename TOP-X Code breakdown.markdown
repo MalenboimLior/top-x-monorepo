@@ -49,20 +49,20 @@ State & Utilities: Pinia, Axios, html2canvas, vue-draggable-plus
 Style: Mobile-first, dark theme inspired by X (Twitter)
 
 Rewrite code check list:
-1. check apps/client/src/stores/locale.ts 
-2. Firebase index
-3. upgrade analytics
-4. Fix home page
-5. remove content system
-7. check Sync on X and Post on X
+1. 📦check apps/client/src/stores/locale.ts 
+2. 📦Firebase index
+3. 📦upgrade analytics
+4. 📦📦Fix home page
+5. 📦📦remove content system
+7. 📦check Sync on X and Post on X
 8. 🧩rewrite favorite feature 
 9. 🧩rewrite game counter feature
 10. 🧩rewrite submit socre
 11. 🧩daily chalange rewrite
-12. Trivia logic
-15. add game from client - need to think about db rules and functions
-16. profile page - optimize reads 
-17. add followers / following 
+12. 🎮Trivia logic
+15. 📦add game from client - need to think about db rules and functions
+16. 📦profile page - optimize reads 
+17. 📦add followers / following 
 18. 🧩sepreate game logic as much as possible 
 19.  
 
