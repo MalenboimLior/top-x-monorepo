@@ -240,11 +240,17 @@ const fetchLeaderboard = async () => {
   error.value = null;
 
   try {
-    leaderboard.value = await getTopLeaderboard(
-      props.gameId,
-      props.limit,
-      props.dailyChallengeId
-    );
+    const result = await getTopLeaderboard(props.gameId, {
+      limit: props.limit,
+      dailyChallengeId: props.dailyChallengeId,
+    });
+    
+    if (result.error) {
+      error.value = result.error;
+      leaderboard.value = [];
+    } else {
+      leaderboard.value = result.items;
+    }
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
     error.value = 'Unable to load the leaderboard right now. Please try again later.';

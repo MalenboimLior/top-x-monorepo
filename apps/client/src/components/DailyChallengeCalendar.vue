@@ -39,8 +39,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { getDailyChallenge } from '@/services/game';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
@@ -295,17 +294,10 @@ async function loadChallengeData() {
       }
 
       try {
-        const challengeRef = doc(
-          db,
-          'games',
-          props.gameId,
-          'daily_challenges',
-          challengeId
-        );
-        const challengeSnap = await getDoc(challengeRef);
+        const result = await getDailyChallenge(props.gameId, challengeId);
         
-        if (challengeSnap.exists()) {
-          challengeData.value.set(challengeId, challengeSnap.data() as DailyChallenge);
+        if (result.challenge) {
+          challengeData.value.set(challengeId, result.challenge);
         }
       } catch (err) {
         console.error(`Failed to load challenge ${challengeId}:`, err);

@@ -18,7 +18,7 @@ import { createEndlessModeController } from './modes/endless';
 import { fetchTriviaQuestions, fetchTriviaBatch } from '@/services/trivia';
 import { db } from '@top-x/shared';
 import { useUserStore } from '../user';
-import { getTopLeaderboard } from '@/services/leaderboard';
+// import { getTopLeaderboard } from '@/services/leaderboard';
 
 interface TriviaLeaderboardEntry {
   uid: string;
@@ -486,15 +486,15 @@ export const useTriviaStore = defineStore('trivia', () => {
     submitResults();
   }
 
-  async function fetchLeaderboard(): Promise<void> {
-    try {
-      const challengeId = activeDailyChallengeId.value ?? undefined;
-      const entries = await getTopLeaderboard('smartest_on_x', 10, challengeId);
-      leaderboard.value = entries;
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    }
-  }
+  // async function fetchLeaderboard(): Promise<void> {
+  //   try {
+  //     const challengeId = activeDailyChallengeId.value ?? undefined;
+  //     const entries = await getTopLeaderboard('smartest_on_x', 10, challengeId);
+  //     leaderboard.value = entries;
+  //   } catch (error) {
+  //     console.error('Error fetching leaderboard:', error);
+  //   }
+  // }
 
   async function loadInviter(inviterUid: string, inviterScore: number): Promise<void> {
     try {

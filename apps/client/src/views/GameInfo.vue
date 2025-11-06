@@ -139,8 +139,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { getGame, getGameStats } from '@/services/game';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
 import DailyChallenges from '@/components/DailyChallenges.vue';
@@ -243,43 +242,31 @@ onMounted(async () => {
   }
 
   try {
-    const gameDocRef = doc(db, 'games', gameId.value);
-    const statsDocRef = doc(db, 'games', gameId.value, 'stats', 'general');
-    const [gameDoc, statsDoc] = await Promise.all([
-      getDoc(gameDocRef),
-      getDoc(statsDocRef),
+    const [gameResult, statsResult] = await Promise.all([
+      getGame(gameId.value),
+      getGameStats(gameId.value),
     ]);
 
-    if (statsDoc.exists()) {
-      stats.value = statsDoc.data() as Partial<GameStats>;
-    } else {
-      stats.value = {};
+    if (statsResult.error) {
+      console.error('GameInfo: Error loading stats:', statsResult.error);
+    }
+    stats.value = statsResult.stats || {};
+
+    if (gameResult.error || !gameResult.game) {
+      console.error('GameInfo: Error loading game:', gameResult.error || 'Game not found');
+      router.push('/');
+      return;
     }
 
-    if (gameDoc.exists()) {
-      const data = gameDoc.data();
-      game.value = {
-        id: gameDoc.id,
-        name: data.name || 'Unnamed Game',
-        description: data.description || 'No description available',
-        gameTypeId: data.gameTypeId || '',
-        gameHeader: data.gameHeader,
-        gameInstruction: data.gameInstruction,
-        image: data.image || fallbackImg,
-        active: data.active ?? true,
-        language: data.language || 'en',
-        shareLink: data.shareLink,
-        dailyChallengeActive: data.dailyChallengeActive,
-        // Add other fields as needed
-      } as Game;
-      console.log('GameInfo: Game data fetched:', game.value);
+    const data = gameResult.game;
+    game.value = {
+      ...data,
+      image: data.image || fallbackImg,
+    };
+    console.log('GameInfo: Game data fetched:', game.value);
 
-      if (analytics) {
-        logEvent(analytics, 'page_view', { page_name: 'game_info', game_id: gameId.value });
-      }
-    } else {
-      console.error('GameInfo: Game document not found for ID:', gameId.value);
-      router.push('/');
+    if (analytics) {
+      logEvent(analytics, 'page_view', { page_name: 'game_info', game_id: gameId.value });
     }
   } catch (error: any) {
     console.error('GameInfo: Error fetching game data:', error.message, error);

@@ -262,8 +262,9 @@ import { computed, ref, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter, useRoute } from 'vue-router';
 import { RouterLink } from 'vue-router';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
+import { getGame, getGames } from '@/services/game';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidView from '@/components/games/pyramid/PyramidView.vue';
@@ -423,9 +424,9 @@ async function loadPyramid() {
   const entries = Object.entries(pyramidGames);
   for (const [gameId, gameData] of entries) {
     if ((gameData as any).custom) {
-      const gameSnap = await getDoc(doc(db, 'games', gameId));
-      if (!gameSnap.exists()) continue;
-      const gameInfo = gameSnap.data();
+      const gameResult = await getGame(gameId);
+      if (!gameResult.game) continue;
+      const gameInfo = gameResult.game;
       const allItems = [...(gameInfo.custom?.items || []), ...(gameInfo.custom?.communityItems || [])];
       pyramid.value = (gameData as any).custom.pyramid.map((tier: any) =>
         tier.slots.map((id: string | null) => ({ image: id ? allItems.find((i: any) => i.id === id) || null : null })),
@@ -522,16 +523,18 @@ function searchMoreFrenemies() {
 
 async function loadAvailableGames() {
   try {
-    const snapshot = await getDocs(collection(db, 'games'));
-    const games = snapshot.docs
-      .map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      } as Game))
-      .filter((g) => g.active && g.dailyChallengeActive);
+    const result = await getGames({
+      activeOnly: true,
+      dailyChallengeActive: true,
+    });
+    
+    if (result.error) {
+      console.error('Error loading available games:', result.error);
+      return;
+    }
     
     // Sort by name
-    games.sort((a, b) => a.name.localeCompare(b.name));
+    const games = result.games.sort((a, b) => a.name.localeCompare(b.name));
     availableGames.value = games;
 
     // Auto-select first game if available and no selection

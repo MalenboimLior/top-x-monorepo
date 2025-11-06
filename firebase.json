@@ -5,11 +5,6 @@
       "public": "apps/client/dist",
       "ignore": ["firebase.json", "/.*", "/node_modules/"],
       "rewrites": [
-        { "source": "/getTopLeaderboard", "function": { "functionId": "getTopLeaderboard", "region": "us-central1" } },
-        { "source": "/getAroundLeaderboard", "function": { "functionId": "getAroundLeaderboard", "region": "us-central1" } },
-        { "source": "/getFriendsLeaderboard", "function": { "functionId": "getFriendsLeaderboard", "region": "us-central1" } },
-        { "source": "/getPercentileRank", "function": { "functionId": "getPercentileRank", "region": "us-central1" } },
-        { "source": "/getVipLeaderboard", "function": { "functionId": "getVipLeaderboard", "region": "us-central1" } },
         { "source": "**", "destination": "/index.html" }
       ]
     },

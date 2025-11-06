@@ -92,8 +92,9 @@
 import ZoneRevealEndScreen from '@/components/games/zonereveal/ZoneRevealEndScreen.vue'
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@top-x/shared'
+import { getDailyChallenge, getActiveDailyChallenge, getGame } from '@/services/game'
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal'
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge'
 import { useHead } from '@vueuse/head'
@@ -149,60 +150,32 @@ async function loadDailyChallengeDocument(
   challenge: string
 ): Promise<ZoneRevealDailyChallenge | null> {
   try {
-    const challengeDocRef = doc(db, 'games', gameId, 'daily_challenges', challenge)
-    const snapshot = await getDoc(challengeDocRef)
-
-    if (!snapshot.exists()) {
+    const result = await getDailyChallenge(gameId, challenge)
+    if (!result.challenge) {
       console.error('No challenge found for', challenge)
       return null
     }
-
-    const data = snapshot.data() as ZoneRevealDailyChallengeData
-    return { id: challenge, ...data }
+    return result.challenge as ZoneRevealDailyChallenge
   } catch (err) {
     console.error('Failed fetching daily challenge:', err)
     return null
   }
 }
 
-async function findActiveDailyChallenge(
+async function findActiveDailyChallengeLocal(
   gameId: string,
   fallbackId?: string
 ): Promise<ZoneRevealDailyChallenge | null> {
-  const now = DateTime.utc()
-  const nowISO = now.toISO()
-
-  if (!nowISO) return null
-
   try {
-    const challengesRef = collection(db, 'games', gameId, 'daily_challenges')
-    const activeQuery = query(
-      challengesRef,
-      where('schedule.availableAt', '<=', nowISO),
-      orderBy('schedule.availableAt', 'desc'),
-      limit(5)
-    )
-    const snapshot = await getDocs(activeQuery)
-
-    for (const docSnap of snapshot.docs) {
-      const data = docSnap.data() as ZoneRevealDailyChallengeData
-      const challenge: ZoneRevealDailyChallenge = { id: docSnap.id, ...data }
-      if (data && isChallengeActive(challenge, now)) {
-        return challenge
-      }
+    const result = await getActiveDailyChallenge(gameId, fallbackId)
+    if (result.challenge) {
+      return result.challenge as ZoneRevealDailyChallenge
     }
+    return null
   } catch (err) {
     console.error('Failed fetching active daily challenge:', err)
+    return null
   }
-
-  if (fallbackId) {
-    const fallbackChallenge = await loadDailyChallengeDocument(gameId, fallbackId)
-    if (fallbackChallenge && isChallengeActive(fallbackChallenge, now)) {
-      return fallbackChallenge
-    }
-  }
-
-  return null
 }
 
 function isChallengeActive(challenge: ZoneRevealDailyChallenge, now: DateTime): boolean {
@@ -296,15 +269,14 @@ onMounted(async () => {
 
   if (gameId.value) {
     try {
-      const gameDocRef = doc(db, 'games', gameId.value)
-      const gameDoc = await getDoc(gameDocRef)
+      const gameResult = await getGame(gameId.value)
 
-      if (!gameDoc.exists()) {
-        console.error('ZoneReveal: Game document not found for ID:', gameId.value)
+      if (!gameResult.game) {
+        console.error('ZoneReveal: Game document not found for ID:', gameId.value, gameResult.error)
         return
       }
 
-      const gameData = gameDoc.data()
+      const gameData = gameResult.game
       gameTitle.value = gameData.name || ''
       gameDescription.value = gameData.description || ''
 
@@ -313,7 +285,7 @@ onMounted(async () => {
       if (initialChallengeId) {
         loadedChallenge = await loadDailyChallengeDocument(gameId.value, initialChallengeId)
       } else if (gameData.dailyChallengeActive) {
-        loadedChallenge = await findActiveDailyChallenge(gameId.value, gameData.dailyChallengeCurrent)
+        loadedChallenge = await findActiveDailyChallengeLocal(gameId.value, gameData.dailyChallengeCurrent)
       }
 
       if (loadedChallenge) {

@@ -14,7 +14,6 @@ const PyramidTier = () => import('@/views/games/PyramidTier.vue');
 const FrenemySearch = () => import('@/views/FrenemySearch.vue');
 const ZoneReveal = () => import('@/views/games/ZoneReveal.vue');
 const Build = () => import('@/views/Build.vue');
-const DailyChallenges = () => import('@/views/DailyChallenges.vue');
 const GameInfo = () => import('@/views/GameInfo.vue');
 import FisherGame from '@/views/games/FisherGame.vue';
 
@@ -64,11 +63,6 @@ const routes = [
     path: '/faq',
     name: 'FAQ',
     component: () => import(/* webpackChunkName: "faq" */ '@/views/FAQ.vue'),
-  },
-  {
-    path: '/DailyChallenges',
-    name: 'DailyChallenges',
-    component: () => import(/* webpackChunkName: "daily-challenges" */ '@/views/DailyChallenges.vue'),
   },
 
   {

@@ -111,8 +111,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { createGame, updateGame } from '@/services/game';
 import { useUserStore } from '@/stores/user';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import AddPyramid from '@/components/build/AddPyramid.vue';
@@ -242,11 +241,21 @@ async function saveGame() {
   try {
     const data = JSON.parse(JSON.stringify(game.value));
     delete data.id;
+    
     if (props.existingGame && props.existingGame.id) {
-      const gameRef = doc(db, 'games', props.existingGame.id);
-      await updateDoc(gameRef, data);
+      const result = await updateGame(props.existingGame.id, data);
+      if (!result.success) {
+        console.error('Error updating game:', result.error);
+        return;
+      }
     } else {
-      await addDoc(collection(db, 'games'), data);
+      const result = await createGame(data);
+      if (!result.gameId) {
+        console.error('Error creating game:', result.error);
+        return;
+      }
+      // Update the game object with the new ID
+      game.value.id = result.gameId;
     }
     emit('save', game.value);
   } catch (err) {

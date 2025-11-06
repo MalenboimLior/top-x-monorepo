@@ -168,10 +168,12 @@ import {
   onSnapshot,
   doc,
   where,
-  type DocumentData,
-  type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { db } from '@top-x/shared';
+import {
+  subscribeToGames,
+  subscribeToGameStats,
+} from '@/services/game';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import GameCard from '@/components/GameCard.vue';
 import fallbackImg from '@/assets/images/fallback.png';
@@ -218,81 +220,24 @@ let configUnsubscribe: (() => void) | null = null;
 let gameTypesUnsubscribe: (() => void) | null = null;
 const statsUnsubscribers = new Map<string, () => void>();
 
-function timestampToMillis(value: unknown): number | undefined {
-  if (!value) return undefined;
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = Date.parse(value);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  }
-  if (typeof value === 'object') {
-    const maybeTimestamp = value as { seconds?: number; nanoseconds?: number; toMillis?: () => number };
-    if (typeof maybeTimestamp.toMillis === 'function') {
-      try {
-        return maybeTimestamp.toMillis();
-      } catch (error) {
-        console.warn('Home: Unable to convert timestamp via toMillis', error);
-      }
-    }
-    if (typeof maybeTimestamp.seconds === 'number') {
-      const nanos = typeof maybeTimestamp.nanoseconds === 'number' ? maybeTimestamp.nanoseconds : 0;
-      return maybeTimestamp.seconds * 1000 + Math.floor(nanos / 1_000_000);
-    }
-  }
-  return undefined;
-}
 
-function mapGameDocument(docSnapshot: QueryDocumentSnapshot<DocumentData>): Game {
-  const data = docSnapshot.data();
-  const createdAt = timestampToMillis(data.createdAt);
-  const updatedAt = timestampToMillis(data.updatedAt);
-  return {
-    id: docSnapshot.id,
-    name: data.name || 'Unnamed Game',
-    description: data.description || 'No description available',
-    gameTypeId: data.gameTypeId || '',
-    image: data.image || fallbackImg,
-    active: data.active ?? false,
-    language: data.language || 'en',
-    shareLink: data.shareLink || '',
-    shareText: data.shareText,
-    gameHeader: data.gameHeader,
-    gameInstruction: data.gameInstruction,
-    vip: data.vip || [],
-    custom: data.custom || {},
-    creator: data.creator,
-    community: data.community ?? false,
-    hideFromHome: data.hideFromHome ?? false,
-    dailyChallengeActive: data.dailyChallengeActive,
-    dailyChallengeCurrent: data.dailyChallengeCurrent,
-    leaderboard: data.leaderboard,
-    createdAt,
-    updatedAt,
-  } as Game;
-}
-
-function subscribeToGameStats(gameId: string) {
+function subscribeToGameStatsLocal(gameId: string) {
   if (statsUnsubscribers.has(gameId)) {
     return;
   }
 
-  const statsRef = doc(db, 'games', gameId, 'stats', 'general');
-  const unsubscribe = onSnapshot(
-    statsRef,
-    (snapshot) => {
-      if (snapshot.exists()) {
-        gameStats[gameId] = snapshot.data() as Partial<GameStats>;
+  const unsubscribe = subscribeToGameStats(gameId, (stats, error) => {
+    if (error) {
+      console.error(`Home: Error fetching stats for game ${gameId}:`, error);
+      delete gameStats[gameId];
+    } else {
+      if (stats) {
+        gameStats[gameId] = stats;
       } else {
         delete gameStats[gameId];
       }
-    },
-    (error) => {
-      console.error(`Home: Error fetching stats for game ${gameId}:`, error.message, error);
-      delete gameStats[gameId];
-    },
-  );
+    }
+  });
 
   statsUnsubscribers.set(gameId, unsubscribe);
 }
@@ -374,27 +319,26 @@ onMounted(() => {
   console.log('Home: Fetching games and configuration from Firestore...');
   trackEvent(analytics, 'page_view', { page_name: 'home' });
 
-  const gamesQuery = query(collection(db, 'games'));
-  gamesUnsubscribe = onSnapshot(
-    gamesQuery,
-    (snapshot) => {
-      const mappedGames = snapshot.docs
-        .map((docSnapshot) => mapGameDocument(docSnapshot))
-        .filter((g) => g.active);
-      games.value = mappedGames;
+  gamesUnsubscribe = subscribeToGames(
+    (mappedGames, error) => {
+      if (error) {
+        console.error('Home: Error fetching games:', error);
+        return;
+      }
+
+      const activeGames = mappedGames.filter((g) => g.active);
+      games.value = activeGames;
 
       const activeIds = new Set<string>();
-      mappedGames.forEach((game) => {
+      activeGames.forEach((game) => {
         activeIds.add(game.id);
-        subscribeToGameStats(game.id);
+        subscribeToGameStatsLocal(game.id);
       });
       cleanupStatsSubscriptions(activeIds);
 
       console.log('Home: Games updated:', games.value);
     },
-    (err) => {
-      console.error('Home: Error fetching games:', err.message, err);
-    },
+    { activeOnly: false } // We filter active games manually to maintain existing behavior
   );
 
   const configRef = doc(db, 'config', 'homepage');
