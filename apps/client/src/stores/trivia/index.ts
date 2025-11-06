@@ -3,22 +3,16 @@ import { computed, ref, watch } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Game } from '@top-x/shared/types/game';
 import type { User, UserGameDataSubmission } from '@top-x/shared/types/user';
+import type { TriviaConfig, TriviaQuestion, TriviaPowerUpRule } from '@top-x/shared/types/trivia';
 import {
-  type TriviaConfig,
-  type TriviaFixedConfig,
-  type TriviaEndlessConfig,
-  type TriviaModeController,
   type TriviaQuestionViewModel,
   type TriviaAttemptPayload,
   type PowerUpState,
 } from './types';
-import { nowIso, shuffleInPlace } from './utils';
-import { createFixedModeController } from './modes/fixed';
-import { createEndlessModeController } from './modes/endless';
-import { fetchTriviaQuestions, fetchTriviaBatch } from '@/services/trivia';
+import { nowIso, toViewModel } from './utils';
+import { hashAnswer, fetchQuestionsFromConfig, shuffleArray } from '@/services/trivia';
 import { db } from '@top-x/shared';
 import { useUserStore } from '../user';
-// import { getTopLeaderboard } from '@/services/leaderboard';
 
 interface TriviaLeaderboardEntry {
   uid: string;
@@ -39,22 +33,6 @@ const GAME_ID = 'smartest_on_x';
 const GAME_TYPE_ID = 'trivia';
 const DEFAULT_LIVES = 3;
 const DEFAULT_QUESTION_TIMER = 15;
-const HASH_SECRET = 'top-x-trivia-secret';
-
-function isEndlessConfig(config: TriviaConfig | null): config is TriviaEndlessConfig {
-  return Boolean(config && config.mode === 'endless');
-}
-
-async function hashAnswerValue(question: TriviaQuestionViewModel, value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const payload = `${question.id}|${value}|${question.salt ?? ''}`;
-  const msgBuffer = encoder.encode(payload);
-  const keyBuffer = encoder.encode(HASH_SECRET);
-  const key = await crypto.subtle.importKey('raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const hashBuffer = await crypto.subtle.sign('HMAC', key, msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 
 export const useTriviaStore = defineStore('trivia', () => {
   const userStore = useUserStore();
@@ -64,7 +42,6 @@ export const useTriviaStore = defineStore('trivia', () => {
   const overrideConfig = ref<TriviaConfig | null>(null);
   const configLoaded = ref(false);
   const activeDailyChallengeId = ref<string | null>(null);
-  const modeController = ref<TriviaModeController | null>(null);
 
   const currentQuestion = ref<TriviaQuestionViewModel | null>(null);
   const selectedAnswer = ref<number | null>(null);
@@ -91,16 +68,25 @@ export const useTriviaStore = defineStore('trivia', () => {
   const correctAttempts = ref(0);
   const powerUps = ref<PowerUpState[]>([]);
 
+  // Question management for fixed mode
+  const allQuestions = ref<TriviaQuestion[]>([]);
+  const questionQueue = ref<TriviaQuestionViewModel[]>([]);
+  const currentBatchIndex = ref(0);
+
   const pendingScore = ref<number | null>(null);
   const pendingBestStreak = ref<number | null>(null);
 
   const activeConfig = computed(() => overrideConfig.value ?? baseConfig.value);
+  const unlimitedLives = computed(() => Boolean(activeConfig.value?.unlimitedLives));
+  const hasPowerUps = computed(() => Boolean(activeConfig.value?.powerUps && activeConfig.value.powerUps.length > 0));
 
   async function ensureConfig(): Promise<void> {
     if (configLoaded.value) {
+      console.log('[Trivia] Config already loaded, skipping');
       return;
     }
 
+    console.log('[Trivia] Loading config...');
     isLoading.value = true;
     try {
       const gameDoc = doc(db, 'games', GAME_ID);
@@ -109,20 +95,32 @@ export const useTriviaStore = defineStore('trivia', () => {
         const data = snapshot.data() as Game;
         if (data.custom && typeof data.custom === 'object') {
           baseConfig.value = data.custom as TriviaConfig;
+          console.log('[Trivia] Config loaded from Firebase:', {
+            mode: baseConfig.value.mode,
+            questionsCount: baseConfig.value.questions?.length ?? 0,
+            unlimitedLives: baseConfig.value.unlimitedLives,
+          });
         }
       }
 
       if (!baseConfig.value) {
-        baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES } as TriviaFixedConfig;
+        console.warn('[Trivia] No config found, using defaults');
+        baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES };
       }
 
-      setupModeController();
-      lives.value = activeConfig.value?.lives ?? DEFAULT_LIVES;
+      // Load questions from config
+      loadQuestionsFromConfig();
+      lives.value = unlimitedLives.value ? Infinity : (activeConfig.value?.lives ?? DEFAULT_LIVES);
       configLoaded.value = true;
+      console.log('[Trivia] Config loaded successfully:', {
+        totalQuestions: allQuestions.value.length,
+        lives: lives.value,
+        unlimitedLives: unlimitedLives.value,
+      });
     } catch (error) {
-      console.error('Failed to load trivia config', error);
-      baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES } as TriviaFixedConfig;
-      setupModeController();
+      console.error('[Trivia] Failed to load trivia config', error);
+      baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES };
+      loadQuestionsFromConfig();
       lives.value = DEFAULT_LIVES;
       configLoaded.value = true;
     } finally {
@@ -130,36 +128,80 @@ export const useTriviaStore = defineStore('trivia', () => {
     }
   }
 
-  function setupModeController(): void {
+  function loadQuestionsFromConfig(): void {
     const config = activeConfig.value;
-    if (!config) {
-      modeController.value = null;
+    console.log('[Trivia] loadQuestionsFromConfig called:', {
+      hasConfig: !!config,
+      questionsCount: config?.questions?.length ?? 0,
+      batchSize: config?.questionBatchSize ?? 0,
+    });
+
+    if (!config || !config.questions || config.questions.length === 0) {
+      // Add fallback default question if no questions exist
+      console.warn('[Trivia] No questions in config, adding default question');
+      allQuestions.value = [createDefaultQuestion()];
       return;
     }
 
-    if (isEndlessConfig(config)) {
-      modeController.value = createEndlessModeController({
-        config,
-        fetchBatch: async (batchSize, cursor, excludeIds) => {
-          const { questions, handle } = await fetchTriviaBatch({
-            gameId: GAME_ID,
-            batchSize,
-            cursor,
-            excludeIds,
-          });
-          return { questions, cursor: handle.cursor, hasMore: handle.hasMore };
-        },
-      });
+    // Get batch size (0 means all questions)
+    const batchSize = config.questionBatchSize ?? 0;
+    
+    if (batchSize === 0) {
+      // Fetch all questions
+      allQuestions.value = [...config.questions];
+      console.log('[Trivia] Loaded all questions:', allQuestions.value.length);
     } else {
-      const fixedConfig = config as TriviaFixedConfig;
-      modeController.value = createFixedModeController({
-        config: fixedConfig,
-        fetchQuestions:
-          fixedConfig.questionSource === 'inline'
-            ? undefined
-            : async (limit, excludeIds) =>
-                fetchTriviaQuestions({ gameId: GAME_ID, limit, excludeIds }),
-      });
+      // Fetch first batch
+      const batch = fetchQuestionsFromConfig(config, batchSize, []);
+      allQuestions.value = [...batch];
+      console.log('[Trivia] Loaded first batch:', batch.length, 'of', config.questions.length);
+    }
+
+    // Validate questions format
+    allQuestions.value.forEach((q: TriviaQuestion, idx: number) => {
+      if (!q.answers || q.answers.length === 0) {
+        console.error(`[Trivia] Question ${idx} (${q.id}) has no answers:`, q);
+      }
+      if (!q.text) {
+        console.error(`[Trivia] Question ${idx} (${q.id}) has no text:`, q);
+      }
+    });
+  }
+
+  function createDefaultQuestion(): TriviaQuestion {
+    return {
+      id: 'default-1',
+      text: 'What is 1 + 1?',
+      answers: [
+        { text: '1' },
+        { text: '2' },
+        { text: '3' },
+        { text: '4' },
+      ],
+      correctAnswer: '2',
+      category: 'math',
+      difficulty: 'very_easy',
+    };
+  }
+
+  async function loadNextBatch(): Promise<void> {
+    const config = activeConfig.value;
+    if (!config || !config.questions) {
+      return;
+    }
+
+    const batchSize = config.questionBatchSize ?? 0;
+    if (batchSize === 0) {
+      // Already have all questions
+      return;
+    }
+
+    // Get next batch
+    const excludeIds = allQuestions.value.map((q: TriviaQuestion) => q.id);
+    const nextBatch = fetchQuestionsFromConfig(config, batchSize, excludeIds);
+    
+    if (nextBatch.length > 0) {
+      allQuestions.value.push(...nextBatch);
     }
   }
 
@@ -175,7 +217,7 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function startGlobalTimer(): void {
-    if (!activeConfig.value?.globalTimer?.enabled) {
+    if (unlimitedLives.value || !activeConfig.value?.globalTimer?.enabled) {
       globalTimeLeft.value = null;
       if (globalTimerHandle.value) {
         clearInterval(globalTimerHandle.value);
@@ -211,6 +253,13 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function startQuestionTimer(question: TriviaQuestionViewModel): void {
+    if (unlimitedLives.value) {
+      // No timer in unlimited lives mode
+      questionTimerDuration.value = 0;
+      questionTimeLeft.value = 0;
+      return;
+    }
+
     const timerSeconds = question.timerSeconds ?? DEFAULT_QUESTION_TIMER;
     questionTimerDuration.value = timerSeconds;
     questionTimeLeft.value = timerSeconds;
@@ -237,20 +286,55 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   async function prepareNextQuestion(): Promise<void> {
-    if (!modeController.value) {
-      return;
+    console.log('[Trivia] prepareNextQuestion called:', {
+      queueLength: questionQueue.value.length,
+      allQuestionsCount: allQuestions.value.length,
+      answeredCount: answeredQuestionIds.value.length,
+    });
+
+    // Check if we need to load more questions
+    if (questionQueue.value.length === 0 && allQuestions.value.length > answeredQuestionIds.value.length) {
+      console.log('[Trivia] Queue empty, loading questions...');
+      await ensureQuestionsLoaded();
     }
 
-    await modeController.value.ensureQuestions();
-    const next = modeController.value.nextQuestion();
+    // Get next question from queue
+    let next = questionQueue.value.shift();
     if (!next) {
-      if (modeController.value.isComplete()) {
-        endGame();
+      console.log('[Trivia] No question in queue, trying to load more...');
+      // Check if we can load more
+      await ensureQuestionsLoaded();
+      next = questionQueue.value.shift();
+      if (!next) {
+        // No more questions - check if we have any questions at all
+        if (allQuestions.value.length === 0) {
+          console.warn('[Trivia] No questions available, adding default question');
+          allQuestions.value = [createDefaultQuestion()];
+          await ensureQuestionsLoaded();
+          next = questionQueue.value.shift();
+        }
+        if (!next) {
+          // Still no questions - end game
+          console.warn('[Trivia] No questions available, ending game');
+          endGame();
+          return;
+        }
       }
+    }
+
+    if (!next) {
+      console.error('[Trivia] Failed to get next question');
+      endGame();
       return;
     }
 
-    const shuffledOptions = shuffleInPlace([...next.options]);
+    console.log('[Trivia] Preparing question:', {
+      id: next.id,
+      question: next.question.substring(0, 50) + '...',
+      optionsCount: next.options.length,
+    });
+
+    const shuffledOptions = shuffleArray([...next.options]);
     currentQuestion.value = {
       ...next,
       options: shuffledOptions,
@@ -260,14 +344,70 @@ export const useTriviaStore = defineStore('trivia', () => {
     selectedAnswer.value = null;
     isCorrect.value = null;
     startQuestionTimer(next);
+    console.log('[Trivia] Question displayed successfully');
   }
 
-  function spawnPowerUp(): void {
-    if (!activeConfig.value?.powerUps?.length) {
+  async function ensureQuestionsLoaded(): Promise<void> {
+    const config = activeConfig.value;
+    if (!config) {
+      console.warn('No config available for loading questions');
       return;
     }
 
-    const available = activeConfig.value.powerUps.filter((rule) => !powerUps.value.find((p) => p.id === rule.id));
+    // Get available questions (not yet answered)
+    const availableQuestions = allQuestions.value.filter(
+      (q: TriviaQuestion) => !answeredQuestionIds.value.includes(q.id)
+    );
+
+    console.log('[Trivia] ensureQuestionsLoaded:', {
+      totalQuestions: allQuestions.value.length,
+      availableQuestions: availableQuestions.length,
+      queueLength: questionQueue.value.length,
+      answeredCount: answeredQuestionIds.value.length,
+    });
+
+    // If queue is empty and we have available questions, add them
+    if (questionQueue.value.length === 0 && availableQuestions.length > 0) {
+      // Convert to view models and shuffle
+      const viewModels = availableQuestions.map((q: TriviaQuestion) => {
+        try {
+          return toViewModel(q);
+        } catch (error) {
+          console.error('[Trivia] Error converting question to view model:', q, error);
+          return null;
+        }
+      }).filter((vm: TriviaQuestionViewModel | null): vm is TriviaQuestionViewModel => vm !== null);
+      
+      if (viewModels.length > 0) {
+        const shuffled = shuffleArray(viewModels);
+        questionQueue.value.push(...shuffled);
+        console.log('[Trivia] Loaded questions into queue:', shuffled.length);
+      }
+    }
+
+    // Check if we need to load next batch
+    const batchSize = config.questionBatchSize ?? 0;
+    if (batchSize > 0 && availableQuestions.length === 0) {
+      await loadNextBatch();
+      const newAvailable = allQuestions.value.filter(
+        (q: TriviaQuestion) => !answeredQuestionIds.value.includes(q.id)
+      );
+      if (newAvailable.length > 0) {
+        const viewModels = newAvailable.map(toViewModel);
+        const shuffled = shuffleArray(viewModels);
+        questionQueue.value.push(...shuffled);
+      }
+    }
+  }
+
+  function spawnPowerUp(): void {
+    if (!hasPowerUps.value || !activeConfig.value?.powerUps?.length) {
+      return;
+    }
+
+    const available = activeConfig.value.powerUps.filter(
+      (rule: TriviaPowerUpRule) => !powerUps.value.find((p: PowerUpState) => p.id === rule.id)
+    );
     if (!available.length) {
       return;
     }
@@ -280,8 +420,12 @@ export const useTriviaStore = defineStore('trivia', () => {
     });
   }
 
-  async function recordAttempt(question: TriviaQuestionViewModel, answerValue: string): Promise<string> {
-    const hash = await hashAnswerValue(question, answerValue);
+  async function recordAttempt(question: TriviaQuestionViewModel, answerIndex: number): Promise<string> {
+    // Get the answer text from the option
+    const option = question.options[answerIndex];
+    const answerText = typeof option === 'string' ? option : option.text;
+    
+    const hash = await hashAnswer(question.id, answerText, question.salt);
     attempts.value.push({
       questionId: question.id,
       answerHash: hash,
@@ -292,7 +436,9 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   function applyIncorrectAnswer(): void {
-    lives.value -= 1;
+    if (!unlimitedLives.value) {
+      lives.value -= 1;
+    }
     streak.value = 0;
     updateBestStreaks();
   }
@@ -307,7 +453,8 @@ export const useTriviaStore = defineStore('trivia', () => {
 
     correctAttempts.value += 1;
 
-    if (activeConfig.value?.lives && streak.value > 0 && streak.value % 5 === 0) {
+    // Only add lives back if not unlimited and lives are configured
+    if (!unlimitedLives.value && activeConfig.value?.lives && streak.value > 0 && streak.value % 5 === 0) {
       lives.value = Math.min(activeConfig.value.lives, lives.value + 1);
     }
 
@@ -319,11 +466,18 @@ export const useTriviaStore = defineStore('trivia', () => {
       return;
     }
 
-    await recordAttempt(currentQuestion.value, 'timeout');
-    modeController.value?.recordAnswer({ correct: false });
+    // Record timeout as incorrect
+    const answerText = 'timeout';
+    const hash = await hashAnswer(currentQuestion.value.id, answerText, currentQuestion.value.salt);
+    attempts.value.push({
+      questionId: currentQuestion.value.id,
+      answerHash: hash,
+      answeredAt: nowIso(),
+    });
+    answeredQuestionIds.value.push(currentQuestion.value.id);
     applyIncorrectAnswer();
 
-    if (lives.value <= 0) {
+    if (!unlimitedLives.value && lives.value <= 0) {
       endGame();
       return;
     }
@@ -332,40 +486,71 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   async function answerQuestion(index: number): Promise<void> {
+    console.log('[Trivia] answerQuestion called:', {
+      index,
+      hasCurrentQuestion: !!currentQuestion.value,
+      alreadyAnswered: selectedAnswer.value !== null,
+    });
+
     if (!currentQuestion.value || selectedAnswer.value !== null) {
+      console.warn('[Trivia] Cannot answer - no question or already answered');
       return;
     }
 
-    if (questionTimerHandle.value) {
+    if (questionTimerHandle.value && !unlimitedLives.value) {
       clearInterval(questionTimerHandle.value);
       questionTimerHandle.value = null;
     }
 
     selectedAnswer.value = index;
-    const answerHash = await recordAttempt(currentQuestion.value, index.toString());
+    const answerHash = await recordAttempt(currentQuestion.value, index);
+    
+    // Validate answer by comparing hash
+    const option = currentQuestion.value.options[index];
+    const answerText = typeof option === 'string' ? option : option.text;
     const expectedHash = currentQuestion.value.correctHash;
     const correct = expectedHash ? expectedHash === answerHash : false;
+    
+    console.log('[Trivia] Answer validation:', {
+      answerText,
+      answerHash,
+      expectedHash,
+      correct,
+    });
+    
     isCorrect.value = correct;
-    modeController.value?.recordAnswer({ correct });
 
     if (correct) {
+      console.log('[Trivia] Correct answer! Score:', score.value, 'Streak:', streak.value);
       applyCorrectAnswer();
     } else {
+      console.log('[Trivia] Incorrect answer. Lives:', lives.value, 'Streak:', streak.value);
       applyIncorrectAnswer();
     }
 
     bestScore.value = Math.max(bestScore.value, score.value);
 
-    if (lives.value <= 0) {
+    if (!unlimitedLives.value && lives.value <= 0) {
+      console.log('[Trivia] No lives left, ending game');
       endGame();
       return;
     }
 
-    if (modeController.value?.isComplete()) {
+    // Check if we've answered all questions
+    const totalQuestions = activeConfig.value?.questions?.length ?? 0;
+    console.log('[Trivia] Progress check:', {
+      answered: answeredQuestionIds.value.length,
+      total: totalQuestions,
+      allQuestionsCount: allQuestions.value.length,
+    });
+
+    if (answeredQuestionIds.value.length >= totalQuestions && totalQuestions > 0) {
+      console.log('[Trivia] All questions answered, ending game');
       endGame();
       return;
     }
 
+    console.log('[Trivia] Preparing next question...');
     await prepareNextQuestion();
   }
 
@@ -381,20 +566,42 @@ export const useTriviaStore = defineStore('trivia', () => {
     selectedAnswer.value = null;
     isCorrect.value = null;
     score.value = 0;
-    lives.value = activeConfig.value?.lives ?? DEFAULT_LIVES;
+    lives.value = unlimitedLives.value ? Infinity : (activeConfig.value?.lives ?? DEFAULT_LIVES);
     currentQuestion.value = null;
+    questionQueue.value = [];
+    currentBatchIndex.value = 0;
     questionTimerDuration.value = DEFAULT_QUESTION_TIMER;
     questionTimeLeft.value = DEFAULT_QUESTION_TIMER;
   }
 
   async function startGame(): Promise<void> {
+    console.log('[Trivia] startGame called');
     await ensureConfig();
-    if (!modeController.value) {
-      return;
-    }
-
     resetGameState();
-    modeController.value.reset();
+    
+    console.log('[Trivia] After resetGameState:', {
+      allQuestionsCount: allQuestions.value.length,
+      queueLength: questionQueue.value.length,
+    });
+    
+    // Ensure questions are loaded before starting
+    if (allQuestions.value.length === 0) {
+      console.log('[Trivia] No questions, reloading from config');
+      loadQuestionsFromConfig();
+    }
+    
+    // If still no questions, add default
+    if (allQuestions.value.length === 0) {
+      console.warn('[Trivia] Still no questions, adding default');
+      allQuestions.value = [createDefaultQuestion()];
+    }
+    
+    console.log('[Trivia] Starting game with:', {
+      totalQuestions: allQuestions.value.length,
+      queueLength: questionQueue.value.length,
+      screen: 'playing',
+    });
+    
     currentScreen.value = 'playing';
     startGlobalTimer();
     await prepareNextQuestion();
@@ -422,7 +629,7 @@ export const useTriviaStore = defineStore('trivia', () => {
         ...(existingGameData?.custom ?? {}),
         trivia: {
           ...existingTriviaCustom,
-          mode: activeConfig.value?.mode ?? 'fixed',
+          mode: 'fixed',
           lastScore: gameData.score,
           lastAttempts: attempts.value.length,
           lastCorrect: correctAttempts.value,
@@ -434,12 +641,12 @@ export const useTriviaStore = defineStore('trivia', () => {
 
     existingGames[GAME_TYPE_ID] = existingTypeGames;
 
-    const updatedProfile: User = {
-      ...profileValue,
-      games: existingGames,
-    };
-
-    userStore.$patch({ profile: updatedProfile });
+    // Update profile using the updateGameProgress method which handles the patch correctly
+    // The profile will be updated via the Firestore listener
+    // This is just for local optimistic update
+    if (userStore.profile) {
+      userStore.profile.games = existingGames;
+    }
   }
 
   async function submitResults(): Promise<void> {
@@ -455,7 +662,7 @@ export const useTriviaStore = defineStore('trivia', () => {
       lastPlayed: Date.now(),
       custom: {
         trivia: {
-          mode: activeConfig.value?.mode ?? 'fixed',
+          mode: 'fixed',
           attemptCount: attempts.value.length,
           attempts: attempts.value,
           questionIds: questionOrder.value,
@@ -470,7 +677,6 @@ export const useTriviaStore = defineStore('trivia', () => {
     try {
       await userStore.updateGameProgress(GAME_TYPE_ID, GAME_ID, payload);
       updateLocalProfile(payload);
-      await fetchLeaderboard();
       pendingScore.value = null;
       pendingBestStreak.value = null;
     } catch (error) {
@@ -485,16 +691,6 @@ export const useTriviaStore = defineStore('trivia', () => {
     currentScreen.value = 'gameover';
     submitResults();
   }
-
-  // async function fetchLeaderboard(): Promise<void> {
-  //   try {
-  //     const challengeId = activeDailyChallengeId.value ?? undefined;
-  //     const entries = await getTopLeaderboard('smartest_on_x', 10, challengeId);
-  //     leaderboard.value = entries;
-  //   } catch (error) {
-  //     console.error('Error fetching leaderboard:', error);
-  //   }
-  // }
 
   async function loadInviter(inviterUid: string, inviterScore: number): Promise<void> {
     try {
@@ -517,11 +713,13 @@ export const useTriviaStore = defineStore('trivia', () => {
     }
   }
 
-  async function hashAnswer(index: number): Promise<string | null> {
+  async function hashAnswerForQuestion(index: number): Promise<string | null> {
     if (!currentQuestion.value) {
       return null;
     }
-    return hashAnswerValue(currentQuestion.value, index.toString());
+    const option = currentQuestion.value.options[index];
+    const answerText = typeof option === 'string' ? option : option.text;
+    return hashAnswer(currentQuestion.value.id, answerText, currentQuestion.value.salt);
   }
 
   async function saveScoreAfterLogin(): Promise<void> {
@@ -559,9 +757,9 @@ export const useTriviaStore = defineStore('trivia', () => {
   const timeLeft = computed(() => questionTimeLeft.value);
   const mode = computed(() => activeConfig.value?.mode ?? 'fixed');
   const language = computed(
-    () => currentQuestion.value?.language ?? activeConfig.value?.language ?? 'en'
+    () => currentQuestion.value?.category ?? activeConfig.value?.language ?? 'en'
   );
-  const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers));
+  const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers && unlimitedLives.value));
   const configLives = computed(() => activeConfig.value?.lives ?? DEFAULT_LIVES);
   const theme = computed(() => ({
     primaryColor: activeConfig.value?.theme?.primaryColor ?? '#8C52FF',
@@ -573,7 +771,6 @@ export const useTriviaStore = defineStore('trivia', () => {
   }));
   const attemptCount = computed(() => attempts.value.length);
   const correctAttemptCount = computed(() => correctAttempts.value);
-  const questionsAnswered = computed(() => attempts.value.length);
   const currentQuestionNumber = computed(() => {
     if (!currentQuestion.value) {
       return attempts.value.length;
@@ -581,20 +778,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     return attempts.value.length + 1;
   });
   const totalQuestions = computed(() => {
-    if (!activeConfig.value || activeConfig.value.mode !== 'fixed') {
-      return null;
-    }
-    if (
-      typeof (activeConfig.value as TriviaFixedConfig | null)?.totalQuestions === 'number' &&
-      (activeConfig.value as TriviaFixedConfig).totalQuestions !== undefined &&
-      (activeConfig.value as TriviaFixedConfig).totalQuestions! > 0
-    ) {
-      return (activeConfig.value as TriviaFixedConfig).totalQuestions!;
-    }
-    if (activeConfig.value?.questions?.length) {
-      return activeConfig.value.questions.length;
-    }
-    return null;
+    return activeConfig.value?.questions?.length ?? null;
   });
 
   const dailyChallengeId = computed(() => activeDailyChallengeId.value);
@@ -605,9 +789,8 @@ export const useTriviaStore = defineStore('trivia', () => {
   ): Promise<void> {
     overrideConfig.value = config;
     activeDailyChallengeId.value = options?.dailyChallengeId ?? null;
-    setupModeController();
-    lives.value = activeConfig.value?.lives ?? DEFAULT_LIVES;
-    await fetchLeaderboard();
+    loadQuestionsFromConfig();
+    lives.value = unlimitedLives.value ? Infinity : (activeConfig.value?.lives ?? DEFAULT_LIVES);
   }
 
   return {
@@ -631,16 +814,17 @@ export const useTriviaStore = defineStore('trivia', () => {
     attempts,
     attemptCount,
     correctAttemptCount,
-    questionsAnswered,
     currentQuestionNumber,
     totalQuestions,
     mode,
     language,
     showCorrectAnswers,
     configLives,
+    unlimitedLives,
+    hasPowerUps,
     theme,
     dailyChallengeId,
-    hashAnswer,
+    hashAnswer: hashAnswerForQuestion,
     loadInviter,
     startGame,
     answerQuestion,

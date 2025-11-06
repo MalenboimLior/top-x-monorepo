@@ -4,19 +4,19 @@
       <section v-if="screen === 'start'" key="start" class="scene-section">
         <Card class="start-card">
           <header class="start-header">
-            <h1 class="scene-title">Endless Trivia Blitz</h1>
-            <p class="scene-subtitle">Stay alive, climb the streak, conquer the feed.</p>
+            <h1 class="scene-title">{{ title }}</h1>
+            <p class="scene-subtitle">{{ subtitle }}</p>
           </header>
           <div class="start-stats">
             <div class="stat">
-              <span class="stat-label">High Score</span>
+              <span class="stat-label">Best Score</span>
               <span class="stat-value">{{ bestScore }}</span>
             </div>
             <div class="stat">
               <span class="stat-label">Best Streak</span>
               <span class="stat-value">{{ bestStreak }}</span>
             </div>
-            <div class="stat">
+            <div v-if="!unlimitedLives" class="stat">
               <span class="stat-label">Lives</span>
               <span class="stat-value">{{ totalLives }}</span>
             </div>
@@ -25,16 +25,16 @@
           <div v-if="inviter" class="inviter-card">
             <img :src="inviter.photoURL" alt="Inviter avatar" class="inviter-avatar" />
             <div class="inviter-details">
-              <p class="inviter-label">{{ inviter.displayName }} dropped a {{ inviter.score }}.</p>
-              <p class="inviter-score">Beat it and flex your streak!</p>
+              <p class="inviter-label">{{ inviterText }}</p>
+              <p class="inviter-score">{{ inviterScoreText }}</p>
             </div>
           </div>
 
           <CustomButton
             class="start-button"
             type="is-primary"
-            :icon="['fas', 'bolt']"
-            label="Start endless run"
+            :icon="startButtonIcon"
+            :label="startButtonLabel"
             @click="startRun"
           />
         </Card>
@@ -50,9 +50,9 @@
             <div class="hud-group" :class="{ 'streak-glow': streakPulse }">
               <span class="hud-label">Streak</span>
               <span class="hud-value">{{ streak }}</span>
-              <small class="hud-sub">Session best {{ sessionBestStreak }}</small>
+              <small class="hud-sub">Best {{ sessionBestStreak }}</small>
             </div>
-            <div class="hud-group">
+            <div v-if="!unlimitedLives" class="hud-group">
               <span class="hud-label">Lives</span>
               <div class="lives">
                 <span v-for="(heart, index) in livesDisplay" :key="index" :class="{ lost: !heart }">❤️</span>
@@ -61,7 +61,7 @@
           </div>
 
           <div class="hud-progress">
-            <div class="timer-wrapper" role="timer" aria-live="polite">
+            <div v-if="!unlimitedLives" class="timer-wrapper" role="timer" aria-live="polite">
               <svg class="timer-circle" viewBox="0 0 120 120">
                 <circle class="timer-circle-bg" cx="60" cy="60" r="54" />
                 <circle
@@ -77,20 +77,23 @@
               <span class="timer-label">Question</span>
             </div>
 
+            <div v-if="progressPercent !== null" class="question-progress">
+              <div class="progress-label">
+                <span>Progress</span>
+                <span>{{ questionNumber }}/{{ totalQuestions }}</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-bar-fill" :style="{ width: `${progressPercent}%` }"></div>
+              </div>
+            </div>
+
             <div v-if="globalTimeLeft !== null" class="global-timer">
               <div class="progress-label">
-                <span>Global Timer</span>
+                <span>Session Timer</span>
                 <span>{{ formattedGlobalTimer }}</span>
               </div>
               <div class="progress-bar">
                 <div class="progress-bar-fill is-warning" :style="{ width: `${globalTimerPercent}%` }"></div>
-              </div>
-            </div>
-
-            <div class="streak-meter">
-              <span class="meter-label">Power streak</span>
-              <div class="meter-bar">
-                <div class="meter-bar-fill" :style="{ width: `${streakMeter}%` }"></div>
               </div>
             </div>
           </div>
@@ -98,7 +101,7 @@
 
         <div v-if="isLoading" class="loading-state">
           <img src="/assets/loading.gif" alt="Loading" />
-          <p>Charging up questions…</p>
+          <p>Fetching questions...</p>
         </div>
 
         <TriviaQuestion
@@ -141,6 +144,7 @@ interface InviterDetails {
 
 interface Props {
   screen: 'start' | 'playing';
+  mode: 'fixed' | 'endless';
   bestScore: number;
   bestStreak: number;
   score: number;
@@ -148,6 +152,7 @@ interface Props {
   sessionBestStreak: number;
   lives: number;
   totalLives: number;
+  unlimitedLives: boolean;
   currentQuestion: TriviaQuestionViewModel | null;
   selectedAnswer: number | null;
   isCorrect: boolean | null;
@@ -157,6 +162,8 @@ interface Props {
   globalTimeLeft: number | null;
   powerUps: PowerUpState[];
   isLoading: boolean;
+  questionNumber: number | null;
+  totalQuestions: number | null;
   showCorrectAnswers: boolean;
   direction: 'ltr' | 'rtl';
   inviter: InviterDetails | null;
@@ -190,32 +197,12 @@ const formattedGlobalTimer = computed(() => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 });
 
-const livesDisplay = computed(() => {
-  const hearts: boolean[] = [];
-  for (let i = 0; i < props.totalLives; i++) {
-    hearts.push(i < props.lives);
+const progressPercent = computed(() => {
+  if (!props.totalQuestions || props.totalQuestions <= 0 || props.questionNumber === null) {
+    return null;
   }
-  return hearts;
-});
-
-const streakPulse = ref(false);
-
-watch(
-  () => props.streak,
-  (newStreak, oldStreak) => {
-    if (newStreak > oldStreak) {
-      streakPulse.value = true;
-      setTimeout(() => {
-        streakPulse.value = false;
-      }, 500);
-    }
-  }
-);
-
-const streakMeter = computed(() => {
-  const capped = Math.min(props.streak, props.sessionBestStreak || 1);
-  const maxReference = Math.max(props.sessionBestStreak, 1);
-  return Math.min(100, Math.round((capped / maxReference) * 100));
+  const answered = Math.max(0, props.questionNumber - 1);
+  return Math.min(100, Math.round((answered / props.totalQuestions) * 100));
 });
 
 const globalTimerStart = ref<number | null>(null);
@@ -239,6 +226,61 @@ const globalTimerPercent = computed(() => {
     return 0;
   }
   return Math.max(0, Math.round((props.globalTimeLeft / globalTimerStart.value) * 100));
+});
+
+const livesDisplay = computed(() => {
+  const hearts: boolean[] = [];
+  for (let i = 0; i < props.totalLives; i++) {
+    hearts.push(i < props.lives);
+  }
+  return hearts;
+});
+
+const streakPulse = ref(false);
+
+watch(
+  () => props.streak,
+  (newStreak, oldStreak) => {
+    if (newStreak > oldStreak) {
+      streakPulse.value = true;
+      setTimeout(() => {
+        streakPulse.value = false;
+      }, 500);
+    }
+  }
+);
+
+const title = computed(() => {
+  return props.mode === 'endless' ? 'Endless Trivia Blitz' : 'Trivia Takedown';
+});
+
+const subtitle = computed(() => {
+  if (props.mode === 'endless') {
+    return 'Stay alive, climb the streak, conquer the feed.';
+  }
+  return `Fixed run · ${props.totalQuestions || '∞'} questions`;
+});
+
+const inviterText = computed(() => {
+  if (props.mode === 'endless') {
+    return `${props.inviter?.displayName} dropped a ${props.inviter?.score}.`;
+  }
+  return `Challenge from ${props.inviter?.displayName}`;
+});
+
+const inviterScoreText = computed(() => {
+  if (props.mode === 'endless') {
+    return 'Beat it and flex your streak!';
+  }
+  return `Score to beat: ${props.inviter?.score}`;
+});
+
+const startButtonIcon = computed(() => {
+  return props.mode === 'endless' ? ['fas', 'bolt'] : ['fas', 'play'];
+});
+
+const startButtonLabel = computed(() => {
+  return props.mode === 'endless' ? 'Start endless run' : 'Start run';
 });
 
 const startRun = () => emit('start-game');
@@ -344,7 +386,7 @@ const onAnswer = (index: number) => emit('answer-question', index);
 
 .start-button {
   align-self: center;
-  min-width: 220px;
+  min-width: 200px;
 }
 
 .scene-hud {
@@ -443,6 +485,7 @@ const onAnswer = (index: number) => emit('answer-question', index);
   color: rgba(255, 255, 255, 0.7);
 }
 
+.question-progress,
 .global-timer {
   flex: 1;
   min-width: 220px;
@@ -465,33 +508,12 @@ const onAnswer = (index: number) => emit('answer-question', index);
 
 .progress-bar-fill {
   height: 100%;
-  background: var(--trivia-secondary, #ff9f1c);
-  transition: width 0.3s ease;
-}
-
-.streak-meter {
-  flex: 1;
-  min-width: 220px;
-}
-
-.meter-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.35rem;
-}
-
-.meter-bar {
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.meter-bar-fill {
-  height: 100%;
   background: var(--trivia-primary, #8c52ff);
   transition: width 0.3s ease;
+}
+
+.progress-bar-fill.is-warning {
+  background: var(--trivia-secondary, #ff9f1c);
 }
 
 .loading-state {
@@ -583,3 +605,4 @@ const onAnswer = (index: number) => emit('answer-question', index);
   }
 }
 </style>
+

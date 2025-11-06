@@ -23,9 +23,10 @@
         {{ error }}
       </div>
 
-      <TriviaSceneFixed
-        v-if="mode === 'fixed' && currentScreen !== 'gameover'"
+      <TriviaScene
+        v-if="currentScreen !== 'gameover'"
         :screen="currentScreen"
+        :mode="mode"
         :best-score="bestScore"
         :best-streak="bestStreak"
         :score="score"
@@ -33,6 +34,7 @@
         :session-best-streak="sessionBestStreak"
         :lives="lives"
         :total-lives="configLives"
+        :unlimited-lives="unlimitedLives"
         :current-question="currentQuestion"
         :selected-answer="selectedAnswer"
         :is-correct="isCorrect"
@@ -44,34 +46,6 @@
         :is-loading="isLoading"
         :question-number="currentQuestionNumber"
         :total-questions="totalQuestions"
-        :show-correct-answers="showCorrectAnswers"
-        :direction="direction"
-        :inviter="inviter"
-        :theme="theme"
-        :language="language"
-        @start-game="startGame"
-        @answer-question="answerQuestion"
-      />
-
-      <TriviaSceneEndless
-        v-else-if="mode === 'endless' && currentScreen !== 'gameover'"
-        :screen="currentScreen"
-        :best-score="bestScore"
-        :best-streak="bestStreak"
-        :score="score"
-        :streak="streak"
-        :session-best-streak="sessionBestStreak"
-        :lives="lives"
-        :total-lives="configLives"
-        :current-question="currentQuestion"
-        :selected-answer="selectedAnswer"
-        :is-correct="isCorrect"
-        :correct-answer-index="correctAnswerIndex"
-        :time-left="timeLeft"
-        :question-timer-duration="questionTimerDuration"
-        :global-time-left="globalTimeLeft"
-        :power-ups="powerUps"
-        :is-loading="isLoading"
         :show-correct-answers="showCorrectAnswers"
         :direction="direction"
         :inviter="inviter"
@@ -114,12 +88,11 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { doc, getDoc } from 'firebase/firestore';
-import TriviaSceneEndless from '@/components/games/trivia/TriviaSceneEndless.vue';
-import TriviaSceneFixed from '@/components/games/trivia/TriviaSceneFixed.vue';
+import TriviaScene from '@/components/games/trivia/TriviaScene.vue';
 import TriviaEndScreen from '@/components/games/trivia/TriviaEndScreen.vue';
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
-import { getPercentileRank } from '@/services/leaderboard';
+import { getUserPercentile } from '@/services/leaderboard';
 import { db } from '@top-x/shared';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
@@ -241,6 +214,7 @@ const mode = computed(() => triviaStore.mode);
 const language = computed(() => triviaStore.language);
 const showCorrectAnswers = computed(() => triviaStore.showCorrectAnswers);
 const configLives = computed(() => triviaStore.configLives);
+const unlimitedLives = computed(() => triviaStore.unlimitedLives);
 const theme = computed(() => triviaStore.theme);
 
 const rtlLangs = ['ar', 'he', 'fa', 'ur'];
@@ -322,13 +296,14 @@ watch(
   async (newScreen) => {
     if (newScreen === 'gameover' && isLoggedIn.value && userStore.user?.uid) {
       try {
-        const rankData = await getPercentileRank(
-          activeGameId.value,
-          userStore.user.uid,
-          triviaStore.dailyChallengeId.value ?? undefined
-        );
-        percentileRank.value = rankData.percentile;
-        usersTopped.value = rankData.usersTopped || 0;
+        const rankData = await getUserPercentile(activeGameId.value, {
+          uid: userStore.user.uid,
+          dailyChallengeId: triviaStore.dailyChallengeId ?? undefined,
+        });
+        percentileRank.value = rankData.percentile ?? 0;
+        // Calculate users topped: if percentile is available, estimate based on total
+        // For now, set to 0 as we don't have this data in the response
+        usersTopped.value = 0;
       } catch (err) {
         console.error('Error fetching percentile rank:', err);
         percentileRank.value = 0;

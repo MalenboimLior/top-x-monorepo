@@ -1,19 +1,29 @@
 import type { TriviaQuestion } from '@top-x/shared/types/trivia';
 import type { TriviaQuestionViewModel } from './types';
 
+/**
+ * Convert TriviaQuestion to TriviaQuestionViewModel
+ * Converts answers array to options array format
+ */
 export function toViewModel(question: TriviaQuestion): TriviaQuestionViewModel {
-  const prompt = question.text ?? question.id;
+  // Convert answers array to options array
+  const options = question.answers.map((answer) => {
+    // If answer has imageUrl, return object format, otherwise just text
+    if (answer.imageUrl) {
+      return { text: answer.text, imageUrl: answer.imageUrl };
+    }
+    return answer.text;
+  });
+
   return {
     id: question.id,
-    prompt,
-    question: prompt,
-    options: [...(question.options ?? [])],
-    correctHash: (question as Record<string, unknown>).correctHash as string | undefined ?? question.hash,
+    question: question.text,
+    options,
+    correctHash: question.hash,
     difficulty: question.difficulty,
-    media: question.media,
-    timerSeconds: question.timerSeconds,
+    media: question.imageUrl ? { imageUrl: question.imageUrl } : undefined,
     salt: question.salt,
-    group: question.category,
+    category: question.category,
   };
 }
 
