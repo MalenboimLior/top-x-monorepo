@@ -19,23 +19,7 @@ const GameInfo = () => import('@/views/GameInfo.vue');
 import FisherGame from '@/views/games/FisherGame.vue';
 
 const routes = [
-  // {
-  //   path: '/',
-  //   name: 'ComingSoon',
-  //   component: ComingSoon,
-  //   beforeEnter: (to: import('vue-router').RouteLocationNormalized, from: import('vue-router').RouteLocationNormalized, next: import('vue-router').NavigationGuardNext) => {
-  //     const params = new URLSearchParams(to.query as Record<string, string>);
-  //     const game = params.get('game');
-  //     const allowedGames = ['us_presidents_game', 'secret']; // Add other game IDs as needed
-  //     if (game && allowedGames.includes(game)) {
-  //       console.log('Router: Bypassing ComingSoon for game:', game);
-  //       next(`/games/PyramidTier?game=${game}`);
-  //     } else {
-  //       console.log('Router: Showing ComingSoon page');
-  //       next();
-  //     }
-  //   },
-  // },
+
   {
     path: '/',
     name: 'Home',

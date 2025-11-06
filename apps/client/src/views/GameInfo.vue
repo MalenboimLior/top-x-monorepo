@@ -143,7 +143,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
-import DailyChallenges from '@/views/DailyChallenges.vue';
+import DailyChallenges from '@/components/DailyChallenges.vue';
 import { useUserStore } from '@/stores/user';
 import { Game } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
