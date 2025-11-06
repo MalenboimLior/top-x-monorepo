@@ -17,23 +17,23 @@ const PLAYER_VISUAL_SIZE = 30;
 const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
   backgroundImage: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2F1753992798351_level2.jpeg?alt=media&token=cc65eb9e-13de-486b-b4b4-bfe2eec2a73b',
   spritesheets: {
-    player: '/assets/Monocle_spritesheet.png',
-    enemy: '/assets/monster_spritesheet.png',
-    robot: '/assets/robot_spritesheet.png',
-    microbe: '/assets/microbe_spritesheet.png',
-    heart: '/assets/heart_spritesheet.png',
-    clock: '/assets/time_spritesheet.png',
-    speed: '/assets/speed_spritesheet.png',
-    freeze: '/assets/freeze_spritesheet.png'
+    player: '/assets/zonereveal/Monocle_spritesheet.png',
+    enemy: '/assets/zonereveal/monster_spritesheet.png',
+    robot: '/assets/zonereveal/robot_spritesheet.png',
+    microbe: '/assets/zonereveal/microbe_spritesheet.png',
+    heart: '/assets/zonereveal/heart_spritesheet.png',
+    clock: '/assets/zonereveal/time_spritesheet.png',
+    speed: '/assets/zonereveal/speed_spritesheet.png',
+    freeze: '/assets/zonereveal/freeze_spritesheet.png'
   },
   playerSpeed: 200,
   enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90, straightUp: 150, straightleft: 150 },
   finishPercent: 50,
-  heartIcon: '/assets/heart_icon.png',
+  heartIcon: '/assets/zonereveal/heart_icon.png',
   answer: {
     solution: 'Top X',
     accepted: ['TopX', 'Top-X'],
-    image: '/assets/levels/level1.jpeg',
+    image: '/assets/zonereveal/level1.jpg',
   },
   levelsConfig: [
     {
@@ -51,7 +51,7 @@ const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
         { type: 'extrafreeze', count: 0 }
       ],
       timeLimit: 60,
-      hiddenImage: '/assets/levels/level1.jpeg',
+      hiddenImage: '/assets/zonereveal/level1.jpg',
       levelHeader: 'Level 1'
     }
   ]
@@ -126,20 +126,20 @@ export default function createZoneRevealScene(
       loadingText.destroy();
     });
 
-    this.load.image('bg', this.zoneRevealConfig.backgroundImage ?? '/assets/anonymous.png');
+    this.load.image('bg', this.zoneRevealConfig.backgroundImage ?? '/assets/zonereveal/anonymous.png');
     this.zoneRevealConfig.levelsConfig.forEach((level, index) => {
       this.load.image(`hidden${index}`, level.hiddenImage);
     });
 
     const defaults = {
-      player: '/assets/Monocle_spritesheet.png',
-      enemy: '/assets/monster_spritesheet.png',
-      robot: '/assets/Alien_spritesheet.png',
-      microbe: '/assets/microbe_spritesheet.png',
-      heart: '/assets/heart_spritesheet.png',
-      clock: '/assets/time_spritesheet.png',
-      speed: '/assets/speed_spritesheet.png',
-      freeze: '/assets/freeze_spritesheet.png'
+      player: '/assets/zonereveal/Monocle_spritesheet.png',
+      enemy: '/assets/zonereveal/monster_spritesheet.png',
+      robot: '/assets/zonereveal/Alien_spritesheet.png',
+      microbe: '/assets/zonereveal/microbe_spritesheet.png',
+      heart: '/assets/zonereveal/heart_spritesheet.png',
+      clock: '/assets/zonereveal/time_spritesheet.png',
+      speed: '/assets/zonereveal/speed_spritesheet.png',
+      freeze: '/assets/zonereveal/freeze_spritesheet.png'
     };
     const sheets = { ...defaults, ...(this.zoneRevealConfig.spritesheets || {}) };
     Object.entries(sheets).forEach(([key, path]) => {
@@ -149,8 +149,8 @@ export default function createZoneRevealScene(
       });
     });
 
-    this.load.image('smoke', '/assets/smoke.png');
-    this.load.image('heart_icon', this.zoneRevealConfig.heartIcon ?? '/assets/heart_icon.png');
+    this.load.image('smoke', '/assets/zonereveal/smoke.png');
+    this.load.image('heart_icon', this.zoneRevealConfig.heartIcon ?? '/assets/zonereveal/heart_icon.png');
   }
 
   create() {

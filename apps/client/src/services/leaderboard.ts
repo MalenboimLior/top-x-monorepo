@@ -39,12 +39,13 @@ import {
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
-import type { LeaderboardEntry } from '@top-x/shared/types/leaderboard';
+import type { LeaderboardEntry } from '@top-x/shared/types/game';
+import { getGame } from './game';
 
 // ----------------------
 // Types
 // ----------------------
-export type { LeaderboardEntry } from '@top-x/shared/types/leaderboard';
+export type { LeaderboardEntry } from '@top-x/shared/types/game';
 
 export type DateRange = 'daily' | 'weekly' | 'monthly' | 'allTime';
 
@@ -429,16 +430,14 @@ export async function getVipLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   try {
     // First, get the game to find VIP UIDs
-    const gameDocRef = doc(db, 'games', gameId);
-    const gameDoc = await getDoc(gameDocRef);
+    const gameResult = await getGame(gameId);
     
-    if (!gameDoc.exists()) {
+    if (!gameResult.game) {
       console.warn('getVipLeaderboard: Game not found:', gameId);
       return [];
     }
     
-    const gameData = gameDoc.data();
-    const vipUids = gameData.vip || [];
+    const vipUids = gameResult.game.vip || [];
     
     if (vipUids.length === 0) {
       return [];
