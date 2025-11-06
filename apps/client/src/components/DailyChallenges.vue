@@ -80,8 +80,8 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db, analytics, trackEvent } from '@top-x/shared';
+import { analytics, trackEvent } from '@top-x/shared';
+import { getGame, getDailyChallenges } from '@/services/game';
 import Leaderboard from '@/components/Leaderboard.vue';
 import { DateTime } from 'luxon';
 
@@ -107,15 +107,26 @@ useHead({
 onMounted(async () => {
   if (!gameId.value) return;
   try {
-    const gameDoc = await getDoc(doc(db, 'games', gameId.value));
-    const gameTypeId = gameDoc.exists() ? ((gameDoc.data() as any).gameTypeId || '') : '';
-    gameTitle.value = gameDoc.exists() ? (gameDoc.data() as any).name || 'Daily Challenges' : 'Daily Challenges';
-    const snapshot = await getDocs(collection(db, 'games', gameId.value, 'daily_challenges'));
-    challenges.value = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      route: `/games/${gameTypeId}?game=${gameId.value}&challenge=${d.id}`,
-    }));
+    const [gameResult, challengesResult] = await Promise.all([
+      getGame(gameId.value),
+      getDailyChallenges(gameId.value),
+    ]);
+
+    if (gameResult.game) {
+      gameTitle.value = gameResult.game.name || 'Daily Challenges';
+      const gameTypeId = gameResult.game.gameTypeId || '';
+      challenges.value = challengesResult.challenges.map((challenge) => ({
+        ...challenge,
+        route: `/games/${gameTypeId}?game=${gameId.value}&challenge=${challenge.id}`,
+      }));
+    } else {
+      gameTitle.value = 'Daily Challenges';
+      challenges.value = challengesResult.challenges.map((challenge) => ({
+        ...challenge,
+        route: `/games/?game=${gameId.value}&challenge=${challenge.id}`,
+      }));
+    }
+
     if (!selectedChallengeId.value && challenges.value.length) {
       selectedChallengeId.value = challenges.value[0].id;
     }

@@ -43,8 +43,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { getGame } from '@/services/game';
 import PyramidEdit from '@/components/games/pyramid/PyramidEdit.vue';
 import PyramidNav from '@/components/games/pyramid/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
@@ -118,11 +117,10 @@ onMounted(async () => {
   }
 
   try {
-    const gameDocRef = doc(db, 'games', gameId.value);
-    const gameDoc = await getDoc(gameDocRef);
+    const gameResult = await getGame(gameId.value);
 
-    if (gameDoc.exists()) {
-      const gameData = gameDoc.data();
+    if (gameResult.game) {
+      const gameData = gameResult.game;
       gameTitle.value = gameData.name || '';
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';

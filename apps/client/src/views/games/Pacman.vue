@@ -109,7 +109,7 @@ import { useHead } from '@vueuse/head'
 import PacmanEndScreen from '@/components/games/pacman/PacmanEndScreen.vue'
 import type { PacmanConfig } from '@top-x/shared/types/pacman'
 import { db } from '@top-x/shared'
-import { doc, getDoc } from 'firebase/firestore'
+import { getGame } from '@/services/game'
 import { useUserStore } from '@/stores/user'
 import { analytics } from '@top-x/shared'
 import { logEvent } from 'firebase/analytics'
@@ -234,14 +234,14 @@ onBeforeUnmount(() => {
 
 async function loadRemoteConfig(id: string) {
   try {
-    const gameDoc = await getDoc(doc(db, 'games', id))
-    if (gameDoc.exists()) {
-      const data = gameDoc.data()
+    const gameResult = await getGame(id)
+    if (gameResult.game) {
+      const data = gameResult.game
       gameTitle.value = data.name || gameTitle.value
       gameDescription.value = data.description || gameDescription.value
       pacmanConfig.value = data.custom as PacmanConfig
     } else {
-      console.warn('Pacman: Game document not found for ID:', id)
+      console.warn('Pacman: Game document not found for ID:', id, gameResult.error)
     }
   } catch (err) {
     console.error('Pacman: Failed to load config', err)

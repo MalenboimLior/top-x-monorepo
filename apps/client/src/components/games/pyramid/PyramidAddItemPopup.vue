@@ -57,9 +57,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@top-x/shared';
+import { addCommunityItem } from '@/services/pyramid';
 import { PyramidItem } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
@@ -127,65 +125,60 @@ async function saveItem() {
     return;
   }
 
+  if (!form.value.image) {
+    alert('Please select an image.');
+    return;
+  }
+
   isSaving.value = true;
 
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  const id = `${userStore.user.uid || 'anonymous'}_${randomNum}`;
-  const filename = `${id}.jpg`;
-  const storagePath = `presidents/${filename}`;
-  console.log('props.gameId:', props.gameId);
-  console.log('id:', id);
   try {
-    // Upload image to Firebase Storage
-    const storageReference = storageRef(storage, storagePath);
-    if (form.value.image) {
-      await uploadBytes(storageReference, form.value.image);
-      const src = await getDownloadURL(storageReference);
-      console.log('PyramidAddItemPopup: Image uploaded:', src);
-
-      // Create new PyramidItem
-      const newItem: PyramidItem = {
-        id,
-        label: form.value.name,
-        name: form.value.name,
-        src,
-        description: form.value.description,
+    const result = await addCommunityItem({
+      gameId: props.gameId,
+      itemData: {
+        name: form.value.name.trim(),
+        description: form.value.description.trim(),
         color: form.value.color,
-        active: true,
-        source: userStore.user.displayName || 'anonymous',
-      };
-      console.log('newItem:', newItem);
+        userId: userStore.user.uid || 'anonymous',
+        userDisplayName: userStore.user.displayName || 'anonymous',
+      },
+      imageFile: form.value.image,
+    });
 
-      // Save to Firestore communityItems array under custom configuration
-      const gameRef = doc(db, 'games', props.gameId);
-      await updateDoc(gameRef, {
-        'custom.communityItems': arrayUnion(newItem)
-      });
-      console.log('PyramidAddItemPopup: Item added to custom.communityItems in Firestore:', newItem);
-if (analytics) {
-    logEvent(analytics, 'user_action', { action: 'save_item', game_id: props.gameId, item_id: newItem.id });
-  }
-      // Emit new item to parent
-      emit('add-item', newItem);
-
-      // Reset form
-      form.value = {
-        label: '',
-        name: '',
-        description: '',
-        color: '#9900ff',
-        image: null,
-      };
-      imagePreview.value = null;
-    } else {
-      throw new Error('No image selected');
+    if (result.error || !result.item) {
+      console.error('PyramidAddItemPopup: Error adding item:', result.error);
+      alert(result.error || 'Failed to save item. Please try again.');
+      return;
     }
+
+    console.log('PyramidAddItemPopup: Item added successfully:', result.item);
+
+    if (analytics) {
+      logEvent(analytics, 'user_action', {
+        action: 'save_item',
+        game_id: props.gameId,
+        item_id: result.item.id,
+      });
+    }
+
+    // Emit new item to parent
+    emit('add-item', result.item);
+
+    // Reset form
+    form.value = {
+      label: '',
+      name: '',
+      description: '',
+      color: '#9900ff',
+      image: null,
+    };
+    imagePreview.value = null;
   } catch (err: any) {
     console.error('PyramidAddItemPopup: Error saving item:', {
       message: err.message,
       code: err.code,
       details: err.details,
-      stack: err.stack
+      stack: err.stack,
     });
     alert('Failed to save item. Please try again.');
   } finally {

@@ -162,8 +162,7 @@ Just your X username + pic - we promise, hands off your feed! 🔒<br>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
+import { getGameStats } from '@/services/game';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidStats } from '@top-x/shared/types/pyramid';
 import { formatNumber } from '@top-x/shared/utils/format';
@@ -210,9 +209,9 @@ onMounted(async () => {
     showLoginTab.value = true;
   }
   try {
-    const statsDoc = await getDoc(doc(db, 'games', props.gameId, 'stats', 'general'));
-    if (statsDoc.exists()) {
-      const data = statsDoc.data();
+    const statsResult = await getGameStats(props.gameId);
+    if (statsResult.stats) {
+      const data = statsResult.stats;
       stats.value = {
         itemRanks: data.custom.itemRanks || {},
         totalPlayers: data.custom.totalPlayers || 0,

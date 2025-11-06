@@ -279,12 +279,14 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import { httpsCallable } from 'firebase/functions';
 import { VueDraggable } from 'vue-draggable-plus';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
-import { db, functions } from '@top-x/shared';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import {
+  requestXaiTriviaQuestions,
+  saveQuestionToGamePool,
+  saveQuestionToGlobalPool,
+} from '@/services/game';
 import type {
   TriviaConfig,
   TriviaQuestion,
@@ -568,18 +570,18 @@ async function requestAiQuestions() {
   aiError.value = '';
   try {
     isRequestingAi.value = true;
-    const callable = httpsCallable<{
-      gameId?: string;
-      language?: string;
-      existingIds: string[];
-    }, { questions?: TriviaQuestion[] }>(functions, 'requestXaiTriviaQuestions');
-    const { data } = await callable({
+    const result = await requestXaiTriviaQuestions({
       gameId: props.gameId,
       language: config.value.language,
       existingIds: config.value.questions.map((question) => question.id),
     });
-    const questions = data.questions ?? [];
-    generatedCandidates.value = questions.map((question) => ({
+    
+    if (result.error) {
+      aiError.value = result.error;
+      return;
+    }
+    
+    generatedCandidates.value = result.questions.map((question) => ({
       id: question.id || createQuestionId(),
       question: hydrateQuestion(question),
     }));
@@ -627,15 +629,20 @@ async function persistCandidateToPool(
   if (!question.id) {
     question.id = createQuestionId();
   }
+  
   if (target === 'game') {
     if (!props.gameId) {
       throw new Error('A gameId is required to store questions under a game.');
     }
-    const questionRef = doc(collection(db, 'games', props.gameId, 'questions'), question.id);
-    await setDoc(questionRef, question, { merge: true });
+    const result = await saveQuestionToGamePool(props.gameId, question);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save question to game pool');
+    }
   } else {
-    const questionRef = doc(collection(db, 'xaiQuestions'), question.id);
-    await setDoc(questionRef, question, { merge: true });
+    const result = await saveQuestionToGlobalPool(question);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save question to global pool');
+    }
   }
 }
 

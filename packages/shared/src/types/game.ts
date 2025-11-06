@@ -4,6 +4,7 @@ import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
 import { PacmanConfig } from "./pacman";
 import { FisherGameConfig } from "./fisherGame";
+import type { LeaderboardEntry, LeaderboardDateIndexes, LeaderboardEntryDate } from "./leaderboard";
 
 export interface GameType {
   id: string;
@@ -58,29 +59,9 @@ export interface Game {
   updatedAt?: number;
 }
 
-export interface LeaderboardDateIndexes {
-  daily: string;
-  weekly: string;
-  monthly: string;
-  allTime: string;
-}
-
-export interface LeaderboardEntryDate {
-  recordedAt: number;
-  indexes: LeaderboardDateIndexes;
-}
-
-export interface LeaderboardEntry {
-  uid: string;
-  displayName: string;
-  username: string;
-  photoURL: string;
-  score: number;
-  streak: number;
-  updatedAt?: number;
-  date?: LeaderboardEntryDate;
-  custom?: Record<string, any>;
-}
+// Leaderboard types are now in ./leaderboard.ts
+// Re-exported here for backward compatibility
+export type { LeaderboardEntry, LeaderboardDateIndexes, LeaderboardEntryDate } from "./leaderboard";
 
 export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig';
 export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'ZoneRevealConfig', 'PacmanConfig', 'FisherGameConfig'];
