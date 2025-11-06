@@ -54,17 +54,19 @@ Rewrite code check list:
 3. upgrade analytics
 4. Fix home page
 5. remove content system
-6. 🧩Leaderboard service not function
 7. check Sync on X and Post on X
 8. 🧩rewrite favorite feature 
 9. 🧩rewrite game counter feature
 10. 🧩rewrite submit socre
 11. 🧩daily chalange rewrite
 12. Trivia logic
-13. Understand Pyramid add item and pyramid state
-14. 🧩Service to get game (remove all firebase ref) and get daily chalange (leaderboard from service and component)
-15. add game from client
+15. add game from client - need to think about db rules and functions
 16. profile page - optimize reads 
 17. add followers / following 
 18. 🧩sepreate game logic as much as possible 
 19.  
+
+done
+6. 🧩Leaderboard service not function
+13. Understand Pyramid add item and pyramid state
+14. 🧩Service to get game (remove all firebase ref) and get daily chalange (leaderboard from service and component)
