@@ -16,8 +16,8 @@ import type { GameStats } from '@top-x/shared/types/stats';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import '../utils/firebaseAdmin';
 import {
-  applyGameCounterUpdates,
-  GAME_COUNTER_KEYS,
+  increaseSessionCounter,
+  incrementTotalPlayersCounter,
 } from '../utils/statsManager';
 import {
   createLeaderboardDatePayload,
@@ -27,7 +27,6 @@ import {
 import {
   createEmptyGameStats,
   normalizeGameStats,
-  hasMeaningfulCustomData,
   hasPyramidCustomChanges,
   isPyramidCustomData,
 } from '../utils/gameStatsHelpers';
@@ -152,13 +151,9 @@ export const submitGameScore = functions.https.onCall(async (
       if (!isDailyChallengeSubmission && previousScore !== null && gameData.score <= previousScore && !pyramidCustomChanged) {
         // Score didn't improve - still increment session counter but don't update score
         console.log(`submitGameScore: score ${gameData.score} is not higher than previous score ${previousScore} for user ${uid}`);
-        applyGameCounterUpdates({
+        increaseSessionCounter({
           tx,
-          userRef,
           statsRef,
-          userData,
-          gameId,
-          updates: [{ key: GAME_COUNTER_KEYS.SESSIONS_PLAYED, type: 'increment' }],
         });
         return {
           success: false,
@@ -420,19 +415,11 @@ export const submitGameScore = functions.https.onCall(async (
       }
 
       // Update game counters (sessions played, total players for first-time players)
-      applyGameCounterUpdates({
-        tx,
-        userRef,
-        statsRef,
-        userData,
-        gameId,
-        updates: [
-          { key: GAME_COUNTER_KEYS.SESSIONS_PLAYED, type: 'increment' },
-          ...(!previousGameData
-            ? [{ key: GAME_COUNTER_KEYS.TOTAL_PLAYERS, type: 'unique' } as const]
-            : []),
-        ],
-      });
+      increaseSessionCounter({ tx, statsRef });
+
+      if (!previousGameData) {
+        incrementTotalPlayersCounter({ tx, statsRef });
+      }
 
       // Determine which leaderboard to update (challenge-specific or general)
       const usingChallengeLeaderboard = Boolean(
@@ -519,8 +506,7 @@ export const submitGameScore = functions.https.onCall(async (
         const distribution = { ...currentStats.scoreDistribution } as { [score: number]: number };
         let totalPlayers = currentStats.totalPlayers;
         let sessionsPlayed = currentStats.sessionsPlayed + 1;
-        let uniqueSubmitters = currentStats.uniqueSubmitters;
-        const favorites = currentStats.favorites;
+        const favoriteCounter = (currentStats as any).favoriteCounter ?? 0;
         let custom = { ...(currentStats.custom ?? {}) } as Record<string, any>;
 
         if (!previousGameData) {
@@ -531,12 +517,6 @@ export const submitGameScore = functions.https.onCall(async (
             distribution[previousScore] = Math.max((distribution[previousScore] || 1) - 1, 0);
           }
           distribution[mergedGameData.score] = (distribution[mergedGameData.score] || 0) + 1;
-        }
-
-        const hadCustomData = hasMeaningfulCustomData(previousGameData?.custom as Record<string, unknown> | undefined);
-        const hasCustomDataNow = hasMeaningfulCustomData(mergedGameData.custom as Record<string, unknown> | undefined);
-        if (!hadCustomData && hasCustomDataNow) {
-          uniqueSubmitters += 1;
         }
 
         // Special handling for PyramidTier game: track item rankings and worst item counts
@@ -598,8 +578,7 @@ export const submitGameScore = functions.https.onCall(async (
           scoreDistribution: distribution,
           totalPlayers,
           sessionsPlayed,
-          uniqueSubmitters,
-          favorites,
+          favoriteCounter,
           custom,
           updatedAt: Date.now(),
         };

@@ -252,7 +252,7 @@ function cleanupStatsSubscriptions(activeGameIds: Set<string>) {
   }
 }
 
-type GameStatMetric = 'totalPlayers' | 'favorites' | 'sessionsPlayed' | 'uniqueSubmitters';
+type GameStatMetric = 'totalPlayers' | 'favoriteCounter' | 'sessionsPlayed';
 
 function getGameStat(gameId: string, key: GameStatMetric): number {
   const stats = gameStats[gameId];
@@ -420,7 +420,6 @@ function resolveOrderLabel(order: HomeSectionOrder): string {
     players: t('home.order.fields.players'),
     favorites: t('home.order.fields.favorites'),
     sessions: t('home.order.fields.sessions'),
-    submissions: t('home.order.fields.submissions'),
   };
   const fieldLabel = fieldLabels[order.field] ?? '';
   return `${t('home.order.prefix')} ${fieldLabel} (${direction})`;
@@ -436,11 +435,9 @@ function getSortValue(game: Game, field: HomeOrderField): number {
     case 'players':
       return getGameStat(game.id, 'totalPlayers');
     case 'favorites':
-      return getGameStat(game.id, 'favorites');
+      return getGameStat(game.id, 'favoriteCounter');
     case 'sessions':
       return getGameStat(game.id, 'sessionsPlayed');
-    case 'submissions':
-      return getGameStat(game.id, 'uniqueSubmitters');
     default:
       return 0;
   }

@@ -185,13 +185,14 @@ const createSubmitGameScore = (initialData, evaluateResponses = []) => {
   const statsManagerStub = {
     GAME_COUNTER_KEYS: {
       TOTAL_PLAYERS: 'totalPlayers',
-      FAVORITES: 'favorites',
+      FAVORITES: 'favoriteCounter',
       SESSIONS_PLAYED: 'sessionsPlayed',
-      UNIQUE_SUBMITTERS: 'uniqueSubmitters',
       UPDATED_AT: 'updatedAt',
     },
-    applyGameCounterUpdates: () => {},
-    applyChallengeCounterUpdates: (params) => params.counterState || {},
+    increaseSessionCounter: () => {},
+    incrementTotalPlayersCounter: () => {},
+    adjustFavoriteCounter: () => {},
+    incrementChallengeAnalyticsCounters: () => {},
   };
 
   const originalLoad = Module._load;

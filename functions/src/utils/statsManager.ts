@@ -1,171 +1,139 @@
 import * as admin from 'firebase-admin';
-import type { DailyChallengeUserProgress, User } from '@top-x/shared/types/user';
 
 export const GAME_COUNTER_KEYS = {
   TOTAL_PLAYERS: 'totalPlayers',
-  FAVORITES: 'favorites',
+  FAVORITES: 'favoriteCounter',
   SESSIONS_PLAYED: 'sessionsPlayed',
-  UNIQUE_SUBMITTERS: 'uniqueSubmitters',
   UPDATED_AT: 'updatedAt',
 } as const;
 
-export type GameCounterKey = typeof GAME_COUNTER_KEYS[keyof typeof GAME_COUNTER_KEYS];
+type GameCounterField = typeof GAME_COUNTER_KEYS[keyof typeof GAME_COUNTER_KEYS];
+export type GameCounterKey = Exclude<GameCounterField, typeof GAME_COUNTER_KEYS.UPDATED_AT>;
 
-export type CounterUpdate =
-  | { key: GameCounterKey; type: 'increment'; amount?: number }
-  | { key: GameCounterKey; type: 'unique'; amount?: number }
-  | { key: GameCounterKey; type: 'toggle'; value: boolean };
+type CounterIncrementMap = Partial<Record<GameCounterKey, number>>;
 
-interface ApplyGameCounterUpdatesParams {
-  tx: FirebaseFirestore.Transaction;
-  userRef: FirebaseFirestore.DocumentReference;
-  statsRef: FirebaseFirestore.DocumentReference;
-  userData: User;
-  gameId: string;
-  updates: CounterUpdate[];
-}
+const normalizeIncrements = (increments?: CounterIncrementMap): Record<GameCounterKey, number> => {
+  const result: Record<GameCounterKey, number> = {} as Record<GameCounterKey, number>;
+  if (!increments) {
+    return result;
+  }
 
-interface ApplyChallengeCounterUpdatesParams {
-  tx: FirebaseFirestore.Transaction;
-  challengeRef: FirebaseFirestore.DocumentReference;
-  counterState?: DailyChallengeUserProgress['counters'];
-  updates: CounterUpdate[];
-}
+  Object.entries(increments).forEach(([key, value]) => {
+    if (typeof value !== 'number' || value === 0) {
+      return;
+    }
 
-const buildUserEngagementUpdate = (
-  gameId: string,
-  updates: Record<string, boolean>,
-): Record<string, boolean> => {
-  const payload: Record<string, boolean> = {};
-  Object.entries(updates).forEach(([counterKey, value]) => {
-    payload[`engagement.games.${gameId}.${counterKey}`] = value;
+    result[key as GameCounterKey] = value;
   });
-  return payload;
+
+  return result;
 };
 
-const buildStatsIncrementUpdate = (
-  increments: Record<string, number>,
+const buildIncrementPayload = (
+  increments: Record<GameCounterKey, number>,
+  options: { prefix?: string; updatedAtField: string },
 ): Record<string, FirebaseFirestore.FieldValue | number> => {
   const payload: Record<string, FirebaseFirestore.FieldValue | number> = {};
-  Object.entries(increments).forEach(([counterKey, amount]) => {
-    payload[counterKey] = admin.firestore.FieldValue.increment(amount);
+  const prefix = options.prefix ?? '';
+
+  Object.entries(increments).forEach(([field, amount]) => {
+    payload[`${prefix}${field}`] = admin.firestore.FieldValue.increment(amount);
   });
-  payload[GAME_COUNTER_KEYS.UPDATED_AT] = Date.now();
+
+  payload[options.updatedAtField] = Date.now();
+
   return payload;
 };
 
-const buildChallengeAnalyticsIncrementUpdate = (
-  increments: Record<string, number>,
-): Record<string, FirebaseFirestore.FieldValue | number> => {
-  const payload: Record<string, FirebaseFirestore.FieldValue | number> = {};
-  Object.entries(increments).forEach(([counterKey, amount]) => {
-    payload[`analytics.${counterKey}`] = admin.firestore.FieldValue.increment(amount);
-  });
-  payload['analytics.updatedAt'] = Date.now();
-  return payload;
-};
-
-export const applyGameCounterUpdates = ({
-  tx,
-  userRef,
-  statsRef,
-  userData,
-  gameId,
-  updates,
-}: ApplyGameCounterUpdatesParams): void => {
-  if (!updates.length) {
+const setIncrementPayload = (
+  tx: FirebaseFirestore.Transaction,
+  ref: FirebaseFirestore.DocumentReference,
+  increments: CounterIncrementMap | undefined,
+  options: { prefix?: string; updatedAtField: string },
+): void => {
+  const normalized = normalizeIncrements(increments);
+  if (Object.keys(normalized).length === 0) {
     return;
   }
 
-  const engagementState = {
-    ...(userData.engagement?.games?.[gameId] || {}),
-  } as Record<string, boolean>;
-
-  const engagementUpdates: Record<string, boolean> = {};
-  const counterIncrements: Record<string, number> = {};
-
-  updates.forEach((update) => {
-    const amount = update.type === 'toggle' ? 1 : update.amount ?? 1;
-
-    if (update.type === 'increment') {
-      counterIncrements[update.key] = (counterIncrements[update.key] || 0) + amount;
-      return;
-    }
-
-    if (update.type === 'unique') {
-      if (!engagementState[update.key]) {
-        engagementState[update.key] = true;
-        engagementUpdates[update.key] = true;
-        counterIncrements[update.key] = (counterIncrements[update.key] || 0) + amount;
-      }
-      return;
-    }
-
-    // toggle update
-    const nextValue = update.value;
-    const currentValue = Boolean(engagementState[update.key]);
-
-    if (currentValue === nextValue) {
-      return;
-    }
-
-    engagementState[update.key] = nextValue;
-    engagementUpdates[update.key] = nextValue;
-    counterIncrements[update.key] = (counterIncrements[update.key] || 0) + (nextValue ? amount : -amount);
-  });
-
-  if (Object.keys(engagementUpdates).length > 0) {
-    tx.set(userRef, buildUserEngagementUpdate(gameId, engagementUpdates), { merge: true });
-  }
-
-  if (Object.keys(counterIncrements).length > 0) {
-    tx.set(statsRef, buildStatsIncrementUpdate(counterIncrements), { merge: true });
-  }
+  tx.set(ref, buildIncrementPayload(normalized, options), { merge: true });
 };
 
-export const applyChallengeCounterUpdates = ({
+export const incrementGameCounters = ({
+  tx,
+  statsRef,
+  increments,
+}: {
+  tx: FirebaseFirestore.Transaction;
+  statsRef: FirebaseFirestore.DocumentReference;
+  increments: CounterIncrementMap;
+}): void => {
+  setIncrementPayload(tx, statsRef, increments, { updatedAtField: GAME_COUNTER_KEYS.UPDATED_AT });
+};
+
+export const increaseSessionCounter = ({
+  tx,
+  statsRef,
+  amount = 1,
+}: {
+  tx: FirebaseFirestore.Transaction;
+  statsRef: FirebaseFirestore.DocumentReference;
+  amount?: number;
+}): void => {
+  incrementGameCounters({
+    tx,
+    statsRef,
+    increments: { [GAME_COUNTER_KEYS.SESSIONS_PLAYED]: amount },
+  });
+};
+
+export const incrementTotalPlayersCounter = ({
+  tx,
+  statsRef,
+  amount = 1,
+}: {
+  tx: FirebaseFirestore.Transaction;
+  statsRef: FirebaseFirestore.DocumentReference;
+  amount?: number;
+}): void => {
+  incrementGameCounters({
+    tx,
+    statsRef,
+    increments: { [GAME_COUNTER_KEYS.TOTAL_PLAYERS]: amount },
+  });
+};
+
+export const adjustFavoriteCounter = ({
+  tx,
+  statsRef,
+  amount,
+}: {
+  tx: FirebaseFirestore.Transaction;
+  statsRef: FirebaseFirestore.DocumentReference;
+  amount: number;
+}): void => {
+  if (!amount) {
+    return;
+  }
+
+  incrementGameCounters({
+    tx,
+    statsRef,
+    increments: { [GAME_COUNTER_KEYS.FAVORITES]: amount },
+  });
+};
+
+export const incrementChallengeAnalyticsCounters = ({
   tx,
   challengeRef,
-  counterState,
-  updates,
-}: ApplyChallengeCounterUpdatesParams): DailyChallengeUserProgress['counters'] => {
-  if (!updates.length) {
-    return counterState ?? {};
-  }
-
-  const state: Record<string, boolean> = { ...(counterState ?? {}) };
-  const increments: Record<string, number> = {};
-
-  updates.forEach((update) => {
-    const amount = update.type === 'toggle' ? 1 : update.amount ?? 1;
-
-    if (update.type === 'increment') {
-      increments[update.key] = (increments[update.key] || 0) + amount;
-      return;
-    }
-
-    if (update.type === 'unique') {
-      if (!state[update.key]) {
-        state[update.key] = true;
-        increments[update.key] = (increments[update.key] || 0) + amount;
-      }
-      return;
-    }
-
-    const nextValue = update.value;
-    const currentValue = Boolean(state[update.key]);
-
-    if (currentValue === nextValue) {
-      return;
-    }
-
-    state[update.key] = nextValue;
-    increments[update.key] = (increments[update.key] || 0) + (nextValue ? amount : -amount);
+  increments,
+}: {
+  tx: FirebaseFirestore.Transaction;
+  challengeRef: FirebaseFirestore.DocumentReference;
+  increments: CounterIncrementMap;
+}): void => {
+  setIncrementPayload(tx, challengeRef, increments, {
+    prefix: 'analytics.',
+    updatedAtField: 'analytics.updatedAt',
   });
-
-  if (Object.keys(increments).length > 0) {
-    tx.set(challengeRef, buildChallengeAnalyticsIncrementUpdate(increments), { merge: true });
-  }
-
-  return state;
 };

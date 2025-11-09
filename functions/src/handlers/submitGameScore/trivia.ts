@@ -35,6 +35,15 @@ export interface TriviaQuestionUpdate {
   data: FirebaseFirestore.DocumentData;
 }
 
+type TriviaQuestionSource = 'subcollection' | 'global' | 'config';
+
+interface TriviaQuestionInfo {
+  source: TriviaQuestionSource;
+  correctHashes: Set<string>;
+  ref?: FirebaseFirestore.DocumentReference;
+  docData?: FirebaseFirestore.DocumentData;
+}
+
 export interface TriviaProcessingMetrics {
   score: number;
   attemptCount: number;
@@ -153,6 +162,48 @@ function collectCorrectTriviaHashes(data: FirebaseFirestore.DocumentData | undef
   }
 
   collectTriviaHashesFromValue((data as Record<string, unknown>).acceptedHashes, hashes);
+
+  return hashes;
+}
+
+function collectTriviaHashesFromPotentialValue(value: unknown, target: Set<string>): void {
+  if (!value) {
+    return;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed && TRIVIA_HASH_VALUE_PATTERN.test(trimmed)) {
+      target.add(trimmed.toLowerCase());
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectTriviaHashesFromPotentialValue(entry, target));
+    return;
+  }
+
+  if (typeof value === 'object') {
+    Object.values(value as Record<string, unknown>).forEach((entry) => collectTriviaHashesFromPotentialValue(entry, target));
+  }
+}
+
+function collectTriviaHashesFromQuestionConfig(question: Record<string, unknown> | undefined): Set<string> {
+  const hashes = new Set<string>();
+  if (!question) {
+    return hashes;
+  }
+
+  collectTriviaHashesFromPotentialValue((question as Record<string, unknown>).hash, hashes);
+  collectTriviaHashesFromPotentialValue((question as Record<string, unknown>).correctHash, hashes);
+  collectTriviaHashesFromPotentialValue((question as Record<string, unknown>).correctHashes, hashes);
+  collectTriviaHashesFromPotentialValue((question as Record<string, unknown>).acceptedHashes, hashes);
+
+  const hashField = (question as Record<string, unknown>).hashes;
+  if (hashField && typeof hashField === 'object') {
+    Object.values(hashField as Record<string, unknown>).forEach((entry) => collectTriviaHashesFromPotentialValue(entry, hashes));
+  }
 
   return hashes;
 }
@@ -336,11 +387,64 @@ export async function processTriviaSubmission({
   const questionRefs = triviaSubmission.questionIds.map((questionId) => gameRef.collection('questions').doc(questionId));
   const questionDocs = await Promise.all(questionRefs.map((ref) => tx.get(ref)));
 
-  const questionInfoMap = new Map<string, { doc: FirebaseFirestore.DocumentSnapshot; correctHashes: Set<string> }>();
+  const questionInfoMap = new Map<string, TriviaQuestionInfo>();
+  const configQuestionMap = new Map<string, Record<string, unknown>>();
+  if (Array.isArray(triviaConfig?.questions)) {
+    triviaConfig.questions.forEach((question) => {
+      if (question && typeof question === 'object' && typeof question.id === 'string') {
+        configQuestionMap.set(question.id, question as unknown as Record<string, unknown>);
+      }
+    });
+  }
 
-  questionDocs.forEach((docSnapshot, index) => {
+  for (let index = 0; index < questionDocs.length; index += 1) {
+    const docSnapshot = questionDocs[index];
     const questionId = triviaSubmission.questionIds[index];
     if (!docSnapshot.exists) {
+      const firestore = gameRef.firestore;
+      const globalQuestionRef = firestore.collection('questions').doc(questionId);
+      const globalQuestionSnapshot = await tx.get(globalQuestionRef);
+
+      if (globalQuestionSnapshot.exists) {
+        const globalData = globalQuestionSnapshot.data();
+        const correctHashes = collectCorrectTriviaHashes(globalData);
+        if (correctHashes.size === 0) {
+          console.warn('submitGameScore: trivia global question missing correct hash metadata', {
+            gameId: gameRef.id,
+            questionId,
+          });
+        }
+        questionInfoMap.set(questionId, {
+          source: 'global',
+          correctHashes,
+          ref: globalQuestionSnapshot.ref,
+          docData: globalData ?? undefined,
+        });
+        continue;
+      }
+
+      const configQuestion = configQuestionMap.get(questionId);
+      if (configQuestion) {
+        const correctHashes = collectTriviaHashesFromQuestionConfig(configQuestion);
+        if (correctHashes.size === 0) {
+          console.warn('submitGameScore: trivia config question missing hash metadata', {
+            gameId: gameRef.id,
+            questionId,
+          });
+        } else {
+          console.debug('submitGameScore: resolved trivia question from config payload', {
+            gameId: gameRef.id,
+            questionId,
+          });
+        }
+        questionInfoMap.set(questionId, {
+          source: 'config',
+          correctHashes,
+          docData: configQuestion,
+        });
+        continue;
+      }
+
       throw new functions.https.HttpsError('failed-precondition', `Trivia question ${questionId} does not exist`);
     }
 
@@ -352,8 +456,13 @@ export async function processTriviaSubmission({
         questionId,
       });
     }
-    questionInfoMap.set(questionId, { doc: docSnapshot, correctHashes });
-  });
+    questionInfoMap.set(questionId, {
+      source: 'subcollection',
+      correctHashes,
+      ref: docSnapshot.ref,
+      docData,
+    });
+  }
 
   const questionDeltas = new Map<string, TriviaQuestionStatsDelta>();
   let correctCount = 0;
@@ -398,11 +507,11 @@ export async function processTriviaSubmission({
 
   questionDeltas.forEach((delta, questionId) => {
     const info = questionInfoMap.get(questionId);
-    if (!info) {
+    if (!info || info.source !== 'subcollection' || !info.docData || !info.ref) {
       return;
     }
 
-    const docData = info.doc.data() ?? {};
+    const docData = info.docData ?? {};
     const existingCounts = { ...(docData.answerCounts ?? {}) } as Record<string, number>;
 
     Object.entries(delta.counts).forEach(([hash, count]) => {
@@ -416,7 +525,7 @@ export async function processTriviaSubmission({
     statsRecord.correctAttempts = previousCorrectAttempts + delta.correct;
 
     questionUpdates.push({
-      ref: info.doc.ref,
+      ref: info.ref,
       data: {
         answerCounts: existingCounts,
         stats: statsRecord,

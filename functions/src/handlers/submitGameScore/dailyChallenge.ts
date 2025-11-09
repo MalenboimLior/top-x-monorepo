@@ -12,8 +12,8 @@ import type {
   UserGameDataSubmission,
 } from '@top-x/shared/types/user';
 import {
-  applyChallengeCounterUpdates,
   GAME_COUNTER_KEYS,
+  incrementChallengeAnalyticsCounters,
 } from '../../utils/statsManager';
 import {
   createEmptyGameStats,
@@ -129,19 +129,13 @@ export function processDailyChallengeSubmission({
   const solved = wasPreviouslySolved || isCurrentAttemptCorrect;
   const bestScoreAt = hasNewBestScore ? attemptTimestamp : previousChallengeProgress?.bestScoreAt;
 
-  const nextCounters = applyChallengeCounterUpdates({
+  incrementChallengeAnalyticsCounters({
     tx,
     challengeRef,
-    counterState: previousChallengeProgress?.counters,
-    updates: [
-      { key: GAME_COUNTER_KEYS.SESSIONS_PLAYED, type: 'increment' },
-      ...(firstSubmission
-        ? [
-          { key: GAME_COUNTER_KEYS.TOTAL_PLAYERS, type: 'unique' } as const,
-          { key: GAME_COUNTER_KEYS.UNIQUE_SUBMITTERS, type: 'unique' } as const,
-        ]
-        : []),
-    ],
+    increments: {
+      [GAME_COUNTER_KEYS.SESSIONS_PLAYED]: 1,
+      ...(firstSubmission ? { [GAME_COUNTER_KEYS.TOTAL_PLAYERS]: 1 } : {}),
+    },
   });
 
   let challengeAttemptMetadata: DailyChallengeAttemptMetadata | undefined;
@@ -174,7 +168,6 @@ export function processDailyChallengeSubmission({
     ...(bestScoreAt ? { bestScoreAt } : {}),
     attemptCount,
     ...(challengeAttemptMetadata ? { attemptMetadata: challengeAttemptMetadata } : {}),
-    ...(nextCounters ? { counters: nextCounters } : {}),
   };
 
   result.challengeProgressUpdate = challengeProgressUpdate;
@@ -276,8 +269,7 @@ export function processDailyChallengeSubmission({
       scoreDistribution: distribution,
       totalPlayers: previousChallengeStats.totalPlayers + (firstSubmission ? 1 : 0),
       sessionsPlayed: previousChallengeStats.sessionsPlayed + 1,
-      uniqueSubmitters: previousChallengeStats.uniqueSubmitters + (firstSubmission ? 1 : 0),
-      favorites: previousChallengeStats.favorites,
+      favoriteCounter: previousChallengeStats.favoriteCounter,
       totalAttempts: (previousChallengeStats.totalAttempts ?? 0) + totalAttemptIncrement,
       correctAttempts: (previousChallengeStats.correctAttempts ?? 0) + correctAttemptIncrement,
       updatedAt: Date.now(),

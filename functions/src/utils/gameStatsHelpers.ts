@@ -5,8 +5,7 @@ import type { UserGameCustomData } from '@top-x/shared/types/user';
 export const createEmptyGameStats = (): GameStats => ({
   totalPlayers: 0,
   sessionsPlayed: 0,
-  uniqueSubmitters: 0,
-  favorites: 0,
+  favoriteCounter: 0,
   scoreDistribution: {},
   updatedAt: Date.now(),
   custom: {},
@@ -36,8 +35,7 @@ export const normalizeGameStats = (
   const normalized: GameStats = {
     totalPlayers: typeof stats.totalPlayers === 'number' ? stats.totalPlayers : base.totalPlayers,
     sessionsPlayed: typeof stats.sessionsPlayed === 'number' ? stats.sessionsPlayed : base.sessionsPlayed,
-    uniqueSubmitters: typeof stats.uniqueSubmitters === 'number' ? stats.uniqueSubmitters : base.uniqueSubmitters,
-    favorites: typeof stats.favorites === 'number' ? stats.favorites : base.favorites,
+    favoriteCounter: typeof stats.favoriteCounter === 'number' ? stats.favoriteCounter : base.favoriteCounter,
     scoreDistribution: normalizedDistribution,
     updatedAt: typeof stats.updatedAt === 'number' ? stats.updatedAt : base.updatedAt,
     custom: stats.custom ? { ...stats.custom } : {},

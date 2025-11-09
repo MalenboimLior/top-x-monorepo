@@ -3,10 +3,7 @@ import * as admin from 'firebase-admin';
 import type { User } from '@top-x/shared/types/user';
 
 import '../utils/firebaseAdmin';
-import {
-  applyGameCounterUpdates,
-  GAME_COUNTER_KEYS,
-} from '../utils/statsManager';
+import { adjustFavoriteCounter } from '../utils/statsManager';
 
 const db = admin.firestore();
 
@@ -57,13 +54,10 @@ export const setGameFavorite = functions.https.onCall(async (request: functions.
           : admin.firestore.FieldValue.arrayRemove(gameId),
       });
 
-      applyGameCounterUpdates({
+      adjustFavoriteCounter({
         tx,
-        userRef,
         statsRef,
-        userData,
-        gameId,
-        updates: [{ key: GAME_COUNTER_KEYS.FAVORITES, type: 'toggle', value: favorite }],
+        amount: favorite ? 1 : -1,
       });
 
       return { success: true, favorite };

@@ -218,7 +218,7 @@
                         </p>
                       </td>
                       <td class="has-text-centered">{{ formatNumber(getGameStat(game.id, 'totalPlayers')) }}</td>
-                      <td class="has-text-centered">{{ formatNumber(getGameStat(game.id, 'favorites')) }}</td>
+                      <td class="has-text-centered">{{ formatNumber(getGameStat(game.id, 'favoriteCounter')) }}</td>
                       <td class="has-text-right">
                         <label class="checkbox">
                           <input
@@ -367,7 +367,6 @@ const sortFieldOptions: Array<{ label: string; value: HomeOrderField }> = [
   { label: 'Players', value: 'players' },
   { label: 'Favorites', value: 'favorites' },
   { label: 'Sessions', value: 'sessions' },
-  { label: 'Submissions', value: 'submissions' },
 ];
 
 const sortDirectionOptions = [
@@ -402,7 +401,7 @@ const availableBuildOptions = computed(() => {
     .sort((a, b) => a.name.localeCompare(b.name));
 });
 
-type GameStatMetric = 'totalPlayers' | 'favorites' | 'sessionsPlayed' | 'uniqueSubmitters';
+type GameStatMetric = 'totalPlayers' | 'favoriteCounter' | 'sessionsPlayed';
 
 function subscribeToGameStats(gameId: string) {
   if (statsUnsubscribers.has(gameId)) {

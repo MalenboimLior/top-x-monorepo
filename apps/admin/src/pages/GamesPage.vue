@@ -25,7 +25,6 @@
               <th scope="col" class="has-text-right">Players</th>
               <th scope="col" class="has-text-right">Favorites</th>
               <th scope="col" class="has-text-right">Sessions</th>
-              <th scope="col" class="has-text-right">Submissions</th>
               <th scope="col" class="has-text-right">Actions</th>
             </tr>
           </thead>
@@ -38,9 +37,8 @@
                 </div>
               </td>
               <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'totalPlayers')) }}</td>
-              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'favorites')) }}</td>
+              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'favoriteCounter')) }}</td>
               <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'sessionsPlayed')) }}</td>
-              <td class="has-text-right">{{ formatCounter(getStatValue(game.id, 'uniqueSubmitters')) }}</td>
               <td class="has-text-right">
                 <div class="buttons are-small is-right action-buttons">
                   <button class="button is-link" type="button" @click="openEditGame(game)">
@@ -150,7 +148,7 @@ const statsUnsubscribers = new Map<string, () => void>();
 
 const formatCounter = (value?: number) => formatNumber(value ?? 0);
 
-type GameStatMetric = 'totalPlayers' | 'favorites' | 'sessionsPlayed' | 'uniqueSubmitters';
+type GameStatMetric = 'totalPlayers' | 'favoriteCounter' | 'sessionsPlayed';
 
 function subscribeToGameStats(gameId: string) {
   if (statsUnsubscribers.has(gameId)) {

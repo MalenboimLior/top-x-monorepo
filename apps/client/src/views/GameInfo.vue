@@ -197,10 +197,10 @@ const counterList = computed(() => {
       value: counters.totalPlayers,
       icon: ['fas', 'user-group'] as [string, string],
     },
-    { 
-      key: 'favorites', 
-      label: 'Favorites', 
-      value: counters.favorites,
+    {
+      key: 'favorites',
+      label: 'Favorites',
+      value: counters.favoriteCounter,
       icon: ['fas', 'heart'] as [string, string],
     },
     { 
@@ -208,12 +208,6 @@ const counterList = computed(() => {
       label: 'Sessions', 
       value: counters.sessionsPlayed,
       icon: ['fas', 'gamepad'] as [string, string],
-    },
-    { 
-      key: 'submissions', 
-      label: 'Submissions', 
-      value: counters.uniqueSubmitters,
-      icon: ['fas', 'share'] as [string, string],
     },
   ].filter((entry) => typeof entry.value === 'number' && entry.value !== undefined);
 });

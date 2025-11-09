@@ -36,8 +36,6 @@ export interface DailyChallengeUserProgress {
   attemptCount?: number;
   /** Snapshot of the most recent attempt metadata. */
   attemptMetadata?: DailyChallengeAttemptMetadata;
-  /** Tracks which unique counters have been applied for this user. */
-  counters?: Record<string, boolean>;
 }
 
 export type DailyChallengeSolveState = 'solved' | 'failed' | 'skipped' | 'timeout';
@@ -89,10 +87,6 @@ export type UserGameDataSubmission = Omit<UserGameData, 'lastPlayed'> & {
   lastPlayed?: number;
 };
 
-export interface UserEngagement {
-  games?: Record<string, Record<string, boolean>>;
-}
-
 export interface User {
   uid: string;
   username: string;
@@ -109,7 +103,6 @@ export interface User {
   games: Record<string, Record<string, UserGameData>>;
   badges: Array<{ id: string; earnedAt: string }>;
   favoriteGames?: string[];
-  engagement?: UserEngagement;
 }
 
 export interface SubmitGameScoreRequest {
