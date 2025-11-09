@@ -4,13 +4,16 @@ import type { TriviaQuestion, TriviaConfig } from '@top-x/shared/types/trivia';
  * Secret key for HMAC hashing. Should match server-side key.
  * In production, this should be stored securely and not exposed in client code.
  */
-const HASH_SECRET = 'top-x-trivia-secret';
+const HASH_SECRET = import.meta.env.VITE_TRIVIA_HASH_SECRET as string | undefined;
 
 /**
  * Hash an answer using HMAC-SHA256
  * Format: HMAC-SHA256(questionId|answerText|salt, secretKey)
  */
 export async function hashAnswer(questionId: string, answerText: string, salt?: string): Promise<string> {
+  if (!HASH_SECRET) {
+    throw new Error('VITE_TRIVIA_HASH_SECRET is not configured');
+  }
   const encoder = new TextEncoder();
   const payload = `${questionId}|${answerText}|${salt ?? ''}`;
   const msgBuffer = encoder.encode(payload);
@@ -37,8 +40,8 @@ export async function validateAnswer(
   answerText: string
 ): Promise<boolean> {
   if (!question.hash) {
-    // If no hash is provided, fall back to direct comparison (less secure)
-    return question.correctAnswer === answerText;
+    console.warn('[Trivia] Missing hash for question', { questionId: question.id });
+    return false;
   }
   
   const answerHash = await hashAnswer(question.id, answerText, question.salt);
@@ -50,8 +53,7 @@ export async function validateAnswer(
  */
 export async function findCorrectAnswerIndex(question: TriviaQuestion): Promise<number | null> {
   if (!question.hash || !question.salt) {
-    // Fallback: find by text match
-    return question.answers.findIndex((ans) => ans.text === question.correctAnswer);
+    return null;
   }
   
   // Hash each answer and compare with the question's hash

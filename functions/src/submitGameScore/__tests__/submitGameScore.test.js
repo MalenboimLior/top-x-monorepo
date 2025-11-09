@@ -160,6 +160,7 @@ const defaultEvaluateResult = { normalizedAnswer: '', distance: 0, isMatch: fals
 
 const createSubmitGameScore = (initialData, evaluateResponses = []) => {
   const responses = Array.isArray(evaluateResponses) ? [...evaluateResponses] : [];
+  console.log('createSubmitGameScore initial keys', Object.keys(initialData));
   const firestore = new FakeFirestore(initialData);
   const adminApps = [];
 

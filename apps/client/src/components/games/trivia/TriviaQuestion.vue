@@ -57,6 +57,7 @@ interface Props {
   showCorrectAnswers?: boolean;
   direction?: 'ltr' | 'rtl';
   disabled?: boolean;
+  isReviewingAnswer?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -67,6 +68,7 @@ const props = withDefaults(defineProps<Props>(), {
   showCorrectAnswers: false,
   direction: 'ltr',
   disabled: false,
+  isReviewingAnswer: false,
 });
 
 const emit = defineEmits<{
@@ -130,11 +132,14 @@ const feedbackIcon = computed(() => {
 });
 
 const optionClass = (index: number) => {
+  const reveal = props.showCorrectAnswers && props.isReviewingAnswer;
+  const isSelected = props.selectedAnswer === index;
+  const correctIndexMatch = props.correctAnswerIndex === index;
   const classes: Record<string, boolean> = {
-    'is-selected': props.selectedAnswer === index,
-    'is-correct': props.showCorrectAnswers && props.correctAnswerIndex === index,
+    'is-selected': isSelected,
+    'is-correct': reveal && correctIndexMatch,
     'is-incorrect':
-      props.showCorrectAnswers && props.selectedAnswer === index && props.correctAnswerIndex !== index,
+      reveal && isSelected && !correctIndexMatch && props.correctAnswerIndex !== null,
   };
   return classes;
 };

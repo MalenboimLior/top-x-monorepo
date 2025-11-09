@@ -64,7 +64,7 @@ Rewrite code check list:
 16. 📦profile page - optimize reads 
 17. 📦add followers / following 
 18. 🧩sepreate game logic as much as possible 
-19.  
+19.  make db ruls to keep trivia game secure and all other collections
 
 done
 6. 🧩Leaderboard service not function

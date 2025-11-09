@@ -34,6 +34,20 @@ export interface TriviaAttemptPayload {
   answeredAt: string;
 }
 
+export interface TriviaAnswerReviewOption {
+  text: string;
+  imageUrl?: string;
+}
+
+export interface TriviaAnswerReview {
+  questionId: string;
+  question: string;
+  options: TriviaAnswerReviewOption[];
+  selectedIndex: number | null;
+  correctIndex: number | null;
+  isCorrect: boolean;
+}
+
 export interface PowerUpState extends TriviaPowerUpRule {
   availableAt: number;
   uses: number;

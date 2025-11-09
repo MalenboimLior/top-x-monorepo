@@ -9,7 +9,11 @@ const firebaseConfig = {
   credential: cert('./serviceAccountKey.json'),
 };
 
-const SECRET_KEY = 'your-secret-key-123'; // Replace this with a secure key
+const SECRET_KEY = process.env.TRIVIA_HASH_SECRET || process.env.VITE_TRIVIA_HASH_SECRET;
+if (!SECRET_KEY) {
+  console.error('Missing TRIVIA_HASH_SECRET environment variable.');
+  process.exit(1);
+}
 
 initializeApp(firebaseConfig);
 const db = getFirestore();

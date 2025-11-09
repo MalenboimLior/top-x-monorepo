@@ -10,7 +10,11 @@ initializeApp(firebaseConfig);
 const db = getFirestore();
 
 // Secret key for HMAC-SHA256 (store securely, e.g., Firebase Secret Manager)
-const SECRET_KEY = 'your-secret-key-123'; // Replace with a strong, random key
+const SECRET_KEY = process.env.TRIVIA_HASH_SECRET || process.env.VITE_TRIVIA_HASH_SECRET;
+if (!SECRET_KEY) {
+  console.error('Missing TRIVIA_HASH_SECRET environment variable.');
+  process.exit(1);
+}
 
 function hashAnswer(correctIndex) {
   return createHmac('sha256', SECRET_KEY)

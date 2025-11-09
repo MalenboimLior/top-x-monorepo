@@ -110,6 +110,7 @@
           :selected-answer="selectedAnswer"
           :is-correct="isCorrect"
           :correct-answer-index="correctAnswerIndex"
+          :is-reviewing-answer="isReviewingAnswer"
           :show-correct-answers="showCorrectAnswers"
           :direction="direction"
           @answer-question="onAnswer"
@@ -157,6 +158,7 @@ interface Props {
   selectedAnswer: number | null;
   isCorrect: boolean | null;
   correctAnswerIndex: number | null;
+  isReviewingAnswer: boolean;
   timeLeft: number;
   questionTimerDuration: number;
   globalTimeLeft: number | null;

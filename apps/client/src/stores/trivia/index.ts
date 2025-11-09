@@ -1,8 +1,5 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
-import { doc, getDoc } from 'firebase/firestore';
-// @ts-ignore -- resolved via tsconfig paths
-import type { Game } from '@top-x/shared/types/game';
 // @ts-ignore -- resolved via tsconfig paths
 import type { User, UserGameDataSubmission } from '@top-x/shared/types/user';
 // @ts-ignore -- resolved via tsconfig paths
@@ -11,10 +8,13 @@ import {
   type TriviaQuestionViewModel,
   type TriviaAttemptPayload,
   type PowerUpState,
+  type TriviaAnswerReview,
 } from './types';
 import { nowIso, toViewModel } from './utils';
 // @ts-ignore -- resolved via tsconfig paths
-import { hashAnswer, fetchQuestionsFromConfig, shuffleArray } from '@/services/trivia';
+import { hashAnswer, shuffleArray } from '@/services/trivia';
+import { doc, getDoc } from 'firebase/firestore';
+import { fetchTriviaQuestions, type FetchTriviaQuestionsResponse, type TriviaQuestionPayload } from '../../services/triviaApi';
 import { db } from '@top-x/shared';
 import { useUserStore } from '../user';
 
@@ -37,6 +37,7 @@ const GAME_ID = 'smartest_on_x';
 const GAME_TYPE_ID = 'trivia';
 const DEFAULT_LIVES = 3;
 const DEFAULT_QUESTION_TIMER = 15;
+const REVIEW_DELAY_MS = 2000;
 
 export const useTriviaStore = defineStore('trivia', () => {
   const userStore = useUserStore();
@@ -72,11 +73,18 @@ export const useTriviaStore = defineStore('trivia', () => {
   const questionOrder = ref<string[]>([]);
   const correctAttempts = ref(0);
   const powerUps = ref<PowerUpState[]>([]);
+  const isReviewingAnswer = ref(false);
+  const correctAnswerIndex = ref<number | null>(null);
+  const answerReview = ref<TriviaAnswerReview[]>([]);
 
   // Question management for fixed mode
   const allQuestions = ref<TriviaQuestion[]>([]);
   const questionQueue = ref<TriviaQuestionViewModel[]>([]);
   const currentBatchIndex = ref(0);
+  const totalQuestionsCount = ref(0);
+  const hasMoreQuestions = ref(false);
+  const isFetchingQuestions = ref(false);
+  const knownQuestionIds = new Set<string>();
 
   const pendingScore = ref<number | null>(null);
   const pendingBestStreak = ref<number | null>(null);
@@ -157,7 +165,7 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     id: (legacy.id as string | undefined) ?? createQuestionId(),
     text: (legacy.text as string | undefined) ?? (legacy.question as string | undefined) ?? (legacy.prompt as string | undefined) ?? '',
     answers: [],
-    correctAnswer: (legacy.correctAnswer as string | undefined) ?? '',
+    correctAnswer: (legacy.correctAnswer as string | undefined) ?? undefined,
     category: legacy.category,
     difficulty: legacy.difficulty,
     salt: legacy.salt,
@@ -201,16 +209,58 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     normalized.answers = [{ text: '' }];
   }
 
-  if (!normalized.correctAnswer || !normalized.answers.some((answer: TriviaAnswer) => answer.text === normalized.correctAnswer)) {
+  const hasMatchingCorrect =
+    normalized.correctAnswer !== undefined &&
+    normalized.answers.some((answer: TriviaAnswer) => answer.text === normalized.correctAnswer);
+
+  if (!hasMatchingCorrect) {
     if (typeof legacy.correct === 'number' && legacy.correct >= 0 && legacy.correct < normalized.answers.length) {
-      normalized.correctAnswer = normalized.answers[legacy.correct]?.text || normalized.answers[0].text;
-    } else {
-      normalized.correctAnswer = normalized.answers[0].text;
+      normalized.correctAnswer = normalized.answers[legacy.correct]?.text;
+    } else if (normalized.correctAnswer) {
+      // Provided correct answer does not match any option; clear it
+      delete normalized.correctAnswer;
     }
   }
 
   return normalized;
 }
+
+function sleep(duration: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, duration);
+  });
+}
+
+function toReviewOptions(question: TriviaQuestionViewModel): TriviaAnswerReview['options'] {
+  return question.options.map((option) => {
+    if (typeof option === 'string') {
+      return { text: option };
+    }
+    return {
+      text: option.text,
+      imageUrl: option.imageUrl,
+    };
+  });
+}
+
+async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | null): Promise<number | null> {
+  if (!question?.correctHash) {
+    return null;
+  }
+
+  for (let i = 0; i < question.options.length; i++) {
+    const option = question.options[i];
+    const answerText = typeof option === 'string' ? option : option.text;
+    const hash = await hashAnswer(question.id, answerText, question.salt);
+    if (hash === question.correctHash) {
+      return i;
+    }
+  }
+
+  return null;
+}
+
+  let ongoingFetch: Promise<FetchTriviaQuestionsResponse | null> | null = null;
 
   async function ensureConfig(): Promise<void> {
     if (configLoaded.value) {
@@ -218,41 +268,44 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
       return;
     }
 
-    console.log('[Trivia] Loading config...');
+    console.log('[Trivia] Loading config via Cloud Function...');
     isLoading.value = true;
     try {
-      const gameDoc = doc(db, 'games', activeGameId.value);
-      const snapshot = await getDoc(gameDoc);
-      if (snapshot.exists()) {
-        const data = snapshot.data() as Game;
-        if (data.custom && typeof data.custom === 'object') {
-          baseConfig.value = data.custom as TriviaConfig;
-          console.log('[Trivia] Config loaded from Firebase:', {
-            mode: baseConfig.value.mode,
-            questionsCount: baseConfig.value.questions?.length ?? 0,
-            unlimitedLives: baseConfig.value.unlimitedLives,
-          });
-        }
-      }
-
-      if (!baseConfig.value) {
-        console.warn('[Trivia] No config found, using defaults');
+      const response = await fetchAndStoreQuestions({ includeConfig: true });
+      if (response?.config) {
+        baseConfig.value = {
+          ...(response.config as TriviaConfig),
+          questions: [],
+        };
+      } else if (!baseConfig.value) {
+        console.warn('[Trivia] No config returned, using defaults');
         baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES };
       }
 
-      // Load questions from config
-      loadQuestionsFromConfig();
-      lives.value = unlimitedLives.value ? Infinity : (activeConfig.value?.lives ?? DEFAULT_LIVES);
+      if (questionQueue.value.length === 0 && allQuestions.value.length === 0) {
+        console.warn('[Trivia] No questions fetched, adding default fallback');
+        integrateQuestions([createDefaultQuestion()]);
+        if (totalQuestionsCount.value === 0) {
+          totalQuestionsCount.value = allQuestions.value.length;
+          hasMoreQuestions.value = false;
+        }
+      }
+
+      lives.value = unlimitedLives.value ? Infinity : (baseConfig.value?.lives ?? DEFAULT_LIVES);
       configLoaded.value = true;
       console.log('[Trivia] Config loaded successfully:', {
-        totalQuestions: allQuestions.value.length,
-        lives: lives.value,
-        unlimitedLives: unlimitedLives.value,
+        totalQuestions: totalQuestionsCount.value,
+        queueLength: questionQueue.value.length,
+        hasMore: hasMoreQuestions.value,
       });
     } catch (error) {
       console.error('[Trivia] Failed to load trivia config', error);
       baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES };
-      loadQuestionsFromConfig();
+      integrateQuestions([createDefaultQuestion()]);
+      if (totalQuestionsCount.value === 0) {
+        totalQuestionsCount.value = allQuestions.value.length;
+        hasMoreQuestions.value = false;
+      }
       lives.value = DEFAULT_LIVES;
       configLoaded.value = true;
     } finally {
@@ -260,43 +313,65 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     }
   }
 
-  function loadQuestionsFromConfig(): void {
-    const config = activeConfig.value;
-    console.log('[Trivia] loadQuestionsFromConfig called:', {
-      hasConfig: !!config,
-      questionsCount: config?.questions?.length ?? 0,
-      batchSize: config?.questionBatchSize ?? 0,
-    });
+  function integrateQuestions(payloads: Array<TriviaQuestionPayload | TriviaQuestion>): void {
+    const newViewModels: TriviaQuestionViewModel[] = [];
 
-    if (!config || !config.questions || config.questions.length === 0) {
-      // Add fallback default question if no questions exist
-      console.warn('[Trivia] No questions in config, adding default question');
-      allQuestions.value = [createDefaultQuestion()];
-      return;
-    }
-
-    const normalizedQuestions: TriviaQuestion[] = config.questions.map((question: TriviaQuestion | LegacyTriviaQuestion) =>
-      normalizeQuestion(question)
-    );
-
-    const batchSize = config.questionBatchSize ?? 0;
-    if (batchSize === 0) {
-      allQuestions.value = [...normalizedQuestions];
-      console.log('[Trivia] Loaded all questions:', allQuestions.value.length);
-    } else {
-      const batch = fetchQuestionsFromConfig({ ...config, questions: normalizedQuestions }, batchSize, []);
-      allQuestions.value = [...batch];
-      console.log('[Trivia] Loaded first batch:', batch.length, 'of', normalizedQuestions.length);
-    }
-
-    allQuestions.value.forEach((q: TriviaQuestion, idx: number) => {
-      if (!q.answers || q.answers.length === 0) {
-        console.error(`[Trivia] Question ${idx} (${q.id}) has no answers:`, q);
+    payloads.forEach((payload) => {
+      const normalized = normalizeQuestion(payload as TriviaQuestion | LegacyTriviaQuestion);
+      if (!normalized.id || knownQuestionIds.has(normalized.id) || answeredQuestionIds.value.includes(normalized.id)) {
+        return;
       }
-      if (!q.text) {
-        console.error(`[Trivia] Question ${idx} (${q.id}) has no text:`, q);
+
+      knownQuestionIds.add(normalized.id);
+      allQuestions.value.push(normalized);
+
+      try {
+        const viewModel = toViewModel(normalized);
+        newViewModels.push(viewModel);
+      } catch (error) {
+        console.error('[Trivia] Error converting question to view model:', normalized, error);
       }
     });
+
+    if (newViewModels.length > 0) {
+      const shuffled = shuffleArray(newViewModels);
+      questionQueue.value.push(...shuffled);
+      console.log('[Trivia] Added questions to queue:', {
+        added: shuffled.length,
+        queueLength: questionQueue.value.length,
+      });
+    }
+  }
+
+  async function fetchAndStoreQuestions(options: { limit?: number; includeConfig?: boolean } = {}): Promise<FetchTriviaQuestionsResponse | null> {
+    if (ongoingFetch) {
+      return ongoingFetch;
+    }
+
+    const { limit, includeConfig } = options;
+    const excludeIds = Array.from(new Set([...answeredQuestionIds.value, ...Array.from(knownQuestionIds)]));
+
+    ongoingFetch = (async (): Promise<FetchTriviaQuestionsResponse | null> => {
+      isFetchingQuestions.value = true;
+      try {
+        const response = await fetchTriviaQuestions({
+          gameId: activeGameId.value,
+          excludeIds,
+          limit,
+          includeConfig,
+        });
+
+        totalQuestionsCount.value = response.totalQuestions;
+        hasMoreQuestions.value = response.hasMore;
+        integrateQuestions(response.questions);
+        return response;
+      } finally {
+        isFetchingQuestions.value = false;
+        ongoingFetch = null;
+      }
+    })();
+
+    return ongoingFetch;
   }
 
   function createDefaultQuestion(): TriviaQuestion {
@@ -313,27 +388,6 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
       category: 'math',
       difficulty: 'very_easy',
     };
-  }
-
-  async function loadNextBatch(): Promise<void> {
-    const config = activeConfig.value;
-    if (!config || !config.questions) {
-      return;
-    }
-
-    const batchSize = config.questionBatchSize ?? 0;
-    if (batchSize === 0) {
-      // Already have all questions
-      return;
-    }
-
-    // Get next batch
-    const excludeIds = allQuestions.value.map((q: TriviaQuestion) => q.id);
-    const nextBatch = fetchQuestionsFromConfig(config, batchSize, excludeIds);
-    
-    if (nextBatch.length > 0) {
-      allQuestions.value.push(...nextBatch);
-    }
   }
 
   function resetTimers(): void {
@@ -423,6 +477,9 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
       answeredCount: answeredQuestionIds.value.length,
     });
 
+    isReviewingAnswer.value = false;
+    correctAnswerIndex.value = null;
+
     // Check if we need to load more questions
     if (questionQueue.value.length === 0 && allQuestions.value.length > answeredQuestionIds.value.length) {
       console.log('[Trivia] Queue empty, loading questions...');
@@ -466,67 +523,49 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     });
 
     const shuffledOptions = shuffleArray([...next.options]);
-    currentQuestion.value = {
+    const displayedQuestion: TriviaQuestionViewModel = {
       ...next,
       options: shuffledOptions,
     };
 
+    currentQuestion.value = displayedQuestion;
+    correctAnswerIndex.value = await determineCorrectOptionIndex(displayedQuestion);
+
     questionOrder.value.push(next.id);
     selectedAnswer.value = null;
     isCorrect.value = null;
-    startQuestionTimer(next);
+    startQuestionTimer(displayedQuestion);
     console.log('[Trivia] Question displayed successfully');
   }
 
   async function ensureQuestionsLoaded(): Promise<void> {
-    const config = activeConfig.value;
-    if (!config) {
-      console.warn('No config available for loading questions');
+    console.log('[Trivia] ensureQuestionsLoaded:', {
+      totalQuestions: totalQuestionsCount.value,
+      fetchedQuestions: allQuestions.value.length,
+      queueLength: questionQueue.value.length,
+      answeredCount: answeredQuestionIds.value.length,
+      hasMore: hasMoreQuestions.value,
+      isFetching: isFetchingQuestions.value,
+    });
+
+    if (questionQueue.value.length > 0) {
       return;
     }
 
-    // Get available questions (not yet answered)
-    const availableQuestions = allQuestions.value.filter(
-      (q: TriviaQuestion) => !answeredQuestionIds.value.includes(q.id)
-    );
+    const shouldFetchMore =
+      hasMoreQuestions.value ||
+      !configLoaded.value ||
+      allQuestions.value.length === answeredQuestionIds.value.length;
 
-    console.log('[Trivia] ensureQuestionsLoaded:', {
-      totalQuestions: allQuestions.value.length,
-      availableQuestions: availableQuestions.length,
-      queueLength: questionQueue.value.length,
-      answeredCount: answeredQuestionIds.value.length,
-    });
-
-    // If queue is empty and we have available questions, add them
-    if (questionQueue.value.length === 0 && availableQuestions.length > 0) {
-      // Convert to view models and shuffle
-      const viewModels = availableQuestions.map((q: TriviaQuestion) => {
-        try {
-          return toViewModel(q);
-        } catch (error) {
-          console.error('[Trivia] Error converting question to view model:', q, error);
-          return null;
-        }
-      }).filter((vm: TriviaQuestionViewModel | null): vm is TriviaQuestionViewModel => vm !== null);
-      
-      if (viewModels.length > 0) {
-        const shuffled = shuffleArray(viewModels);
-        questionQueue.value.push(...shuffled);
-        console.log('[Trivia] Loaded questions into queue:', shuffled.length);
-      }
+    if (shouldFetchMore) {
+      await fetchAndStoreQuestions({ limit: activeConfig.value?.questionBatchSize });
     }
 
-    // Check if we need to load next batch
-    const batchSize = config.questionBatchSize ?? 0;
-    if (batchSize > 0 && availableQuestions.length === 0) {
-      await loadNextBatch();
-      const newAvailable = allQuestions.value.filter(
-        (q: TriviaQuestion) => !answeredQuestionIds.value.includes(q.id)
-      );
-      if (newAvailable.length > 0) {
-        const viewModels = newAvailable.map(toViewModel);
-        const shuffled = shuffleArray(viewModels);
-        questionQueue.value.push(...shuffled);
+    if (questionQueue.value.length === 0 && allQuestions.value.length === 0) {
+      integrateQuestions([createDefaultQuestion()]);
+      if (totalQuestionsCount.value === 0) {
+        totalQuestionsCount.value = allQuestions.value.length;
+        hasMoreQuestions.value = false;
       }
     }
   }
@@ -597,18 +636,53 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
       return;
     }
 
+    if (questionTimerHandle.value) {
+      clearInterval(questionTimerHandle.value);
+      questionTimerHandle.value = null;
+    }
+
+    const questionSnapshot = currentQuestion.value;
+
     // Record timeout as incorrect
     const answerText = 'timeout';
-    const hash = await hashAnswer(currentQuestion.value.id, answerText, currentQuestion.value.salt);
+    const hash = await hashAnswer(questionSnapshot.id, answerText, questionSnapshot.salt);
     attempts.value.push({
-      questionId: currentQuestion.value.id,
+      questionId: questionSnapshot.id,
       answerHash: hash,
       answeredAt: nowIso(),
     });
-    answeredQuestionIds.value.push(currentQuestion.value.id);
+    answeredQuestionIds.value.push(questionSnapshot.id);
+
+    selectedAnswer.value = -1;
+    isCorrect.value = false;
+    isReviewingAnswer.value = true;
     applyIncorrectAnswer();
 
-    if (!unlimitedLives.value && lives.value <= 0) {
+    const reviewOptions = toReviewOptions(questionSnapshot);
+    const correctIndex =
+      correctAnswerIndex.value ?? (await determineCorrectOptionIndex(questionSnapshot));
+    answerReview.value.push({
+      questionId: questionSnapshot.id,
+      question: questionSnapshot.question,
+      options: reviewOptions,
+      selectedIndex: null,
+      correctIndex,
+      isCorrect: false,
+    });
+
+    const outOfLives = !unlimitedLives.value && lives.value <= 0;
+    const totalQuestions = totalQuestionsCount.value;
+    const answeredAll =
+      totalQuestions > 0 && answeredQuestionIds.value.length >= totalQuestions;
+
+    await sleep(REVIEW_DELAY_MS);
+
+    if (outOfLives) {
+      endGame();
+      return;
+    }
+
+    if (answeredAll) {
       endGame();
       return;
     }
@@ -633,13 +707,14 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
       questionTimerHandle.value = null;
     }
 
+    const questionSnapshot = currentQuestion.value;
     selectedAnswer.value = index;
-    const answerHash = await recordAttempt(currentQuestion.value, index);
+    const answerHash = await recordAttempt(questionSnapshot, index);
     
     // Validate answer by comparing hash
-    const option = currentQuestion.value.options[index];
+    const option = questionSnapshot.options[index];
     const answerText = typeof option === 'string' ? option : option.text;
-    const expectedHash = currentQuestion.value.correctHash;
+    const expectedHash = questionSnapshot.correctHash;
     const correct = expectedHash ? expectedHash === answerHash : false;
     
     console.log('[Trivia] Answer validation:', {
@@ -650,6 +725,7 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     });
     
     isCorrect.value = correct;
+    isReviewingAnswer.value = true;
 
     if (correct) {
       console.log('[Trivia] Correct answer! Score:', score.value, 'Streak:', streak.value);
@@ -661,27 +737,38 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
 
     bestScore.value = Math.max(bestScore.value, score.value);
 
-    if (!unlimitedLives.value && lives.value <= 0) {
-      console.log('[Trivia] No lives left, ending game');
-      endGame();
-      return;
-    }
-
-    // Check if we've answered all questions
-    const totalQuestions = activeConfig.value?.questions?.length ?? 0;
-    console.log('[Trivia] Progress check:', {
-      answered: answeredQuestionIds.value.length,
-      total: totalQuestions,
-      allQuestionsCount: allQuestions.value.length,
+    const reviewOptions = toReviewOptions(questionSnapshot);
+    const correctIndex =
+      correctAnswerIndex.value ?? (await determineCorrectOptionIndex(questionSnapshot));
+    answerReview.value.push({
+      questionId: questionSnapshot.id,
+      question: questionSnapshot.question,
+      options: reviewOptions,
+      selectedIndex: index,
+      correctIndex,
+      isCorrect: correct,
     });
 
-    if (answeredQuestionIds.value.length >= totalQuestions && totalQuestions > 0) {
-      console.log('[Trivia] All questions answered, ending game');
+    const outOfLives = !unlimitedLives.value && lives.value <= 0;
+    const totalQuestions = totalQuestionsCount.value;
+    const answeredAll =
+      totalQuestions > 0 && answeredQuestionIds.value.length >= totalQuestions;
+
+    await sleep(REVIEW_DELAY_MS);
+
+    if (outOfLives) {
+      console.log('[Trivia] No lives left after review, ending game');
       endGame();
       return;
     }
 
-    console.log('[Trivia] Preparing next question...');
+    if (answeredAll) {
+      console.log('[Trivia] All questions answered after review, ending game');
+      endGame();
+      return;
+    }
+
+    console.log('[Trivia] Preparing next question after review window...');
     await prepareNextQuestion();
   }
 
@@ -692,6 +779,9 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     questionOrder.value = [];
     correctAttempts.value = 0;
     powerUps.value = [];
+    isReviewingAnswer.value = false;
+    answerReview.value = [];
+    correctAnswerIndex.value = null;
     streak.value = 0;
     sessionBestStreak.value = 0;
     selectedAnswer.value = null;
@@ -703,11 +793,16 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     currentBatchIndex.value = 0;
     questionTimerDuration.value = DEFAULT_QUESTION_TIMER;
     questionTimeLeft.value = DEFAULT_QUESTION_TIMER;
+    allQuestions.value = [];
+    knownQuestionIds.clear();
+    totalQuestionsCount.value = 0;
+    hasMoreQuestions.value = false;
+    ongoingFetch = null;
+    configLoaded.value = false;
   }
 
   async function startGame(): Promise<void> {
     console.log('[Trivia] startGame called');
-    await ensureConfig();
     resetGameState();
     
     console.log('[Trivia] After resetGameState:', {
@@ -715,18 +810,8 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
       queueLength: questionQueue.value.length,
     });
     
-    // Ensure questions are loaded before starting
-    if (allQuestions.value.length === 0) {
-      console.log('[Trivia] No questions, reloading from config');
-      loadQuestionsFromConfig();
-    }
-    
-    // If still no questions, add default
-    if (allQuestions.value.length === 0) {
-      console.warn('[Trivia] Still no questions, adding default');
-      allQuestions.value = [createDefaultQuestion()];
-    }
-    
+    await ensureConfig();
+
     console.log('[Trivia] Starting game with:', {
       totalQuestions: allQuestions.value.length,
       queueLength: questionQueue.value.length,
@@ -918,7 +1003,8 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
   const language = computed(
     () => currentQuestion.value?.category ?? activeConfig.value?.language ?? 'en'
   );
-  const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers && unlimitedLives.value));
+  const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers));
+  const showCorrectAnswersOnEnd = computed(() => Boolean(activeConfig.value?.showCorrectAnswersOnEnd));
   const configLives = computed(() => activeConfig.value?.lives ?? DEFAULT_LIVES);
   const theme = computed(() => ({
     primaryColor: activeConfig.value?.theme?.primaryColor ?? '#8C52FF',
@@ -937,7 +1023,7 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     return attempts.value.length + 1;
   });
   const totalQuestions = computed(() => {
-    return activeConfig.value?.questions?.length ?? null;
+    return totalQuestionsCount.value > 0 ? totalQuestionsCount.value : null;
   });
 
   const dailyChallengeId = computed(() => activeDailyChallengeId.value);
@@ -949,8 +1035,17 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
   ): Promise<void> {
     overrideConfig.value = config;
     activeDailyChallengeId.value = options?.dailyChallengeId ?? null;
-    loadQuestionsFromConfig();
-    lives.value = unlimitedLives.value ? Infinity : (activeConfig.value?.lives ?? DEFAULT_LIVES);
+    resetGameState();
+    if (config && config.questions && config.questions.length > 0) {
+      integrateQuestions(config.questions);
+      totalQuestionsCount.value = config.questions.length;
+      hasMoreQuestions.value = false;
+      configLoaded.value = true;
+      lives.value = unlimitedLives.value ? Infinity : (config.lives ?? DEFAULT_LIVES);
+    } else {
+      configLoaded.value = false;
+      await ensureConfig();
+    }
   }
 
   return {
@@ -958,6 +1053,7 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     currentQuestion,
     selectedAnswer,
     isCorrect,
+    correctAnswerIndex,
     lives,
     score,
     streak,
@@ -968,10 +1064,12 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     isLoading,
     inviter,
     powerUps,
+    isReviewingAnswer,
     timeLeft,
     questionTimerDuration,
     globalTimeLeft,
     attempts,
+    answerReview,
     attemptCount,
     correctAttemptCount,
     currentQuestionNumber,
@@ -979,6 +1077,7 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
     mode,
     language,
     showCorrectAnswers,
+    showCorrectAnswersOnEnd,
     configLives,
     unlimitedLives,
     hasPowerUps,
