@@ -228,7 +228,6 @@ export const useUserStore = defineStore('user', () => {
       games: {},
       badges: [],
       favoriteGames: [],
-      engagement: { games: {} },
     };
     try {
       console.log('Attempting to create profile:', userProfile);

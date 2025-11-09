@@ -131,7 +131,7 @@ const statItems = computed(() => {
     },
     {
       key: 'favorites',
-      value: stats.favorites,
+      value: stats.favoriteCounter,
       icon: ['fas', 'heart'] as [string, string],
       label: t('home.stats.favorites'),
     },

@@ -5,8 +5,7 @@ export interface ScoreDistribution {
 export interface GameStats {
   totalPlayers: number;
   sessionsPlayed: number;
-  uniqueSubmitters: number;
-  favorites: number;
+  favoriteCounter: number;
   scoreDistribution: ScoreDistribution;
   updatedAt: number;
   custom?: Record<string, any>;

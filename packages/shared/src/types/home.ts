@@ -1,6 +1,6 @@
 import type { Game } from './game';
 
-export type HomeOrderField = 'date' | 'players' | 'favorites' | 'sessions' | 'submissions';
+export type HomeOrderField = 'date' | 'players' | 'favorites' | 'sessions';
 export type HomeOrderDirection = 'asc' | 'desc';
 
 export interface HomeSectionOrder {
