@@ -1,15 +1,19 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { doc, getDoc } from 'firebase/firestore';
+// @ts-ignore -- resolved via tsconfig paths
 import type { Game } from '@top-x/shared/types/game';
+// @ts-ignore -- resolved via tsconfig paths
 import type { User, UserGameDataSubmission } from '@top-x/shared/types/user';
-import type { TriviaConfig, TriviaQuestion, TriviaPowerUpRule } from '@top-x/shared/types/trivia';
+// @ts-ignore -- resolved via tsconfig paths
+import type { TriviaConfig, TriviaQuestion, TriviaPowerUpRule, TriviaAnswer } from '@top-x/shared/types/trivia';
 import {
   type TriviaQuestionViewModel,
   type TriviaAttemptPayload,
   type PowerUpState,
 } from './types';
 import { nowIso, toViewModel } from './utils';
+// @ts-ignore -- resolved via tsconfig paths
 import { hashAnswer, fetchQuestionsFromConfig, shuffleArray } from '@/services/trivia';
 import { db } from '@top-x/shared';
 import { useUserStore } from '../user';
@@ -38,6 +42,7 @@ export const useTriviaStore = defineStore('trivia', () => {
   const userStore = useUserStore();
 
   const currentScreen = ref<'start' | 'playing' | 'gameover'>('start');
+  const activeGameId = ref<string>(GAME_ID);
   const baseConfig = ref<TriviaConfig | null>(null);
   const overrideConfig = ref<TriviaConfig | null>(null);
   const configLoaded = ref(false);
@@ -80,6 +85,133 @@ export const useTriviaStore = defineStore('trivia', () => {
   const unlimitedLives = computed(() => Boolean(activeConfig.value?.unlimitedLives));
   const hasPowerUps = computed(() => Boolean(activeConfig.value?.powerUps && activeConfig.value.powerUps.length > 0));
 
+interface LegacyTriviaAnswer {
+  text?: string;
+  label?: string;
+  imageUrl?: string | null;
+  image_url?: string | null;
+  image?: string | null;
+}
+
+interface LegacyTriviaQuestion extends Partial<TriviaQuestion> {
+  options?: Array<string | LegacyTriviaAnswer>;
+  correct?: number;
+  question?: string;
+  prompt?: string;
+  media?: {
+    imageUrl?: string;
+    image_url?: string;
+    optionImageUrls?: Array<string | null>;
+  };
+  correctHash?: unknown;
+  correctHashes?: unknown;
+}
+
+function extractHashValue(source: unknown): string | undefined {
+  if (!source) {
+    return undefined;
+  }
+
+  if (typeof source === 'string') {
+    return source;
+  }
+
+  if (Array.isArray(source)) {
+    for (const entry of source) {
+      const value = extractHashValue(entry);
+      if (value) {
+        return value;
+      }
+    }
+    return undefined;
+  }
+
+  if (typeof source === 'object') {
+    const record = source as Record<string, unknown>;
+    const keysToCheck = ['value', 'hash', 'correct', 'primary', 'default'];
+    for (const key of keysToCheck) {
+      const candidate = record[key];
+      if (typeof candidate === 'string' && candidate) {
+        return candidate;
+      }
+    }
+    // Some callers might just store string values under arbitrary keys
+    for (const candidate of Object.values(record)) {
+      if (typeof candidate === 'string' && candidate) {
+        return candidate;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function createQuestionId() {
+  return `q_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): TriviaQuestion {
+  const legacy = question as LegacyTriviaQuestion & Record<string, unknown>;
+
+  const normalized: TriviaQuestion = {
+    id: (legacy.id as string | undefined) ?? createQuestionId(),
+    text: (legacy.text as string | undefined) ?? (legacy.question as string | undefined) ?? (legacy.prompt as string | undefined) ?? '',
+    answers: [],
+    correctAnswer: (legacy.correctAnswer as string | undefined) ?? '',
+    category: legacy.category,
+    difficulty: legacy.difficulty,
+    salt: legacy.salt,
+    hash:
+      extractHashValue(legacy.hash) ??
+      extractHashValue(legacy.correctHash) ??
+      extractHashValue(legacy.correctHashes),
+    imageUrl:
+      (legacy.imageUrl as string | undefined) ??
+      (legacy.media?.imageUrl as string | undefined) ??
+      (legacy.media?.image_url as string | undefined),
+  };
+
+  let answersSource: Array<string | LegacyTriviaAnswer> | undefined;
+  const legacyAnswers = legacy.answers as Array<string | LegacyTriviaAnswer> | undefined;
+  if (legacyAnswers && legacyAnswers.length) {
+    answersSource = legacyAnswers;
+  } else if (legacy.options && legacy.options.length) {
+    answersSource = legacy.options;
+  }
+
+  if (answersSource) {
+    normalized.answers = answersSource.map((option, index): TriviaAnswer => {
+      if (typeof option === 'string') {
+        return {
+          text: option,
+          imageUrl: legacy.media?.optionImageUrls?.[index] || undefined,
+        };
+      }
+
+      const text = option.text || option.label || '';
+      const imageUrl = option.imageUrl || option.image_url || option.image || legacy.media?.optionImageUrls?.[index] || undefined;
+      return {
+        text,
+        imageUrl: imageUrl || undefined,
+      };
+    });
+  }
+
+  if (!normalized.answers.length) {
+    normalized.answers = [{ text: '' }];
+  }
+
+  if (!normalized.correctAnswer || !normalized.answers.some((answer: TriviaAnswer) => answer.text === normalized.correctAnswer)) {
+    if (typeof legacy.correct === 'number' && legacy.correct >= 0 && legacy.correct < normalized.answers.length) {
+      normalized.correctAnswer = normalized.answers[legacy.correct]?.text || normalized.answers[0].text;
+    } else {
+      normalized.correctAnswer = normalized.answers[0].text;
+    }
+  }
+
+  return normalized;
+}
+
   async function ensureConfig(): Promise<void> {
     if (configLoaded.value) {
       console.log('[Trivia] Config already loaded, skipping');
@@ -89,7 +221,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     console.log('[Trivia] Loading config...');
     isLoading.value = true;
     try {
-      const gameDoc = doc(db, 'games', GAME_ID);
+      const gameDoc = doc(db, 'games', activeGameId.value);
       const snapshot = await getDoc(gameDoc);
       if (snapshot.exists()) {
         const data = snapshot.data() as Game;
@@ -143,21 +275,20 @@ export const useTriviaStore = defineStore('trivia', () => {
       return;
     }
 
-    // Get batch size (0 means all questions)
+    const normalizedQuestions: TriviaQuestion[] = config.questions.map((question: TriviaQuestion | LegacyTriviaQuestion) =>
+      normalizeQuestion(question)
+    );
+
     const batchSize = config.questionBatchSize ?? 0;
-    
     if (batchSize === 0) {
-      // Fetch all questions
-      allQuestions.value = [...config.questions];
+      allQuestions.value = [...normalizedQuestions];
       console.log('[Trivia] Loaded all questions:', allQuestions.value.length);
     } else {
-      // Fetch first batch
-      const batch = fetchQuestionsFromConfig(config, batchSize, []);
+      const batch = fetchQuestionsFromConfig({ ...config, questions: normalizedQuestions }, batchSize, []);
       allQuestions.value = [...batch];
-      console.log('[Trivia] Loaded first batch:', batch.length, 'of', config.questions.length);
+      console.log('[Trivia] Loaded first batch:', batch.length, 'of', normalizedQuestions.length);
     }
 
-    // Validate questions format
     allQuestions.value.forEach((q: TriviaQuestion, idx: number) => {
       if (!q.answers || q.answers.length === 0) {
         console.error(`[Trivia] Question ${idx} (${q.id}) has no answers:`, q);
@@ -406,7 +537,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     }
 
     const available = activeConfig.value.powerUps.filter(
-      (rule: TriviaPowerUpRule) => !powerUps.value.find((p: PowerUpState) => p.id === rule.id)
+      (rule: TriviaPowerUpRule) => !powerUps.value.find((p) => (p as TriviaPowerUpRule).id === rule.id)
     );
     if (!available.length) {
       return;
@@ -414,10 +545,10 @@ export const useTriviaStore = defineStore('trivia', () => {
 
     const nextPowerUp = available[Math.floor(Math.random() * available.length)];
     powerUps.value.push({
-      ...nextPowerUp,
+      ...(nextPowerUp as TriviaPowerUpRule),
       availableAt: Date.now(),
       uses: 0,
-    });
+    } as PowerUpState);
   }
 
   async function recordAttempt(question: TriviaQuestionViewModel, answerIndex: number): Promise<string> {
@@ -607,13 +738,13 @@ export const useTriviaStore = defineStore('trivia', () => {
     await prepareNextQuestion();
   }
 
-  function updateLocalProfile(gameData: UserGameDataSubmission): void {
+  function updateLocalProfile(gameData: UserGameDataSubmission, gameId: string): void {
     const profileValue = userStore.profile;
     if (!profileValue) {
       return;
     }
 
-    const existingGameData = profileValue.games?.[GAME_TYPE_ID]?.[GAME_ID];
+    const existingGameData = profileValue.games?.[GAME_TYPE_ID]?.[gameId];
     const nextScore = Math.max(existingGameData?.score ?? 0, gameData.score);
     const nextStreak = Math.max(existingGameData?.streak ?? 0, gameData.streak);
 
@@ -621,7 +752,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     const existingTypeGames = { ...(existingGames[GAME_TYPE_ID] ?? {}) };
     const existingTriviaCustom = (existingGameData?.custom?.trivia as Record<string, unknown> | undefined) ?? {};
 
-    existingTypeGames[GAME_ID] = {
+    existingTypeGames[gameId] = {
       score: nextScore,
       streak: nextStreak,
       lastPlayed: gameData.lastPlayed ?? Date.now(),
@@ -674,9 +805,10 @@ export const useTriviaStore = defineStore('trivia', () => {
       },
     };
 
+    const currentGameId = activeGameId.value;
     try {
-      await userStore.updateGameProgress(GAME_TYPE_ID, GAME_ID, payload);
-      updateLocalProfile(payload);
+      await userStore.updateGameProgress(GAME_TYPE_ID, currentGameId, payload);
+      updateLocalProfile(payload, currentGameId);
       pendingScore.value = null;
       pendingBestStreak.value = null;
     } catch (error) {
@@ -729,6 +861,30 @@ export const useTriviaStore = defineStore('trivia', () => {
     await submitResults();
   }
 
+  function setGameId(gameId: string): void {
+    const normalized = (gameId ?? '').trim() || GAME_ID;
+    if (normalized === activeGameId.value) {
+      return;
+    }
+
+    activeGameId.value = normalized;
+    baseConfig.value = null;
+    overrideConfig.value = null;
+    configLoaded.value = false;
+    activeDailyChallengeId.value = null;
+    pendingScore.value = null;
+    pendingBestStreak.value = null;
+    leaderboard.value = [];
+    inviter.value = null;
+    allQuestions.value = [];
+    questionQueue.value = [];
+    currentBatchIndex.value = 0;
+    resetGameState();
+    bestScore.value = 0;
+    bestStreak.value = 0;
+    currentScreen.value = 'start';
+  }
+
   function resetGame(): void {
     resetGameState();
     currentScreen.value = 'start';
@@ -736,9 +892,12 @@ export const useTriviaStore = defineStore('trivia', () => {
   }
 
   watch(
-    () => userStore.profile,
-    (profile) => {
-      const stats = profile?.games?.[GAME_TYPE_ID]?.[GAME_ID];
+    () => ({
+      profile: userStore.profile,
+      gameId: activeGameId.value,
+    }),
+    ({ profile, gameId }) => {
+      const stats = profile?.games?.[GAME_TYPE_ID]?.[gameId];
       bestScore.value = stats?.score ?? 0;
       bestStreak.value = stats?.streak ?? 0;
     },
@@ -782,6 +941,7 @@ export const useTriviaStore = defineStore('trivia', () => {
   });
 
   const dailyChallengeId = computed(() => activeDailyChallengeId.value);
+  const gameId = computed(() => activeGameId.value);
 
   async function applyConfigOverride(
     config: TriviaConfig | null,
@@ -824,6 +984,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     hasPowerUps,
     theme,
     dailyChallengeId,
+    gameId,
     hashAnswer: hashAnswerForQuestion,
     loadInviter,
     startGame,
@@ -831,5 +992,6 @@ export const useTriviaStore = defineStore('trivia', () => {
     resetGame,
     saveScoreAfterLogin,
     applyConfigOverride,
+    setGameId,
   };
 });

@@ -312,6 +312,8 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue']);
 
+const HASH_SECRET = 'top-x-trivia-secret';
+
 const themeFields = [
   { key: 'primaryColor', label: 'Primary Color', type: 'color', placeholder: '#ff0066' },
   { key: 'secondaryColor', label: 'Secondary Color', type: 'color', placeholder: '#0066ff' },
@@ -334,6 +336,7 @@ const validatedGameId = computed(() => {
 });
 
 const config = ref<TriviaConfigWithTheme>(hydrateConfig(props.modelValue));
+let sanitizeRevision = 0;
 
 watch(
   () => props.modelValue,
@@ -342,6 +345,9 @@ watch(
     config.value = hydrateConfig(value);
     nextTick(() => {
       isSyncing.value = false;
+      if (configNeedsHashing(config.value)) {
+        void emitSanitizedConfig();
+      }
     });
   },
   { deep: true },
@@ -349,9 +355,9 @@ watch(
 
 watch(
   config,
-  (value) => {
+  () => {
     if (isSyncing.value) return;
-    emit('update:modelValue', sanitizeConfig(value));
+    void emitSanitizedConfig();
   },
   { deep: true, immediate: false },
 );
@@ -367,6 +373,12 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   if (!base.theme) {
     base.theme = {};
   }
+
+  base.theme.primaryColor = base.theme.primaryColor || '#000000';
+  base.theme.secondaryColor = base.theme.secondaryColor || '#000000';
+  base.theme.backgroundColor = base.theme.backgroundColor || '#000000';
+  base.theme.backgroundOverlayColor = base.theme.backgroundOverlayColor || '#000000';
+
   if (!base.powerUps) {
     base.powerUps = [];
   }
@@ -423,9 +435,10 @@ function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
   return hydrated;
 }
 
-function sanitizeConfig(value: TriviaConfigWithTheme): TriviaConfig {
+async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfig> {
   const clone: TriviaConfig = JSON.parse(JSON.stringify(value));
-  clone.questions = (clone.questions ?? []).map(sanitizeQuestion);
+  const questions = clone.questions ?? [];
+  clone.questions = await Promise.all(questions.map((question) => sanitizeQuestion(question)));
 
   if (clone.mode === 'endless') {
     clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? 10;
@@ -452,38 +465,42 @@ function sanitizeConfig(value: TriviaConfigWithTheme): TriviaConfig {
   return clone;
 }
 
-function sanitizeQuestion(question: TriviaQuestion): TriviaQuestion {
+async function sanitizeQuestion(question: TriviaQuestion): Promise<TriviaQuestion> {
   const sanitized = JSON.parse(JSON.stringify(question)) as TriviaQuestion;
   sanitized.text = sanitized.text?.trim() ?? '';
   sanitized.id = sanitized.id?.trim() || createQuestionId();
-  
+
   // Sanitize answers
   sanitized.answers = (sanitized.answers ?? []).map((answer) => ({
-    text: answer.text?.trim() ?? '',
-    imageUrl: answer.imageUrl?.trim() || undefined,
-  })).filter((ans) => ans.text.length > 0);
-  
+    text: answer?.text?.trim() ?? '',
+    imageUrl: answer?.imageUrl?.trim() || undefined,
+  }));
+
   if (sanitized.answers.length === 0) {
-    sanitized.answers = [{ text: 'Answer' }];
+    sanitized.answers = [{ text: '' }];
   }
-  
+
   // Validate correct answer
   const answerTexts = sanitized.answers.map((a) => a.text);
   if (!sanitized.correctAnswer || !answerTexts.includes(sanitized.correctAnswer)) {
     sanitized.correctAnswer = sanitized.answers[0]?.text || '';
+  } else {
+    sanitized.correctAnswer = sanitized.correctAnswer.trim();
   }
-  
+
   // Clean up imageUrl (question image)
   sanitized.imageUrl = sanitized.imageUrl?.trim() || undefined;
-  
+
   // Remove old media structure if it exists
   delete (sanitized as any).media;
-  
+
   sanitized.category = sanitized.category?.trim() || undefined;
   sanitized.difficulty = sanitized.difficulty || undefined;
-  sanitized.salt = sanitized.salt?.trim() || undefined;
-  sanitized.hash = sanitized.hash?.trim() || undefined;
-  
+
+  const ensuredSalt = sanitized.salt?.trim() || generateSalt();
+  sanitized.salt = ensuredSalt;
+  sanitized.hash = await computeAnswerHash(sanitized.id, sanitized.correctAnswer, ensuredSalt);
+
   return sanitized;
 }
 
@@ -635,7 +652,7 @@ async function persistCandidateToPool(
   candidate: GeneratedCandidate,
   target: 'game' | 'global',
 ): Promise<void> {
-  const question = sanitizeQuestion(candidate.question);
+  const question = await sanitizeQuestion(candidate.question);
   if (!question.id) {
     question.id = createQuestionId();
   }
@@ -648,6 +665,40 @@ async function persistCandidateToPool(
   } else {
     const questionRef = doc(collection(db, 'xaiQuestions'), question.id);
     await setDoc(questionRef, question, { merge: true });
+  }
+}
+
+function generateSalt(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function computeAnswerHash(questionId: string, answerText: string, salt?: string): Promise<string> {
+  const payload = `${questionId}|${answerText}|${salt ?? ''}`;
+  const encoder = new TextEncoder();
+  const msgBuffer = encoder.encode(payload);
+  const keyBuffer = encoder.encode(HASH_SECRET);
+
+  const key = await crypto.subtle.importKey('raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const hashBuffer = await crypto.subtle.sign('HMAC', key, msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function configNeedsHashing(value: TriviaConfigWithTheme): boolean {
+  return (value.questions ?? []).some((q) => !q?.hash || !q?.salt);
+}
+
+async function emitSanitizedConfig(): Promise<void> {
+  const currentRevision = ++sanitizeRevision;
+  try {
+    const sanitized = await sanitizeConfig(config.value);
+    if (currentRevision === sanitizeRevision) {
+      emit('update:modelValue', sanitized);
+    }
+  } catch (error) {
+    console.error('Failed to sanitize trivia config', error);
   }
 }
 </script>

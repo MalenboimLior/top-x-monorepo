@@ -56,7 +56,7 @@
         <CustomButton
           v-if="shareUrl"
           type="is-info"
-          :icon="['fas', 'share-nodes']"
+          :icon="['fas', 'share']"
           :label="isLoggedIn ? 'Share run' : 'Share challenge'"
           @click="$emit('share')"
         />

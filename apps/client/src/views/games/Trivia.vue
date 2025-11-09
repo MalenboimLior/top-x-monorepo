@@ -116,6 +116,8 @@ const initialGameId =
 const resolvedGameId = ref<string>(initialGameId);
 const activeGameId = computed(() => resolvedGameId.value);
 
+triviaStore.setGameId(resolvedGameId.value);
+
 const initialChallengeId = typeof route.query.challenge === 'string'
   ? (route.query.challenge as string)
   : null;
@@ -170,6 +172,7 @@ watch(
       typeof nextGame === 'string' && nextGame.trim().length > 0 ? (nextGame as string) : DEFAULT_GAME_ID;
     if (normalized !== resolvedGameId.value) {
       resolvedGameId.value = normalized;
+      triviaStore.setGameId(normalized);
       void loadDailyChallengeConfig(dailyChallengeId.value);
     }
   }
