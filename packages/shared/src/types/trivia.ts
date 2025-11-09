@@ -20,8 +20,8 @@ export interface TriviaQuestion {
   imageUrl?: string;
   /** Array of possible answers */
   answers: TriviaAnswer[];
-  /** The correct answer text (matches one of the answers' text) */
-  correctAnswer: string;
+  /** The correct answer text (matches one of the answers' text). Optional in published configs */
+  correctAnswer?: string;
   /** Optional categorization for filtering/analytics */
   category?: string;
   /** Difficulty flag used for sequencing or scoring */
@@ -79,6 +79,8 @@ export interface TriviaConfig {
   mode: 'fixed'|'endless';
   /** Question bank to draw from */
   questions: TriviaQuestion[];
+  /** Optional map of correct answers retained for admin tooling */
+  correctAnswers?: Record<string, string>;
   /** Preferred language for the trivia experience (BCP 47 tag) */
   language?: string;
   powerUpsActive?: boolean;

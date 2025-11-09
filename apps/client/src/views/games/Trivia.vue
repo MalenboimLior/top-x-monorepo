@@ -39,6 +39,7 @@
         :selected-answer="selectedAnswer"
         :is-correct="isCorrect"
         :correct-answer-index="correctAnswerIndex"
+        :is-reviewing-answer="isReviewingAnswer"
         :time-left="timeLeft"
         :question-timer-duration="questionTimerDuration"
         :global-time-left="globalTimeLeft"
@@ -74,6 +75,8 @@
         :share-url="shareUrl"
         :share-text="shareText"
         :language="language"
+        :show-answer-summary="shouldShowAnswerSummary"
+        :answer-summary="answerSummary"
         @play-again="resetGame"
         @share="shareScore"
         @login="login"
@@ -216,6 +219,13 @@ const totalQuestions = computed(() => triviaStore.totalQuestions);
 const mode = computed(() => triviaStore.mode);
 const language = computed(() => triviaStore.language);
 const showCorrectAnswers = computed(() => triviaStore.showCorrectAnswers);
+const showCorrectAnswersOnEnd = computed(() => triviaStore.showCorrectAnswersOnEnd);
+const correctAnswerIndex = computed(() => triviaStore.correctAnswerIndex);
+const isReviewingAnswer = computed(() => triviaStore.isReviewingAnswer);
+const answerSummary = computed(() => triviaStore.answerReview);
+const shouldShowAnswerSummary = computed(
+  () => showCorrectAnswersOnEnd.value && answerSummary.value.length > 0
+);
 const configLives = computed(() => triviaStore.configLives);
 const unlimitedLives = computed(() => triviaStore.unlimitedLives);
 const theme = computed(() => triviaStore.theme);
@@ -245,7 +255,6 @@ const overlayStyles = computed(() => ({
   background: theme.value.backgroundOverlayColor,
 }));
 
-const correctAnswerIndex = ref<number | null>(null);
 const percentileRank = ref(0);
 const usersTopped = ref(0);
 
@@ -276,23 +285,6 @@ onMounted(() => {
     triviaStore.loadInviter(inviterUid, score);
   }
 });
-
-watch(
-  () => currentQuestion.value,
-  async (newQuestion) => {
-    correctAnswerIndex.value = null;
-    if (!newQuestion || !newQuestion.correctHash) return;
-
-    for (let i = 0; i < newQuestion.options.length; i++) {
-      const hash = await triviaStore.hashAnswer(i);
-      if (hash === newQuestion.correctHash) {
-        correctAnswerIndex.value = i;
-        break;
-      }
-    }
-  },
-  { immediate: true }
-);
 
 watch(
   () => currentScreen.value,

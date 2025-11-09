@@ -58,6 +58,14 @@
             Reveal answers after each question
           </label>
         </div>
+
+        <div class="column is-half">
+          <label class="label">Show Correct Answers On End</label>
+          <label class="checkbox">
+            <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" />
+            Display full answer summary on end screen
+          </label>
+        </div>
       </div>
     </section>
 
@@ -288,6 +296,7 @@ import type {
   TriviaAnswer,
   TriviaPowerUpRule,
 } from '@top-x/shared/types/trivia';
+import { computeAnswerHash, ensureSalt, hasHashSecret } from '@/utils/triviaHash';
 
 interface TriviaConfigWithTheme extends TriviaConfig {
   theme: NonNullable<TriviaConfig['theme']>;
@@ -312,7 +321,9 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue']);
 
-const HASH_SECRET = 'top-x-trivia-secret';
+if (!hasHashSecret()) {
+  console.warn('[AddTrivia] Missing VITE_TRIVIA_HASH_SECRET. Hashing will fail.');
+}
 
 const themeFields = [
   { key: 'primaryColor', label: 'Primary Color', type: 'color', placeholder: '#ff0066' },
@@ -382,7 +393,11 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   if (!base.powerUps) {
     base.powerUps = [];
   }
-  base.questions = base.questions?.map(hydrateQuestion) ?? [];
+  base.showCorrectAnswers = Boolean(base.showCorrectAnswers);
+  base.showCorrectAnswersOnEnd = Boolean(base.showCorrectAnswersOnEnd);
+  const correctAnswerMap = base.correctAnswers ?? {};
+  base.correctAnswers = correctAnswerMap;
+  base.questions = base.questions?.map((question) => hydrateQuestion(question, correctAnswerMap)) ?? [];
 
   if (base.mode === 'endless') {
     base.questionBatchSize = base.questionBatchSize ?? 10;
@@ -396,7 +411,7 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   return base as TriviaConfigWithTheme;
 }
 
-function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
+function hydrateQuestion(question: TriviaQuestion, correctAnswers: Record<string, string>): TriviaQuestion {
   const hydrated: TriviaQuestion = JSON.parse(JSON.stringify(question));
   hydrated.id = hydrated.id?.trim() || createQuestionId();
   
@@ -428,8 +443,11 @@ function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
   
   // Set correct answer if missing or invalid
   const answerTexts = hydrated.answers.map((a) => a.text);
-  if (!hydrated.correctAnswer || !answerTexts.includes(hydrated.correctAnswer)) {
+  const mappedCorrect = hydrated.correctAnswer ?? correctAnswers[hydrated.id];
+  if (!mappedCorrect || !answerTexts.includes(mappedCorrect)) {
     hydrated.correctAnswer = hydrated.answers[0]?.text || '';
+  } else {
+    hydrated.correctAnswer = mappedCorrect;
   }
   
   return hydrated;
@@ -438,7 +456,20 @@ function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
 async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfig> {
   const clone: TriviaConfig = JSON.parse(JSON.stringify(value));
   const questions = clone.questions ?? [];
-  clone.questions = await Promise.all(questions.map((question) => sanitizeQuestion(question)));
+  const incomingCorrectAnswers = clone.correctAnswers ?? {};
+  const correctAnswerMap: Record<string, string> = {};
+  const sanitizedQuestions = await Promise.all(
+    questions.map(async (question) => {
+      const existing = question.correctAnswer ?? incomingCorrectAnswers[question.id];
+      const { sanitized, correctAnswer } = await sanitizeQuestion(question, existing);
+      if (correctAnswer) {
+        correctAnswerMap[sanitized.id] = correctAnswer;
+      }
+      return sanitized;
+    })
+  );
+  clone.questions = sanitizedQuestions;
+  clone.correctAnswers = correctAnswerMap;
 
   if (clone.mode === 'endless') {
     clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? 10;
@@ -461,11 +492,16 @@ async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfi
   clone.solveThreshold = typeof clone.solveThreshold === 'number' ? clamp(clone.solveThreshold, 0, 1) : undefined;
   clone.theme = sanitizeTheme(clone.theme ?? {});
   clone.powerUps = (clone.powerUps ?? []).map(sanitizePowerUp).filter((p) => !!p.id && !!p.label);
+  clone.showCorrectAnswers = Boolean(clone.showCorrectAnswers);
+  clone.showCorrectAnswersOnEnd = Boolean(clone.showCorrectAnswersOnEnd);
 
   return clone;
 }
 
-async function sanitizeQuestion(question: TriviaQuestion): Promise<TriviaQuestion> {
+async function sanitizeQuestion(
+  question: TriviaQuestion,
+  fallbackCorrectAnswer?: string
+): Promise<{ sanitized: TriviaQuestion; correctAnswer: string }> {
   const sanitized = JSON.parse(JSON.stringify(question)) as TriviaQuestion;
   sanitized.text = sanitized.text?.trim() ?? '';
   sanitized.id = sanitized.id?.trim() || createQuestionId();
@@ -483,7 +519,10 @@ async function sanitizeQuestion(question: TriviaQuestion): Promise<TriviaQuestio
   // Validate correct answer
   const answerTexts = sanitized.answers.map((a) => a.text);
   if (!sanitized.correctAnswer || !answerTexts.includes(sanitized.correctAnswer)) {
-    sanitized.correctAnswer = sanitized.answers[0]?.text || '';
+    const fallback = fallbackCorrectAnswer && answerTexts.includes(fallbackCorrectAnswer)
+      ? fallbackCorrectAnswer
+      : sanitized.answers[0]?.text || '';
+    sanitized.correctAnswer = fallback;
   } else {
     sanitized.correctAnswer = sanitized.correctAnswer.trim();
   }
@@ -497,11 +536,14 @@ async function sanitizeQuestion(question: TriviaQuestion): Promise<TriviaQuestio
   sanitized.category = sanitized.category?.trim() || undefined;
   sanitized.difficulty = sanitized.difficulty || undefined;
 
-  const ensuredSalt = sanitized.salt?.trim() || generateSalt();
+  const ensuredSalt = ensureSalt(sanitized.salt);
   sanitized.salt = ensuredSalt;
   sanitized.hash = await computeAnswerHash(sanitized.id, sanitized.correctAnswer, ensuredSalt);
 
-  return sanitized;
+  const { correctAnswer } = sanitized;
+  delete sanitized.correctAnswer;
+
+  return { sanitized, correctAnswer };
 }
 
 function sanitizeTheme(theme: NonNullable<TriviaConfig['theme']>): NonNullable<TriviaConfig['theme']> {
@@ -542,7 +584,7 @@ function addQuestion() {
 
 function duplicateQuestion(index: number) {
   const question = config.value.questions[index];
-  const duplicate = hydrateQuestion(question);
+  const duplicate = hydrateQuestion(question, config.value.correctAnswers ?? {});
   duplicate.id = createQuestionId();
   config.value.questions.splice(index + 1, 0, duplicate);
 }
@@ -585,7 +627,7 @@ function createEmptyQuestion(): TriviaQuestion {
     text: '',
     answers: [{ text: '' }, { text: '' }],
     correctAnswer: '',
-  } as TriviaQuestion);
+  } as TriviaQuestion, config.value.correctAnswers ?? {});
 }
 
 function createQuestionId() {
@@ -652,38 +694,20 @@ async function persistCandidateToPool(
   candidate: GeneratedCandidate,
   target: 'game' | 'global',
 ): Promise<void> {
-  const question = await sanitizeQuestion(candidate.question);
-  if (!question.id) {
-    question.id = createQuestionId();
+  const { sanitized, correctAnswer } = await sanitizeQuestion(candidate.question);
+  if (!sanitized.id) {
+    sanitized.id = createQuestionId();
   }
   if (target === 'game') {
     if (!props.gameId) {
       throw new Error('A gameId is required to store questions under a game.');
     }
-    const questionRef = doc(collection(db, 'games', props.gameId, 'questions'), question.id);
-    await setDoc(questionRef, question, { merge: true });
+    const questionRef = doc(collection(db, 'games', props.gameId, 'questions'), sanitized.id);
+    await setDoc(questionRef, { ...sanitized, correctAnswer }, { merge: true });
   } else {
-    const questionRef = doc(collection(db, 'xaiQuestions'), question.id);
-    await setDoc(questionRef, question, { merge: true });
+    const questionRef = doc(collection(db, 'xaiQuestions'), sanitized.id);
+    await setDoc(questionRef, { ...sanitized, correctAnswer }, { merge: true });
   }
-}
-
-function generateSalt(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function computeAnswerHash(questionId: string, answerText: string, salt?: string): Promise<string> {
-  const payload = `${questionId}|${answerText}|${salt ?? ''}`;
-  const encoder = new TextEncoder();
-  const msgBuffer = encoder.encode(payload);
-  const keyBuffer = encoder.encode(HASH_SECRET);
-
-  const key = await crypto.subtle.importKey('raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const hashBuffer = await crypto.subtle.sign('HMAC', key, msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 function configNeedsHashing(value: TriviaConfigWithTheme): boolean {

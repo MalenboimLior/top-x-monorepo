@@ -1,0 +1,30 @@
+import * as functions from 'firebase-functions/v2';
+import type { TriviaConfig, TriviaQuestion } from '@top-x/shared/types/trivia';
+declare function sanitizeQuestion(question: TriviaQuestion): Omit<TriviaQuestion, 'correctAnswer'>;
+declare function buildConfigPayload(config: TriviaConfig): {
+    questionIds: string[];
+    questionCount: number;
+    mode: "fixed" | "endless";
+    language?: string;
+    powerUpsActive?: boolean;
+    powerUps?: import("@top-x/shared/types/trivia").TriviaPowerUpRule[];
+    theme?: import("@top-x/shared/types/trivia").TriviaThemeConfig;
+    showCorrectAnswers?: boolean;
+    showCorrectAnswersOnEnd?: boolean;
+    solveThreshold?: number;
+    mustLogin?: boolean;
+    allowRepeats?: boolean;
+    unlimitedLives?: boolean;
+    lives?: number;
+    globalTimer?: import("@top-x/shared/types/trivia").TriviaGlobalTimerConfig;
+    questionBatchSize?: number;
+    isHybrid?: boolean;
+};
+export declare const getTriviaQuestions: functions.https.CallableFunction<any, Promise<{
+    config?: ReturnType<typeof buildConfigPayload>;
+    questions: ReturnType<typeof sanitizeQuestion>[];
+    totalQuestions: number;
+    remainingQuestions: number;
+    hasMore: boolean;
+}>, unknown>;
+export {};

@@ -4,3 +4,4 @@ export { postOnX } from './external/xApi';
 export { submitGameScore } from './handlers/submitGameScore';
 export { claimDailyChallengeRewards } from './handlers/dailyChallengeRewards';
 export { setGameFavorite } from './handlers/gameFavorite';
+export { getTriviaQuestions } from './handlers/getTriviaQuestions';

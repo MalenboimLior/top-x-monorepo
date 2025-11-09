@@ -3,6 +3,7 @@ import AdminShell from '@/layouts/AdminShell.vue';
 import DashboardPage from '@/pages/DashboardPage.vue';
 import GameTypesPage from '@/pages/GameTypesPage.vue';
 import GamesPage from '@/pages/GamesPage.vue';
+import TriviaRehashPage from '@/pages/TriviaRehashPage.vue';
 import HomePageManager from '@/pages/HomePageManager.vue';
 import ContentPage from '@/pages/ContentPage.vue';
 import CommunicationsPage from '@/pages/CommunicationsPage.vue';
@@ -14,6 +15,17 @@ const adminChildren: RouteRecordRaw[] = [
   { path: '', name: 'dashboard', component: DashboardPage, meta: { title: 'Dashboard', requiresAuth: true, requiresAdmin: true } },
   { path: 'game-types', name: 'game-types', component: GameTypesPage, meta: { title: 'Game Types', requiresAuth: true, requiresAdmin: true } },
   { path: 'games', name: 'games', component: GamesPage, meta: { title: 'Games', requiresAuth: true, requiresAdmin: true } },
+  {
+    path: 'games/trivia-rehash',
+    name: 'trivia-rehash',
+    component: TriviaRehashPage,
+    meta: {
+      title: 'Rehash Trivia',
+      subtitle: 'Refresh answer hashes for a Trivia game after rotating secrets.',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
   { path: 'homepage', name: 'homepage', component: HomePageManager, meta: { title: 'Homepage', requiresAuth: true, requiresAdmin: true } },
   { path: 'content', name: 'content', component: ContentPage, meta: { title: 'Content', requiresAuth: true, requiresAdmin: true } },
   { path: 'communications', name: 'communications', component: CommunicationsPage, meta: { title: 'Communications', requiresAuth: true, requiresAdmin: true } },
