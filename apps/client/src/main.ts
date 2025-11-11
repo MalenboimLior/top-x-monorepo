@@ -30,6 +30,13 @@ import {
   faGamepad,
   faTrophy,
   faBolt,
+  faFire,
+  faSkull,
+  faVenus,
+  faLayerGroup,
+  faMap,
+  faFish,
+  faGhost,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -59,6 +66,13 @@ library.add(
   faGamepad,
   faTrophy,
   faBolt,
+  faFire,
+  faSkull,
+  faVenus,
+  faLayerGroup,
+  faMap,
+  faFish,
+  faGhost,
 );
 
 import 'bulma/css/bulma.min.css';

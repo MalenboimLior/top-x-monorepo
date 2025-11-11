@@ -1,62 +1,23 @@
 <!-- Home.vue -->
 <template>
   <div class="home-page section-stack">
-    <section class="hero layout-container">
-      <div class="hero-content">
-             <h1 class="hero-title">{{ t('home.heroTitle') }}</h1>
-        <p class="hero-subtitle">{{ t('home.heroSubtitle') }}</p>
-</div>
-      <!--  <div class="hero-content">
-        <div class="hero-eyebrow">
-          <span class="hero-pill">TOP-X</span>
-          <span class="hero-eyebrow-text">{{ t('home.heroEyebrow') }}</span>
-        </div>
-       <h1 class="hero-title">{{ t('home.heroTitle') }}</h1>
-        <p class="hero-subtitle">{{ t('home.heroSubtitle') }}</p>
-        <div class="hero-actions">
-          <CustomButton
-            type="is-primary is-medium hero-button"
-            :label="t('home.playNow')"
-            @click="scrollToGames"
-          />
-          <button class="hero-link" type="button" @click="scrollToGames">
-            {{ t('home.exploreCollection') }}
-          </button>
-        </div>
-        <dl class="hero-stats">
-          <div class="hero-stat">
-            <dt>{{ formatNumber(heroTopXCount) }}</dt>
-            <dd>{{ t('home.heroStats.topx') }}</dd>
-          </div>
-          <div class="hero-stat">
-            <dt>{{ formatNumber(featuredGames.length) }}</dt>
-            <dd>{{ t('home.heroStats.featured') }}</dd>
-          </div>
-          <div class="hero-stat">
-            <dt>{{ formatNumber(communityLibraryCount) }}</dt>
-            <dd>{{ t('home.heroStats.community') }}</dd>
-          </div>
-        </dl>
-      </div>
-      <div class="hero-visual">
-        <div class="hero-glow"></div>
-        <img src="../assets/topx-logo.png" alt="TOP-X" class="hero-logo" />
-      </div> -->
-    </section>
-
-    <section ref="gamesSection" class="game-section layout-container section-stack">
-      <header class="section-header">
-        <div>
-          <h2 class="section-title">{{ t('home.featuredGames.title') }}</h2>
-          <p class="section-subtitle">{{ t('home.featuredGames.subtitle') }}</p>
-        </div>
-      </header>
-      <div class="game-grid game-grid--featured">
+    <HeroSection @create="goToBuild" @play="scrollToGames" />
+    <GameSection
+      ref="gamesSection"
+      :title="t('home.featuredGames.title')"
+      :subtitle="t('home.featuredGames.subtitle')"
+      :games="featuredGames"
+      :game-stats="gameStats"
+      :items-per-row="3"
+      :initial-rows="1"
+      :rows-increment="1"
+      :empty-message="t('home.featuredGames.empty')"
+      grid-variant="featured"
+    >
+      <template #default="{ game, stats }">
         <GameCard
-          v-for="game in featuredGames"
-          :key="game.id"
           :game="game"
-          :stats="gameStats[game.id]"
+          :stats="stats"
           size="featured"
           show-featured-label
           :featured-label="t('home.labels.featured')"
@@ -64,97 +25,73 @@
           :daily-challenge-label="t('home.labels.dailyChallenge')"
           :play-label="t('home.playNow')"
           button-type="is-primary"
-          @select="navigateToGame"
           @play="navigateToGame"
         />
-      </div>
-      <p v-if="!featuredGames.length" class="empty-state">{{ t('home.featuredGames.empty') }}</p>
-    </section>
-
-    <template v-if="shouldDisplayAds">
-      <ins
-        ref="adSlotRef"
-        class="adsbygoogle"
-        style="display:block; width: 100%; min-height: 250px; margin: 2rem auto;"
-        :data-ad-client="adClient"
-        :data-ad-slot="adSlot"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
-    </template>
-
-    <section class="game-section layout-container section-stack">
-      <header class="section-header">
-        <div>
-          <h2 class="section-title">{{ t('home.topxGames.title') }}</h2>
-          <p class="section-subtitle">{{ topXSortDescription }}</p>
-        </div>
-      </header>
-      <div class="game-grid game-grid--quad">
+      </template>
+    </GameSection>
+    <HowItWorksSection />
+    <GameSection
+      section-id="featuredGames"
+      :title="t('home.topxGames.title')"
+      :subtitle="topXSortDescription"
+      :games="topXGames"
+      :game-stats="gameStats"
+      :items-per-row="4"
+      :initial-rows="1"
+      :rows-increment="1"
+      :empty-message="t('home.topxGames.empty')"
+      grid-variant="quad"
+    >
+      <template #default="{ game, stats }">
         <GameCard
-          v-for="game in topXGames"
-          :key="game.id"
           :game="game"
-          :stats="gameStats[game.id]"
+          :stats="stats"
           :daily-challenge-active="Boolean(game.dailyChallengeActive)"
           :daily-challenge-label="t('home.labels.dailyChallenge')"
           :play-label="t('home.playNow')"
           button-type="is-primary"
-          @select="navigateToGame"
           @play="navigateToGame"
         />
-      </div>
-      <p v-if="!topXGames.length" class="empty-state">{{ t('home.topxGames.empty') }}</p>
-    </section>
-
-    <section class="game-section layout-container section-stack">
-      <header class="section-header">
-        <div>
-          <h2 class="section-title">{{ t('home.communityGames.title') }}</h2>
-          <p class="section-subtitle">{{ communitySortDescription }}</p>
-        </div>
-      </header>
-      <div class="game-grid game-grid--quad">
+      </template>
+    </GameSection>
+    <GameSection
+      :title="t('home.communityGames.title')"
+      :subtitle="communitySortDescription"
+      :games="communityGames"
+      :game-stats="gameStats"
+      :items-per-row="4"
+      :initial-rows="1"
+      :rows-increment="1"
+      :empty-message="t('home.communityGames.empty')"
+      grid-variant="quad"
+    >
+      <template #default="{ game, stats }">
         <GameCard
-          v-for="game in communityGames"
-          :key="game.id"
           :game="game"
-          :stats="gameStats[game.id]"
+          :stats="stats"
           :creator="game.creator"
           :daily-challenge-active="Boolean(game.dailyChallengeActive)"
           :daily-challenge-label="t('home.labels.dailyChallenge')"
           :play-label="t('home.playNow')"
           button-type="is-primary"
-          @select="navigateToGame"
           @play="navigateToGame"
         />
-      </div>
-      <p v-if="!communityGames.length" class="empty-state">{{ t('home.communityGames.empty') }}</p>
-    </section>
+      </template>
+    </GameSection>
 
-    <section class="home-build layout-container section-stack">
-      <header class="section-header">
-        <div>
-          <h2 class="section-title">{{ t('home.buildSection.title') }}</h2>
-          <p class="section-subtitle">{{ t('home.buildSection.subtitle') }}</p>
-        </div>
-        <CustomButton type="is-primary" :label="t('home.buildSection.ctaAll')" @click="goToBuild()" />
-      </header>
-      <div class="build-grid">
-        <button
-          v-for="gameType in orderedGameTypes"
-          :key="gameType.id"
-          type="button"
-          class="build-tile"
-          @click="goToBuild(gameType.id)"
-        >
-          <span class="build-tile__name">{{ gameType.name }}</span>
-          <span class="build-tile__description">{{ gameType.description }}</span>
-          <span class="build-tile__cta">{{ t('home.buildSection.cta') }}</span>
-        </button>
-        <p v-if="!orderedGameTypes.length" class="empty-state">{{ t('home.buildSection.empty') }}</p>
-      </div>
-    </section>
+    <BuildSection
+      :title="t('home.buildSection.title')"
+      :subtitle="t('home.buildSection.subtitle')"
+      :game-types="orderedGameTypes"
+      :primary-cta="t('home.buildSection.ctaAll')"
+      :free-cta="t('home.buildSection.ctaFree')"
+      :tile-cta="t('home.buildSection.cta')"
+      :empty-message="t('home.buildSection.empty')"
+      @open-all="goToBuild()"
+      @open-free="goToBuild()"
+      @select-type="goToBuild"
+    />
+    <AdsenseBlock v-if="shouldDisplayAds" ref="adSlotRef" :client="adClient" :slot="adSlot" />
   </div>
 </template>
 
@@ -174,9 +111,12 @@ import {
   subscribeToGames,
   subscribeToGameStats,
 } from '@/services/game';
-import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import HeroSection from '@/components/home/HeroSection.vue';
+import HowItWorksSection from '@/components/home/HowItWorksSection.vue';
 import GameCard from '@/components/GameCard.vue';
-import fallbackImg from '@/assets/images/fallback.png';
+import GameSection from '@/components/home/GameSection.vue';
+import BuildSection from '@/components/home/BuildSection.vue';
+import AdsenseBlock from '@/components/home/AdsenseBlock.vue';
 import { analytics, trackEvent } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
@@ -184,7 +124,6 @@ import type { HomePageConfig, HomeOrderField, HomeSectionOrder } from '@top-x/sh
 import { defaultHomePageConfig } from '@top-x/shared/types/home';
 import { useLocaleStore } from '@/stores/locale';
 import { pushAdSenseSlot } from '@/utils/googleAdsense';
-import { formatNumber } from '@top-x/shared/utils/format';
 
 const router = useRouter();
 
@@ -193,8 +132,8 @@ const gameStats = reactive<Record<string, Partial<GameStats>>>({});
 const gameTypes = ref<GameType[]>([]);
 const homeConfig = ref<HomePageConfig>({ ...defaultHomePageConfig });
 const configLoaded = ref(false);
-const gamesSection = ref<HTMLElement | null>(null);
-const adSlotRef = ref<HTMLElement | null>(null);
+const gamesSection = ref<{ el: HTMLElement | null } | null>(null);
+const adSlotRef = ref<{ el: HTMLElement | null } | null>(null);
 const hasInitializedAd = ref(false);
 
 const localeStore = useLocaleStore();
@@ -265,7 +204,7 @@ function tryInitializeAdSlot() {
     return;
   }
 
-  const adNode = adSlotRef.value;
+  const adNode = adSlotRef.value?.el;
   if (!adNode) {
     return;
   }
@@ -489,7 +428,8 @@ function navigateToGame(gameId: string, gameTypeId: string) {
 }
 
 function scrollToGames() {
-  gamesSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const sectionEl = gamesSection.value?.el;
+  sectionEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function goToBuild(gameTypeId?: string) {

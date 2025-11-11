@@ -23,15 +23,14 @@
 
       <div class="navbar-menu" :class="{ 'is-active': isMenuActive }">
         <div class="navbar-start">
-        <router-link class="navbar-item" to="/" @click="closeMenu">{{ t('nav.home') }}</router-link>
+        <!-- <router-link class="navbar-item" to="/" @click="closeMenu">{{ t('nav.home') }}</router-link> -->
         <!-- <router-link class="navbar-item" to="/frenemies" @click="closeMenu">
           <font-awesome-icon :icon="['fas', 'search']" class="navbar-icon" />
           Frenemies
         </router-link>        -->
-
-        <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
-        <router-link class="navbar-item" to="/faq" @click="closeMenu">{{ t('nav.faq') }}</router-link>
         <router-link  class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
+        <router-link  class="navbar-item" to="/frenemies" @click="closeMenu">{{ t('nav.frenemies') }}</router-link>
+        <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
         <router-link
          
           class="navbar-item"

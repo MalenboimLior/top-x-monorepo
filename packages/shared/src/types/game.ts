@@ -21,6 +21,14 @@ export type GameCustomConfig =
   | PacmanConfig
   | FisherGameConfig;
 
+export type GameBadgeKey = 'onFire' | 'hardcore' | 'womenOnly';
+
+export interface GameCreator {
+  userid: string;
+  username: string;
+  image?: string;
+}
+
 export interface Game {
   id: string;
   name: string;
@@ -37,9 +45,13 @@ export interface Game {
   shareLink?: string;
   image: string;
   vip: string[];
+  /** Optional visual badges applied by admins */
+  badges?: GameBadgeKey[];
+  /** Limit exposure of a game to direct links only */
+  unlisted?: boolean;
   /** Union of possible config payloads. TriviaConfig now includes fixed/endless metadata. */
   custom: GameCustomConfig;
-  creator?: { userid: string; username: string };
+  creator?: GameCreator;
   community?: boolean;
   hideFromHome?: boolean;
   dailyChallengeActive?: boolean;

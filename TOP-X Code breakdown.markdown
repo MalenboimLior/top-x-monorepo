@@ -50,10 +50,12 @@ Style: Mobile-first, dark theme inspired by X (Twitter)
 
 Rewrite code check list:
 1. 📦check apps/client/src/stores/locale.ts 
-2. 📦Firebase index
-3. 📦upgrade analytics
 4. 📦📦Fix home page
 5. 📦📦remove content system
+
+
+2. 📦Firebase index
+3. 📦upgrade analytics
 7. 📦check Sync on X and Post on X
 11. 🧩daily chalange rewrite
 12. 🎮Trivia logic
@@ -62,6 +64,7 @@ Rewrite code check list:
 17. 📦add followers / following 
 18. 🧩sepreate game logic as much as possible 
 19.  make db ruls to keep trivia game secure and all other collections
+20 - unlisted
 
 done
 6. 🧩Leaderboard service not function
