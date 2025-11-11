@@ -34,12 +34,12 @@
             <CustomButton
               v-else-if="isLoggedIn && !isFrenemy"
               type="is-primary"
-              label="Add Frenemy"
+              label="Follow"
               :icon="['fas', 'user-plus']"
               @click="addFrenemy(profile?.uid || '')"
             />
-            <p v-else-if="!isLoggedIn" class="profile-card__hint">Login to add frenemy</p>
-            <p v-else class="profile-card__hint">Already frenemies</p>
+            <p v-else-if="!isLoggedIn" class="profile-card__hint">Log in to follow users</p>
+            <p v-else class="profile-card__hint">Already following</p>
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@
             :class="{ active: activeTab === 'frenemies' }"
             @click="setActiveTab('frenemies')"
           >
-            Frenemies ({{ userStore.profile?.frenemies?.length || 0 }})
+            Following ({{ userStore.profile?.frenemies?.length || 0 }})
           </button>
           <button
             v-if="isOwnProfile"
@@ -184,8 +184,8 @@
         </div>
 
         <div v-if="activeTab === 'frenemies' && isOwnProfile" class="profile-panel">
-          <div v-if="loadingFrenemies" class="profile-empty">Loading frenemies...</div>
-          <div v-else-if="!frenemyEntries.length" class="profile-empty">No frenemies added yet.</div>
+          <div v-if="loadingFrenemies" class="profile-empty">Loading following...</div>
+          <div v-else-if="!frenemyEntries.length" class="profile-empty">You're not following anyone yet.</div>
           <div v-else class="profile-list">
             <article v-for="entry in frenemyEntries" :key="entry.uid" class="profile-list-item">
               <div class="profile-list-item__avatar">
@@ -206,13 +206,13 @@
             </article>
           </div>
           <div class="profile-panel__cta">
-            <CustomButton type="is-primary" label="Search more frenemies" @click="searchMoreFrenemies" />
+            <CustomButton type="is-primary" label="Find users to follow" @click="searchMoreFrenemies" />
           </div>
         </div>
 
         <div v-if="activeTab === 'whoadded' && isOwnProfile" class="profile-panel">
           <div v-if="loadingAddedBy" class="profile-empty">Loading...</div>
-          <div v-else-if="!addedByEntries.length" class="profile-empty">No one has added you as a frenemy yet.</div>
+          <div v-else-if="!addedByEntries.length" class="profile-empty">No one is following you yet.</div>
           <div v-else class="profile-list">
             <article v-for="entry in addedByEntries" :key="entry.uid" class="profile-list-item">
               <div class="profile-list-item__avatar">
@@ -226,11 +226,11 @@
                 <CustomButton
                   v-if="isOwnProfile && !userStore.profile?.frenemies?.includes(entry.uid)"
                   type="is-primary is-small"
-                  label="Add to Frenemies"
+                  label="Follow back"
                   @click="addFrenemy(entry.uid)"
                   :disabled="!isOwnProfile"
                 />
-                <p v-else-if="isOwnProfile" class="profile-card__hint">Already Frenemies</p>
+                <p v-else-if="isOwnProfile" class="profile-card__hint">Already following</p>
               </div>
             </article>
           </div>
@@ -242,7 +242,7 @@
       <div class="profile-login-banner__content" @click.stop>
         <p class="profile-login-banner__title">Unlock Your Profile? 🧐</p>
         <p class="profile-login-banner__text">
-          Log in to reveal your picks, stats and frenemies' results!<br />
+          Log in to reveal your picks, stats and followers' results!<br />
           Just your X username + pic - we promise, no meddling with your account! 🔒
         </p>
         <CustomButton
@@ -281,7 +281,7 @@ const route = useRoute();
 useHead({
   title: 'Your Profile - TOP-X',
   meta: [
-    { name: 'description', content: 'View your TOP-X profile, stats and frenemies.' },
+    { name: 'description', content: 'View your TOP-X profile, stats and followers.' },
   ],
 });
 
@@ -455,7 +455,7 @@ async function fetchFrenemies() {
     const frenemyDocs = await Promise.all(frenemyPromises);
     frenemyEntries.value = frenemyDocs.filter((docItem) => docItem.exists()).map((docItem) => docItem.data() as User);
   } catch (err) {
-    console.error('Error fetching frenemies:', err);
+    console.error('Error fetching following list:', err);
   } finally {
     loadingFrenemies.value = false;
   }
@@ -518,7 +518,7 @@ function setActiveTab(tab: string) {
 }
 
 function searchMoreFrenemies() {
-  router.push('/frenemies');
+  router.push('/users');
 }
 
 async function loadAvailableGames() {

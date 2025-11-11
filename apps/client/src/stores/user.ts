@@ -246,8 +246,8 @@ export const useUserStore = defineStore('user', () => {
 
   async function addFrenemy(frenemyUid: string) {
     if (!user.value || frenemyUid === user.value.uid) {
-      console.log('Cannot add frenemy: no user logged in or same user');
-      error.value = 'Cannot add yourself as a frenemy';
+      console.log('Cannot follow user: no user logged in or same user');
+      error.value = 'Cannot follow yourself';
       return;
     }
     try {
@@ -263,11 +263,11 @@ export const useUserStore = defineStore('user', () => {
       const frenemyDocRef = doc(db, 'users', frenemyUid);
       const frenemyDocSnap = await getDoc(frenemyDocRef);
       if (!frenemyDocSnap.exists()) {
-        console.error('Frenemy document does not exist:', frenemyUid);
-        error.value = 'Frenemy not found';
+        console.error('Target user document does not exist:', frenemyUid);
+        error.value = 'User not found';
         return;
       }
-      console.log('Frenemy document state:', frenemyDocSnap.data());
+      console.log('Target user document state:', frenemyDocSnap.data());
       try {
         await updateDoc(userDocRef, {
           frenemies: arrayUnion(frenemyUid),
@@ -288,10 +288,10 @@ export const useUserStore = defineStore('user', () => {
         await updateDoc(frenemyDocRef, {
           addedBy: arrayUnion(user.value.uid),
         });
-        console.log(`Successfully updated frenemy ${frenemyUid} addedBy with ${user.value.uid}`);
+        console.log(`Successfully updated user ${frenemyUid} addedBy with ${user.value.uid}`);
         trackEvent(analytics, 'user_action', { action: 'add_frenemy', frenemy_uid: frenemyUid });
       } catch (err: any) {
-        console.error('Error updating frenemy addedBy:', {
+        console.error('Error updating user addedBy:', {
           userId: user.value.uid,
           frenemyUid,
           message: err.message,
@@ -303,7 +303,7 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (err: any) {
       error.value = err.message;
-      console.error('Failed to add frenemy:', {
+      console.error('Failed to follow user:', {
         userId: user.value.uid,
         frenemyUid,
         message: err.message,
@@ -328,10 +328,10 @@ export const useUserStore = defineStore('user', () => {
       await updateDoc(frenemyDocRef, {
         addedBy: arrayRemove(user.value.uid),
       });
-      console.log(`Removed frenemy ${frenemyUid} for user ${user.value.uid}`);
+      console.log(`Removed following ${frenemyUid} for user ${user.value.uid}`);
       trackEvent(analytics, 'user_action', { action: 'remove_frenemy', frenemy_uid: frenemyUid });
     } catch (err: any) {
-      console.error('Error removing frenemy:', err);
+      console.error('Error removing following user:', err);
       error.value = err.message;
     }
   }

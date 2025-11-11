@@ -20,7 +20,7 @@
           <CustomButton
             v-if="user && user.uid !== vote.uid && !frenemies.includes(vote.uid)"
             type="is-primary is-small"
-            label="Add to Frenemies"
+            label="Follow"
             @click="addFrenemy(vote.uid)"
           />
         </div>
@@ -41,10 +41,10 @@
     </div>
 
     <div v-if="user" class="has-text-centered mt-4">
-      <p class="has-text-white">Can't spot your pals? Time to hunt for more frenemies!</p>
+      <p class="has-text-white">Can't spot your pals? Time to find more users to follow!</p>
       <CustomButton
         type="is-primary"
-        label="Search more frenemies"
+        label="Find users to follow"
         @click="searchFrenemies"
       />
     </div>
@@ -180,15 +180,15 @@ async function addFrenemy(uid: string) {
   try {
     await userStore.addFrenemy(uid);
   } catch (err) {
-    console.error('Error adding frenemy:', err);
+    console.error('Error following user:', err);
   }
 }
 
 function searchFrenemies() {
   if (analytics) {
-    logEvent(analytics, 'user_action', { action: 'search_frenemies', game_id: props.gameId });
+    logEvent(analytics, 'user_action', { action: 'search_users', game_id: props.gameId });
   }
-  router.push('/frenemies');
+  router.push('/users');
 }
 </script>
 
