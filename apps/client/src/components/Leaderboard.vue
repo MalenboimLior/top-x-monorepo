@@ -65,7 +65,7 @@
                 <CustomButton
                   v-if="entry.uid !== currentUserId && !frenemiesSet.has(entry.uid)"
                   type="is-link is-small"
-                  label="Add Frenemy"
+                  label="Follow"
                   :icon="['fas', 'user-plus']"
                   @click="handleAddFrenemy(entry.uid)"
                 />

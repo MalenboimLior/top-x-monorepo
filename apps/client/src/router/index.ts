@@ -11,7 +11,8 @@ const ContactUs = () => import('@/views/ContactUs.vue');
 const FAQ = () => import('@/views/FAQ.vue');
 const Trivia = () => import('@/views/games/Trivia.vue');
 const PyramidTier = () => import('@/views/games/PyramidTier.vue');
-const FrenemySearch = () => import('@/views/FrenemySearch.vue');
+const Users = () =>
+  import(/* webpackChunkName: "users" */ '@/views/FrenemySearch.vue');
 const ZoneReveal = () => import('@/views/games/ZoneReveal.vue');
 const Build = () => import('@/views/Build.vue');
 const GameInfo = () => import('@/views/GameInfo.vue');
@@ -66,10 +67,9 @@ const routes = [
   },
 
   {
-    path: '/frenemies',
-    name: 'FrenemySearch',
-    component: () =>
-      import(/* webpackChunkName: "frenemy-search" */ '@/views/FrenemySearch.vue'),
+    path: '/users',
+    name: 'Users',
+    component: Users,
   },
   {
     path: '/games/trivia',
