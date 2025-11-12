@@ -8,9 +8,9 @@
       :subtitle="t('home.featuredGames.subtitle')"
       :games="featuredGames"
       :game-stats="gameStats"
-      :items-per-row="3"
-      :initial-rows="1"
-      :rows-increment="1"
+      :items-per-row="featuredItemsPerRow"
+      :initial-rows="featuredRows"
+      :rows-increment="featuredRows"
       :empty-message="t('home.featuredGames.empty')"
       grid-variant="featured"
     >
@@ -36,8 +36,9 @@
       :subtitle="topXSortDescription"
       :games="topXGames"
       :game-stats="gameStats"
-      :items-per-row="4"
-      :initial-rows="1"
+      :items-per-row="topXItemsPerRow"
+      :initial-rows="topXInitialRows"
+      :max-rows="topXMaxRows"
       :rows-increment="1"
       :empty-message="t('home.topxGames.empty')"
       grid-variant="quad"
@@ -59,8 +60,9 @@
       :subtitle="communitySortDescription"
       :games="communityGames"
       :game-stats="gameStats"
-      :items-per-row="4"
-      :initial-rows="1"
+      :items-per-row="communityItemsPerRow"
+      :initial-rows="communityInitialRows"
+      :max-rows="communityMaxRows"
       :rows-increment="1"
       :empty-message="t('home.communityGames.empty')"
       grid-variant="quad"
@@ -120,7 +122,7 @@ import AdsenseBlock from '@/components/home/AdsenseBlock.vue';
 import { analytics, trackEvent } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
-import type { HomePageConfig, HomeOrderField, HomeSectionOrder } from '@top-x/shared/types/home';
+import type { HomeCollectionConfig, HomePageConfig, HomeOrderField, HomeSectionOrder } from '@top-x/shared/types/home';
 import { defaultHomePageConfig } from '@top-x/shared/types/home';
 import { useLocaleStore } from '@/stores/locale';
 import { pushAdSenseSlot } from '@/utils/googleAdsense';
@@ -230,6 +232,25 @@ function normalizeHomeConfig(raw: Partial<HomePageConfig> | undefined): HomePage
     }
     return fallback ?? null;
   };
+  const resolveMaxRowsField = (configSection: Partial<HomeCollectionConfig> | undefined, fallback: number | null | undefined) => {
+    const candidate = (configSection?.maxRows ?? (configSection as { rows?: unknown })?.rows) as unknown;
+    if (candidate === null) {
+      return null;
+    }
+    if (typeof candidate === 'number' && Number.isFinite(candidate) && candidate > 0) {
+      return Math.floor(candidate);
+    }
+    return fallback ?? null;
+  };
+  const resolveItemsPerRowField = (value: unknown, fallback: number | null | undefined) => {
+    if (value === null) {
+      return null;
+    }
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return Math.floor(value);
+    }
+    return fallback ?? null;
+  };
   if (!raw) {
     return base;
   }
@@ -240,10 +261,14 @@ function normalizeHomeConfig(raw: Partial<HomePageConfig> | undefined): HomePage
     topX: {
       sort: raw.topX?.sort ?? base.topX.sort,
       limit: resolveLimit(raw.topX?.limit, base.topX.limit),
+      maxRows: resolveMaxRowsField(raw.topX, base.topX.maxRows),
+      itemsPerRow: resolveItemsPerRowField(raw.topX?.itemsPerRow, base.topX.itemsPerRow),
     },
     community: {
       sort: raw.community?.sort ?? base.community.sort,
       limit: resolveLimit(raw.community?.limit, base.community.limit),
+      maxRows: resolveMaxRowsField(raw.community, base.community.maxRows),
+      itemsPerRow: resolveItemsPerRowField(raw.community?.itemsPerRow, base.community.itemsPerRow),
     },
     hiddenGameIds: Array.isArray(raw.hiddenGameIds) ? [...raw.hiddenGameIds] : base.hiddenGameIds,
     build: {
@@ -319,18 +344,7 @@ onMounted(() => {
   }
 });
 
-const hiddenGameIds = computed(() => {
-  const hidden = new Set<string>();
-  for (const id of homeConfig.value.hiddenGameIds) {
-    hidden.add(id);
-  }
-  for (const game of games.value) {
-    if (game.hideFromHome) {
-      hidden.add(game.id);
-    }
-  }
-  return hidden;
-});
+const hiddenGameIds = computed(() => new Set(homeConfig.value.hiddenGameIds));
 
 const visibleGames = computed(() => games.value.filter((game) => !hiddenGameIds.value.has(game.id)));
 
@@ -394,16 +408,27 @@ function sortGames(gamesToSort: Game[], order: HomeSectionOrder): Game[] {
   return sorted;
 }
 
+function resolveSectionLimit(configSection: HomeCollectionConfig): number | null {
+  const layoutLimit =
+    configSection.maxRows && configSection.itemsPerRow
+      ? Math.max(0, configSection.maxRows) * Math.max(0, configSection.itemsPerRow)
+      : null;
+  if (typeof configSection.limit === 'number' && configSection.limit >= 0) {
+    return layoutLimit !== null ? Math.min(configSection.limit, layoutLimit) : configSection.limit;
+  }
+  return layoutLimit;
+}
+
 const topXGames = computed(() => {
   const sorted = sortGames(topXLibrary.value, homeConfig.value.topX.sort);
-  const limit = homeConfig.value.topX.limit ?? sorted.length;
-  return sorted.slice(0, limit);
+  const limit = resolveSectionLimit(homeConfig.value.topX);
+  return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;
 });
 
 const communityGames = computed(() => {
   const sorted = sortGames(communityLibrary.value, homeConfig.value.community.sort);
-  const limit = homeConfig.value.community.limit ?? sorted.length;
-  return sorted.slice(0, limit);
+  const limit = resolveSectionLimit(homeConfig.value.community);
+  return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;
 });
 
 const orderedGameTypes = computed(() => {
@@ -421,6 +446,34 @@ const orderedGameTypes = computed(() => {
     .sort((a, b) => a.name.localeCompare(b.name));
   return [...prioritized, ...remaining];
 });
+
+const featuredRows = 1;
+const featuredItemsPerRow = 3;
+
+function normalizePositiveInt(value: number | null | undefined, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+  return fallback;
+}
+
+function resolveMaxRows(value: number | null | undefined, fallback: number): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+  if (value === null) {
+    return undefined;
+  }
+  return fallback;
+}
+
+const topXMaxRows = computed(() => resolveMaxRows(homeConfig.value.topX.maxRows, 2));
+const topXItemsPerRow = computed(() => normalizePositiveInt(homeConfig.value.topX.itemsPerRow, 4));
+const topXInitialRows = computed(() => Math.min(1, topXMaxRows.value ?? 1));
+
+const communityMaxRows = computed(() => resolveMaxRows(homeConfig.value.community.maxRows, 2));
+const communityItemsPerRow = computed(() => normalizePositiveInt(homeConfig.value.community.itemsPerRow, 4));
+const communityInitialRows = computed(() => Math.min(1, communityMaxRows.value ?? 1));
 
 function navigateToGame(gameId: string, gameTypeId: string) {
   trackEvent(analytics, 'select_game', { game_id: gameId });
@@ -467,3 +520,4 @@ onBeforeUnmount(() => {
 <style scoped>
 @import '../styles/Home.css';
 </style>
+

@@ -50,7 +50,6 @@ Style: Mobile-first, dark theme inspired by X (Twitter)
 
 Rewrite code check list:
 1. 📦check apps/client/src/stores/locale.ts 
-4. 📦📦Fix home page
 5. 📦📦remove content system
 
 
@@ -75,3 +74,5 @@ done
 8. 🧩rewrite favorite feature 
 9. 🧩rewrite game counter feature
 10. 🧩rewrite submit socre
+
+4. 📦📦Fix home page

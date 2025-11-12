@@ -256,7 +256,6 @@ async function logout() {
   gap: 0.75rem;
   font-weight: 500;
   font-size: 0.95rem;
-  color: rgba(248, 250, 252, 0.85);
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease,
     transform 0.2s ease;
 }
