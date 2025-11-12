@@ -29,12 +29,10 @@ import { computed } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import { usePageContentDoc } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
 
 const router = useRouter();
 const localeStore = useLocaleStore();
-const locale = computed(() => localeStore.language || 'en');
 const t = (key: string) => localeStore.translate(key);
 
 const defaultContent = computed(() => ({
@@ -63,66 +61,13 @@ const defaultContent = computed(() => ({
   },
 }));
 
-const defaultSeo = computed(() => ({
+const seo = computed(() => ({
   title: t('terms.meta.title'),
   description: t('terms.meta.description'),
   keywords: t('terms.meta.keywords'),
 }));
 
-const { content: remoteContent, seo: remoteSeo } = usePageContentDoc('terms', locale);
-
-const content = computed(() => {
-  const defaults = defaultContent.value;
-  const data = remoteContent.value;
-
-  const sections: { title: string; body: string }[] = [];
-  let index = 1;
-  while (true) {
-    const titleKey = `sections.${index}.title`;
-    const bodyKey = `sections.${index}.body`;
-    const defaultSection = defaults.sections[index - 1];
-    const title = data[titleKey] ?? defaultSection?.title;
-    const body = data[bodyKey] ?? defaultSection?.body;
-    if (!title && !body) {
-      if (!defaultSection) {
-        break;
-      }
-    }
-    if (title || body) {
-      sections.push({
-        title: title ?? '',
-        body: body ?? '',
-      });
-    }
-    if (!defaultSection && !data[titleKey] && !data[bodyKey]) {
-      break;
-    }
-    index += 1;
-  }
-
-  return {
-    hero: {
-      pill: data['hero.pill'] ?? defaults.hero.pill,
-      title: data['hero.title'] ?? defaults.hero.title,
-      subtitle: data['hero.subtitle'] ?? defaults.hero.subtitle,
-    },
-    sections: sections.length ? sections : defaults.sections,
-    cta: {
-      label: data['cta.label'] ?? defaults.cta.label,
-      href: data['cta.href'] ?? defaults.cta.href,
-    },
-  };
-});
-
-const seo = computed(() => {
-  const defaults = defaultSeo.value;
-  const overrides = remoteSeo.value;
-  return {
-    title: overrides.title || defaults.title,
-    description: overrides.description || defaults.description,
-    keywords: overrides.keywords || defaults.keywords,
-  };
-});
+const content = defaultContent;
 
 useHead(() => ({
   title: seo.value.title,

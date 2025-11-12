@@ -5,7 +5,6 @@ import GameTypesPage from '@/pages/GameTypesPage.vue';
 import GamesPage from '@/pages/GamesPage.vue';
 import TriviaRehashPage from '@/pages/TriviaRehashPage.vue';
 import HomePageManager from '@/pages/HomePageManager.vue';
-import ContentPage from '@/pages/ContentPage.vue';
 import CommunicationsPage from '@/pages/CommunicationsPage.vue';
 import SettingsPage from '@/pages/SettingsPage.vue';
 import LoginPage from '@/pages/LoginPage.vue';
@@ -27,7 +26,6 @@ const adminChildren: RouteRecordRaw[] = [
     },
   },
   { path: 'homepage', name: 'homepage', component: HomePageManager, meta: { title: 'Homepage', requiresAuth: true, requiresAdmin: true } },
-  { path: 'content', name: 'content', component: ContentPage, meta: { title: 'Content', requiresAuth: true, requiresAdmin: true } },
   { path: 'communications', name: 'communications', component: CommunicationsPage, meta: { title: 'Communications', requiresAuth: true, requiresAdmin: true } },
   { path: 'settings', name: 'settings', component: SettingsPage, meta: { title: 'Settings', requiresAuth: true, requiresAdmin: true } },
 ];
