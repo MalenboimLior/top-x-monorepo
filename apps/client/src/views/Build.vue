@@ -112,7 +112,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useUserStore } from '@/stores/user';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db, usePageContentDoc } from '@top-x/shared';
+import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
@@ -126,7 +126,6 @@ const selectedGameType = ref<GameType | null>(null);
 const selectedGame = ref<Game | null>(null);
 
 const localeStore = useLocaleStore();
-const locale = computed(() => localeStore.language || 'en');
 const t = (key: string) => localeStore.translate(key);
 
 const defaultContent = computed(() => ({
@@ -166,65 +165,13 @@ const defaultContent = computed(() => ({
   },
 }));
 
-const defaultSeo = computed(() => ({
+const seo = computed(() => ({
   title: t('build.meta.title'),
   description: t('build.meta.description'),
   keywords: t('build.meta.keywords'),
 }));
 
-const { content: remoteContent, seo: remoteSeo } = usePageContentDoc('build', locale);
-
-const content = computed(() => {
-  const defaults = defaultContent.value;
-  const data = remoteContent.value;
-
-  return {
-    hero: {
-      pill: data['hero.pill'] ?? defaults.hero.pill,
-      title: data['hero.title'] ?? defaults.hero.title,
-      subtitle: data['hero.subtitle'] ?? defaults.hero.subtitle,
-    },
-    heroCta: {
-      reminder: data['hero.cta.reminder'] ?? defaults.heroCta.reminder,
-      button: data['hero.cta.button'] ?? defaults.heroCta.button,
-    },
-    stats: {
-      templatesLabel: data['stats.templates.label'] ?? defaults.stats.templatesLabel,
-      gamesLabel: data['stats.games.label'] ?? defaults.stats.gamesLabel,
-    },
-    locked: {
-      title: data['locked.title'] ?? defaults.locked.title,
-      body: data['locked.body'] ?? defaults.locked.body,
-      button: data['locked.button'] ?? defaults.locked.button,
-    },
-    templates: {
-      title: data['templates.title'] ?? defaults.templates.title,
-      subtitle: data['templates.subtitle'] ?? defaults.templates.subtitle,
-      empty: data['templates.empty'] ?? defaults.templates.empty,
-    },
-    games: {
-      title: data['games.title'] ?? defaults.games.title,
-      subtitle: data['games.subtitle'] ?? defaults.games.subtitle,
-      empty: data['games.empty'] ?? defaults.games.empty,
-    },
-    editor: {
-      back: data['editor.back'] ?? defaults.editor.back,
-      headingCreate: data['editor.heading.create'] ?? defaults.editor.headingCreate,
-      headingEdit: data['editor.heading.edit'] ?? defaults.editor.headingEdit,
-      subtitle: data['editor.subtitle'] ?? defaults.editor.subtitle,
-    },
-  };
-});
-
-const seo = computed(() => {
-  const defaults = defaultSeo.value;
-  const overrides = remoteSeo.value;
-  return {
-    title: overrides.title || defaults.title,
-    description: overrides.description || defaults.description,
-    keywords: overrides.keywords || defaults.keywords,
-  };
-});
+const content = defaultContent;
 
 const editorHeading = computed(() => {
   const templateName = selectedGameType.value?.name ?? '';

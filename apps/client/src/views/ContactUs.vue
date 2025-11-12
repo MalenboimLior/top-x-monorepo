@@ -38,13 +38,11 @@ import { computed } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import { usePageContentDoc } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
 
 const localeStore = useLocaleStore();
 const router = useRouter();
 
-const locale = computed(() => localeStore.language || 'en');
 const t = (key: string) => localeStore.translate(key);
 
 const defaultContent = computed(() => ({
@@ -73,57 +71,13 @@ const defaultContent = computed(() => ({
   },
 }));
 
-const defaultSeo = computed(() => ({
+const seo = computed(() => ({
   title: t('contact.meta.title'),
   description: t('contact.meta.description'),
   keywords: t('contact.meta.keywords'),
 }));
 
-const { content: remoteContent, seo: remoteSeo } = usePageContentDoc('contact', locale);
-
-const content = computed(() => {
-  const defaults = defaultContent.value;
-  const data = remoteContent.value;
-
-  const hero = {
-    pill: data['hero.pill'] ?? defaults.hero.pill,
-    title: data['hero.title'] ?? defaults.hero.title,
-    subtitle: data['hero.subtitle'] ?? defaults.hero.subtitle,
-  };
-
-  const talkSection = {
-    title: data['sections.talk.title'] ?? defaults.sections[0].title,
-    body: data['sections.talk.body'] ?? defaults.sections[0].body,
-    linkLabel: data['sections.talk.linkLabel'] ?? defaults.sections[0].linkLabel,
-    linkHref: data['sections.talk.linkHref'] ?? defaults.sections[0].linkHref,
-  };
-
-  const followSection = {
-    title: data['sections.follow.title'] ?? defaults.sections[1].title,
-    body: data['sections.follow.body'] ?? defaults.sections[1].body,
-    linkLabel: data['sections.follow.linkLabel'] ?? defaults.sections[1].linkLabel,
-    linkHref: data['sections.follow.linkHref'] ?? defaults.sections[1].linkHref,
-  };
-
-  return {
-    hero,
-    sections: [talkSection, followSection],
-    cta: {
-      label: data['cta.label'] ?? defaults.cta.label,
-      href: data['cta.href'] ?? defaults.cta.href,
-    },
-  };
-});
-
-const seo = computed(() => {
-  const defaults = defaultSeo.value;
-  const overrides = remoteSeo.value;
-  return {
-    title: overrides.title || defaults.title,
-    description: overrides.description || defaults.description,
-    keywords: overrides.keywords || defaults.keywords,
-  };
-});
+const content = defaultContent;
 
 useHead(() => ({
   title: seo.value.title,
