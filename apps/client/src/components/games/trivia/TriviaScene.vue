@@ -394,7 +394,7 @@ const onAnswer = (index: number) => emit('answer-question', index);
 .scene-hud {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   background: rgba(10, 12, 25, 0.75);
   border-radius: 18px;
   padding: 1.5rem;
@@ -599,11 +599,79 @@ const onAnswer = (index: number) => emit('answer-question', index);
 
 @media (max-width: 768px) {
   .scene-hud {
-    padding: 1.25rem;
+    padding: 1rem 1.1rem;
+    gap: 1rem;
   }
 
   .hud-main {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .hud-group {
+    min-width: 0;
+    padding: 0.65rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .hud-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+  }
+
+  .hud-value {
+    font-size: 1.2rem;
+  }
+
+  .hud-sub {
+    font-size: 0.65rem;
+  }
+
+  .lives {
+    font-size: 1.1rem;
+    gap: 0.25rem;
+  }
+
+  .hud-progress {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .timer-wrapper {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+  }
+
+  .timer-circle {
+    width: 72px;
+    height: 72px;
+  }
+
+  .timer-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+
+  .question-progress,
+  .global-timer {
+    flex: 1 0 150px;
+    min-width: 0;
+  }
+
+  .progress-label {
+    font-size: 0.75rem;
+  }
+
+  .progress-bar {
+    height: 6px;
   }
 }
 </style>

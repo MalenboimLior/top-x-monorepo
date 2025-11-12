@@ -4,6 +4,12 @@ type Direction = 'ltr' | 'rtl';
 
 type LocaleMessages = Record<string, string>;
 
+type GameTypeContent = {
+  displayName: string;
+  instructions: string;
+  images: string[];
+};
+
 const LOCAL_STORAGE_KEY = 'topx.locale.preferredLanguage';
 
 function normalizeLanguage(language: string | null | undefined): 'en' | 'il' {
@@ -78,17 +84,88 @@ const staticLocaleMessages = Object.entries(localeModules).reduce(
 const FALLBACK_LANGUAGE = 'en';
 const fallbackMessages = staticLocaleMessages[FALLBACK_LANGUAGE] ?? {};
 
+const GAME_TYPE_CONTENT: Record<'en' | 'il', Record<string, GameTypeContent>> = {
+  en: {
+    pyramid: {
+      displayName: 'Pyramid Rankings',
+      instructions: 'Stack your picks from top-tier icons to the bottom rung. Every placement shifts the vibe—choose wisely before you lock it in.',
+      images: ['/assets/fallback.png'],
+    },
+    pyramidtier: {
+      displayName: 'Tier Pyramid',
+      instructions: 'Drag and drop your roster into tiers from S to C. Shuffle until the crowd agrees and publish your final board.',
+      images: ['/assets/fallback.png'],
+    },
+    trivia: {
+      displayName: 'Trivia Clash',
+      instructions: 'Answer fast, answer bold. Each correct hit boosts your streak; miss one and the leaderboard gets spicy.',
+      images: ['/assets/fallback.png'],
+    },
+    zonereveal: {
+      displayName: 'Zone Reveal',
+      instructions: 'Uncover the map before time runs out. Tap, reveal, and guess the mystery zone with the fewest clues possible.',
+      images: ['/assets/zonereveal/level1.jpg', '/assets/zonereveal/heart_icon.png'],
+    },
+    pacman: {
+      displayName: 'Pac-X Chase',
+      instructions: 'Collect the dots, dodge the ghosts, and snag the power-ups. Classic arcade energy with slick TOP-X styling.',
+      images: ['/assets/fallback.png'],
+    },
+    fishergame: {
+      displayName: 'Fishing Frenzy',
+      instructions: 'Cast your line, hook the rares, and rack up a record haul before the timer dries up.',
+      images: ['/assets/fallback.png'],
+    },
+  },
+  il: {
+    pyramid: {
+      displayName: 'דירוג פירמידה',
+      instructions: 'סדרו את הבחירות מראש הפסגה עד הבסיס. כל מיקום משנה את האווירה – בחרו חכם לפני שסוגרים.',
+      images: ['/assets/fallback.png'],
+    },
+    pyramidtier: {
+      displayName: 'פירמידת טיארים',
+      instructions: 'גררו ושחררו את הרשימה שלכם לטיארים מ־S עד C. תעדכנו עד שהחברים מרוצים ואז מפרסמים.',
+      images: ['/assets/fallback.png'],
+    },
+    trivia: {
+      displayName: 'טריוויה על אש גבוהה',
+      instructions: 'עונים מהר ובבטחון. כל פגיעה מדויקת מעלה את הרצף שלכם; טעות אחת ומישהו אחר קופץ לראשות הטבלה.',
+      images: ['/assets/fallback.png'],
+    },
+    zonereveal: {
+      displayName: 'חשיפת אזורים',
+      instructions: 'מגלים את המפה לפני שהזמן אוזל. מקישים, חושפים ומנחשים את האזור הסודי עם כמה שפחות רמזים.',
+      images: ['/assets/zonereveal/level1.jpg', '/assets/zonereveal/heart_icon.png'],
+    },
+    pacman: {
+      displayName: 'Pac-X רודפים',
+      instructions: 'אוספים את הנקודות, מתחמקים מהרוחות ולוכדים בוסטרים. נוסטלגיה ארקייד עם סטייל של TOP-X.',
+      images: ['/assets/fallback.png'],
+    },
+    fishergame: {
+      displayName: 'טירוף דייג',
+      instructions: 'מטילים חכה, תופסים נדירים ומעמיסים ניקוד לפני שהשעון עוצר.',
+      images: ['/assets/fallback.png'],
+    },
+  },
+};
+
+const fallbackGameTypeContent = GAME_TYPE_CONTENT[FALLBACK_LANGUAGE];
+
 interface LocaleState {
   language: string;
   direction: Direction;
   messages: LocaleMessages;
   initialized: boolean;
+  gameTypeContent: Record<string, GameTypeContent>;
 }
 
 interface LocaleActions {
   initialize(): Promise<void>;
   setLanguage(language: string): Promise<void>;
   translate(key: string): string;
+  getGameTypeContent(gameTypeId: string): GameTypeContent | null;
 }
 
 async function detectPreferredLanguage(): Promise<string> {
@@ -172,6 +249,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
     direction: 'ltr',
     messages: fallbackMessages,
     initialized: false,
+    gameTypeContent: fallbackGameTypeContent,
   }),
   actions: {
     async initialize() {
@@ -300,6 +378,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       
       // Load locale messages
       this.messages = await loadLocaleMessages(this.language);
+      this.gameTypeContent = GAME_TYPE_CONTENT[this.language as 'en' | 'il'] ?? fallbackGameTypeContent;
       
       // Save to cache
       persistLanguage(this.language);
@@ -328,6 +407,25 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         console.warn('[locale] Missing translation for key', key, 'in language', this.language);
       }
       return key;
+    },
+    getGameTypeContent(gameTypeId: string): GameTypeContent | null {
+      const normalizedId = gameTypeId.toLowerCase();
+      const fromActive =
+        this.gameTypeContent[gameTypeId] ?? this.gameTypeContent[normalizedId];
+      if (fromActive) {
+        return fromActive;
+      }
+
+      const fallbackValue =
+        fallbackGameTypeContent[gameTypeId] ?? fallbackGameTypeContent[normalizedId];
+      if (fallbackValue) {
+        return fallbackValue;
+      }
+
+      if (import.meta.env.DEV) {
+        console.warn('[locale] Missing GameType content for key', gameTypeId);
+      }
+      return null;
     },
   },
   persist: {
