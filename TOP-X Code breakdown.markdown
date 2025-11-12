@@ -49,9 +49,6 @@ State & Utilities: Pinia, Axios, html2canvas, vue-draggable-plus
 Style: Mobile-first, dark theme inspired by X (Twitter)
 
 Rewrite code check list:
-1. 📦check apps/client/src/stores/locale.ts 
-5. 📦📦remove content system
-
 
 2. 📦Firebase index
 3. 📦upgrade analytics
@@ -76,3 +73,8 @@ done
 10. 🧩rewrite submit socre
 
 4. 📦📦Fix home page
+
+
+1. 📦check apps/client/src/stores/locale.ts 
+5. 📦📦remove content system
+

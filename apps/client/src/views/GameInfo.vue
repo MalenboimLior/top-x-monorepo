@@ -1,62 +1,70 @@
 <!-- Updated GameInfo.vue -->
 <template>
-  <div class="game-info-container">
-    <!-- Section 1: Game Info -->
-    <section class="game-info-section">
-      <div class="game-hero">
-        <div class="game-image-wrapper">
-          <img :src="game.image" :alt="`${game.name} image`" class="game-image" />
-          <div v-if="gamePills.length" class="game-image-labels">
+  <div class="game-info-page section-stack">
+    <section class="layout-container section-stack game-summary">
+      <div class="summary-grid surface">
+        <div class="summary-media">
+          <img :src="game.image" :alt="`${game.name} image`" class="summary-image" />
+          <div v-if="gamePills.length" class="summary-badges">
             <span
               v-for="pill in gamePills"
               :key="pill.text + pill.variant"
-              class="game-image-badge"
-              :class="`game-image-badge--${pill.variant}`"
+              class="summary-badge"
+              :class="`summary-badge--${pill.variant}`"
             >
               <font-awesome-icon v-if="pill.icon" :icon="pill.icon" />
               <span>{{ pill.text }}</span>
             </span>
           </div>
         </div>
-        <div class="game-details">
-          <h1 class="game-title">{{ game.name }}</h1>
-          <p class="game-description">{{ game.description }}</p>
-          <div class="game-meta-grid">
+        <div class="summary-details">
+          <div class="summary-header">
+            <span class="summary-eyebrow">Featured Game</span>
+            <h1 class="summary-title">{{ game.name }}</h1>
+            <p class="summary-description">{{ game.description }}</p>
+          </div>
+          <div class="summary-meta">
             <div class="meta-card">
-              <div class="meta-card__header">
-                <font-awesome-icon :icon="['fas', 'gamepad']" class="meta-card__icon" />
-                <h3>Game Type</h3>
+              <div class="meta-card__icon">
+                <font-awesome-icon :icon="['fas', 'gamepad']" />
               </div>
-              <p>{{ game.gameTypeId || 'Coming Soon' }}</p>
+              <div class="meta-card__body">
+                <p class="meta-card__label">Game Type</p>
+                <p class="meta-card__value">{{ game.gameTypeId || 'Coming Soon' }}</p>
+              </div>
             </div>
             <div class="meta-card" v-if="game.gameHeader">
-              <div class="meta-card__header">
-                <font-awesome-icon :icon="['fas', 'table']" class="meta-card__icon" />
-                <h3>Header</h3>
+              <div class="meta-card__icon">
+                <font-awesome-icon :icon="['fas', 'table']" />
               </div>
-              <p>{{ game.gameHeader }}</p>
+              <div class="meta-card__body">
+                <p class="meta-card__label">Header</p>
+                <p class="meta-card__value">{{ game.gameHeader }}</p>
+              </div>
             </div>
             <div class="meta-card" v-if="game.gameInstruction">
-              <div class="meta-card__header">
-                <font-awesome-icon :icon="['fas', 'circle-info']" class="meta-card__icon" />
-                <h3>How to play</h3>
+              <div class="meta-card__icon">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
               </div>
-              <p>{{ game.gameInstruction }}</p>
+              <div class="meta-card__body">
+                <p class="meta-card__label">How to Play</p>
+                <p class="meta-card__value">{{ game.gameInstruction }}</p>
+              </div>
             </div>
           </div>
-          <div v-if="hasCounters" class="game-stats">
+          <div v-if="hasCounters" class="summary-stats">
             <div
               v-for="counter in counterList"
               :key="counter.key"
-              class="stat-pill"
+              class="summary-stat"
               :title="counter.label"
             >
-              <span class="stat-icon" role="img" :aria-label="counter.label">
+              <span class="summary-stat__icon" role="img" :aria-label="counter.label">
                 <font-awesome-icon :icon="counter.icon" />
               </span>
-              <div class="stat-content">
-                <span class="stat-value">{{ formatCounter(counter.value) }}</span>
-                <span class="stat-label">{{ counter.label }}</span>
+              <div class="summary-stat__content">
+                <span class="summary-stat__value">{{ formatCounter(counter.value) }}</span>
+                <span class="summary-stat__label">{{ counter.label }}</span>
               </div>
             </div>
           </div>
@@ -64,30 +72,36 @@
       </div>
     </section>
 
-    <!-- Section 2: Action Buttons -->
-    <section class="action-buttons-section">
-      <CustomButton
-        type="is-primary is-large"
-        label="Play Now"
-        @click="playGame"
-      />
-      <button
-        class="ghost-button"
-        type="button"
-        :class="{ 'is-active': isFavorite }"
-        :aria-pressed="isFavorite"
-        @click="toggleFavoriteStatus"
-      >
-        <font-awesome-icon :icon="['fas', 'heart']" />
-        {{ isFavorite ? 'Remove Favorite' : 'Add to Favorites' }}
-      </button>
-      <button class="ghost-button" type="button" @click="backToGames">
-        Back to Games
-      </button>
+    <section v-if="game.gameTypeId" class="layout-container game-type-section">
+      <div class="surface">
+        <GameTypeInfo :game-type-id="game.gameTypeId" />
+      </div>
     </section>
 
-    <!-- Section 3: Leaderboard -->
-    <section class="leaderboard-section">
+    <section class="layout-container game-actions">
+      <div class="surface action-card">
+        <CustomButton
+          type="is-primary is-large"
+          label="Play Now"
+          @click="playGame"
+        />
+        <button
+          class="ghost-button"
+          type="button"
+          :class="{ 'is-active': isFavorite }"
+          :aria-pressed="isFavorite"
+          @click="toggleFavoriteStatus"
+        >
+          <font-awesome-icon :icon="['fas', 'heart']" />
+          {{ isFavorite ? 'Remove Favorite' : 'Add to Favorites' }}
+        </button>
+        <button class="ghost-button" type="button" @click="backToGames">
+          Back to Games
+        </button>
+      </div>
+    </section>
+
+    <section class="layout-container section-stack leaderboard-section">
       <div class="section-heading">
         <h2 class="section-title">
           <font-awesome-icon :icon="['fas', 'trophy']" />
@@ -95,13 +109,12 @@
         </h2>
         <p class="section-subtitle">See who is dominating this challenge.</p>
       </div>
-      <div class="section-surface">
+      <div class="surface">
         <Leaderboard :game-id="gameId" />
       </div>
     </section>
 
-    <!-- Section 4: Daily Challenges -->
-    <section v-if="game.dailyChallengeActive" class="daily-challenges-section">
+    <section v-if="game.dailyChallengeActive" class="layout-container section-stack daily-challenges-section">
       <div class="section-heading">
         <h2 class="section-title">
           <font-awesome-icon :icon="['fas', 'bolt']" />
@@ -109,15 +122,13 @@
         </h2>
         <p class="section-subtitle">A fresh leaderboard every 24 hours.</p>
       </div>
-      <div class="section-surface">
-        <!-- Assuming DailyChallenges component can accept gameId prop; adjust if needed -->
+      <div class="surface">
         <DailyChallenges :gameId="gameId" />
       </div>
     </section>
 
-    <!-- Section 5: Build Your Own Game -->
-    <section class="build-section">
-      <div class="section-surface build-card">
+    <section class="layout-container build-section">
+      <div class="surface build-card">
         <div class="build-copy">
           <h3>
             <font-awesome-icon :icon="['fas', 'edit']" />
@@ -143,6 +154,7 @@ import { getGame, getGameStats } from '@/services/game';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
 import DailyChallenges from '@/components/DailyChallenges.vue';
+import GameTypeInfo from '@/components/GameTypeInfo.vue';
 import { useUserStore } from '@/stores/user';
 import { Game } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
@@ -290,258 +302,292 @@ function buildGame() {
 </script>
 
 <style scoped>
-.game-info-container {
+.game-info-page {
   min-height: 100vh;
-  padding: 4rem clamp(1rem, 4vw, 1.5rem) 5rem;
-  background: #000;
+  background: radial-gradient(circle at top, rgba(0, 232, 224, 0.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(196, 255, 0, 0.12), transparent 60%),
+    #000;
   color: var(--bulma-text);
-  display: flex;
-  flex-direction: column;
-  gap: 3.5rem;
-  width: 100%;
-  max-width: var(--container-xl);
-  margin-inline: auto;
+  padding: clamp(var(--space-6), 8vh, var(--space-9)) clamp(var(--space-4), 4vw, var(--space-6))
+    var(--space-12);
   box-sizing: border-box;
-}
-
-.game-info-section {
   width: 100%;
-  display: flex;
-  justify-content: center;
+  --section-stack-gap: var(--space-11);
 }
 
-.game-hero {
+.game-summary {
+  --section-stack-gap: var(--space-7);
+}
+
+.summary-grid {
   display: grid;
-  width: min(1200px, 100%);
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2.5rem;
-  align-items: start;
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 1.3fr);
+  gap: var(--space-7);
+  align-items: flex-start;
 }
 
-.game-image-wrapper {
+.summary-media {
   position: relative;
-  border-radius: 24px;
+  border-radius: var(--space-6);
   overflow: hidden;
   border: 1px solid rgba(0, 232, 224, 0.22);
   background: radial-gradient(circle at 30% 20%, rgba(0, 232, 224, 0.35), rgba(0, 0, 0, 0.85));
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.55);
 }
 
-.game-image {
-  width: 100%;
+.summary-image {
   display: block;
+  width: 100%;
+  height: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
 }
 
-.game-image-labels {
+.summary-badges {
   position: absolute;
-  top: var(--space-3, 1rem);
-  left: var(--space-3, 1rem);
-  right: var(--space-3, 1rem);
+  inset-block-start: var(--space-3);
+  inset-inline: var(--space-3);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2, 0.5rem);
-  z-index: 3;
+  gap: var(--space-2);
+  z-index: 2;
 }
 
-.game-image-badge {
+.summary-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2, 0.5rem);
-  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
-  border-radius: 12px;
-  font-size: var(--font-size-200, 0.75rem);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 999px;
+  font-size: var(--font-size-200);
   font-weight: 700;
-  letter-spacing: 0.05em;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.game-image-badge:hover {
-  transform: scale(1.05);
+.summary-badge:hover {
+  transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-.game-image-badge svg {
+.summary-badge svg {
   font-size: 0.9rem;
 }
 
-.game-image-badge--featured {
+.summary-badge--featured {
   background: linear-gradient(135deg, rgba(255, 201, 20, 0.35), rgba(255, 215, 0, 0.25));
   color: #ffd85c;
   border: 1.5px solid rgba(255, 201, 20, 0.5);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.game-image-badge--daily {
+.summary-badge--daily {
   background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.25));
   color: #00e8e0;
   border: 1.5px solid rgba(0, 232, 224, 0.5);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.game-details {
+.summary-details {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
-.game-title {
-  font-size: clamp(2.2rem, 2vw + 1.5rem, 3.2rem);
-  font-weight: 700;
+.summary-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.summary-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: var(--font-size-300);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.summary-title {
   margin: 0;
+  font-size: clamp(2.2rem, 2.2vw + 1.6rem, 3.4rem);
+  font-weight: 800;
+  line-height: 1.05;
+  color: #ffffff;
+  text-shadow: 0 18px 35px rgba(0, 232, 224, 0.15);
 }
 
-.game-description {
+.summary-description {
   margin: 0;
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.6;
+  max-width: 42rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: clamp(1.05rem, 1.1vw + 0.8rem, 1.2rem);
+  line-height: 1.65;
 }
 
-.game-meta-grid {
+.summary-meta {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-4);
 }
 
 .meta-card {
-  background: rgba(0, 232, 224, 0.05);
-  border: 1px solid rgba(0, 232, 224, 0.18);
-  border-radius: 18px;
-  padding: 1.2rem 1.4rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--space-4);
+  background: rgba(0, 232, 224, 0.05);
+  border: 1px solid rgba(0, 232, 224, 0.16);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
   min-height: 140px;
-  transition: all 0.2s ease;
 }
 
 .meta-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 232, 224, 0.32);
   background: rgba(0, 232, 224, 0.08);
-  border-color: rgba(0, 232, 224, 0.3);
-  transform: translateY(-2px);
-}
-
-.meta-card__header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .meta-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, rgba(0, 232, 224, 0.32), rgba(0, 232, 224, 0.18));
   color: var(--bulma-primary);
-  font-size: 1rem;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-.meta-card h3 {
+.meta-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.meta-card__label {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.meta-card p {
+.meta-card__value {
   margin: 0;
   font-size: 1rem;
   color: #ffffff;
   line-height: 1.5;
 }
 
-.game-stats {
+.summary-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: var(--space-4);
 }
 
-.stat-pill {
+.summary-stat {
   display: flex;
   align-items: center;
-  gap: var(--space-3, 0.75rem);
-  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  border-radius: 12px;
-  border: 1px solid rgba(0, 232, 224, 0.25);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--space-4);
+  border: 1px solid rgba(0, 232, 224, 0.28);
   background: rgba(255, 255, 255, 0.05);
-  min-width: 140px;
-  transition: all 0.2s ease;
+  min-width: 160px;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
   cursor: default;
 }
 
-.stat-pill:hover {
+.summary-stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 232, 224, 0.45);
   background: rgba(0, 232, 224, 0.12);
-  border-color: rgba(0, 232, 224, 0.4);
-  transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 232, 224, 0.2);
 }
 
-.stat-icon {
+.summary-stat__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 10px;
+  border-radius: 0.85rem;
   background: linear-gradient(135deg, rgba(0, 232, 224, 0.3), rgba(0, 232, 224, 0.2));
   color: var(--bulma-primary);
   font-size: 1.1rem;
   flex-shrink: 0;
 }
 
-.stat-content {
+.summary-stat__content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
-.stat-value {
-  font-size: 1.25rem;
+.summary-stat__value {
+  font-size: 1.3rem;
   font-weight: 700;
   color: #ffffff;
   line-height: 1;
 }
 
-.stat-label {
+.summary-stat__label {
   font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: rgba(255, 255, 255, 0.6);
 }
 
-.action-buttons-section {
+.game-type-section,
+.leaderboard-section,
+.daily-challenges-section,
+.build-section {
+  --section-stack-gap: var(--space-6);
+}
+
+.game-actions {
+  margin-block: var(--space-4);
+}
+
+.action-card {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: clamp(var(--space-5), 4vw, var(--space-7));
 }
 
 .ghost-button {
   background: transparent;
-  border: 1px solid rgba(0, 232, 224, 0.25);
+  border: 1px solid rgba(0, 232, 224, 0.28);
   color: var(--bulma-text);
   padding: 0.9rem 1.8rem;
   border-radius: 999px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  transition: background 0.2s ease, border-color 0.2s ease;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .ghost-button svg {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .ghost-button:hover {
   background: rgba(0, 232, 224, 0.12);
   border-color: rgba(0, 232, 224, 0.45);
+  color: #ffffff;
 }
 
 .ghost-button.is-active {
@@ -557,9 +603,8 @@ function buildGame() {
 .section-heading {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
   text-align: center;
-  margin-bottom: 1.5rem;
 }
 
 .section-title {
@@ -568,12 +613,13 @@ function buildGame() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
+  color: #ffffff;
 }
 
 .section-title svg {
   color: var(--bulma-primary);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
 }
 
 .section-subtitle {
@@ -581,35 +627,38 @@ function buildGame() {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.section-surface {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 24px;
-  border: 1px solid rgba(0, 232, 224, 0.12);
-  padding: 2rem clamp(1rem, 4vw, 1.5rem);
-  backdrop-filter: blur(12px);
-}
-
 .build-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-3);
+  text-align: center;
 }
 
 .build-card {
   width: min(960px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  align-items: flex-start;
+  gap: var(--space-4);
+  align-items: center;
+  text-align: center;
+  padding: clamp(var(--space-6), 5vw, var(--space-8));
+}
+
+.build-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
 }
 
 .build-copy h3 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  color: #ffffff;
 }
 
 .build-copy h3 svg {
@@ -619,6 +668,7 @@ function buildGame() {
 .build-copy p {
   margin: 0;
   color: rgba(255, 255, 255, 0.68);
+  max-width: 32rem;
 }
 
 .build-hint {
@@ -629,93 +679,66 @@ function buildGame() {
   text-transform: uppercase;
 }
 
-@media (max-width: 768px) {
-  .game-info-container {
-    padding: 3rem clamp(0.75rem, 4vw, 1.25rem) 4rem;
-    gap: 3rem;
+@media (max-width: 75rem) {
+  .summary-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .game-hero {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  .game-details {
+  .summary-details {
     align-items: flex-start;
-    text-align: left;
-  }
-
-  .game-meta-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-surface {
-    padding: 1.5rem clamp(0.75rem, 4vw, 1.15rem);
-  }
-
-  .build-card {
-    align-items: stretch;
-  }
-
-  .game-stats {
-    justify-content: center;
-  }
-
-  .stat-pill {
-    flex: 1 1 calc(50% - 0.5rem);
-    min-width: auto;
-  }
-
-  .section-title {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .section-title svg {
-    font-size: 1.25rem;
   }
 }
 
-@media (max-width: 480px) {
-  .game-info-container {
-    padding: 2.5rem 0.75rem 3.5rem;
+@media (max-width: 48rem) {
+  .game-info-page {
+    padding: var(--space-10) clamp(var(--space-3), 6vw, var(--space-4)) var(--space-10);
+    --section-stack-gap: var(--space-9);
   }
 
-  .action-buttons-section {
-    width: 100%;
-    flex-direction: column;
+  .summary-grid {
+    gap: var(--space-6);
   }
 
-  .action-buttons-section > * {
-    width: 100%;
+  .summary-meta {
+    grid-template-columns: 1fr;
   }
 
-  .section-surface {
-    padding: 1.25rem clamp(0.65rem, 4vw, 0.9rem);
+  .summary-stats {
+    justify-content: center;
   }
 
-  .meta-card {
-    min-height: auto;
-  }
-
-  .stat-pill {
-    flex: 1 1 100%;
+  .summary-stat {
+    flex: 1 1 calc(50% - var(--space-3));
     min-width: auto;
   }
 
-  .game-image-labels {
-    top: var(--space-2, 0.5rem);
-    left: var(--space-2, 0.5rem);
-    right: var(--space-2, 0.5rem);
+  .action-card {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .game-image-badge {
+  .action-card > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 37.5rem) {
+  .summary-badges {
+    inset-block-start: var(--space-2);
+    inset-inline: var(--space-2);
+  }
+
+  .summary-badge {
     font-size: 0.65rem;
     padding: 0.4rem 0.75rem;
   }
 
-  .ghost-button {
-    justify-content: center;
+  .summary-stat {
+    flex: 1 1 100%;
+  }
+
+  .build-card {
+    padding: var(--space-6);
   }
 }
 </style>
