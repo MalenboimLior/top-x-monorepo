@@ -10,7 +10,18 @@ export interface HomeSectionOrder {
 
 export interface HomeCollectionConfig {
   sort: HomeSectionOrder;
+  /**
+   * Maximum number of games to include in the section. Null/undefined shows all.
+   */
   limit?: number | null;
+  /**
+   * Maximum number of rows to display in the client grid. Null/undefined defaults to auto.
+   */
+  maxRows?: number | null;
+  /**
+   * Preferred number of items per row in the client grid. Null/undefined uses the layout default.
+   */
+  itemsPerRow?: number | null;
 }
 
 export interface HomeFeaturedConfig {
@@ -41,6 +52,8 @@ export const defaultHomePageConfig: HomePageConfig = {
       direction: 'desc',
     },
     limit: 8,
+    maxRows: 2,
+    itemsPerRow: 4,
   },
   community: {
     sort: {
@@ -48,6 +61,8 @@ export const defaultHomePageConfig: HomePageConfig = {
       direction: 'desc',
     },
     limit: 8,
+    maxRows: 2,
+    itemsPerRow: 4,
   },
   hiddenGameIds: [],
   build: {

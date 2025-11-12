@@ -56,6 +56,7 @@ interface GameSectionProps {
   itemsPerRow?: number;
   initialRows?: number;
   rowsIncrement?: number;
+  maxRows?: number;
   gridVariant?: string;
   sectionId?: string;
   showMoreLabel?: string;
@@ -69,6 +70,7 @@ const props = withDefaults(defineProps<GameSectionProps>(), {
   itemsPerRow: 3,
   initialRows: 1,
   rowsIncrement: undefined,
+  maxRows: undefined,
   gridVariant: '',
   sectionId: undefined,
   showMoreLabel: '',
@@ -85,24 +87,32 @@ const sanitizedRowsIncrement = computed(() => {
   return Math.max(1, Math.trunc(value));
 });
 
-const maxRows = computed(() => {
+const availableRows = computed(() => {
   if (!props.games.length) {
     return 0;
   }
   return Math.max(1, Math.ceil(props.games.length / sanitizedItemsPerRow.value));
 });
 
+const rowsCap = computed(() => {
+  if (availableRows.value === 0) {
+    return 0;
+  }
+  const cap = props.maxRows === undefined || props.maxRows === null ? availableRows.value : Math.trunc(props.maxRows);
+  return Math.max(1, Math.min(availableRows.value, cap));
+});
+
 const currentRows = ref(0);
 
 watch(
-  [maxRows, sanitizedInitialRows],
+  [rowsCap, sanitizedInitialRows],
   () => {
-    if (maxRows.value === 0) {
+    if (rowsCap.value === 0) {
       currentRows.value = 0;
       return;
     }
     const initial = sanitizedInitialRows.value > 0 ? sanitizedInitialRows.value : 1;
-    currentRows.value = Math.min(initial, maxRows.value);
+    currentRows.value = Math.min(initial, rowsCap.value);
   },
   { immediate: true },
 );
@@ -110,24 +120,24 @@ watch(
 watch(
   () => props.games.length,
   () => {
-    if (maxRows.value === 0) {
+    if (rowsCap.value === 0) {
       currentRows.value = 0;
       return;
     }
-    currentRows.value = Math.min(currentRows.value || 1, maxRows.value);
+    currentRows.value = Math.min(currentRows.value || 1, rowsCap.value);
   },
 );
 
 const visibleCount = computed(() => sanitizedItemsPerRow.value * currentRows.value);
 const visibleGames = computed(() => props.games.slice(0, visibleCount.value));
 
-const showMoreAvailable = computed(() => maxRows.value > 0 && currentRows.value < maxRows.value);
+const showMoreAvailable = computed(() => rowsCap.value > 0 && currentRows.value < rowsCap.value);
 
 function handleShowMore() {
   if (!showMoreAvailable.value) {
     return;
   }
-  currentRows.value = Math.min(maxRows.value, currentRows.value + sanitizedRowsIncrement.value);
+  currentRows.value = Math.min(rowsCap.value, currentRows.value + sanitizedRowsIncrement.value);
 }
 
 const gridClasses = computed(() => {

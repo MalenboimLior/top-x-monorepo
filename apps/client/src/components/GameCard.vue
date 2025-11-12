@@ -135,7 +135,7 @@ type MediaLabel = {
   icon: [string, string];
 };
 
-const BADGE_LABEL_LIMIT = 3;
+const BADGE_LABEL_LIMIT = 5;
 
 const localeStore = useLocaleStore();
 const userStore = useUserStore();
@@ -171,7 +171,7 @@ const mediaLabels = computed<MediaLabel[]>(() => {
   if (props.dailyChallengeActive && props.dailyChallengeLabel) {
     labels.push({ text: props.dailyChallengeLabel, variant: 'daily', icon: ['fas', 'bolt'] });
   }
-  const remainingSlots = Math.max(0, BADGE_LABEL_LIMIT - labels.length);
+  const remainingSlots = BADGE_LABEL_LIMIT - labels.length;
   if (remainingSlots > 0) {
     labels.push(...badgeLabels.value.slice(0, remainingSlots));
   }
