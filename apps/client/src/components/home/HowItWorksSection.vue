@@ -103,15 +103,68 @@ const blocks = computed(() => {
 }
 
 .how-it-works__header {
-  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.8vw, 0.45rem);
+  padding-block: clamp(0.8rem, 2vw, 1.2rem);
+  padding-inline: clamp(1.2rem, 2.4vw, 1.6rem);
+  padding-inline-start: clamp(1.8rem, 4vw, 2.4rem);
+  width: 100%;
+  border-radius: 18px;
+  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.58));
+  border: 1px solid rgba(0, 232, 224, 0.14);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  text-align: start;
+}
+
+.how-it-works__header::before {
+  content: '';
+  position: absolute;
+  inset-block: clamp(0.6rem, 1.6vw, 0.9rem);
+  inset-inline-start: clamp(0.75rem, 1.8vw, 1rem);
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 232, 224, 0.9), rgba(196, 255, 0, 0.9));
+  box-shadow: 0 0 14px rgba(0, 232, 224, 0.5);
+}
+
+.how-it-works__header::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: -25%;
+  inset-block-start: -45%;
+  width: 60%;
+  height: 120%;
+  background: radial-gradient(circle, rgba(196, 255, 0, 0.18), transparent 60%);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .how-it-works__title {
-  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-size: clamp(1.8rem, 1.2vw + 1.1rem, 2.4rem);
   font-weight: 800;
   margin: 0;
   color: #ffffff;
-  text-shadow: 0 28px 55px rgba(0, 232, 224, 0.35);
+  text-shadow: 0 12px 28px rgba(0, 232, 224, 0.3);
+}
+
+.how-it-works.is-rtl .how-it-works__header {
+  padding-inline-start: clamp(1.2rem, 2.4vw, 1.6rem);
+  padding-inline-end: clamp(1.8rem, 4vw, 2.4rem);
+  text-align: right;
+}
+
+.how-it-works.is-rtl .how-it-works__header::before {
+  inset-inline-start: auto;
+  inset-inline-end: clamp(0.75rem, 1.8vw, 1rem);
+}
+
+.how-it-works.is-rtl .how-it-works__header::after {
+  inset-inline-end: auto;
+  inset-inline-start: -25%;
 }
 
 .how-it-works.is-rtl .how-it-works__title {
@@ -225,6 +278,11 @@ const blocks = computed(() => {
 @media (max-width: 640px) {
   .how-it-works {
     padding-block: clamp(var(--space-9), 12vh, var(--space-11));
+  }
+
+  .how-it-works__header {
+    padding-inline: clamp(1rem, 3.4vw, 1.4rem);
+    padding-inline-start: clamp(1.6rem, 5vw, 2.1rem);
   }
 
   .how-it-works__grid {
