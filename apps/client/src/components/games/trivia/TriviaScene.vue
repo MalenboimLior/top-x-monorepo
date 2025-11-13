@@ -43,16 +43,28 @@
       <section v-else key="playing" class="scene-section">
         <div class="scene-hud">
           <div class="hud-main">
-            <div class="hud-group">
+            <div class="hud-group hud-group--compact">
               <span class="hud-label">Score</span>
               <span class="hud-value">{{ score }}</span>
             </div>
-            <div class="hud-group" :class="{ 'streak-glow': streakPulse }">
+            <div
+              class="hud-group hud-group--compact bonus-anchor"
+              :class="{ 'streak-glow': streakPulse }"
+            >
               <span class="hud-label">Streak</span>
               <span class="hud-value">{{ streak }}</span>
               <small class="hud-sub">Best {{ sessionBestStreak }}</small>
+              <transition name="bonus-pop">
+                <span
+                  v-if="showStreakBonus && streakBonusValue !== null"
+                  :key="streakBonusKey"
+                  class="bonus-chip bonus-chip--streak"
+                >
+                  +{{ streakBonusValue }}
+                </span>
+              </transition>
             </div>
-            <div v-if="!unlimitedLives" class="hud-group">
+            <div v-if="!unlimitedLives" class="hud-group lives-group">
               <span class="hud-label">Lives</span>
               <div class="lives">
                 <span v-for="(heart, index) in livesDisplay" :key="index" :class="{ lost: !heart }">❤️</span>
@@ -61,29 +73,53 @@
           </div>
 
           <div class="hud-progress">
-            <div v-if="!unlimitedLives" class="timer-wrapper" role="timer" aria-live="polite">
-              <svg class="timer-circle" viewBox="0 0 120 120">
-                <circle class="timer-circle-bg" cx="60" cy="60" r="54" />
-                <circle
-                  class="timer-circle-progress"
-                  cx="60"
-                  cy="60"
-                  r="54"
-                  :stroke-dasharray="circumference"
-                  :stroke-dashoffset="dashOffset"
-                />
-                <text x="50%" y="50%" dy="0.35em" text-anchor="middle">{{ timeLeft }}</text>
-              </svg>
-              <span class="timer-label">Question</span>
-            </div>
-
-            <div v-if="progressPercent !== null" class="question-progress">
-              <div class="progress-label">
-                <span>Progress</span>
-                <span>{{ questionNumber }}/{{ totalQuestions }}</span>
+            <div
+              v-if="!unlimitedLives || progressPercent !== null"
+              class="progress-track"
+            >
+              <div
+                v-if="!unlimitedLives"
+                class="timer-wrapper bonus-anchor"
+                role="timer"
+                aria-live="polite"
+              >
+                <svg class="timer-circle" viewBox="0 0 120 120">
+                  <circle class="timer-circle-start" cx="60" cy="6" r="6" :fill="timerStrokeColor" />
+                  <circle class="timer-circle-bg" cx="60" cy="60" r="54" />
+                  <circle
+                    class="timer-circle-progress"
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    :stroke-dasharray="circumference"
+                    :stroke-dashoffset="dashOffset"
+                    :style="{ stroke: timerStrokeColor }"
+                    stroke-linecap="round"
+                  />
+                  <text x="50%" y="50%" dy="0.35em" text-anchor="middle">{{ timeLeft }}</text>
+                </svg>
+                <transition name="bonus-pop">
+                  <span
+                    v-if="showSpeedBonus && speedBonusValue !== null"
+                    :key="speedBonusKey"
+                    class="bonus-chip bonus-chip--timer"
+                  >
+                    +{{ speedBonusValue }}
+                  </span>
+                </transition>
               </div>
-              <div class="progress-bar">
-                <div class="progress-bar-fill" :style="{ width: `${progressPercent}%` }"></div>
+              <div
+                v-if="progressPercent !== null && progressDisplayNumber !== null"
+                class="question-progress"
+                :style="{ '--progress-start-color': progressAccentColor }"
+              >
+                <div class="progress-label">
+                  <span>Progress</span>
+                  <span>{{ progressDisplayNumber }}/{{ totalQuestions }}</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-bar-fill" :style="progressFillStyle"></div>
+                </div>
               </div>
             </div>
 
@@ -104,17 +140,24 @@
           <p>Fetching questions...</p>
         </div>
 
-        <TriviaQuestion
-          v-else
-          :question="currentQuestion"
-          :selected-answer="selectedAnswer"
-          :is-correct="isCorrect"
-          :correct-answer-index="correctAnswerIndex"
-          :is-reviewing-answer="isReviewingAnswer"
-          :show-correct-answers="showCorrectAnswers"
-          :direction="direction"
-          @answer-question="onAnswer"
-        />
+        <div class="question-wrapper" v-else>
+          <TriviaQuestion
+            :question="currentQuestion"
+            :selected-answer="selectedAnswer"
+            :is-correct="isCorrect"
+            :correct-answer-index="correctAnswerIndex"
+            :is-reviewing-answer="isReviewingAnswer"
+            :show-correct-answers="showCorrectAnswers"
+            :direction="direction"
+            @answer-question="onAnswer"
+          />
+        </div>
+.question-wrapper {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
 
         <div v-if="powerUps.length" class="power-ups">
           <h3 class="power-ups-title">Power-ups</h3>
@@ -131,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import TriviaQuestion from './TriviaQuestion.vue';
@@ -171,6 +214,8 @@ interface Props {
   inviter: InviterDetails | null;
   theme: Record<string, string | undefined>;
   language: string;
+  lastSpeedBonus: number;
+  lastStreakBonus: number;
 }
 
 const props = defineProps<Props>();
@@ -190,6 +235,21 @@ const dashOffset = computed(() => {
   return circumference * (1 - ratio);
 });
 
+const timerStrokeColor = computed(() => {
+  if (props.questionTimerDuration <= 0) {
+    return '#4ade80';
+  }
+  const ratio = Math.max(0, Math.min(1, props.timeLeft / props.questionTimerDuration));
+
+  if (ratio <= 0.15) {
+    return '#ff4d4f';
+  }
+  if (ratio <= 0.35) {
+    return '#ff9f1c';
+  }
+  return '#4ade80';
+});
+
 const formattedGlobalTimer = computed(() => {
   if (props.globalTimeLeft === null) {
     return '';
@@ -199,12 +259,79 @@ const formattedGlobalTimer = computed(() => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 });
 
-const progressPercent = computed(() => {
-  if (!props.totalQuestions || props.totalQuestions <= 0 || props.questionNumber === null) {
+const answeredQuestions = computed(() => {
+  if (!props.totalQuestions || props.totalQuestions <= 0) {
+    return 0;
+  }
+  const questionNumber = props.questionNumber ?? 0;
+  const hasCurrentQuestion = Boolean(props.currentQuestion);
+  const answered = Math.max(0, questionNumber - (hasCurrentQuestion ? 1 : 0));
+  return Math.min(answered, props.totalQuestions);
+});
+
+const progressDisplayNumber = computed(() => {
+  if (!props.totalQuestions || props.totalQuestions <= 0) {
     return null;
   }
-  const answered = Math.max(0, props.questionNumber - 1);
-  return Math.min(100, Math.round((answered / props.totalQuestions) * 100));
+
+  if (answeredQuestions.value >= props.totalQuestions) {
+    return props.totalQuestions;
+  }
+
+  return Math.min(props.totalQuestions, answeredQuestions.value + 1);
+});
+
+const progressPercent = computed(() => {
+  if (!props.totalQuestions || props.totalQuestions <= 0) {
+    return null;
+  }
+
+  const answered = answeredQuestions.value;
+
+  if (props.isReviewingAnswer && answered >= props.totalQuestions) {
+    return 100;
+  }
+
+  if (answered <= 0) {
+    return 0;
+  }
+
+  const percent = (answered / props.totalQuestions) * 100;
+  return Math.min(100, Math.round(percent));
+});
+
+const progressAccentColor = computed(() => {
+  if (progressPercent.value === null) {
+    return '#8c52ff';
+  }
+
+  const ratio = progressPercent.value / 100;
+
+  if (ratio >= 0.85) {
+    return '#4ade80';
+  }
+  if (ratio >= 0.6) {
+    return '#8c52ff';
+  }
+  if (ratio >= 0.3) {
+    return '#ff9f1c';
+  }
+  return '#38bdf8';
+});
+
+const progressFillStyle = computed(() => {
+  if (progressPercent.value === null) {
+    return {};
+  }
+
+  const accent = progressAccentColor.value;
+  const glowColor = accent.startsWith('#') ? `${accent}40` : 'rgba(140, 82, 255, 0.35)';
+
+  return {
+    width: `${progressPercent.value}%`,
+    background: `linear-gradient(90deg, ${accent} 0%, rgba(140, 82, 255, 0.92) 65%, rgba(255, 159, 28, 0.95) 100%)`,
+    boxShadow: `0 0 18px ${glowColor}`,
+  };
 });
 
 const globalTimerStart = ref<number | null>(null);
@@ -240,6 +367,65 @@ const livesDisplay = computed(() => {
 
 const streakPulse = ref(false);
 
+const BONUS_DISPLAY_DURATION = 1400;
+const streakBonusValue = ref<number | null>(null);
+const showStreakBonus = ref(false);
+const streakBonusKey = ref(0);
+let streakBonusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const speedBonusValue = ref<number | null>(null);
+const showSpeedBonus = ref(false);
+const speedBonusKey = ref(0);
+let speedBonusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const clearStreakTimeout = () => {
+  if (streakBonusTimeout) {
+    clearTimeout(streakBonusTimeout);
+    streakBonusTimeout = null;
+  }
+};
+
+const clearSpeedTimeout = () => {
+  if (speedBonusTimeout) {
+    clearTimeout(speedBonusTimeout);
+    speedBonusTimeout = null;
+  }
+};
+
+const hideStreakBonus = () => {
+  clearStreakTimeout();
+  showStreakBonus.value = false;
+  streakBonusValue.value = null;
+};
+
+const hideSpeedBonus = () => {
+  clearSpeedTimeout();
+  showSpeedBonus.value = false;
+  speedBonusValue.value = null;
+};
+
+const triggerStreakBonus = (value: number) => {
+  streakBonusValue.value = value;
+  streakBonusKey.value += 1;
+  showStreakBonus.value = true;
+  clearStreakTimeout();
+  streakBonusTimeout = setTimeout(() => {
+    showStreakBonus.value = false;
+    streakBonusTimeout = null;
+  }, BONUS_DISPLAY_DURATION);
+};
+
+const triggerSpeedBonus = (value: number) => {
+  speedBonusValue.value = value;
+  speedBonusKey.value += 1;
+  showSpeedBonus.value = true;
+  clearSpeedTimeout();
+  speedBonusTimeout = setTimeout(() => {
+    showSpeedBonus.value = false;
+    speedBonusTimeout = null;
+  }, BONUS_DISPLAY_DURATION);
+};
+
 watch(
   () => props.streak,
   (newStreak, oldStreak) => {
@@ -251,6 +437,42 @@ watch(
     }
   }
 );
+
+watch(
+  () => [props.lastStreakBonus, props.streak, props.screen] as const,
+  ([bonus, , screen]) => {
+    if (screen !== 'playing') {
+      hideStreakBonus();
+      return;
+    }
+    if (bonus > 0) {
+      triggerStreakBonus(bonus);
+    } else if (bonus === 0) {
+      hideStreakBonus();
+    }
+  }
+);
+
+watch(
+  () =>
+    [props.lastSpeedBonus, props.score, props.unlimitedLives, props.screen] as const,
+  ([bonus, , unlimited, screen]) => {
+    if (screen !== 'playing' || unlimited) {
+      hideSpeedBonus();
+      return;
+    }
+    if (bonus > 0) {
+      triggerSpeedBonus(bonus);
+    } else if (bonus === 0) {
+      hideSpeedBonus();
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  hideStreakBonus();
+  hideSpeedBonus();
+});
 
 const title = computed(() => {
   return props.mode === 'endless' ? 'Endless Trivia Blitz' : 'Trivia Takedown';
@@ -303,6 +525,20 @@ const onAnswer = (index: number) => emit('answer-question', index);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  align-items: center;
+}
+
+.scene-section > * {
+  width: 100%;
+  max-width: 720px;
+}
+
+.start-card,
+.scene-hud,
+.power-ups {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .start-card {
@@ -389,6 +625,7 @@ const onAnswer = (index: number) => emit('answer-question', index);
 .start-button {
   align-self: center;
   min-width: 200px;
+  margin-top: 1rem;
 }
 
 .scene-hud {
@@ -403,18 +640,66 @@ const onAnswer = (index: number) => emit('answer-question', index);
 
 .hud-main {
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
+  gap: 1.1rem;
+  flex-wrap: nowrap;
+  align-items: stretch;
 }
 
 .hud-group {
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 0;
+  min-width: 0;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 14px;
-  padding: 0.9rem 1.1rem;
+  padding: 0.85rem 1rem;
   color: #fff;
   position: relative;
+  backdrop-filter: blur(6px);
+}
+
+.hud-group--compact {
+  flex: 0.85 1 0;
+}
+
+.bonus-anchor {
+  position: relative;
+}
+
+.bonus-chip {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.25rem;
+  background: rgba(255, 223, 94, 0.95);
+  color: #0b0b0f;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  box-shadow: 0 12px 24px rgba(255, 190, 92, 0.35);
+  pointer-events: none;
+  white-space: nowrap;
+  transform-origin: center;
+}
+
+.bonus-chip--timer {
+  left: 50%;
+  right: auto;
+  top: -0.75rem;
+  transform: translate(-50%, 0);
+}
+
+.bonus-pop-enter-active,
+.bonus-pop-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.bonus-pop-enter-from,
+.bonus-pop-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.9);
+}
+
+.bonus-pop-enter-to {
+  transform: translateY(0) scale(1);
 }
 
 .hud-label {
@@ -426,7 +711,7 @@ const onAnswer = (index: number) => emit('answer-question', index);
 }
 
 .hud-value {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
@@ -439,18 +724,33 @@ const onAnswer = (index: number) => emit('answer-question', index);
   display: flex;
   gap: 0.35rem;
   font-size: 1.35rem;
+  white-space: nowrap;
 }
 
 .lives .lost {
   opacity: 0.35;
 }
 
+.lives-group {
+  flex: 1.35 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
 .hud-progress {
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 1.25rem;
   color: #fff;
+}
+
+.progress-track {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: nowrap;
 }
 
 .timer-wrapper {
@@ -458,11 +758,21 @@ const onAnswer = (index: number) => emit('answer-question', index);
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+}
+
+.timer-circle-start {
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.35));
+}
+
+.progress-track .question-progress {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .timer-circle {
-  width: 120px;
-  height: 120px;
+  width: 72px;
+  height: 72px;
 }
 
 .timer-circle-bg {
@@ -478,13 +788,6 @@ const onAnswer = (index: number) => emit('answer-question', index);
   transform: rotate(-90deg);
   transform-origin: center;
   transition: stroke-dashoffset 0.35s ease;
-}
-
-.timer-label {
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 .question-progress,
@@ -506,16 +809,30 @@ const onAnswer = (index: number) => emit('answer-question', index);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
+  position: relative;
 }
 
 .progress-bar-fill {
   height: 100%;
   background: var(--trivia-primary, #8c52ff);
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .progress-bar-fill.is-warning {
   background: var(--trivia-secondary, #ff9f1c);
+}
+
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--progress-start-color, var(--trivia-primary, #8c52ff));
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.35);
 }
 
 .loading-state {
@@ -536,6 +853,7 @@ const onAnswer = (index: number) => emit('answer-question', index);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
   color: #fff;
+  width: 100%;
 }
 
 .power-ups-title {
@@ -604,14 +922,11 @@ const onAnswer = (index: number) => emit('answer-question', index);
   }
 
   .hud-main {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    gap: 0.75rem;
+    gap: 0.55rem;
   }
 
   .hud-group {
-    min-width: 0;
-    padding: 0.65rem 0.75rem;
+    padding: 0.65rem 0.7rem;
     border-radius: 12px;
   }
 
@@ -624,6 +939,10 @@ const onAnswer = (index: number) => emit('answer-question', index);
     font-size: 1.2rem;
   }
 
+  .hud-group--compact .hud-value {
+    font-size: 1.05rem;
+  }
+
   .hud-sub {
     font-size: 0.65rem;
   }
@@ -633,11 +952,17 @@ const onAnswer = (index: number) => emit('answer-question', index);
     gap: 0.25rem;
   }
 
+  .lives-group {
+    flex: 1.4 1 0;
+    gap: 0.2rem;
+  }
+
   .hud-progress {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     gap: 0.75rem;
+  }
+
+  .progress-track {
+    gap: 0.6rem;
   }
 
   .timer-wrapper {
@@ -651,13 +976,19 @@ const onAnswer = (index: number) => emit('answer-question', index);
   }
 
   .timer-circle {
-    width: 72px;
-    height: 72px;
+    width: 66px;
+    height: 66px;
   }
 
-  .timer-label {
+  .bonus-chip {
+    top: -0.2rem;
+    right: -0.15rem;
     font-size: 0.75rem;
-    letter-spacing: 0.06em;
+    padding: 0.1rem 0.35rem;
+  }
+
+  .bonus-chip--timer {
+    top: -0.55rem;
   }
 
   .question-progress,

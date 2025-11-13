@@ -69,6 +69,10 @@
     "./api/useCollection": {
       "types": "./dist/api/useCollection.d.ts",
       "default": "./dist/api/useCollection.js"
+    },
+    "./trivia/scoring": {
+      "types": "./dist/trivia/scoring.d.ts",
+      "default": "./dist/trivia/scoring.js"
     }
   }
 }

@@ -62,7 +62,8 @@ Rewrite code check list:
 19.  make db ruls to keep trivia game secure and all other collections
 20 - unlisted
 
-done
+
+DONE
 6. 🧩Leaderboard service not function
 13. Understand Pyramid add item and pyramid state
 14. 🧩Service to get game (remove all firebase ref) and get daily chalange (leaderboard from service and component)

@@ -86,7 +86,7 @@ function handleSelect(gameTypeId: string) {
 
 <style scoped>
 .build-section {
-  --section-stack-gap: clamp(var(--space-7), 6vh, var(--space-8));
+  --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-5));
 }
 
 .build-section.is-rtl {

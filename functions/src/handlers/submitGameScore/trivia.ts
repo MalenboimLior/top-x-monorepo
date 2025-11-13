@@ -5,6 +5,11 @@ import type {
   UserGameCustomData,
   UserGameDataSubmission,
 } from '@top-x/shared/types/user';
+import {
+  calculateTriviaSpeedBonus,
+  TRIVIA_PER_QUESTION_BASE_POINTS,
+  TRIVIA_STREAK_BONUS_STEP,
+} from '@top-x/shared/trivia/scoring';
 
 const TRIVIA_HASH_VALUE_PATTERN = /^[a-f0-9]{64}$/i;
 
@@ -12,6 +17,9 @@ export interface TriviaAttemptSubmission {
   questionId: string;
   answerHash: string;
   answeredAt?: string;
+  durationSeconds?: number;
+  timeRemainingSeconds?: number;
+  speedBonus?: number;
 }
 
 export interface TriviaSubmissionPayload {
@@ -49,6 +57,10 @@ export interface TriviaProcessingMetrics {
   attemptCount: number;
   correctCount: number;
   accuracy: number;
+  basePoints?: number;
+  streakBonus?: number;
+  speedBonus?: number;
+  lastSpeedBonus?: number;
   bestStreak?: number;
   currentStreak?: number;
   mode?: string;
@@ -241,6 +253,23 @@ export function extractTriviaSubmission(custom: UserGameCustomData | undefined):
     return null;
   }
 
+  const parseOptionalNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return undefined;
+      }
+      const parsed = Number(trimmed);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return undefined;
+  };
+
   const attempts: TriviaAttemptSubmission[] = [];
   const rawAttempts = candidate.attempts;
 
@@ -274,6 +303,30 @@ export function extractTriviaSubmission(custom: UserGameCustomData | undefined):
         questionId,
         answerHash: normalizedHash,
       };
+
+      const durationSeconds = parseOptionalNumber(
+        (attemptRecord.durationSeconds as unknown)
+        ?? (attemptRecord.timerSeconds as unknown)
+        ?? (attemptRecord.duration as unknown),
+      );
+      if (typeof durationSeconds === 'number' && durationSeconds >= 0) {
+        attempt.durationSeconds = durationSeconds;
+      }
+
+      const timeRemainingSeconds = parseOptionalNumber(
+        (attemptRecord.timeRemainingSeconds as unknown)
+        ?? (attemptRecord.remainingSeconds as unknown)
+        ?? (attemptRecord.timeRemaining as unknown)
+        ?? (attemptRecord.secondsRemaining as unknown),
+      );
+      if (typeof timeRemainingSeconds === 'number' && timeRemainingSeconds >= 0) {
+        attempt.timeRemainingSeconds = timeRemainingSeconds;
+      }
+
+      const speedBonus = parseOptionalNumber(attemptRecord.speedBonus);
+      if (typeof speedBonus === 'number' && speedBonus >= 0) {
+        attempt.speedBonus = speedBonus;
+      }
 
       if (typeof attemptRecord.answeredAt === 'string') {
         attempt.answeredAt = attemptRecord.answeredAt;
@@ -397,6 +450,27 @@ export async function processTriviaSubmission({
     });
   }
 
+  const MAX_TIMER_SECONDS = 300;
+
+  const extractTimerSeconds = (info: TriviaQuestionInfo | undefined): number | undefined => {
+    if (!info?.docData) {
+      return undefined;
+    }
+    const data = info.docData as Record<string, unknown>;
+    const direct = data.timerSeconds;
+    if (typeof direct === 'number' && Number.isFinite(direct) && direct > 0) {
+      return direct;
+    }
+    const timerField = data.timer;
+    if (timerField && typeof timerField === 'object') {
+      const timerSeconds = (timerField as Record<string, unknown>).seconds;
+      if (typeof timerSeconds === 'number' && Number.isFinite(timerSeconds) && timerSeconds > 0) {
+        return timerSeconds;
+      }
+    }
+    return undefined;
+  };
+
   for (let index = 0; index < questionDocs.length; index += 1) {
     const docSnapshot = questionDocs[index];
     const questionId = triviaSubmission.questionIds[index];
@@ -466,8 +540,15 @@ export async function processTriviaSubmission({
 
   const questionDeltas = new Map<string, TriviaQuestionStatsDelta>();
   let correctCount = 0;
+  let totalScore = 0;
+  let totalSpeedBonus = 0;
+  let totalStreakBonus = 0;
+  let totalBasePoints = 0;
+  let currentComputedStreak = 0;
+  let bestComputedStreak = 0;
+  let lastSpeedBonus = 0;
 
-  triviaSubmission.attempts.forEach((attempt) => {
+  triviaSubmission.attempts.forEach((attempt, attemptIndex) => {
     const questionInfo = questionInfoMap.get(attempt.questionId);
     if (!questionInfo) {
       throw new functions.https.HttpsError('invalid-argument', `Unknown trivia question attempted: ${attempt.questionId}`);
@@ -486,19 +567,85 @@ export async function processTriviaSubmission({
     if (questionInfo.correctHashes.has(normalizedHash)) {
       delta.correct += 1;
       correctCount += 1;
+
+      currentComputedStreak += 1;
+      bestComputedStreak = Math.max(bestComputedStreak, currentComputedStreak);
+
+      const basePoints = TRIVIA_PER_QUESTION_BASE_POINTS;
+      const streakBonus = Math.max(0, currentComputedStreak - 1) * TRIVIA_STREAK_BONUS_STEP;
+
+      const durationCandidate =
+        typeof attempt.durationSeconds === 'number'
+          && Number.isFinite(attempt.durationSeconds)
+          && attempt.durationSeconds > 0
+          ? attempt.durationSeconds
+          : extractTimerSeconds(questionInfo);
+      const durationSeconds =
+        typeof durationCandidate === 'number'
+          && Number.isFinite(durationCandidate)
+          && durationCandidate > 0
+          ? Math.min(durationCandidate, MAX_TIMER_SECONDS)
+          : undefined;
+
+      const remainingCandidate =
+        typeof attempt.timeRemainingSeconds === 'number' && Number.isFinite(attempt.timeRemainingSeconds)
+          ? Math.max(0, attempt.timeRemainingSeconds)
+          : undefined;
+      const timeRemainingSeconds =
+        typeof durationSeconds === 'number'
+          ? Math.min(remainingCandidate ?? 0, durationSeconds)
+          : remainingCandidate;
+
+      const computedSpeedBonus = calculateTriviaSpeedBonus(timeRemainingSeconds, durationSeconds);
+      if (
+        typeof attempt.speedBonus === 'number'
+        && Math.abs(attempt.speedBonus - computedSpeedBonus) > TRIVIA_STREAK_BONUS_STEP
+      ) {
+        console.warn('submitGameScore: trivia speed bonus mismatch', {
+          gameId: gameRef.id,
+          questionId: attempt.questionId,
+          attemptIndex,
+          reported: attempt.speedBonus,
+          computed: computedSpeedBonus,
+        });
+      }
+
+      lastSpeedBonus = computedSpeedBonus;
+      totalSpeedBonus += computedSpeedBonus;
+      totalBasePoints += basePoints;
+      totalStreakBonus += streakBonus;
+      totalScore += basePoints + streakBonus + computedSpeedBonus;
+    } else {
+      currentComputedStreak = 0;
+      lastSpeedBonus = 0;
     }
   });
 
   const attemptCount = triviaSubmission.attempts.length;
   const accuracy = attemptCount > 0 ? correctCount / attemptCount : 0;
 
+  const bestStreakCandidates = [
+    bestComputedStreak,
+    typeof triviaSubmission.bestStreak === 'number' ? triviaSubmission.bestStreak : 0,
+    typeof triviaSubmission.currentStreak === 'number' ? triviaSubmission.currentStreak : 0,
+  ];
+  const resolvedBestStreak = Math.max(...bestStreakCandidates);
+  const resolvedCurrentStreak = Math.max(
+    currentComputedStreak,
+    typeof triviaSubmission.currentStreak === 'number' ? triviaSubmission.currentStreak : 0,
+  );
+
   const metrics: TriviaProcessingMetrics = {
-    score: correctCount,
+    score: totalScore,
     attemptCount,
     correctCount,
     accuracy,
-    bestStreak: triviaSubmission.bestStreak,
-    currentStreak: triviaSubmission.currentStreak,
+    basePoints: totalBasePoints,
+    streakBonus: totalStreakBonus,
+    speedBonus: totalSpeedBonus,
+    lastSpeedBonus,
+    bestStreak: resolvedBestStreak,
+    currentStreak: resolvedCurrentStreak,
     mode: triviaSubmission.mode ?? triviaConfig?.mode ?? 'fixed',
     questionIds: triviaSubmission.questionIds,
   };
@@ -551,9 +698,17 @@ export async function processTriviaSubmission({
     lastQuestionIds: metrics.questionIds,
     lastMode: metrics.mode,
     reportedAttemptCount: triviaSubmission.reportedAttemptCount,
-    sessionBestStreak: triviaSubmission.bestStreak,
-    sessionCurrentStreak: triviaSubmission.currentStreak,
+    sessionBestStreak: metrics.bestStreak,
+    sessionCurrentStreak: metrics.currentStreak,
   };
+
+  if (typeof metrics.speedBonus === 'number') {
+    nextTrivia.lastSpeedBonusTotal = metrics.speedBonus;
+    nextTrivia.speedBonusTotal = metrics.speedBonus;
+  }
+  if (typeof metrics.lastSpeedBonus === 'number') {
+    nextTrivia.lastSpeedBonus = metrics.lastSpeedBonus;
+  }
 
   Object.keys(nextTrivia).forEach((key) => {
     if (nextTrivia[key] === undefined) {
@@ -568,6 +723,8 @@ export async function processTriviaSubmission({
     triviaSubmission.bestStreak ?? 0,
     triviaSubmission.currentStreak ?? 0,
     typeof submittedGameData.streak === 'number' ? submittedGameData.streak : 0,
+    metrics.bestStreak ?? 0,
+    metrics.currentStreak ?? 0,
   );
 
   updatedSubmission.streak = resolvedStreak;

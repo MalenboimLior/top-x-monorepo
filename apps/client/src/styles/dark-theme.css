@@ -1,4 +1,6 @@
 /* src/styles/dark-theme.css #c4ff00  */
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap');
+/*@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');*/
 /* Override Bulma's global color scheme for dark mode */
 :root {
   --bulma-scheme-main: #000000; /* Dark background */
@@ -10,7 +12,7 @@
   --bulma-border: #333; /* Subtle borders */
   --bulma-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Darker shadow */
   
-  --bulma-body-family: 'assistant', sans-serif; /* Use Assistant font */
+  --bulma-body-family: 'Assistant', sans-serif; /* Use Assistant font */
 
    /* Override Bulma success color for dark mode */
   --bulma-success: #00e8e0; /* Use X.com blue for success */

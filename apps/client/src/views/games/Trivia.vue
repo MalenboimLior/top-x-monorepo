@@ -32,6 +32,8 @@
         :score="score"
         :streak="streak"
         :session-best-streak="sessionBestStreak"
+        :last-speed-bonus="lastSpeedBonus"
+        :last-streak-bonus="lastStreakBonus"
         :lives="lives"
         :total-lives="configLives"
         :unlimited-lives="unlimitedLives"
@@ -78,7 +80,6 @@
         :show-answer-summary="shouldShowAnswerSummary"
         :answer-summary="answerSummary"
         @play-again="resetGame"
-        @share="shareScore"
         @login="login"
         @add-frenemy="addToFrenemies"
       />
@@ -205,6 +206,8 @@ const timeLeft = computed(() => triviaStore.timeLeft);
 const questionTimerDuration = computed(() => triviaStore.questionTimerDuration);
 const globalTimeLeft = computed(() => triviaStore.globalTimeLeft);
 const streak = computed(() => triviaStore.streak);
+const lastSpeedBonus = computed(() => triviaStore.lastSpeedBonus);
+const lastStreakBonus = computed(() => triviaStore.lastStreakBonus);
 const leaderboard = computed(() => triviaStore.leaderboard);
 const isLoading = computed(() => triviaStore.isLoading);
 const isLoggedIn = computed(() => !!userStore.user);
@@ -318,16 +321,6 @@ const resetGame = () => {
   triviaStore.resetGame();
   percentileRank.value = 0;
   usersTopped.value = 0;
-};
-
-const shareScore = () => {
-  if (!userStore.user) {
-    userStore.loginWithX();
-    return;
-  }
-  const text = `${shareText.value} ${shareUrl.value}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(tweetUrl, '_blank');
 };
 
 const login = async () => {

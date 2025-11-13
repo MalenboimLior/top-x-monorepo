@@ -72,6 +72,11 @@
                 <footer class="build-game-card__actions">
                   <CustomButton type="is-primary is-small" label="Edit" @click="editGame(game)" />
                   <CustomButton
+                    type="is-link is-small"
+                    :label="content.games.open"
+                    @click="openGame(game)"
+                  />
+                  <CustomButton
                     :type="game.active ? 'is-warning is-small' : 'is-success is-small'"
                     :label="game.active ? 'Unpublish' : 'Publish'"
                     @click="togglePublish(game)"
@@ -156,6 +161,7 @@ const defaultContent = computed(() => ({
     title: t('build.games.title'),
     subtitle: t('build.games.subtitle'),
     empty: t('build.games.empty'),
+    open: t('build.games.open'),
   },
   editor: {
     back: t('build.editor.back'),
@@ -251,6 +257,13 @@ async function togglePublish(game: Game) {
   } catch (err) {
     console.error('Error toggling publish:', err);
   }
+}
+
+function openGame(game: Game) {
+  if (!game.id || typeof window === 'undefined') {
+    return;
+  }
+  window.open(`/games/info?game=${game.id}`, '_blank', 'noopener');
 }
 
 function handleSave() {

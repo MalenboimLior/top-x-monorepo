@@ -165,17 +165,27 @@ const answer = (index: number) => {
   position: relative;
   overflow: hidden;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  min-width: 0;
 }
 
 .question-header {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 0.85rem;
 }
 
 .question-text {
   flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(140, 82, 255, 0.16), rgba(56, 189, 248, 0.18));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
 }
 
 .question-prompt {
@@ -187,11 +197,13 @@ const answer = (index: number) => {
 }
 
 .question-title {
-  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
   font-weight: 700;
   color: #fff;
-  line-height: 1.3;
+  line-height: 1.28;
   margin: 0;
+  letter-spacing: 0.01em;
+  text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 28px rgba(140, 82, 255, 0.35);
 }
 
 .question-difficulty {
@@ -337,6 +349,16 @@ const answer = (index: number) => {
   .question-header {
     flex-direction: column;
     align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .question-text {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .question-title {
+    font-size: clamp(1.4rem, 5vw, 1.75rem);
   }
 
   .question-media {

@@ -347,6 +347,7 @@ export const submitGameScore = functions.https.onCall(async (
         const previousTriviaTotals = previousGameData?.custom?.trivia as Record<string, unknown> | undefined;
         const previousTotalAttemptsValue = previousTriviaTotals?.totalAttempts;
         const previousBestStreakValue = previousTriviaTotals?.bestStreak;
+        const previousAggregateSpeedBonusValue = previousTriviaTotals?.aggregateSpeedBonusTotal;
         const existingTotalAttempts = typeof triviaCustom.totalAttempts === 'number'
           ? (triviaCustom.totalAttempts as number)
           : typeof previousTotalAttemptsValue === 'number'
@@ -356,6 +357,11 @@ export const submitGameScore = functions.https.onCall(async (
           ? (triviaCustom.bestStreak as number)
           : typeof previousBestStreakValue === 'number'
             ? previousBestStreakValue
+            : 0;
+        const existingAggregateSpeedBonus = typeof triviaCustom.aggregateSpeedBonusTotal === 'number'
+          ? (triviaCustom.aggregateSpeedBonusTotal as number)
+          : typeof previousAggregateSpeedBonusValue === 'number'
+            ? previousAggregateSpeedBonusValue
             : 0;
 
         triviaCustom.totalAttempts = existingTotalAttempts + triviaMetrics.attemptCount;
@@ -371,6 +377,20 @@ export const submitGameScore = functions.https.onCall(async (
         triviaCustom.lastQuestionIds = triviaMetrics.questionIds;
         if (triviaMetrics.mode) {
           triviaCustom.lastMode = triviaMetrics.mode;
+        }
+        if (typeof triviaMetrics.speedBonus === 'number') {
+          triviaCustom.speedBonusTotal = triviaMetrics.speedBonus;
+          triviaCustom.lastSpeedBonusTotal = triviaMetrics.speedBonus;
+          triviaCustom.aggregateSpeedBonusTotal = existingAggregateSpeedBonus + triviaMetrics.speedBonus;
+        }
+        if (typeof triviaMetrics.lastSpeedBonus === 'number') {
+          triviaCustom.lastSpeedBonus = triviaMetrics.lastSpeedBonus;
+        }
+        if (typeof triviaMetrics.basePoints === 'number') {
+          triviaCustom.lastBasePoints = triviaMetrics.basePoints;
+        }
+        if (typeof triviaMetrics.streakBonus === 'number') {
+          triviaCustom.lastStreakBonus = triviaMetrics.streakBonus;
         }
 
         baseCustom.trivia = triviaCustom;
