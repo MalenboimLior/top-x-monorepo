@@ -126,7 +126,7 @@ import { collection, doc, getDoc, getDocs, updateDoc, writeBatch, type DocumentR
 import type { Game } from '@top-x/shared/types/game';
 import type { TriviaConfig, TriviaQuestion } from '@top-x/shared/types/trivia';
 import { db } from '@top-x/shared';
-import { computeAnswerHash, ensureSalt, hasHashSecret } from '@/utils/triviaHash';
+import { computeAnswerHash, ensureSalt, hasHashSecret } from '@top-x/shared/utils/triviaHash';
 
 interface LoadedSubQuestion {
   id: string;

@@ -15,7 +15,12 @@ import { nowIso, toViewModel } from './utils';
 import { hashAnswer, shuffleArray } from '@/services/trivia';
 import { doc, getDoc } from 'firebase/firestore';
 import { fetchTriviaQuestions, type FetchTriviaQuestionsResponse, type TriviaQuestionPayload } from '../../services/triviaApi';
-import { db } from '@top-x/shared';
+import {
+  db,
+  calculateTriviaSpeedBonus,
+  TRIVIA_PER_QUESTION_BASE_POINTS,
+  TRIVIA_STREAK_BONUS_STEP,
+} from '@top-x/shared';
 import { useUserStore } from '../user';
 
 interface TriviaLeaderboardEntry {
@@ -58,6 +63,9 @@ export const useTriviaStore = defineStore('trivia', () => {
   const sessionBestStreak = ref(0);
   const bestScore = ref(0);
   const bestStreak = ref(0);
+  const speedBonusTotal = ref(0);
+  const lastSpeedBonus = ref(0);
+  const lastStreakBonus = ref(0);
   const leaderboard = ref<TriviaLeaderboardEntry[]>([]);
   const isLoading = ref(false);
   const inviter = ref<InviterSnapshot | null>(null);
@@ -245,17 +253,32 @@ function toReviewOptions(question: TriviaQuestionViewModel): TriviaAnswerReview[
 
 async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | null): Promise<number | null> {
   if (!question?.correctHash) {
+    if (question) {
+      console.warn('[Trivia] Missing correct hash for question; cannot determine answer', {
+        id: question.id,
+        options: question.options,
+      });
+    }
     return null;
   }
+
+  const attemptedHashes: { option: string; hash: string }[] = [];
 
   for (let i = 0; i < question.options.length; i++) {
     const option = question.options[i];
     const answerText = typeof option === 'string' ? option : option.text;
     const hash = await hashAnswer(question.id, answerText, question.salt);
+    attemptedHashes.push({ option: answerText, hash });
     if (hash === question.correctHash) {
       return i;
     }
   }
+
+  console.warn('[Trivia] No option hash matched correct hash', {
+    id: question.id,
+    correctHash: question.correctHash,
+    attemptedHashes,
+  });
 
   return null;
 }
@@ -590,22 +613,36 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     } as PowerUpState);
   }
 
-  async function recordAttempt(question: TriviaQuestionViewModel, answerIndex: number): Promise<string> {
+  interface AttemptMetadata {
+    durationSeconds?: number;
+    timeRemainingSeconds?: number;
+  }
+
+  async function recordAttempt(
+    question: TriviaQuestionViewModel,
+    answerIndex: number,
+    metadata?: AttemptMetadata,
+  ): Promise<{ hash: string; attempt: TriviaAttemptPayload }> {
     // Get the answer text from the option
     const option = question.options[answerIndex];
     const answerText = typeof option === 'string' ? option : option.text;
     
     const hash = await hashAnswer(question.id, answerText, question.salt);
-    attempts.value.push({
+    const attemptEntry: TriviaAttemptPayload = {
       questionId: question.id,
       answerHash: hash,
       answeredAt: nowIso(),
-    });
+      durationSeconds: metadata?.durationSeconds,
+      timeRemainingSeconds: metadata?.timeRemainingSeconds,
+    };
+    attempts.value.push(attemptEntry);
     answeredQuestionIds.value.push(question.id);
-    return hash;
+    return { hash, attempt: attemptEntry };
   }
 
   function applyIncorrectAnswer(): void {
+    lastSpeedBonus.value = 0;
+    lastStreakBonus.value = 0;
     if (!unlimitedLives.value) {
       lives.value -= 1;
     }
@@ -613,13 +650,21 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     updateBestStreaks();
   }
 
-  function applyCorrectAnswer(): void {
+  interface CorrectAnswerOptions {
+    speedBonus?: number;
+  }
+
+  function applyCorrectAnswer(options?: CorrectAnswerOptions): void {
     streak.value += 1;
     updateBestStreaks();
 
-    const basePoints = 100;
-    const streakBonus = Math.max(0, streak.value - 1) * 10;
-    score.value += basePoints + streakBonus;
+    const basePoints = TRIVIA_PER_QUESTION_BASE_POINTS;
+    const streakBonus = Math.max(0, streak.value - 1) * TRIVIA_STREAK_BONUS_STEP;
+    const speedBonus = Math.max(0, options?.speedBonus ?? 0);
+    score.value += basePoints + streakBonus + speedBonus;
+    speedBonusTotal.value += speedBonus;
+    lastSpeedBonus.value = speedBonus;
+    lastStreakBonus.value = streakBonus;
 
     correctAttempts.value += 1;
 
@@ -650,6 +695,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       questionId: questionSnapshot.id,
       answerHash: hash,
       answeredAt: nowIso(),
+      durationSeconds: questionTimerDuration.value,
+      timeRemainingSeconds: 0,
+      speedBonus: 0,
     });
     answeredQuestionIds.value.push(questionSnapshot.id);
 
@@ -708,20 +756,38 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     }
 
     const questionSnapshot = currentQuestion.value;
+    const durationSeconds = questionTimerDuration.value;
+    const timeRemainingSeconds = questionTimeLeft.value;
     selectedAnswer.value = index;
-    const answerHash = await recordAttempt(questionSnapshot, index);
+    const { hash: answerHash, attempt: attemptEntry } = await recordAttempt(
+      questionSnapshot,
+      index,
+      {
+        durationSeconds,
+        timeRemainingSeconds,
+      },
+    );
     
     // Validate answer by comparing hash
     const option = questionSnapshot.options[index];
     const answerText = typeof option === 'string' ? option : option.text;
     const expectedHash = questionSnapshot.correctHash;
     const correct = expectedHash ? expectedHash === answerHash : false;
+    const speedBonus = correct
+      ? calculateTriviaSpeedBonus(timeRemainingSeconds, durationSeconds)
+      : 0;
+    if (speedBonus > 0) {
+      attemptEntry.speedBonus = speedBonus;
+    }
     
     console.log('[Trivia] Answer validation:', {
       answerText,
       answerHash,
       expectedHash,
       correct,
+      durationSeconds,
+      timeRemainingSeconds,
+      speedBonus,
     });
     
     isCorrect.value = correct;
@@ -729,7 +795,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
 
     if (correct) {
       console.log('[Trivia] Correct answer! Score:', score.value, 'Streak:', streak.value);
-      applyCorrectAnswer();
+      applyCorrectAnswer({ speedBonus });
     } else {
       console.log('[Trivia] Incorrect answer. Lives:', lives.value, 'Streak:', streak.value);
       applyIncorrectAnswer();
@@ -787,6 +853,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     selectedAnswer.value = null;
     isCorrect.value = null;
     score.value = 0;
+    speedBonusTotal.value = 0;
+    lastSpeedBonus.value = 0;
+    lastStreakBonus.value = 0;
     lives.value = unlimitedLives.value ? Infinity : (activeConfig.value?.lives ?? DEFAULT_LIVES);
     currentQuestion.value = null;
     questionQueue.value = [];
@@ -851,6 +920,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
           lastCorrect: correctAttempts.value,
           lastQuestionIds: questionOrder.value,
           bestStreak: sessionBestStreak.value,
+          speedBonusTotal: speedBonusTotal.value,
+          lastSpeedBonus: lastSpeedBonus.value,
+          lastStreakBonus: lastStreakBonus.value,
         },
       },
     };
@@ -886,6 +958,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
           correctCount: correctAttempts.value,
           bestStreak: sessionBestStreak.value,
           currentStreak: streak.value,
+          speedBonusTotal: speedBonusTotal.value,
+          lastSpeedBonus: lastSpeedBonus.value,
+          lastStreakBonus: lastStreakBonus.value,
         },
       },
     };
@@ -1069,6 +1144,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     questionTimerDuration,
     globalTimeLeft,
     attempts,
+    speedBonusTotal,
+    lastSpeedBonus,
+    lastStreakBonus,
     answerReview,
     attemptCount,
     correctAttemptCount,

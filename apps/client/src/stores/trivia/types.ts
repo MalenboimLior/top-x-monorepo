@@ -32,6 +32,9 @@ export interface TriviaAttemptPayload {
   questionId: string;
   answerHash: string;
   answeredAt: string;
+  durationSeconds?: number;
+  timeRemainingSeconds?: number;
+  speedBonus?: number;
 }
 
 export interface TriviaAnswerReviewOption {

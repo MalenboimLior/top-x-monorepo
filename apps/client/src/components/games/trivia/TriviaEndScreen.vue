@@ -26,6 +26,7 @@
 
       <div v-if="percentileRank > 0 && isLoggedIn" class="percentile-wrapper">
         <PercentileRank
+          ref="percentileRankRef"
           :user-image="userImage"
           :username="username"
           :percentile="percentileRank"
@@ -53,12 +54,11 @@
           label="Play again"
           @click="$emit('play-again')"
         />
-        <CustomButton
-          v-if="shareUrl"
-          type="is-info"
-          :icon="['fas', 'share']"
-          :label="isLoggedIn ? 'Share run' : 'Share challenge'"
-          @click="$emit('share')"
+        <ShareButton
+          v-if="isLoggedIn && shareButtonImage"
+          :share-text="shareContent"
+          :image-url="shareButtonImage"
+          file-name="top-x-trivia"
         />
         <CustomButton
           v-if="!isLoggedIn"
@@ -136,11 +136,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
 import PercentileRank from '@/components/PercentileRank.vue';
+import ShareButton from '@/components/ShareButton.vue';
 import { useUserStore } from '@/stores/user';
 import type { TriviaAnswerReview } from '@/stores/trivia/types';
 
@@ -194,7 +195,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 defineEmits<{
   (e: 'play-again'): void;
-  (e: 'share'): void;
   (e: 'login'): void;
   (e: 'add-frenemy', uid: string): void;
 }>();
@@ -235,6 +235,65 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
     entry.selectedIndex === optionIndex && entry.correctIndex !== optionIndex,
   'is-missed': entry.selectedIndex === null && entry.correctIndex === optionIndex,
 });
+
+const shareContent = computed(() => {
+  const parts = [props.shareText, props.shareUrl].filter((value): value is string => Boolean(value));
+  return parts.join(' ');
+});
+
+const percentileRankRef = ref<InstanceType<typeof PercentileRank> | null>(null);
+const shareButtonImage = ref<string | null>(null);
+const isGeneratingShareImage = ref(false);
+
+async function generateShareImage(): Promise<void> {
+  if (!props.isLoggedIn || props.percentileRank <= 0) {
+    shareButtonImage.value = null;
+    return;
+  }
+
+  const generator = percentileRankRef.value?.getImageDataUrl;
+  if (!generator) {
+    shareButtonImage.value = null;
+    return;
+  }
+
+  if (isGeneratingShareImage.value) {
+    return;
+  }
+
+  isGeneratingShareImage.value = true;
+  try {
+    await nextTick();
+    const image = await generator();
+    shareButtonImage.value = image;
+  } catch (error) {
+    console.error('[TriviaEndScreen] Failed to generate share image', error);
+    shareButtonImage.value = null;
+  } finally {
+    isGeneratingShareImage.value = false;
+  }
+}
+
+watch(
+  () => [props.isLoggedIn, props.percentileRank, props.usersTopped, props.bestScore, props.score],
+  () => {
+    void generateShareImage();
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  void generateShareImage();
+});
+
+watch(
+  () => percentileRankRef.value,
+  (value) => {
+    if (value) {
+      void generateShareImage();
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -251,6 +310,10 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
   padding: 2rem;
   color: #fff;
   box-shadow: 0 24px 45px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .summary-header {
@@ -270,16 +333,30 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
 }
 
 .summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  align-items: stretch;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.25rem;
+}
+
+.summary-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .summary-stat {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 1rem 1.25rem;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  scroll-snap-align: center;
 }
 
 .stat-label {
@@ -291,7 +368,7 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
@@ -349,6 +426,10 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
   border-radius: 18px;
   padding: 1.5rem;
   color: #fff;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .answer-review {
@@ -356,6 +437,10 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  width: 100%;
+  max-width: 720px;
+  margin: 2rem auto 0;
+  box-sizing: border-box;
 }
 
 .answer-review-title {
@@ -510,7 +595,32 @@ const reviewOptionClass = (entry: TriviaAnswerReview, optionIndex: number) => ({
 
 @media (max-width: 768px) {
   .summary-card {
-    padding: 1.5rem;
+    padding: 1.35rem;
+    border-radius: 16px;
+  }
+
+  .summary-grid {
+    gap: 0.65rem;
+    padding-bottom: 0.15rem;
+  }
+
+  .summary-stat {
+    min-width: 160px;
+    padding: 0.85rem 1rem;
+  }
+
+  .summary-actions {
+    padding: 0 0.5rem;
+  }
+
+  .leaderboard-card {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  .answer-review {
+    padding: 0 0.5rem;
+    margin-top: 1.5rem;
   }
 
   .answer-review-item {

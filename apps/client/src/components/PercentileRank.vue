@@ -1,6 +1,6 @@
 <!-- Shows how a user's score ranks globally -->
 <template>
-  <div class="percentile-rank-container">
+  <div ref="containerRef" class="percentile-rank-container">
     <div class="rank-content">
       <div class="media animate-item" style="--animation-delay: 0s;">
         <div class="media-left">
@@ -10,7 +10,7 @@
         </div>
         <div class="media-content">
           <p class="username has-text-white">{{ usernameWithAt }}</p>
-          <p class="score has-text-white">Scored {{ bestScore }} pts!</p>
+          <p class="score has-text-white">Scored {{ rankScore }} pts!</p>
         </div>
       </div>
       <p class="percentile has-text-white animate-item" style="--animation-delay: 0.2s;">
@@ -30,16 +30,13 @@
         Can you top me? 🔝
       </p>
     </div>
-    <div class="buttons mt-4 is-flex is-justified-center animate-item" style="--animation-delay: 0.8s;">
-      <CustomButton type="is-info" label="Share Score on " @click="shareScore"  :icon="['fab', 'x-twitter']" />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, nextTick } from 'vue';
+import html2canvas from 'html2canvas';
 import { useUserStore } from '@/stores/user';
-import CustomButton from '@top-x/shared/components/CustomButton.vue';
 
 interface Props {
   userImage: string;
@@ -58,9 +55,15 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const userStore = useUserStore();
+const containerRef = ref<HTMLDivElement | null>(null);
 
 const usernameWithAt = computed(() => {
-  return `@${userStore.profile?.username || 'Anonymous'}`;
+  const username = userStore.profile?.username?.replace(/^@+/, '') || 'Player';
+  return `@${username}`;
+});
+
+const rankScore = computed(() => {
+  return props.score || props.bestScore || 0;
 });
 
 const progressBarItems = computed(() => {
@@ -83,28 +86,12 @@ const progressBarString = computed(() => {
   return '■'.repeat(filled) + '□'.repeat(empty);
 });
 
-const shareScore = () => {
-  if (!userStore.user) {
-    console.log('User not logged in, prompting login');
-    userStore.loginWithX();
-    return;
-  }
-  const shareText = `I scored ${props.bestScore} pts in TOP-X Trivia! 🏆\n${progressBarString.value} | Top ${props.percentile}% #SmartestOnX #TriviaChallenge\nOutscored ${props.usersTopped} players! Can you beat me? 🔝\n`;
-  const url = `https://top-x.co/games/trivia?inviterUid=${userStore.user.uid}&gameId=trivia&score=${props.bestScore}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareText}${url}`)}`;
-  window.open(tweetUrl, '_blank');
-  console.log('Sharing score on X:', {
-    score: props.score,
-    percentile: props.percentile,
-    usersTopped: props.usersTopped,
-    url,
-  });
-};
-
 // Animation control
 const isAnimated = ref(false);
+const shareReady = ref(true);
 
 onMounted(() => {
+  shareReady.value = true;
   isAnimated.value = true;
 });
 
@@ -117,6 +104,34 @@ watch(
     }, 50); // Brief delay to reset animation
   }
 );
+
+async function getImageDataUrl(): Promise<string | null> {
+  if (!containerRef.value) {
+    return null;
+  }
+  try {
+    shareReady.value = false;
+    await nextTick();
+    containerRef.value.classList.add('share-capture');
+    const canvas = await html2canvas(containerRef.value, {
+      backgroundColor: '#0a0c19',
+      scale: 3,
+      useCORS: true,
+      logging: false,
+      ignoreElements: (element) => element.tagName === 'BUTTON',
+    });
+    const dataUrl = canvas.toDataURL('image/png');
+    return dataUrl;
+  } catch (error) {
+    console.error('[PercentileRank] Failed to generate image', error);
+    return null;
+  } finally {
+    containerRef.value?.classList.remove('share-capture');
+    shareReady.value = true;
+  }
+}
+
+defineExpose({ getImageDataUrl, progressBarString });
 </script>
 
 <style scoped>
@@ -124,6 +139,12 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.percentile-rank-container.share-capture .animate-item {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .rank-content {

@@ -23,6 +23,7 @@ const showShareTooltip = ref(false);
 const props = defineProps<{
   shareText: string;
   imageUrl: string | null;
+  fileName?: string;
 }>();
 
 // Check if Web Share API is supported
@@ -42,7 +43,10 @@ const handleShare = async () => {
 
   try {
     const blob = await (await fetch(props.imageUrl)).blob();
-    const file = new File([blob], 'top-x-pyramid.png', { type: blob.type || 'image/png' });
+    const filename = `${(props.fileName || 'top-x-share')
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]+/g, '-')}.png`;
+    const file = new File([blob], filename, { type: blob.type || 'image/png' });
     
     if (isMobile.value && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
@@ -64,7 +68,7 @@ const handleShare = async () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'top-x-pyramid.png';
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

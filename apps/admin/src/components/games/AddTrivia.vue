@@ -296,7 +296,7 @@ import type {
   TriviaAnswer,
   TriviaPowerUpRule,
 } from '@top-x/shared/types/trivia';
-import { computeAnswerHash, ensureSalt, hasHashSecret } from '@/utils/triviaHash';
+import { computeAnswerHash, ensureSalt, hasHashSecret } from '@top-x/shared/utils/triviaHash';
 
 interface TriviaConfigWithTheme extends TriviaConfig {
   theme: NonNullable<TriviaConfig['theme']>;

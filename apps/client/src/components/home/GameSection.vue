@@ -160,7 +160,7 @@ defineExpose({ el: rootRef });
 
 <style scoped>
 .game-section {
-  --section-stack-gap: clamp(var(--space-7), 6vh, var(--space-8));
+  --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-5));
 }
 
 .game-section.is-rtl {
@@ -171,27 +171,27 @@ defineExpose({ el: rootRef });
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: clamp(0.4rem, 1vw, 0.6rem);
-  padding-block: clamp(1.1rem, 2.4vw, 1.6rem);
-  padding-inline: clamp(1.5rem, 3vw, 2.1rem);
-  padding-inline-start: clamp(2.4rem, 5vw, 3.2rem);
-  border-radius: 24px;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.16), transparent 55%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
-  border: 1px solid rgba(0, 232, 224, 0.18);
-  box-shadow: 0 26px 48px rgba(0, 0, 0, 0.45);
+  gap: clamp(0.3rem, 0.8vw, 0.45rem);
+  padding-block: clamp(0.8rem, 2vw, 1.2rem);
+  padding-inline: clamp(1.2rem, 2.4vw, 1.6rem);
+  padding-inline-start: clamp(1.8rem, 4vw, 2.4rem);
+  border-radius: 18px;
+  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.58));
+  border: 1px solid rgba(0, 232, 224, 0.14);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
 
 .section-header__content::before {
   content: '';
   position: absolute;
-  inset-block: clamp(0.75rem, 2vw, 1.1rem);
-  inset-inline-start: clamp(0.9rem, 2vw, 1.2rem);
-  width: 4px;
+  inset-block: clamp(0.6rem, 1.6vw, 0.9rem);
+  inset-inline-start: clamp(0.75rem, 1.8vw, 1rem);
+  width: 3px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(0, 232, 224, 0.9), rgba(196, 255, 0, 0.9));
-  box-shadow: 0 0 18px rgba(0, 232, 224, 0.6);
+  box-shadow: 0 0 14px rgba(0, 232, 224, 0.5);
 }
 
 .section-header__content::after {
@@ -208,28 +208,29 @@ defineExpose({ el: rootRef });
 
 .section-title {
   margin: 0;
-  font-size: clamp(var(--font-size-700), 2vw + 1rem, var(--font-size-1000));
+  font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
   font-weight: 800;
   color: #ffffff;
-  text-shadow: 0 18px 46px rgba(0, 232, 224, 0.35);
+  text-shadow: 0 12px 28px rgba(0, 232, 224, 0.3);
 }
 
 .section-subtitle {
   margin: 0;
+  font-size: clamp(0.75rem, 0.7vw + 0.7rem, 1rem);
   color: rgba(255, 255, 255, 0.72);
   font-weight: 500;
   max-width: 36rem;
 }
 
 .game-section.is-rtl .section-header__content {
-  padding-inline-start: clamp(1.5rem, 3vw, 2.1rem);
-  padding-inline-end: clamp(2.4rem, 5vw, 3.2rem);
+  padding-inline-start: clamp(1.2rem, 2.4vw, 1.6rem);
+  padding-inline-end: clamp(1.8rem, 4vw, 2.4rem);
   text-align: right;
 }
 
 .game-section.is-rtl .section-header__content::before {
   inset-inline-start: auto;
-  inset-inline-end: clamp(0.9rem, 2vw, 1.2rem);
+  inset-inline-end: clamp(0.75rem, 1.8vw, 1rem);
 }
 
 .game-section.is-rtl .section-header__content::after {
@@ -258,8 +259,8 @@ defineExpose({ el: rootRef });
   }
 
   .section-header__content {
-    padding-inline: clamp(1.2rem, 4vw, 1.6rem);
-    padding-inline-start: clamp(2.1rem, 6vw, 2.6rem);
+    padding-inline: clamp(1rem, 3.4vw, 1.4rem);
+    padding-inline-start: clamp(1.6rem, 5vw, 2.1rem);
   }
 }
 
@@ -269,8 +270,8 @@ defineExpose({ el: rootRef });
   }
 
   .section-header__content {
-    padding-inline: clamp(1.1rem, 4vw, 1.4rem);
-    padding-inline-start: clamp(1.8rem, 6vw, 2.2rem);
+    padding-inline: clamp(0.9rem, 4vw, 1.2rem);
+    padding-inline-start: clamp(1.4rem, 6vw, 1.8rem);
   }
 }
 </style>

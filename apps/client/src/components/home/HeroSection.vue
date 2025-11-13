@@ -6,30 +6,35 @@
     <div class="hero-content">
       <img :src="logo" alt="TOP-X logo" class="hero-logo" />
 
-      <h1 class="hero-heading">Top Them All!</h1>
+      <h1 class="hero-heading" dir="ltr">Top Them All!</h1>
 
       <p class="hero-platform">{{ t('home.heroPlatform') }}</p>
 
       <p class="hero-tagline" aria-live="polite">
         <span class="tagline-text">{{ displayedTagline }}</span>
-        <span v-if="taglineAnimationRunning" class="tagline-cursor" aria-hidden="true"></span>
+        <span
+          class="tagline-cursor"
+          :class="{ 'is-active': taglineAnimationRunning }"
+          aria-hidden="true"
+        ></span>
       </p>
 
-      <p v-if="challengeVisible" class="hero-challenge">
+      <!-- <p v-if="challengeVisible" class="hero-challenge">
         <span class="challenge-crown" aria-hidden="true">👑</span>
         <span>{{ t('home.heroChallenge') }}</span>
-      </p>
+      </p> -->
 
-      <div class="hero-actions" :class="{ 'is-rtl': isRTL }">
+      <div class="hero-actions" >
+        <button class="hero-button hero-button--secondary" type="button" @click="onPlayClick">
+          {{ t('home.ctaPlay') }}
+        </button>
         <CustomButton
           class="hero-button hero-button--primary"
           type="is-primary"
           :label="t('home.ctaCreate')"
           @click="onCreateClick"
         />
-        <button class="hero-button hero-button--secondary" type="button" @click="onPlayClick">
-          {{ t('home.ctaPlay') }}
-        </button>
+        
       </div>
     </div>
 
@@ -99,7 +104,7 @@ function scheduleTaglineAnimation(text: string) {
       if (index === characters.length - 1) {
         taglineAnimationRunning.value = false;
       }
-    }, index * 85);
+    }, index * 60);
     typewriterTimeouts.push(timeout);
   });
 }
@@ -150,7 +155,10 @@ const logo = topxLogo;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(var(--space-7), 10vh, var(--space-9)) var(--layout-inline-padding) clamp(var(--space-8), 12vh, var(--space-9));
+  padding: clamp(var(--space-6), 5vh, var(--space-8))
+         var(--layout-inline-padding)
+         clamp(var(--space-6), 7vh, var(--space-8));
+
   background: rgba(5, 5, 5, 0.78);
   border-radius: clamp(28px, 6vw, 44px);
   border: 1px solid rgba(0, 232, 224, 0.16);
@@ -189,38 +197,42 @@ const logo = topxLogo;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(1rem, 2vh, 1.5rem);
+  gap: clamp(0.5rem, 1vh, 0.875rem);
 }
 
 .hero-logo {
-  width: min(140px, 26vw);
+  width: min(220px, 26vw);
   height: auto;
   filter: drop-shadow(0 18px 32px rgba(0, 232, 224, 0.35));
 }
 
 .hero-heading {
-  font-size: clamp(2.3rem, 5vw, 3.6rem);
+  font-size: clamp(1.6rem, 5vw, 2.7rem);
+  /*height: 70px;*/
   font-weight: 800;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /*  text-transform: uppercase;*/
   color: #00e8e0;
   margin: 0;
+  line-height: 1.15;
   text-shadow: 0 24px 55px rgba(0, 232, 224, 0.45);
 }
 
 .hero-platform {
-  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-size: clamp(1.5rem, 3.4vw, 2.3rem);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.88);
   margin: 0;
+  line-height: 1.15;
 }
 
 .hero-tagline {
-  font-size: clamp(1.4rem, 3.6vw, 2.1rem);
+  font-size: clamp(1.2rem, 3.2vw, 1.8rem);
   font-weight: 700;
   color: #c4ff00;
   margin: 0;
   min-height: 2.6rem;
+  line-height: 1.15;
 }
 
 .tagline-text {
@@ -233,6 +245,12 @@ const logo = topxLogo;
   height: 1.2em;
   margin-inline-start: 0.1em;
   background: #c4ff00;
+  opacity: 0;
+  animation: none;
+}
+
+.tagline-cursor.is-active {
+  opacity: 1;
   animation: blink 0.9s steps(1, start) infinite;
 }
 
@@ -371,26 +389,39 @@ const logo = topxLogo;
 
 @media (max-width: 960px) {
   .hero-section {
-    min-height: 70vh;
-    padding: clamp(var(--space-6), 12vh, var(--space-8)) var(--layout-inline-padding) clamp(var(--space-7), 10vh, var(--space-8));
+    min-height: 40vh;
+    padding: clamp(var(--space-2), 2vh, var(--space-3))
+             var(--layout-inline-padding)
+             clamp(var(--space-2), 2vh, var(--space-3));
   }
 }
 
 @media (max-width: 768px) {
   .hero-content {
-    gap: 1rem;
+    gap: clamp(0.4rem, 1.1vh, 0.65rem);
   }
 
   .hero-actions {
     flex-direction: column;
-  }
-
-  .hero-actions.is-rtl {
-    flex-direction: column;
+    margin-top: 0.4rem;
+    gap: 0.6rem;
   }
 
   .hero-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: clamp(var(--space-1), 1vh, var(--space-2))
+             var(--layout-inline-padding)
+             clamp(var(--space-1), 1vh, var(--space-2));
+  }
+
+  .hero-actions {
+    margin-top: 0.3rem;
+    gap: 0.5rem;
   }
 }
 </style>

@@ -93,9 +93,9 @@ const blocks = computed(() => {
 <style scoped>
 .how-it-works {
   position: relative;
-  padding-block: clamp(var(--space-10), 14vh, var(--space-12));
+  padding-block: clamp(var(--space-9), 12vh, var(--space-11));
   color: #ffffff;
-  --section-stack-gap: clamp(var(--space-7), 6vh, var(--space-8));
+  --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-5));
 }
 
 .how-it-works.is-rtl {

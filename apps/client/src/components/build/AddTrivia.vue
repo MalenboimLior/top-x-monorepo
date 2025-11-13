@@ -1,355 +1,508 @@
 <template>
-  <div class="add-trivia">
-    <h3 class="title is-4 has-text-white">Trivia Configuration</h3>
+  <div class="trivia-wizard">
+    <section v-if="activeStep === 'session'" class="wizard-layout">
+      <div class="wizard-layout__form">
+        <header class="wizard-header">
+          <p class="wizard-header__eyebrow">{{ t('build.trivia.session.eyebrow') }}</p>
+          <h2 class="wizard-header__title">{{ t('build.trivia.session.title') }}</h2>
+          <p class="wizard-header__subtitle">{{ t('build.trivia.session.subtitle') }}</p>
+        </header>
 
-    <section class="config-section">
-      <h4 class="subtitle is-5 has-text-white">Session Settings</h4>
-      <div class="columns is-multiline">
-        <div class="column is-half">
-          <label class="label has-text-white">Mode</label>
-          <div class="select is-fullwidth">
-            <select v-model="config.mode">
-              <option value="fixed">Fixed</option>
-              <option value="endless">Endless</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="column is-half">
-          <label class="label has-text-white">Language</label>
-          <input class="input" v-model="config.language" placeholder="en" />
-        </div>
-
-        <div v-if="config.mode === 'fixed'" class="column is-half">
-          <label class="label has-text-white">Total Questions</label>
-          <input class="input" type="number" v-model.number="config.totalQuestions" min="1" />
-        </div>
-
-        <div v-if="config.mode === 'fixed'" class="column is-half">
-          <label class="label has-text-white">Question Source</label>
-          <div class="select is-fullwidth">
-            <select v-model="config.questionSource">
-              <option value="pool">Question Pool (remote)</option>
-              <option value="inline">Inline (use configured list)</option>
-              <option value="hybrid">Hybrid (inline + pool)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="column is-half">
-          <label class="label has-text-white">Batch Size</label>
-          <input class="input" type="number" v-model.number="config.questionBatchSize" min="1" />
-        </div>
-
-        <div class="column is-half">
-          <label class="label has-text-white">Lives</label>
-          <input class="input" type="number" v-model.number="config.lives" min="0" />
-        </div>
-
-        <div v-if="config.mode === 'endless'" class="column is-half">
-          <label class="label has-text-white">Allow Repeats</label>
-          <label class="checkbox has-text-white">
-            <input type="checkbox" v-model="config.allowRepeats" />
-            Reuse questions when pool is exhausted
-          </label>
-        </div>
-
-        <div class="column is-half">
-          <label class="label has-text-white">Solve Threshold</label>
-          <input class="input" type="number" step="0.01" min="0" max="1" v-model.number="config.solveThreshold" />
-        </div>
-
-        <div class="column is-half">
-          <label class="label has-text-white">Show Correct Answers</label>
-          <label class="checkbox has-text-white">
-            <input type="checkbox" v-model="config.showCorrectAnswers" />
-            Reveal answers after each question
-          </label>
-        </div>
-      </div>
-    </section>
-
-    <section class="config-section">
-      <h4 class="subtitle is-5 has-text-white">Global Timer</h4>
-      <label class="checkbox has-text-white">
-        <input type="checkbox" v-model="config.globalTimer.enabled" />
-        Enable global timer
-      </label>
-      <div class="columns" v-if="config.globalTimer.enabled">
-        <div class="column is-half">
-          <label class="label has-text-white">Duration (seconds)</label>
-          <input class="input" type="number" min="0" v-model.number="config.globalTimer.durationSeconds" />
-        </div>
-      </div>
-    </section>
-
-    <section class="config-section">
-      <h4 class="subtitle is-5 has-text-white">Power-Ups</h4>
-      <div v-if="config.powerUps.length === 0" class="has-text-grey-light">No power-ups configured.</div>
-      <div v-for="(powerUp, index) in config.powerUps" :key="powerUp.id || index" class="box">
-        <div class="columns is-multiline">
-          <div class="column is-half">
-            <label class="label has-text-white">Identifier</label>
-            <input class="input" v-model="powerUp.id" placeholder="shield" />
-          </div>
-          <div class="column is-half">
-            <label class="label has-text-white">Label</label>
-            <input class="input" v-model="powerUp.label" placeholder="Shield" />
-          </div>
-          <div class="column is-one-third">
-            <label class="label has-text-white">Spawn Rate (0-1)</label>
-            <input class="input" type="number" step="0.01" min="0" max="1" v-model.number="powerUp.spawnRate" />
-          </div>
-          <div class="column is-one-third">
-            <label class="label has-text-white">Max Uses</label>
-            <input class="input" type="number" min="0" v-model.number="powerUp.maxUses" />
-          </div>
-          <div class="column is-one-third">
-            <label class="label has-text-white">Cooldown (s)</label>
-            <input class="input" type="number" min="0" v-model.number="powerUp.cooldownSeconds" />
-          </div>
-          <div class="column is-full">
-            <label class="label has-text-white">Description</label>
-            <textarea class="textarea" v-model="powerUp.description" placeholder="Explain how the power-up works"></textarea>
-          </div>
-        </div>
-        <div class="has-text-right">
-          <button class="button is-danger is-light" @click="removePowerUp(index)">Remove</button>
-        </div>
-      </div>
-      <CustomButton type="is-success" label="Add Power-Up" @click="addPowerUp" />
-    </section>
-
-    <section class="config-section">
-      <h4 class="subtitle is-5 has-text-white">Theme</h4>
-      <div class="columns is-multiline">
-        <div class="column is-one-third" v-for="field in themeFields" :key="field.key">
-          <label class="label has-text-white">{{ field.label }}</label>
-          <input
-            class="input"
-            :type="field.type"
-            v-model="config.theme[field.key as keyof typeof config.theme]"
-            :placeholder="field.placeholder"
-          />
-        </div>
-      </div>
-    </section>
-
-    <section class="config-section">
-      <div class="section-header">
-        <h4 class="subtitle is-5 has-text-white">Questions ({{ config.questions.length }})</h4>
-        <div class="actions">
-          <CustomButton type="is-info" label="Request xAI Questions" @click="requestAiQuestions" :disabled="isRequestingAi" />
-          <CustomButton type="is-success" label="Add Question" @click="addQuestion" />
-        </div>
-      </div>
-
-      <p v-if="aiError" class="help is-danger">{{ aiError }}</p>
-      <p v-if="isRequestingAi" class="help has-text-info">Requesting questions from xAI…</p>
-
-      <div v-if="generatedCandidates.length" class="generated-list">
-        <h5 class="subtitle is-6 has-text-white">AI Suggestions</h5>
-        <div v-for="candidate in generatedCandidates" :key="candidate.id" class="box ai-candidate">
-          <div class="candidate-header">
-            <div>
-              <strong>{{ candidate.question.text }}</strong>
-              <span v-if="candidate.question.category" class="tag is-info is-light">{{ candidate.question.category }}</span>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>{{ t('build.trivia.session.lives.title') }}</h3>
+            <p class="muted">{{ t('build.trivia.session.lives.hint') }}</p>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.unlimitedLives" />
+              <span>{{ t('build.trivia.session.lives.unlimited') }}</span>
+            </label>
+            <div v-if="!config.unlimitedLives" class="field">
+              <label :for="ids.lives">{{ t('build.trivia.session.lives.count') }}</label>
+              <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
             </div>
-            <div class="candidate-actions">
-              <button class="button is-small is-primary" @click="acceptCandidate(candidate)">Add to Config</button>
-              <button
-                v-if="canManagePools && props.gameId"
-                class="button is-small is-link"
-                :class="{ 'is-loading': candidate.isSaving && candidate.lastAction === 'game' }"
-                @click="storeCandidate(candidate, 'game')"
+          </div>
+
+          <div class="settings-card">
+            <h3>{{ t('build.trivia.session.correctAnswers.title') }}</h3>
+            <p class="muted">{{ t('build.trivia.session.correctAnswers.hint') }}</p>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.showCorrectAnswers" :disabled="!config.unlimitedLives" />
+              <span>{{ t('build.trivia.session.correctAnswers.perQuestion') }}</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" :disabled="!config.unlimitedLives" />
+              <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
+            </label>
+            <p v-if="!config.unlimitedLives" class="muted">
+              {{ t('build.trivia.session.correctAnswers.disabled') }}
+            </p>
+          </div>
+
+          <div class="settings-card">
+            <h3>{{ t('build.trivia.session.powerUps.title') }}</h3>
+            <p class="muted">{{ t('build.trivia.session.powerUps.hint') }}</p>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.powerUpsActive" />
+              <span>{{ t('build.trivia.session.powerUps.enable') }}</span>
+            </label>
+
+            <div v-if="config.powerUpsActive" class="powerup-list">
+              <article
+                v-for="(powerUp, index) in config.powerUps"
+                :key="powerUp.id || index"
+                class="powerup-card"
               >
-                Send to Game Pool
-              </button>
-              <button
-                v-if="canManagePools"
-                class="button is-small is-info"
-                :class="{ 'is-loading': candidate.isSaving && candidate.lastAction === 'global' }"
-                @click="storeCandidate(candidate, 'global')"
-              >
-                Save to Shared Pool
-              </button>
-              <button class="button is-small" @click="discardCandidate(candidate)">Dismiss</button>
-            </div>
-          </div>
-          <p v-if="candidate.error" class="help is-danger">{{ candidate.error }}</p>
-          <p v-else-if="candidate.lastAction" class="help is-success">
-            {{ candidate.lastAction === 'game' ? 'Stored in game question pool.' : 'Stored in shared pool.' }}
-          </p>
-          <ul class="candidate-options">
-            <li v-for="(option, index) in candidate.question.options" :key="index">
-              <span :class="{ 'has-text-success': option === candidate.question.correctAnswer }">
-                {{ option }}
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <VueDraggable v-model="config.questions" item-key="id" handle=".drag-handle" class="draggable-list">
-        <template #item="{ element: question, index }">
-          <div class="box question-card">
-            <header class="question-header">
-              <span class="drag-handle" aria-label="Drag question">⠿</span>
-              <h5 class="title is-6 has-text-white">Question {{ index + 1 }}</h5>
-              <div class="question-actions">
-                <button class="button is-small" @click="duplicateQuestion(index)">Duplicate</button>
-                <button class="button is-small is-danger" @click="removeQuestion(index)">Remove</button>
-              </div>
-            </header>
-
-            <div class="field">
-              <label class="label has-text-white">Identifier</label>
-              <input class="input" v-model="question.id" placeholder="question-id" />
-            </div>
-
-            <div class="field">
-              <label class="label has-text-white">Prompt</label>
-              <textarea class="textarea" v-model="question.text" placeholder="Ask your question"></textarea>
-            </div>
-
-            <div class="columns is-multiline">
-              <div class="column is-half">
-                <label class="label has-text-white">Category</label>
-                <input class="input" v-model="question.category" placeholder="general" />
-              </div>
-              <div class="column is-one-quarter">
-                <label class="label has-text-white">Difficulty</label>
-                <div class="select is-fullwidth">
-                  <select v-model="question.difficulty">
-                    <option value="">Unset</option>
-                    <option v-for="level in difficulties" :key="level" :value="level">{{ level }}</option>
-                  </select>
+                <div class="field">
+                  <label :for="`${ids.powerUpId}-${index}`">{{ t('build.trivia.session.powerUps.idLabel') }}</label>
+                  <input :id="`${ids.powerUpId}-${index}`" v-model="powerUp.id" placeholder="shield" />
                 </div>
-              </div>
-              <div class="column is-one-quarter">
-                <label class="label has-text-white">Timer (seconds)</label>
-                <input class="input" type="number" min="0" v-model.number="question.timerSeconds" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label has-text-white">Question Image</label>
-              <ImageUploader
-                v-model="question.media.imageUrl"
-                :uploadFolder="`trivia/${validatedGameId}/questions/${question.id}`"
-                :cropWidth="512"
-                :cropHeight="512"
-              />
-            </div>
-
-            <div class="answers">
-              <h6 class="subtitle is-6 has-text-white">Answers</h6>
-              <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="box answer-option">
-                <div class="columns is-multiline">
-                  <div class="column is-three-fifths">
-                    <label class="label has-text-white">Answer {{ optionIndex + 1 }}</label>
-                    <input class="input" v-model="question.options[optionIndex]" placeholder="Answer text" />
-                  </div>
-                  <div class="column is-two-fifths">
-                    <label class="label has-text-white">Image</label>
-                    <ImageUploader
-                      v-model="question.media.optionImageUrls[optionIndex]"
-                      :uploadFolder="`trivia/${validatedGameId}/options/${question.id}/${optionIndex}`"
-                      :cropWidth="256"
-                      :cropHeight="256"
+                <div class="field">
+                  <label :for="`${ids.powerUpLabel}-${index}`">{{ t('build.trivia.session.powerUps.labelLabel') }}</label>
+                  <input :id="`${ids.powerUpLabel}-${index}`" v-model="powerUp.label" placeholder="Shield" />
+                </div>
+                <div class="powerup-card__row">
+                  <div class="field">
+                    <label :for="`${ids.powerUpSpawn}-${index}`">{{ t('build.trivia.session.powerUps.spawnRate') }}</label>
+                    <input
+                      :id="`${ids.powerUpSpawn}-${index}`"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      v-model.number="powerUp.spawnRate"
                     />
                   </div>
-                  <div class="column is-full">
-                    <label class="radio has-text-white">
-                      <input type="radio" :name="`correct-${question.id}`" :value="option" v-model="question.correctAnswer" />
-                      Correct Answer
-                    </label>
-                    <button class="button is-text is-small" @click="removeOption(question, optionIndex)">Remove</button>
+                  <div class="field">
+                    <label :for="`${ids.powerUpMax}-${index}`">{{ t('build.trivia.session.powerUps.maxUses') }}</label>
+                    <input
+                      :id="`${ids.powerUpMax}-${index}`"
+                      type="number"
+                      min="0"
+                      v-model.number="powerUp.maxUses"
+                    />
+                  </div>
+                  <div class="field">
+                    <label :for="`${ids.powerUpCooldown}-${index}`">{{ t('build.trivia.session.powerUps.cooldown') }}</label>
+                    <input
+                      :id="`${ids.powerUpCooldown}-${index}`"
+                      type="number"
+                      min="0"
+                      v-model.number="powerUp.cooldownSeconds"
+                    />
                   </div>
                 </div>
-              </div>
-              <CustomButton type="is-success is-small" label="Add Answer" @click="addOption(question)" />
+                <div class="field">
+                  <label :for="`${ids.powerUpDescription}-${index}`">{{ t('build.trivia.session.powerUps.description') }}</label>
+                  <textarea :id="`${ids.powerUpDescription}-${index}`" rows="2" v-model="powerUp.description" />
+                </div>
+                <button type="button" class="ghost ghost--danger" @click="removePowerUp(index)">
+                  {{ t('build.trivia.session.powerUps.remove') }}
+                </button>
+              </article>
+
+              <CustomButton type="is-success is-light" :label="t('build.trivia.session.powerUps.add')" @click="addPowerUp" />
             </div>
           </div>
-        </template>
-      </VueDraggable>
+
+          <div class="settings-card">
+            <h3>{{ t('build.trivia.session.access.title') }}</h3>
+            <p class="muted">{{ t('build.trivia.session.access.hint') }}</p>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.mustLogin" />
+              <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.allowRepeats" />
+              <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
+            </label>
+          </div>
+
+          <div class="settings-card">
+            <h3>{{ t('build.trivia.session.timer.title') }}</h3>
+            <p class="muted">{{ t('build.trivia.session.timer.hint') }}</p>
+            <label class="toggle">
+              <input type="checkbox" v-model="config.globalTimer.enabled" />
+              <span>{{ t('build.trivia.session.timer.enable') }}</span>
+            </label>
+            <div v-if="config.globalTimer.enabled" class="field field--inline">
+              <label :for="ids.timerDuration">{{ t('build.trivia.session.timer.duration') }}</label>
+              <input :id="ids.timerDuration" type="number" min="0" v-model.number="config.globalTimer.durationSeconds" />
+              <span class="field--suffix">{{ t('build.trivia.session.timer.seconds') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="wizard-layout__preview">
+        <div class="session-preview">
+          <header>
+            <p class="wizard-header__eyebrow">{{ t('build.trivia.preview.eyebrow') }}</p>
+            <h3>{{ t('build.trivia.preview.sessionTitle') }}</h3>
+            <p class="muted">{{ t('build.trivia.preview.sessionSubtitle') }}</p>
+          </header>
+          <div class="session-preview__board">
+            <div class="session-preview__row">
+              <span>{{ t('build.trivia.preview.lives') }}</span>
+              <strong>{{ livesPreview }}</strong>
+            </div>
+            <div class="session-preview__row">
+              <span>{{ t('build.trivia.preview.correctAnswers') }}</span>
+              <strong>{{ answersPreview }}</strong>
+            </div>
+            <div class="session-preview__row">
+              <span>{{ t('build.trivia.preview.powerUps') }}</span>
+              <strong>{{ powerUpSummary }}</strong>
+            </div>
+            <div class="session-preview__row">
+              <span>{{ t('build.trivia.preview.timer') }}</span>
+              <strong>{{ timerSummary }}</strong>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section v-else-if="activeStep === 'questions'" class="wizard-layout">
+      <div class="wizard-layout__form">
+        <header class="wizard-header">
+          <p class="wizard-header__eyebrow">{{ t('build.trivia.questions.eyebrow') }}</p>
+          <h2 class="wizard-header__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</h2>
+          <p class="wizard-header__subtitle">{{ t('build.trivia.questions.subtitle') }}</p>
+          <CustomButton type="is-success" :label="t('build.trivia.questions.addQuestion')" @click="handleAddQuestion" />
+        </header>
+
+        <ul v-if="config.questions.length" class="question-list">
+          <li
+            v-for="(question, index) in config.questions"
+            :key="question.id"
+            :class="['question-list__item', { 'question-list__item--active': index === selectedQuestionIndex }]"
+          >
+            <button type="button" class="question-list__select" @click="selectQuestion(index)">
+              <span class="question-list__index">{{ index + 1 }}</span>
+              <div>
+                <strong>{{ question.text || t('build.trivia.questions.untitled') }}</strong>
+                <p class="muted">{{ t('build.trivia.questions.optionCount', { count: question.options.length }) }}</p>
+              </div>
+            </button>
+            <div class="question-list__actions">
+              <button type="button" class="ghost" :disabled="index === 0" @click="reorderQuestion(index, -1)">
+                {{ t('build.trivia.questions.moveUp') }}
+              </button>
+              <button
+                type="button"
+                class="ghost"
+                :disabled="index === config.questions.length - 1"
+                @click="reorderQuestion(index, 1)"
+              >
+                {{ t('build.trivia.questions.moveDown') }}
+              </button>
+              <button type="button" class="ghost ghost--danger" @click="removeQuestion(index)">
+                {{ t('build.trivia.questions.remove') }}
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <div v-else class="empty-state">
+          <p>{{ t('build.trivia.questions.empty') }}</p>
+        </div>
+      </div>
+
+      <aside class="wizard-layout__preview">
+        <div v-if="activeQuestion" class="question-preview">
+          <header>
+            <p class="wizard-header__eyebrow question-preview__label">
+              {{ questionLabel }}
+            </p>
+            <input
+              class="question-preview__title"
+              v-model="activeQuestion.text"
+              :placeholder="t('build.trivia.questions.promptPlaceholder')"
+            />
+          </header>
+
+          <div class="field">
+            <label>{{ t('build.trivia.questions.imageLabel') }}</label>
+            <ImageUploader
+              v-model="activeQuestion.media.imageUrl"
+              :uploadFolder="`trivia/${validatedGameId}/questions/${activeQuestion.id}`"
+              :cropWidth="512"
+              :cropHeight="512"
+            />
+          </div>
+
+          <section class="answer-list">
+            <h3>{{ t('build.trivia.questions.answersTitle') }}</h3>
+            <article v-for="(option, index) in activeQuestion.options" :key="`${activeQuestion.id}-${index}`">
+              <div class="field">
+                <label>{{ t('build.trivia.questions.answerLabel', { index: index + 1 }) }}</label>
+                <input
+                  v-model="activeQuestion.options[index]"
+                  :placeholder="t('build.trivia.questions.answerPlaceholder')"
+                />
+              </div>
+              <div class="field">
+                <label>{{ t('build.trivia.questions.answerImage') }}</label>
+                <ImageUploader
+                  v-model="activeQuestion.media.optionImageUrls[index]"
+                  :uploadFolder="`trivia/${validatedGameId}/options/${activeQuestion.id}/${index}`"
+                  :cropWidth="256"
+                  :cropHeight="256"
+                />
+              </div>
+              <label class="radio">
+                <input
+                  type="radio"
+                  :name="`correct-${activeQuestion.id}`"
+                  :value="option"
+                  v-model="activeQuestion.correctAnswer"
+                />
+                <span>{{ t('build.trivia.questions.markCorrect') }}</span>
+              </label>
+              <button
+                type="button"
+                class="ghost ghost--danger"
+                :disabled="activeQuestion.options.length <= 2"
+                @click="removeOption(activeQuestion, index)"
+              >
+                {{ t('build.trivia.questions.removeAnswer') }}
+              </button>
+            </article>
+            <CustomButton
+              type="is-success is-light"
+              :label="t('build.trivia.questions.addAnswer')"
+              @click="addOption(activeQuestion)"
+            />
+          </section>
+
+          <div class="question-actions">
+            <CustomButton
+              type="is-primary"
+              :label="t('build.trivia.questions.saveAndAdd')"
+              @click="handleSaveAndAddQuestion"
+            />
+          </div>
+        </div>
+
+        <div v-else class="empty-state">
+          <p>{{ t('build.trivia.questions.noSelection') }}</p>
+        </div>
+      </aside>
+    </section>
+
+    <section v-else class="wizard-layout">
+      <div class="wizard-layout__form">
+        <header class="wizard-header">
+          <p class="wizard-header__eyebrow">{{ t('build.trivia.theme.eyebrow') }}</p>
+          <h2 class="wizard-header__title">{{ t('build.trivia.theme.title') }}</h2>
+          <p class="wizard-header__subtitle">{{ t('build.trivia.theme.subtitle') }}</p>
+        </header>
+
+        <div class="theme-grid">
+          <div v-for="field in themeFields" :key="field.key" class="field theme-field">
+            <label :for="`${ids.theme}-${field.key}`">{{ t(field.label) }}</label>
+            <input
+              :id="`${ids.theme}-${field.key}`"
+              :type="field.type"
+              v-model="config.theme[field.key as keyof typeof config.theme]"
+              :placeholder="field.placeholder"
+            />
+            <p class="muted">{{ t(field.hint) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="wizard-layout__preview">
+        <div class="theme-preview">
+          <div class="theme-preview__swatch" :style="{ background: config.theme.primaryColor || '#00e8e0' }">
+            <span>{{ t('build.trivia.theme.primarySwatch') }}</span>
+          </div>
+          <div class="theme-preview__swatch" :style="{ background: config.theme.secondaryColor || '#ff2d92' }">
+            <span>{{ t('build.trivia.theme.secondarySwatch') }}</span>
+          </div>
+          <div
+            class="theme-preview__canvas"
+            :style="{
+              backgroundColor: config.theme.backgroundColor || '#050505',
+              backgroundImage: config.theme.backgroundImageUrl ? `url(${config.theme.backgroundImageUrl})` : undefined,
+              boxShadow: config.theme.backgroundOverlayColor ? `0 0 0 8px ${config.theme.backgroundOverlayColor}` : undefined
+            }"
+          >
+            <span>{{ t('build.trivia.theme.canvasLabel') }}</span>
+          </div>
+        </div>
+      </aside>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import { VueDraggable } from 'vue-draggable-plus';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
-import {
-  requestXaiTriviaQuestions,
-  saveQuestionToGamePool,
-  saveQuestionToGlobalPool,
-} from '@/services/game';
-import type {
-  TriviaConfig,
-  TriviaQuestion,
-  TriviaQuestionMedia,
-  TriviaPowerUpRule,
-} from '@top-x/shared/types/trivia';
+import { useLocaleStore } from '@/stores/locale';
+import type { TriviaAnswer, TriviaConfig, TriviaPowerUpRule, TriviaQuestion } from '@top-x/shared/types/trivia';
+import { computeAnswerHash, ensureSalt, hasHashSecret } from '@top-x/shared/utils/triviaHash';
+
+type TriviaStep = 'session' | 'questions' | 'theme';
 
 interface TriviaConfigWithTheme extends TriviaConfig {
   theme: NonNullable<TriviaConfig['theme']>;
   globalTimer: NonNullable<TriviaConfig['globalTimer']>;
   powerUps: TriviaPowerUpRule[];
+  questions: EditableTriviaQuestion[];
   allowRepeats?: boolean;
-  totalQuestions?: number;
-}
-
-interface GeneratedCandidate {
-  id: string;
-  question: TriviaQuestion;
-  isSaving?: boolean;
-  lastAction?: 'game' | 'global';
-  error?: string;
+  unlimitedLives?: boolean;
+  showCorrectAnswers?: boolean;
+  showCorrectAnswersOnEnd?: boolean;
+  mustLogin?: boolean;
+  lives?: number | null;
+  powerUpsActive?: boolean;
 }
 
 const props = defineProps<{
   modelValue: TriviaConfig;
   gameId?: string;
-  allowPoolManagement?: boolean;
+  activeStep: TriviaStep;
 }>();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: TriviaConfig): void;
+}>();
+
+if (!hasHashSecret()) {
+  console.warn('[Build/AddTrivia] Missing VITE_TRIVIA_HASH_SECRET. Hashing will fail.');
+}
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
+
+const ids = {
+  lives: 'trivia-lives',
+  timerDuration: 'trivia-timer-duration',
+  powerUpId: 'trivia-powerup-id',
+  powerUpLabel: 'trivia-powerup-label',
+  powerUpSpawn: 'trivia-powerup-spawn',
+  powerUpMax: 'trivia-powerup-max',
+  powerUpCooldown: 'trivia-powerup-cooldown',
+  powerUpDescription: 'trivia-powerup-description',
+  theme: 'trivia-theme',
+} as const;
+
+type QuestionMedia = {
+  imageUrl?: string | null;
+  optionImageUrls?: (string | null)[];
+};
+
+type EditableTriviaQuestion = TriviaQuestion & {
+  options: string[];
+  correctAnswer?: string;
+  media?: QuestionMedia;
+};
 
 const themeFields = [
-  { key: 'primaryColor', label: 'Primary Color', type: 'color', placeholder: '#ff0066' },
-  { key: 'secondaryColor', label: 'Secondary Color', type: 'color', placeholder: '#0066ff' },
-  { key: 'backgroundColor', label: 'Background Color', type: 'color', placeholder: '#0b0b0b' },
-  { key: 'backgroundImageUrl', label: 'Background Image URL', type: 'text', placeholder: 'https://…' },
-  { key: 'backgroundVideoUrl', label: 'Background Video URL', type: 'text', placeholder: 'https://…' },
-  { key: 'backgroundOverlayColor', label: 'Overlay Color', type: 'color', placeholder: '#00000088' },
+  {
+    key: 'primaryColor',
+    label: 'build.trivia.theme.primaryLabel',
+    hint: 'build.trivia.theme.primaryHint',
+    type: 'color',
+    placeholder: '#00E8E0',
+  },
+  {
+    key: 'secondaryColor',
+    label: 'build.trivia.theme.secondaryLabel',
+    hint: 'build.trivia.theme.secondaryHint',
+    type: 'color',
+    placeholder: '#FF2D92',
+  },
+  {
+    key: 'backgroundColor',
+    label: 'build.trivia.theme.backgroundColorLabel',
+    hint: 'build.trivia.theme.backgroundColorHint',
+    type: 'color',
+    placeholder: '#050505',
+  },
+  {
+    key: 'backgroundImageUrl',
+    label: 'build.trivia.theme.backgroundImageLabel',
+    hint: 'build.trivia.theme.backgroundImageHint',
+    type: 'text',
+    placeholder: 'https://…',
+  },
+  {
+    key: 'backgroundVideoUrl',
+    label: 'build.trivia.theme.backgroundVideoLabel',
+    hint: 'build.trivia.theme.backgroundVideoHint',
+    type: 'text',
+    placeholder: 'https://…',
+  },
+  {
+    key: 'backgroundOverlayColor',
+    label: 'build.trivia.theme.overlayLabel',
+    hint: 'build.trivia.theme.overlayHint',
+    type: 'text',
+    placeholder: '#00000088',
+  },
 ] as const;
 
-const difficulties = ['very_easy', 'easy', 'medium', 'hard', 'very_hard', 'expert'];
-const QUESTION_SOURCES = ['pool', 'hybrid', 'inline'] as const;
-type QuestionSource = (typeof QUESTION_SOURCES)[number];
+const DEFAULT_THEME_COLORS = {
+  primaryColor: '#00E8E0',
+  secondaryColor: '#FF2D92',
+  backgroundColor: '#050505',
+} as const;
 
+const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{6})$/;
+
+function normalizeHexColor(value: unknown, fallback: string): string {
+  if (typeof value === 'string' && HEX_COLOR_REGEX.test(value)) {
+    return value.toUpperCase();
+  }
+  return fallback;
+}
+
+function applyThemeDefaults(theme: NonNullable<TriviaConfig['theme']>) {
+  theme.primaryColor = normalizeHexColor(theme.primaryColor, DEFAULT_THEME_COLORS.primaryColor);
+  theme.secondaryColor = normalizeHexColor(theme.secondaryColor, DEFAULT_THEME_COLORS.secondaryColor);
+  theme.backgroundColor = normalizeHexColor(theme.backgroundColor, DEFAULT_THEME_COLORS.backgroundColor);
+}
+
+const config = ref<TriviaConfigWithTheme>(hydrateConfig(props.modelValue));
 const isSyncing = ref(false);
-const generatedCandidates = ref<GeneratedCandidate[]>([]);
-const isRequestingAi = ref(false);
-const aiError = ref('');
-const canManagePools = computed(() => props.allowPoolManagement === true);
+const selectedQuestionIndex = ref(0);
+
+const questionLabel = computed(() => {
+  const index = selectedQuestionIndex.value + 1;
+  const translatedWithIndex = t('build.trivia.preview.questionLabel', { index }) as unknown as string | undefined;
+  if (translatedWithIndex && !translatedWithIndex.includes('{')) {
+    return translatedWithIndex;
+  }
+  const base = t('build.trivia.preview.questionLabel') as unknown as string | undefined;
+  const fallback =
+    t('build.trivia.preview.questionLabelFallback') as unknown as string | undefined;
+  const prefix =
+    (base && !base.includes('{') && base) ||
+    (fallback && !fallback.includes('{') && fallback) ||
+    'Question';
+  return `${prefix} ${index}`;
+});
 
 const validatedGameId = computed(() => {
   const id = props.gameId || `temp-${Date.now()}`;
   return id.replace(/[\\/]/g, '');
 });
 
-const config = ref<TriviaConfigWithTheme>(hydrateConfig(props.modelValue));
+const activeQuestion = computed<EditableTriviaQuestion | null>(
+  () => config.value.questions[selectedQuestionIndex.value] ?? null,
+);
 
 watch(
   () => props.modelValue,
   (value) => {
+    if (isSyncing.value) return;
     isSyncing.value = true;
     config.value = hydrateConfig(value);
     nextTick(() => {
+      ensureSelectedQuestionInRange();
       isSyncing.value = false;
     });
   },
@@ -358,21 +511,83 @@ watch(
 
 watch(
   config,
-  (value) => {
+  async (value) => {
     if (isSyncing.value) return;
-    emit('update:modelValue', sanitizeConfig(value));
+    isSyncing.value = true;
+    try {
+      const sanitized = await sanitizeConfig(value);
+      emit('update:modelValue', sanitized);
+    } catch (error) {
+      console.error('[Build/AddTrivia] Failed to sanitize config', error);
+    } finally {
+      nextTick(() => {
+        isSyncing.value = false;
+      });
+    }
   },
   { deep: true },
 );
 
+watch(
+  () => config.value.questions.length,
+  () => ensureSelectedQuestionInRange(),
+);
+
+watch(
+  () => config.value.unlimitedLives,
+  (unlimited) => {
+    if (!unlimited) {
+      config.value.showCorrectAnswers = false;
+      config.value.showCorrectAnswersOnEnd = false;
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => config.value.globalTimer.enabled,
+  (enabled) => {
+    if (!enabled) {
+      config.value.globalTimer.durationSeconds = undefined;
+    }
+  },
+  { immediate: true },
+);
+
+function ensureSelectedQuestionInRange() {
+  const maxIndex = config.value.questions.length - 1;
+  if (maxIndex < 0) {
+    selectedQuestionIndex.value = 0;
+    return;
+  }
+  if (selectedQuestionIndex.value > maxIndex) {
+    selectedQuestionIndex.value = maxIndex;
+  }
+}
+
 function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   const base: TriviaConfig = value
     ? JSON.parse(JSON.stringify(value))
-    : ({ mode: 'fixed', questions: [], language: 'en' } as TriviaConfig);
+    : ({
+        mode: 'fixed',
+        questions: [],
+        language: '',
+        powerUpsActive: false,
+        allowRepeats: false,
+        unlimitedLives: true,
+        showCorrectAnswers: true,
+        showCorrectAnswersOnEnd: true,
+        mustLogin: false,
+        globalTimer: { enabled: false },
+        theme: {},
+        powerUps: [],
+      } as TriviaConfig);
 
-  if (!QUESTION_SOURCES.includes(base.questionSource as QuestionSource)) {
-    base.questionSource = 'pool';
-  }
+  base.mode = 'fixed';
+  base.language = base.language ?? '';
+  base.solveThreshold = undefined;
+  base.questionBatchSize = undefined;
+  base.isHybrid = false;
 
   if (!base.globalTimer) {
     base.globalTimer = { enabled: false };
@@ -380,107 +595,247 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   if (!base.theme) {
     base.theme = {};
   }
-  if (!base.powerUps) {
+  applyThemeDefaults(base.theme);
+  if (!Array.isArray(base.powerUps)) {
     base.powerUps = [];
   }
-  base.questions = base.questions?.map(hydrateQuestion) ?? [];
 
-  if (base.mode === 'endless') {
-    base.questionBatchSize = base.questionBatchSize ?? 10;
-    base.lives = base.lives ?? 3;
+  const correctAnswerMap = base.correctAnswers ?? {};
+  const hydratedQuestions = (base.questions ?? []).map((question) =>
+    hydrateQuestion(question, correctAnswerMap),
+  ) as EditableTriviaQuestion[];
+  base.questions =
+    hydratedQuestions.length > 0 ? hydratedQuestions : [createEmptyQuestion(correctAnswerMap)];
+  base.correctAnswers = correctAnswerMap;
+
+  if (base.unlimitedLives === false) {
+    base.lives = sanitizePositiveInteger(base.lives) ?? 3;
   } else {
-    base.questionBatchSize = base.questionBatchSize ?? undefined;
+    base.unlimitedLives = true;
     base.lives = base.lives ?? undefined;
   }
 
   return base as TriviaConfigWithTheme;
 }
 
-function hydrateQuestion(question: TriviaQuestion): TriviaQuestion {
-  const hydrated: TriviaQuestion = JSON.parse(JSON.stringify(question));
+function hydrateQuestion(
+  question: TriviaQuestion,
+  correctAnswers: Record<string, string>,
+): EditableTriviaQuestion {
+  const hydrated = JSON.parse(JSON.stringify(question)) as EditableTriviaQuestion;
   hydrated.id = hydrated.id?.trim() || createQuestionId();
-  hydrated.options = hydrated.options ?? [];
+  hydrated.text = hydrated.text ?? '';
+
+  const answerOptions =
+    Array.isArray(question.answers) && question.answers.length > 0
+      ? question.answers.map((answer) => (answer?.text ?? '').trim())
+      : Array.isArray((question as unknown as { options?: string[] }).options)
+        ? ((question as unknown as { options?: string[] }).options ?? []).map((option) => option ?? '')
+        : [];
+
+  const normalizedOptions = answerOptions.length ? [...answerOptions] : [];
+
+  while (normalizedOptions.length < 2) {
+    normalizedOptions.push('');
+  }
+
+  hydrated.options = normalizedOptions;
+
+  hydrated.answers =
+    Array.isArray(question.answers) && question.answers.length
+      ? question.answers.map((answer) => ({
+          text: (answer?.text ?? '').trim(),
+          imageUrl: answer?.imageUrl ?? undefined,
+        }))
+      : [];
+
   if (!hydrated.media) {
-    hydrated.media = {} as TriviaQuestionMedia;
+    hydrated.media = {};
   }
-  const media = hydrated.media as TriviaQuestionMedia;
-  const options = hydrated.options ?? [];
-  const images = media.optionImageUrls ? [...media.optionImageUrls] : [];
-  media.optionImageUrls = options.map((_, index) => images[index] ?? null);
-  if (!hydrated.correctAnswer && options.length > 0) {
-    hydrated.correctAnswer = options[0];
+
+  const media = hydrated.media as QuestionMedia;
+  const baseQuestionImage =
+    typeof question.imageUrl === 'string' ? question.imageUrl : media.imageUrl ?? '';
+  media.imageUrl = typeof baseQuestionImage === 'string' ? baseQuestionImage : '';
+
+  const answerImages =
+    Array.isArray(question.answers) && question.answers.length
+      ? question.answers.map((answer) => (answer?.imageUrl ?? '') || '')
+      : Array.isArray(media.optionImageUrls)
+        ? [...media.optionImageUrls]
+        : [];
+
+  media.optionImageUrls = hydrated.options.map((_, index) => {
+    const value = answerImages[index];
+    return typeof value === 'string' ? value : '';
+  });
+
+  const mappedCorrect =
+    (typeof question.correctAnswer === 'string' && question.correctAnswer.trim()) ||
+    correctAnswers[hydrated.id];
+
+  if (mappedCorrect && hydrated.options.includes(mappedCorrect)) {
+    hydrated.correctAnswer = mappedCorrect;
+  } else if (!hydrated.correctAnswer || !hydrated.options.includes(hydrated.correctAnswer)) {
+    hydrated.correctAnswer = hydrated.options[0];
   }
+
   return hydrated;
 }
 
-function sanitizeConfig(value: TriviaConfigWithTheme): TriviaConfig {
+async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfig> {
   const clone: TriviaConfig = JSON.parse(JSON.stringify(value));
-  clone.questions = (clone.questions ?? []).map(sanitizeQuestion);
+  const questionResults = await Promise.all(
+    (clone.questions ?? []).map((question) => sanitizeQuestion(question as EditableTriviaQuestion)),
+  );
+  const correctAnswerMap: Record<string, string> = {};
+  clone.questions = questionResults.map(({ sanitized, correctAnswer }) => {
+    if (sanitized.id && correctAnswer) {
+      correctAnswerMap[sanitized.id] = correctAnswer;
+    }
+    return sanitized;
+  });
+  clone.mode = 'fixed';
+  clone.language = (clone.language ?? '').trim() || undefined;
+  clone.solveThreshold = undefined;
+  clone.questionBatchSize = undefined;
+  clone.isHybrid = false;
 
-  if (!QUESTION_SOURCES.includes(clone.questionSource as QuestionSource)) {
-    clone.questionSource = 'pool';
-  }
-  if (clone.mode !== 'fixed' && clone.questionSource === 'inline') {
-    clone.questionSource = 'pool';
-  }
-
-  if (clone.mode === 'endless') {
-    clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? 10;
+  clone.unlimitedLives = Boolean(clone.unlimitedLives);
+  if (!clone.unlimitedLives) {
     clone.lives = sanitizePositiveInteger(clone.lives) ?? 3;
-    (clone as TriviaConfigWithTheme).allowRepeats = Boolean((clone as TriviaConfigWithTheme).allowRepeats);
   } else {
-    clone.totalQuestions = sanitizePositiveInteger(clone.totalQuestions);
-    clone.questionBatchSize = sanitizePositiveInteger(clone.questionBatchSize) ?? undefined;
-    clone.lives = sanitizePositiveInteger(clone.lives) ?? undefined;
-    delete (clone as any).allowRepeats;
+    clone.lives = undefined;
   }
+
+  clone.powerUpsActive = Boolean(clone.powerUpsActive);
+  clone.allowRepeats = Boolean(clone.allowRepeats);
+  clone.mustLogin = Boolean(clone.mustLogin);
+  clone.showCorrectAnswers = clone.unlimitedLives ? Boolean(clone.showCorrectAnswers) : false;
+  clone.showCorrectAnswersOnEnd = clone.unlimitedLives ? Boolean(clone.showCorrectAnswersOnEnd) : false;
 
   if (!clone.globalTimer?.enabled) {
     clone.globalTimer = { enabled: false };
   } else {
-    clone.globalTimer.durationSeconds = sanitizePositiveInteger(clone.globalTimer.durationSeconds) ?? undefined;
+    const duration = sanitizePositiveInteger(clone.globalTimer.durationSeconds);
+    if (duration !== undefined) {
+      clone.globalTimer.durationSeconds = duration;
+    } else {
+      delete clone.globalTimer.durationSeconds;
+    }
   }
 
-  clone.solveThreshold = typeof clone.solveThreshold === 'number' ? clamp(clone.solveThreshold, 0, 1) : undefined;
   clone.theme = sanitizeTheme(clone.theme ?? {});
-  clone.powerUps = (clone.powerUps ?? []).map(sanitizePowerUp).filter((p) => !!p.id && !!p.label);
+  clone.powerUps = (clone.powerUps ?? []).map(sanitizePowerUp).filter((powerUp) => powerUp.id && powerUp.label);
+  clone.correctAnswers = correctAnswerMap;
 
-  return clone;
+  return JSON.parse(JSON.stringify(clone)) as TriviaConfig;
 }
 
-function sanitizeQuestion(question: TriviaQuestion): TriviaQuestion {
-  const sanitized = JSON.parse(JSON.stringify(question)) as TriviaQuestion;
-  sanitized.text = sanitized.text?.trim() ?? '';
-  sanitized.id = sanitized.id?.trim() || createQuestionId();
-  sanitized.options = (sanitized.options ?? []).map((option: string) => option?.trim() ?? '').filter(Boolean);
-  if (sanitized.options.length === 0) {
-    sanitized.options = ['Answer'];
+async function sanitizeQuestion(
+  question: EditableTriviaQuestion,
+): Promise<{ sanitized: TriviaQuestion; correctAnswer: string }> {
+  const working = JSON.parse(JSON.stringify(question)) as EditableTriviaQuestion;
+  working.id = working.id?.trim() || createQuestionId();
+  working.text = working.text?.trim() ?? '';
+
+  working.options = (working.options ?? []).map((option: string) => option?.trim() ?? '').filter(Boolean);
+
+  if (working.options.length < 2) {
+    while (working.options.length < 2) {
+      working.options.push(`Answer ${working.options.length + 1}`);
+    }
   }
-  if (!sanitized.correctAnswer || !sanitized.options.includes(sanitized.correctAnswer)) {
-    sanitized.correctAnswer = sanitized.options[0];
+
+  if (!working.correctAnswer || !working.options.includes(working.correctAnswer)) {
+    working.correctAnswer = working.options[0];
+  } else {
+    working.correctAnswer = working.correctAnswer.trim();
   }
-  if (sanitized.media) {
-    const media = sanitized.media;
+
+  let questionImage: string | undefined;
+  let optionImages: (string | undefined)[] = [];
+
+  const trimmedImageFromQuestion =
+    typeof working.imageUrl === 'string' ? working.imageUrl.trim() : undefined;
+  if (trimmedImageFromQuestion) {
+    questionImage = trimmedImageFromQuestion;
+  }
+
+  if (working.media) {
+    const media = working.media as QuestionMedia;
+    const mediaImage = typeof media.imageUrl === 'string' ? media.imageUrl.trim() : '';
+    if (mediaImage) {
+      questionImage = mediaImage;
+    }
     if (media.optionImageUrls) {
-      media.optionImageUrls = sanitized.options.map((_, index) => media.optionImageUrls?.[index] ?? null);
+      optionImages = working.options.map((_, index) => {
+        const raw = media.optionImageUrls?.[index];
+        if (typeof raw === 'string') {
+          const trimmed = raw.trim();
+          return trimmed || undefined;
+        }
+        return undefined;
+      });
     }
   }
-  sanitized.timerSeconds = sanitizePositiveInteger(sanitized.timerSeconds) ?? undefined;
-  sanitized.category = sanitized.category?.trim() || undefined;
-  sanitized.difficulty = sanitized.difficulty || undefined;
-  sanitized.language = sanitized.language?.trim() || undefined;
-  return sanitized;
-}
 
-function sanitizeTheme(theme: NonNullable<TriviaConfig['theme']>): NonNullable<TriviaConfig['theme']> {
-  const cleaned = { ...theme };
-  Object.keys(cleaned).forEach((key) => {
-    const value = (cleaned as Record<string, unknown>)[key];
-    if (value === '' || value === null || value === undefined) {
-      delete (cleaned as Record<string, unknown>)[key];
+  const answers: TriviaAnswer[] = working.options.map((optionText, index) => {
+    const answer: TriviaAnswer = { text: optionText };
+    const imageUrl = optionImages[index];
+    if (imageUrl) {
+      answer.imageUrl = imageUrl;
     }
+    return answer;
   });
-  return cleaned;
+
+  const sanitized: TriviaQuestion = {
+    id: working.id,
+    text: working.text,
+    answers,
+    category: working.category?.trim() || undefined,
+    difficulty: working.difficulty || undefined,
+  };
+
+  if (questionImage) {
+    sanitized.imageUrl = questionImage;
+  }
+
+  const correctAnswer = working.correctAnswer ?? '';
+
+  const ensuredSalt = ensureSalt(working.salt);
+  sanitized.salt = ensuredSalt;
+
+  if (correctAnswer) {
+    try {
+      sanitized.hash = await computeAnswerHash(working.id, correctAnswer, ensuredSalt);
+    } catch (error) {
+      console.error('[Build/AddTrivia] Failed to compute answer hash', {
+        id: working.id,
+        error,
+      });
+    }
+  }
+
+  if (!sanitized.hash) {
+    console.warn('[Build/AddTrivia] Question missing hash after sanitization', {
+      id: sanitized.id,
+      hasSalt: Boolean(sanitized.salt),
+      correctAnswer,
+    });
+  }
+
+  delete (sanitized as { correctAnswer?: string }).correctAnswer;
+
+  if (!sanitized.hash || !sanitized.salt) {
+    console.warn('[Build/AddTrivia] Question missing hash or salt before emit', {
+      id: sanitized.id,
+      hasHash: Boolean(sanitized.hash),
+      hasSalt: Boolean(sanitized.salt),
+    });
+  }
+
+  return { sanitized, correctAnswer };
 }
 
 function sanitizePowerUp(rule: TriviaPowerUpRule): TriviaPowerUpRule {
@@ -494,6 +849,18 @@ function sanitizePowerUp(rule: TriviaPowerUpRule): TriviaPowerUpRule {
   };
 }
 
+function sanitizeTheme(theme: NonNullable<TriviaConfig['theme']>): NonNullable<TriviaConfig['theme']> {
+  const cleaned = { ...theme };
+  Object.keys(cleaned).forEach((key) => {
+    const value = (cleaned as Record<string, unknown>)[key];
+    if (value === '' || value === null || value === undefined) {
+      delete (cleaned as Record<string, unknown>)[key];
+    }
+  });
+  applyThemeDefaults(cleaned);
+  return cleaned;
+}
+
 function sanitizePositiveInteger(value: unknown): number | undefined {
   if (typeof value !== 'number') return undefined;
   if (Number.isNaN(value) || value < 0) return undefined;
@@ -504,259 +871,551 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-function addQuestion() {
-  config.value.questions.push(createEmptyQuestion());
+function createQuestionId() {
+  return `q_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function duplicateQuestion(index: number) {
-  const question = config.value.questions[index];
-  const duplicate = hydrateQuestion(question);
-  duplicate.id = createQuestionId();
-  config.value.questions.splice(index + 1, 0, duplicate);
+function handleAddQuestion() {
+  const question = createEmptyQuestion(config.value.correctAnswers ?? {});
+  config.value.questions.push(question);
+  nextTick(() => {
+    selectedQuestionIndex.value = config.value.questions.length - 1;
+  });
+}
+
+function handleSaveAndAddQuestion() {
+  handleAddQuestion();
+  nextTick(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+}
+
+function createEmptyQuestion(
+  correctAnswers: Record<string, string> = {},
+): EditableTriviaQuestion {
+  return hydrateQuestion(
+    {
+      id: createQuestionId(),
+      text: '',
+      answers: [{ text: '' }, { text: '' }],
+      correctAnswer: '',
+      imageUrl: '',
+    } as TriviaQuestion,
+    correctAnswers,
+  );
+}
+
+function selectQuestion(index: number) {
+  selectedQuestionIndex.value = index;
+}
+
+function reorderQuestion(index: number, direction: -1 | 1) {
+  const questions = config.value.questions;
+  const target = index + direction;
+  if (target < 0 || target >= questions.length) return;
+  const [item] = questions.splice(index, 1);
+  questions.splice(target, 0, item);
+  if (selectedQuestionIndex.value === index) {
+    selectedQuestionIndex.value = target;
+  } else if (selectedQuestionIndex.value === target) {
+    selectedQuestionIndex.value = index;
+  }
 }
 
 function removeQuestion(index: number) {
   config.value.questions.splice(index, 1);
+  if (config.value.questions.length === 0) {
+    config.value.questions.push(createEmptyQuestion(config.value.correctAnswers ?? {}));
+  }
+  ensureSelectedQuestionInRange();
 }
 
-function addOption(question: TriviaQuestion) {
+function addOption(question: EditableTriviaQuestion) {
   question.options = question.options ?? [];
   question.options.push('');
   ensureOptionImages(question);
+  if (!question.correctAnswer) {
+    question.correctAnswer = question.options[0] ?? '';
+  }
 }
 
-function removeOption(question: TriviaQuestion, index: number) {
+function removeOption(question: EditableTriviaQuestion, index: number) {
   question.options.splice(index, 1);
+  if (question.options.length < 2) {
+    question.options.push('');
+  }
   ensureOptionImages(question);
   if (!question.options.includes(question.correctAnswer)) {
     question.correctAnswer = question.options[0] ?? '';
   }
 }
 
-function ensureOptionImages(question: TriviaQuestion) {
+function ensureOptionImages(question: EditableTriviaQuestion) {
   if (!question.media) {
     question.media = {};
   }
-  const media = question.media;
-  const options = question.options ?? [];
-  const existing = media.optionImageUrls ? [...media.optionImageUrls] : [];
-  media.optionImageUrls = options.map((_, index) => existing[index] ?? null);
-}
-
-function removePowerUp(index: number) {
-  config.value.powerUps.splice(index, 1);
+  const media = question.media as QuestionMedia;
+  media.imageUrl = typeof media.imageUrl === 'string' ? media.imageUrl : '';
+  const existing = Array.isArray(media.optionImageUrls) ? [...media.optionImageUrls] : [];
+  media.optionImageUrls = (question.options ?? []).map((_, i) => {
+    const value = existing[i];
+    return typeof value === 'string' ? value : '';
+  });
 }
 
 function addPowerUp() {
   config.value.powerUps.push({ id: '', label: '' });
 }
 
-function createEmptyQuestion(): TriviaQuestion {
-  return hydrateQuestion({
-    id: createQuestionId(),
-    text: '',
-    options: ['', ''],
-    correctAnswer: '',
-    media: { optionImageUrls: [null, null] },
-  } as TriviaQuestion);
+function removePowerUp(index: number) {
+  config.value.powerUps.splice(index, 1);
 }
 
-function createQuestionId() {
-  return `q_${Math.random().toString(36).slice(2, 10)}`;
-}
+const livesPreview = computed(() =>
+  config.value.unlimitedLives ? t('build.trivia.preview.unlimited') : String(config.value.lives ?? 3),
+);
 
-async function requestAiQuestions() {
-  if (isRequestingAi.value) return;
-  aiError.value = '';
-  try {
-    isRequestingAi.value = true;
-    const result = await requestXaiTriviaQuestions({
-      gameId: props.gameId,
-      language: config.value.language,
-      existingIds: config.value.questions.map((question) => question.id),
-    });
-    
-    if (result.error) {
-      aiError.value = result.error;
-      return;
-    }
-    
-    generatedCandidates.value = result.questions.map((question) => ({
-      id: question.id || createQuestionId(),
-      question: hydrateQuestion(question),
-    }));
-  } catch (error) {
-    console.error('Failed to request xAI trivia questions', error);
-    aiError.value = error instanceof Error ? error.message : 'Unable to request questions from xAI';
-  } finally {
-    isRequestingAi.value = false;
+const answersPreview = computed(() => {
+  if (!config.value.unlimitedLives) {
+    return t('build.trivia.preview.hidden');
   }
-}
-
-function acceptCandidate(candidate: GeneratedCandidate) {
-  config.value.questions.push(hydrateQuestion(candidate.question));
-  generatedCandidates.value = generatedCandidates.value.filter((item) => item.id !== candidate.id);
-}
-
-function discardCandidate(candidate: GeneratedCandidate) {
-  generatedCandidates.value = generatedCandidates.value.filter((item) => item.id !== candidate.id);
-}
-
-async function storeCandidate(candidate: GeneratedCandidate, target: 'game' | 'global') {
-  if (candidate.isSaving) return;
-  if (target === 'game' && !props.gameId) {
-    candidate.error = 'A game must be selected to store questions under it.';
-    return;
+  if (config.value.showCorrectAnswers && config.value.showCorrectAnswersOnEnd) {
+    return t('build.trivia.preview.answersAll');
   }
-  candidate.isSaving = true;
-  candidate.error = '';
-  candidate.lastAction = target;
-  try {
-    await persistCandidateToPool(candidate, target);
-  } catch (error) {
-    console.error('Failed to persist AI question', error);
-    candidate.error = error instanceof Error ? error.message : 'Failed to save question';
-  } finally {
-    candidate.isSaving = false;
+  if (config.value.showCorrectAnswers) {
+    return t('build.trivia.preview.answersPerQuestion');
   }
-}
+  if (config.value.showCorrectAnswersOnEnd) {
+    return t('build.trivia.preview.answersSummary');
+  }
+  return t('build.trivia.preview.answersHidden');
+});
 
-async function persistCandidateToPool(
-  candidate: GeneratedCandidate,
-  target: 'game' | 'global',
-): Promise<void> {
-  const question = sanitizeQuestion(candidate.question);
-  if (!question.id) {
-    question.id = createQuestionId();
+const powerUpSummary = computed(() => {
+  if (!config.value.powerUpsActive) {
+    return t('build.trivia.preview.disabled');
   }
-  
-  if (target === 'game') {
-    if (!props.gameId) {
-      throw new Error('A gameId is required to store questions under a game.');
-    }
-    const result = await saveQuestionToGamePool(props.gameId, question);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to save question to game pool');
-    }
-  } else {
-    const result = await saveQuestionToGlobalPool(question);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to save question to global pool');
-    }
+  const count = config.value.powerUps.length;
+  if (count === 0) {
+    return t('build.trivia.preview.powerUpsNone');
   }
-}
+  if (count === 1) {
+    return config.value.powerUps[0].label || t('build.trivia.preview.powerUpsSingle');
+  }
+  return t('build.trivia.preview.powerUpsCount', { count });
+});
 
-// expose helper for advanced integrations (admin variant reuses the same helpers)
-defineExpose({
-  persistCandidateToPool,
-  storeCandidate,
+const timerSummary = computed(() => {
+  if (!config.value.globalTimer.enabled) {
+    return t('build.trivia.preview.disabled');
+  }
+  return t('build.trivia.preview.timerValue', {
+    seconds: config.value.globalTimer.durationSeconds || 0,
+  });
 });
 </script>
 
 <style scoped>
-.add-trivia {
+.trivia-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.wizard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 2rem;
+  width: 100%;
+}
+
+.wizard-layout__form,
+.wizard-layout__preview {
+  background: rgba(12, 12, 12, 0.8);
+  border-radius: 18px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+
+.wizard-layout__preview {
+  background: linear-gradient(180deg, rgba(20, 20, 20, 0.75), rgba(8, 8, 8, 0.9));
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.config-section {
-  background: rgba(30, 30, 30, 0.8);
-  border-radius: 12px;
+.wizard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.wizard-header__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.75rem;
+  color: rgba(0, 232, 224, 0.9);
+  margin: 0;
+}
+
+.wizard-header__title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.wizard-header__subtitle {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.settings-card {
+  background: rgba(23, 23, 23, 0.75);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.section-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.actions {
-  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
-.draggable-list {
+.settings-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.toggle input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--bulma-primary, #00e8e0);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.field input,
+.field textarea,
+.field select {
+  background: rgba(5, 5, 5, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  color: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: rgba(0, 232, 224, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 232, 224, 0.3);
+}
+
+.field--inline {
+  position: relative;
+  padding-right: 2.5rem;
+}
+
+.field--suffix {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+}
+
+.powerup-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.question-card {
-  background: rgba(18, 18, 18, 0.95);
+.powerup-card {
+  background: rgba(10, 10, 10, 0.65);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.powerup-card__row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.muted {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.45rem 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.ghost:hover:not(:disabled) {
+  background: rgba(0, 232, 224, 0.16);
+  border-color: rgba(0, 232, 224, 0.4);
+}
+
+.ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ghost--danger {
+  border-color: rgba(255, 92, 141, 0.3);
+  color: rgba(255, 126, 153, 0.95);
+}
+
+.ghost--danger:hover:not(:disabled) {
+  background: rgba(255, 92, 141, 0.15);
+  border-color: rgba(255, 92, 141, 0.45);
+}
+
+.session-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.session-preview header h3 {
+  margin: 0.25rem 0 0;
+  color: #ffffff;
+  font-size: 1.35rem;
+}
+
+.session-preview__board {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem;
+}
+
+.session-preview__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.session-preview__row strong {
+  color: #ffffff;
+}
+
+.question-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.question-list__item {
+  background: rgba(20, 20, 20, 0.7);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.question-list__item--active {
+  border-color: rgba(0, 232, 224, 0.45);
+  box-shadow: 0 16px 28px rgba(0, 232, 224, 0.18);
+}
+
+.question-list__select {
+  background: none;
+  border: none;
+  text-align: left;
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  color: inherit;
+  cursor: pointer;
+}
+
+.question-list__index {
+  font-weight: 700;
+  color: rgba(0, 232, 224, 0.85);
+  font-size: 1.1rem;
+}
+
+.question-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  background: rgba(15, 15, 15, 0.6);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.question-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: rgba(12, 12, 12, 0.65);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.5rem;
+}
+
+.question-preview__label {
+  margin-bottom: 0.5rem;
+}
+
+.question-preview__title {
+  width: 100%;
+  background: rgba(6, 6, 6, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 600;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.question-preview__title:focus {
+  outline: none;
+  border-color: rgba(0, 232, 224, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 232, 224, 0.25);
+}
+
+.answer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.answer-list article {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(6, 6, 6, 0.55);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.question-header {
-  display: flex;
+.answer-list .radio {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.drag-handle {
-  cursor: grab;
-  margin-right: 0.5rem;
-  user-select: none;
+.answer-list .radio input[type='radio'] {
+  width: 16px;
+  height: 16px;
+  accent-color: rgba(0, 232, 224, 0.9);
 }
 
 .question-actions {
   display: flex;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
 }
 
-.answers {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.theme-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.answer-option {
-  background: rgba(45, 45, 45, 0.6);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.generated-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.ai-candidate {
-  background: rgba(26, 26, 26, 0.9);
+.theme-field {
+  background: rgba(15, 15, 15, 0.55);
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  padding: 1rem;
 }
 
-.candidate-header {
+.theme-preview {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: stretch;
+}
+
+.theme-preview__swatch,
+.theme-preview__canvas {
+  border-radius: 16px;
+  min-height: 120px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.candidate-actions {
-  display: flex;
-  gap: 0.5rem;
+.theme-preview__canvas {
+  min-height: 160px;
+  background-size: cover;
+  background-position: center;
 }
 
-.candidate-options {
-  margin-top: 0.75rem;
-  margin-left: 1rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.candidate-options li + li {
-  margin-top: 0.25rem;
+@media (max-width: 1180px) {
+  .wizard-layout {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
+

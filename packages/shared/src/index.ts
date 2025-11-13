@@ -3,5 +3,7 @@ export * from './utils/analytics';
 export * from './api';
 export * from './types';
 export * from './utils/zoneRevealAnswer';
+export * from './utils/triviaHash';
 export * from './constants/gameBadges';
 export * from './constants/gameTypes';
+export * from './trivia/scoring';

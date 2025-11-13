@@ -4,8 +4,7 @@
     <div class="navbar-inner layout-container">
       <div class="navbar-brand">
         <router-link class="navbar-item" to="/">
-          <img src="@/assets/topx-icon.png" alt="TOP-X Logo">
-          <span class="brand-wordmark">TOP-X</span>
+          <img src="@/assets/topx-logo.png" alt="TOP-X Logo">
         </router-link>
         <a
           role="button"
@@ -28,17 +27,10 @@
           <font-awesome-icon :icon="['fas', 'search']" class="navbar-icon" />
           Users
         </router-link>        -->
-        <router-link  class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
-        <router-link  class="navbar-item" to="/users" @click="closeMenu">{{ t('nav.users') }}</router-link>
+        <router-link class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
+        <router-link class="navbar-item" to="/users" @click="closeMenu">{{ t('nav.users') }}</router-link>
         <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
-        <router-link
-         
-          class="navbar-item"
-          to="/build"
-          @click="closeMenu"
-        >
-          {{ t('nav.build') }}
-        </router-link>
+        <router-link class="navbar-item build-link" to="/build" @click="closeMenu">{{ t('nav.build') }}</router-link>
 
       </div>
 
@@ -225,17 +217,9 @@ watch(
 }
 
 .navbar-brand img {
-  width: 36px;
-  height: 36px;
+  height: 22px;
+  width: auto;
   filter: drop-shadow(0 6px 12px rgba(0, 232, 224, 0.25));
-}
-
-.brand-wordmark {
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  color: var(--bulma-primary);
 }
 
 .navbar-menu {
@@ -341,12 +325,31 @@ watch(
   margin: 0;
   border: 2px solid rgba(0, 232, 224, 0.4);
   box-shadow: 0 10px 25px rgba(0, 232, 224, 0.2);
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .profile-link .image img {
   width: 48px;
   height: 48px;
   max-height: 48px;
+}
+
+.build-link {
+  border: 1px solid rgba(0, 232, 224, 0.4);
+  border-radius: 12px;
+  padding: calc(var(--space-3) - 2px) calc(var(--space-4) - 2px);
+  background: rgba(0, 232, 224, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 232, 224, 0.2);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.build-link:hover,
+.build-link.router-link-active {
+  box-shadow: 0 10px 24px rgba(0, 232, 224, 0.35);
+  transform: translateY(-1px);
+  color: var(--bulma-primary);
+  background: rgba(0, 232, 224, 0.18);
 }
 
 @media screen and (max-width: 64rem) {

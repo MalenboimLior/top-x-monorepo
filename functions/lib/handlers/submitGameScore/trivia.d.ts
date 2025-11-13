@@ -5,6 +5,9 @@ export interface TriviaAttemptSubmission {
     questionId: string;
     answerHash: string;
     answeredAt?: string;
+    durationSeconds?: number;
+    timeRemainingSeconds?: number;
+    speedBonus?: number;
 }
 export interface TriviaSubmissionPayload {
     mode?: string;
@@ -29,6 +32,10 @@ export interface TriviaProcessingMetrics {
     attemptCount: number;
     correctCount: number;
     accuracy: number;
+    basePoints?: number;
+    streakBonus?: number;
+    speedBonus?: number;
+    lastSpeedBonus?: number;
     bestStreak?: number;
     currentStreak?: number;
     mode?: string;
