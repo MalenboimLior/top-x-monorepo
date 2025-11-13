@@ -1,9 +1,5 @@
 <template>
-  <article
-    class="game-card"
-    :class="[`game-card--${size}`]"
-    @click="handleSelect"
-  >
+  <article class="game-card" :class="[`game-card--${size}`]" @click="handleSelect">
     <div class="game-card__media" :dir="mediaDirection">
       <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
       <div v-if="mediaLabels.length" class="game-card__labels-top">
@@ -16,6 +12,15 @@
           <font-awesome-icon v-if="label.icon" :icon="label.icon" />
           <span>{{ label.text }}</span>
         </span>
+      </div>
+      <div
+        v-if="displayGameType"
+        class="game-card__type-overlay"
+        :title="gameTypeLabel"
+        role="img"
+        :aria-label="gameTypeLabel"
+      >
+        <font-awesome-icon :icon="gameTypeIcon" />
       </div>
       <button
         type="button"
@@ -33,34 +38,26 @@
     <div class="game-card__content">
       <h3 class="game-card__title">{{ game.name }}</h3>
       <p class="game-card__description">{{ game.description }}</p>
-      <div v-if="resolvedCreator" class="game-card__creator">
-        <div class="game-card__creator-avatar">
-          <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
-        </div>
-        <div class="game-card__creator-meta">
-          <span class="game-card__creator-label">{{ creatorLabel }}</span>
-          <a :href="creatorProfileUrl" @click.stop>{{ resolvedCreator.username }}</a>
-        </div>
-      </div>
-      <div v-if="displayGameType || hasStats" class="game-card__meta">
-        <div v-if="displayGameType" class="game-card__type" :title="gameTypeLabel">
-          <span class="game-card__type-icon" role="img" :aria-label="gameTypeLabel">
-            <font-awesome-icon :icon="gameTypeIcon" />
+      <div v-if="hasStats" class="game-card__stats" dir="ltr">
+        <div v-for="stat in statItems" :key="stat.key" class="game-card__stat" :title="stat.label">
+          <span class="game-card__stat-icon" role="img" :aria-label="stat.label">
+            <font-awesome-icon :icon="stat.icon" />
           </span>
-          <!-- <span class="game-card__type-label">{{ gameTypeLabel }}</span> -->
-        </div>
-        <div v-if="hasStats" class="game-card__stats">
-          <div v-for="stat in statItems" :key="stat.key" class="game-card__stat" :title="stat.label">
-            <span class="game-card__stat-icon" role="img" :aria-label="stat.label">
-              <font-awesome-icon :icon="stat.icon" />
-            </span>
-            <span class="game-card__stat-value">{{ stat.value }}</span>
-          </div>
+          <span class="game-card__stat-value">{{ stat.value }}</span>
         </div>
       </div>
-      <div v-if="playLabel" class="game-card__footer">
-        <div class="game-card__footer-button">
+      <div class="game-card__footer">
+        <div v-if="playLabel" class="game-card__footer-button">
           <CustomButton :type="buttonType" :label="playLabel" @click.stop="handlePlay" />
+        </div>
+        <div v-if="resolvedCreator" class="game-card__creator" dir="ltr">
+          <div class="game-card__creator-avatar">
+            <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
+          </div>
+          <div class="game-card__creator-meta">
+            <span class="game-card__creator-label">{{ creatorLabel }}</span>
+            <a :href="creatorProfileUrl" @click.stop>{{ resolvedCreator.username }}</a>
+          </div>
         </div>
       </div>
     </div>
@@ -341,8 +338,28 @@ function handlePlay() {
 </script>
 
 <style scoped>
+.game-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  inline-size: min(320px, 100%);
+  /*min-block-size: 520px;*/
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 28px;
+  border: 1px solid rgba(0, 232, 224, 0.12);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.game-card--featured {
+  inline-size: min(360px, 100%);
+/*min-block-size: 560px;*/}
+
 .game-card__media {
   position: relative;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .game-card__media-badge {
@@ -404,8 +421,8 @@ function handlePlay() {
 .game-card__labels-top {
   position: absolute;
   top: var(--space-3);
-  left: var(--space-3);
-  right: calc(var(--space-3) + 48px);
+  inset-inline-start: var(--space-3);
+  inset-inline-end: calc(var(--space-3) + 48px);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -415,7 +432,7 @@ function handlePlay() {
 .game-card__favorite {
   position: absolute;
   top: var(--space-3);
-  right: var(--space-3);
+  inset-inline-end: var(--space-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -448,22 +465,35 @@ function handlePlay() {
   opacity: 0.7;
 }
 
-.game-card__media[dir='rtl'] .game-card__labels-top {
-  left: calc(var(--space-3) + 48px);
-  right: var(--space-3);
+.game-card__type-overlay {
+  position: absolute;
+  inset-inline-end: var(--space-3);
+  inset-block-end: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.2));
+  border: 1.5px solid rgba(0, 232, 224, 0.45);
+  color: var(--bulma-primary);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
-.game-card__media[dir='rtl'] .game-card__favorite {
-  right: auto;
-  left: var(--space-3);
+.game-card__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  /*gap: var(--space-3);*/
+  padding: var(--space-3);
 }
 
 .game-card__footer {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: auto;
+  gap: var(--space-4);
+
   padding-top: var(--space-2);
 }
 
@@ -497,6 +527,11 @@ function handlePlay() {
   color: #000000 !important;
 }
 
+.game-card__footer-button :deep(.button):focus-visible {
+  outline: 2px solid var(--bulma-primary);
+  outline-offset: 4px;
+}
+
 .game-card__footer-button :deep(.button.is-primary:hover) {
   background: linear-gradient(135deg, #00e8e0, var(--bulma-primary)) !important;
   color: #000000 !important;
@@ -506,7 +541,7 @@ function handlePlay() {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-3) 0;
+  padding: 0;
 }
 
 .game-card__creator-avatar {
@@ -592,11 +627,13 @@ function handlePlay() {
 }
 
 .game-card__title {
-  padding-inline-start: 20px;
   font-size: 1.35rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .game-card--featured .game-card__title {
@@ -604,62 +641,52 @@ function handlePlay() {
 }
 
 .game-card__description {
-  padding-inline-start: 20px;
   margin: 0;
   color: rgba(255, 255, 255, 0.65);
   line-height: 1.55;
+  line-clamp: 2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .game-card__stats {
   display: flex;
-  flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
-  gap: var(--space-3);
-  margin: 0;
-  padding: var(--space-3);
+  gap: var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
   overflow-x: auto;
-  flex: 1 1 auto;
 }
 
 .game-card__stat {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: 10px;
-  background: rgba(0, 232, 224, 0.12);
-  border: 1px solid rgba(0, 232, 224, 0.25);
-  transition: all 0.2s ease;
-  cursor: default;
   flex-shrink: 0;
   white-space: nowrap;
-}
-
-.game-card__stat:hover {
-  background: rgba(0, 232, 224, 0.18);
-  border-color: rgba(0, 232, 224, 0.4);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 232, 224, 0.2);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .game-card__stat-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.3), rgba(0, 232, 224, 0.2));
+  width: 1.5rem;
+  height: 1.5rem;
   color: var(--bulma-primary);
-  font-size: 1rem;
-  flex-shrink: 0;
+  font-size: 0.9rem;
 }
 
 .game-card__stat-value {
   color: #ffffff;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1;
 }
 </style>
