@@ -9,6 +9,7 @@ import CommunicationsPage from '@/pages/CommunicationsPage.vue';
 import SettingsPage from '@/pages/SettingsPage.vue';
 import LoginPage from '@/pages/LoginPage.vue';
 import { registerAuthGuards } from '@/router/guards';
+import UsersPage from '@/pages/UsersPage.vue';
 
 const adminChildren: RouteRecordRaw[] = [
   { path: '', name: 'dashboard', component: DashboardPage, meta: { title: 'Dashboard', requiresAuth: true, requiresAdmin: true } },
@@ -25,6 +26,7 @@ const adminChildren: RouteRecordRaw[] = [
       requiresAdmin: true,
     },
   },
+  { path: 'users', name: 'users', component: UsersPage, meta: { title: 'Users', subtitle: 'Search and curate featured creators for the homepage.', requiresAuth: true, requiresAdmin: true } },
   { path: 'homepage', name: 'homepage', component: HomePageManager, meta: { title: 'Homepage', requiresAuth: true, requiresAdmin: true } },
   { path: 'communications', name: 'communications', component: CommunicationsPage, meta: { title: 'Communications', requiresAuth: true, requiresAdmin: true } },
   { path: 'settings', name: 'settings', component: SettingsPage, meta: { title: 'Settings', requiresAuth: true, requiresAdmin: true } },

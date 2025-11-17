@@ -93,7 +93,7 @@ const blocks = computed(() => {
 <style scoped>
 .how-it-works {
   position: relative;
-  padding-block: clamp(var(--space-9), 12vh, var(--space-11));
+  /*padding-block: clamp(var(--space-9), 12vh, var(--space-11));*/
   color: #ffffff;
   --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-5));
 }
@@ -144,7 +144,7 @@ const blocks = computed(() => {
 }
 
 .how-it-works__title {
-  font-size: clamp(1.8rem, 1.2vw + 1.1rem, 2.4rem);
+  font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
   font-weight: 800;
   margin: 0;
   color: #ffffff;

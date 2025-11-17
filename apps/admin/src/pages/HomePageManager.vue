@@ -106,6 +106,57 @@
 
           <article class="card home-manager__card">
             <header class="card-header">
+              <p class="card-header-title">Hot games layout</p>
+            </header>
+            <div class="card-content">
+              <p class="mb-4">Most sessions across all games (official and community).</p>
+              <div class="home-manager__field-row">
+                <div class="field">
+                  <label class="label">Max rows</label>
+                  <div class="control">
+                    <input
+                      class="input"
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Auto"
+                      v-model.number="homeConfigForm.hot.maxRows"
+                    />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="label">Games per row</label>
+                  <div class="control">
+                    <input
+                      class="input"
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Auto"
+                      v-model.number="homeConfigForm.hot.itemsPerRow"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label">Max games</label>
+                <div class="control">
+                  <input
+                    class="input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Show all"
+                    v-model.number="homeConfigForm.hot.limit"
+                  />
+                </div>
+                <p class="help">Sorting is fixed to most sessions (descending).</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card home-manager__card">
+            <header class="card-header">
               <p class="card-header-title">Community games ordering</p>
             </header>
             <div class="card-content">
@@ -619,6 +670,36 @@ watch(
   },
 );
 
+watch(
+  () => homeConfigForm.value.hot.maxRows,
+  (value) => {
+    const normalized = normalizeOptionalPositive(value);
+    if (normalized !== (value ?? null)) {
+      homeConfigForm.value.hot.maxRows = normalized;
+    }
+  },
+);
+
+watch(
+  () => homeConfigForm.value.hot.itemsPerRow,
+  (value) => {
+    const normalized = normalizeOptionalPositive(value);
+    if (normalized !== (value ?? null)) {
+      homeConfigForm.value.hot.itemsPerRow = normalized;
+    }
+  },
+);
+
+watch(
+  () => homeConfigForm.value.hot.limit,
+  (value) => {
+    const normalized = normalizeOptionalPositive(value);
+    if (normalized !== (value ?? null)) {
+      homeConfigForm.value.hot.limit = normalized;
+    }
+  },
+);
+
 onMounted(() => {
   const configRef = doc(db, 'config', 'homepage');
   configUnsubscribe = onSnapshot(
@@ -689,6 +770,13 @@ function normalizeHomeConfig(raw: Partial<HomePageConfig> | undefined): HomePage
       maxRows: resolveMaxRowsField(raw.topX, base.topX.maxRows),
       itemsPerRow: resolveItemsPerRowField(raw.topX?.itemsPerRow, base.topX.itemsPerRow),
     },
+    hot: {
+      // hot section is always sessions-based; allow overriding from DB if present, else default
+      sort: raw.hot?.sort ?? base.hot.sort,
+      limit: resolveLimit(raw.hot?.limit, base.hot.limit),
+      maxRows: resolveMaxRowsField(raw.hot, base.hot.maxRows),
+      itemsPerRow: resolveItemsPerRowField(raw.hot?.itemsPerRow, base.hot.itemsPerRow),
+    },
     community: {
       sort: raw.community?.sort ?? base.community.sort,
       limit: resolveLimit(raw.community?.limit, base.community.limit),
@@ -727,6 +815,12 @@ function toComparable(config: HomePageConfig): string {
       maxRows: config.topX.maxRows ?? null,
       itemsPerRow: config.topX.itemsPerRow ?? null,
     },
+    hot: {
+      sort: config.hot.sort,
+      limit: config.hot.limit ?? null,
+      maxRows: config.hot.maxRows ?? null,
+      itemsPerRow: config.hot.itemsPerRow ?? null,
+    },
     community: {
       sort: config.community.sort,
       limit: config.community.limit ?? null,
@@ -759,6 +853,13 @@ function sanitizeForSave(config: HomePageConfig): HomePageConfig {
       maxRows: sanitizePositiveInt(config.topX.maxRows),
       itemsPerRow: sanitizePositiveInt(config.topX.itemsPerRow),
     },
+    hot: {
+      // force sessions/desc to ensure Hot Games semantics
+      sort: { field: 'sessions', direction: 'desc' },
+      limit: sanitizePositiveInt(config.hot.limit),
+      maxRows: sanitizePositiveInt(config.hot.maxRows),
+      itemsPerRow: sanitizePositiveInt(config.hot.itemsPerRow),
+    },
     community: {
       sort: { ...config.community.sort },
       limit: sanitizePositiveInt(config.community.limit),
@@ -785,6 +886,12 @@ async function saveHomeConfig() {
         maxRows: sanitized.topX.maxRows ?? deleteField(),
         itemsPerRow: sanitized.topX.itemsPerRow ?? deleteField(),
       },
+      hot: {
+        sort: sanitized.hot.sort,
+        limit: sanitized.hot.limit ?? deleteField(),
+        maxRows: sanitized.hot.maxRows ?? deleteField(),
+        itemsPerRow: sanitized.hot.itemsPerRow ?? deleteField(),
+      },
       community: {
         sort: sanitized.community.sort,
         limit: sanitized.community.limit ?? deleteField(),
@@ -806,6 +913,12 @@ async function saveHomeConfig() {
         limit: sanitized.topX.limit ?? null,
         maxRows: sanitized.topX.maxRows ?? null,
         itemsPerRow: sanitized.topX.itemsPerRow ?? null,
+      },
+      hot: {
+        sort: sanitized.hot.sort,
+        limit: sanitized.hot.limit ?? null,
+        maxRows: sanitized.hot.maxRows ?? null,
+        itemsPerRow: sanitized.hot.itemsPerRow ?? null,
       },
       community: {
         sort: sanitized.community.sort,
