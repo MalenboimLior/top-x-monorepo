@@ -31,6 +31,30 @@
     </GameSection>
     <HowItWorksSection />
     <GameSection
+      :title="'Hot Games'"
+      :subtitle="hotSortDescription"
+      :games="hotGames"
+      :game-stats="gameStats"
+      :items-per-row="hotItemsPerRow"
+      :initial-rows="hotInitialRows"
+      :max-rows="hotMaxRows"
+      :rows-increment="1"
+      :empty-message="t('home.topxGames.empty')"
+      grid-variant="quad"
+    >
+      <template #default="{ game, stats }">
+        <GameCard
+          :game="game"
+          :stats="stats"
+          :daily-challenge-active="Boolean(game.dailyChallengeActive)"
+          :daily-challenge-label="t('home.labels.dailyChallenge')"
+          :play-label="t('home.playNow')"
+          button-type="is-primary"
+          @play="navigateToGame"
+        />
+      </template>
+    </GameSection>
+    <GameSection
       section-id="featuredGames"
       :title="t('home.topxGames.title')"
       :subtitle="topXSortDescription"
@@ -39,6 +63,30 @@
       :items-per-row="topXItemsPerRow"
       :initial-rows="topXInitialRows"
       :max-rows="topXMaxRows"
+      :rows-increment="1"
+      :empty-message="t('home.topxGames.empty')"
+      grid-variant="quad"
+    >
+      <template #default="{ game, stats }">
+        <GameCard
+          :game="game"
+          :stats="stats"
+          :daily-challenge-active="Boolean(game.dailyChallengeActive)"
+          :daily-challenge-label="t('home.labels.dailyChallenge')"
+          :play-label="t('home.playNow')"
+          button-type="is-primary"
+          @play="navigateToGame"
+        />
+      </template>
+    </GameSection>
+    <GameSection
+      :title="'Hot Games'"
+      :subtitle="hotSortDescription"
+      :games="hotGames"
+      :game-stats="gameStats"
+      :items-per-row="hotItemsPerRow"
+      :initial-rows="hotInitialRows"
+      :max-rows="hotMaxRows"
       :rows-increment="1"
       :empty-message="t('home.topxGames.empty')"
       grid-variant="quad"
@@ -93,6 +141,15 @@
       @open-free="goToBuild()"
       @select-type="goToBuild"
     />
+    <TopCreatorsSection
+      v-if="creatorsList.length"
+      :title="'👾 Top Creators'"
+      :subtitle="'The creators who made the most noise across the web.'"
+      :creators="creatorsList"
+      @open-profile="navigateToProfile"
+    />
+    <DevelopersStage @submit="goToBuild()" />
+    <BrandsStage @contact="goToContact()" />
     <AdsenseBlock v-if="shouldDisplayAds" ref="adSlotRef" :client="adClient" :slot="adSlot" />
   </div>
 </template>
@@ -103,10 +160,12 @@ import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
 import {
   collection,
+  getDocs,
   query,
   onSnapshot,
   doc,
   where,
+  documentId,
 } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import {
@@ -118,6 +177,9 @@ import HowItWorksSection from '@/components/home/HowItWorksSection.vue';
 import GameCard from '@/components/GameCard.vue';
 import GameSection from '@/components/home/GameSection.vue';
 import BuildSection from '@/components/home/BuildSection.vue';
+import TopCreatorsSection from '@/components/home/TopCreatorsSection.vue';
+import DevelopersStage from '@/components/home/DevelopersStage.vue';
+import BrandsStage from '@/components/home/BrandsStage.vue';
 import AdsenseBlock from '@/components/home/AdsenseBlock.vue';
 import { analytics, trackEvent } from '@top-x/shared';
 import type { Game, GameType } from '@top-x/shared/types/game';
@@ -126,6 +188,7 @@ import type { HomeCollectionConfig, HomePageConfig, HomeOrderField, HomeSectionO
 import { defaultHomePageConfig } from '@top-x/shared/types/home';
 import { useLocaleStore } from '@/stores/locale';
 import { pushAdSenseSlot } from '@/utils/googleAdsense';
+import type { User } from '@top-x/shared/types/user';
 
 const router = useRouter();
 
@@ -137,6 +200,7 @@ const configLoaded = ref(false);
 const gamesSection = ref<{ el: HTMLElement | null } | null>(null);
 const adSlotRef = ref<{ el: HTMLElement | null } | null>(null);
 const hasInitializedAd = ref(false);
+const creators = ref<User[]>([]);
 
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
@@ -258,11 +322,20 @@ function normalizeHomeConfig(raw: Partial<HomePageConfig> | undefined): HomePage
     featured: {
       gameIds: Array.isArray(raw.featured?.gameIds) ? [...raw.featured.gameIds] : base.featured.gameIds,
     },
+    creators: {
+      userIds: Array.isArray(raw.creators?.userIds) ? [...raw.creators.userIds] : base.creators!.userIds,
+    },
     topX: {
       sort: raw.topX?.sort ?? base.topX.sort,
       limit: resolveLimit(raw.topX?.limit, base.topX.limit),
       maxRows: resolveMaxRowsField(raw.topX, base.topX.maxRows),
       itemsPerRow: resolveItemsPerRowField(raw.topX?.itemsPerRow, base.topX.itemsPerRow),
+    },
+    hot: {
+      sort: raw.hot?.sort ?? base.hot.sort,
+      limit: resolveLimit(raw.hot?.limit, base.hot.limit),
+      maxRows: resolveMaxRowsField(raw.hot, base.hot.maxRows),
+      itemsPerRow: resolveItemsPerRowField(raw.hot?.itemsPerRow, base.hot.itemsPerRow),
     },
     community: {
       sort: raw.community?.sort ?? base.community.sort,
@@ -312,6 +385,7 @@ onMounted(() => {
       const rawData = snapshot.exists() ? (snapshot.data() as Partial<HomePageConfig>) : undefined;
       homeConfig.value = normalizeHomeConfig(rawData);
       configLoaded.value = true;
+      void loadCreators();
     },
     (err) => {
       console.error('Home: Error fetching home configuration:', err.message, err);
@@ -371,14 +445,15 @@ function resolveOrderLabel(order: HomeSectionOrder): string {
   const fieldLabels: Record<HomeOrderField, string> = {
     date: t('home.order.fields.date'),
     players: t('home.order.fields.players'),
-    favorites: t('home.order.fields.favorites'),
-    sessions: t('home.order.fields.sessions'),
+    favorites: "",//t('home.order.fields.favorites')"",
+    sessions: "",//t('home.order.fields.sessions'),
   };
   const fieldLabel = fieldLabels[order.field] ?? '';
-  return `${t('home.order.prefix')} ${fieldLabel} (${direction})`;
+  return `${t('home.order.prefix')} ${fieldLabel}`;// (${direction})`;
 }
 
 const topXSortDescription = computed(() => resolveOrderLabel(homeConfig.value.topX.sort));
+const hotSortDescription = computed(() => resolveOrderLabel(homeConfig.value.hot.sort));
 const communitySortDescription = computed(() => resolveOrderLabel(homeConfig.value.community.sort));
 
 function getSortValue(game: Game, field: HomeOrderField): number {
@@ -422,6 +497,13 @@ function resolveSectionLimit(configSection: HomeCollectionConfig): number | null
 const topXGames = computed(() => {
   const sorted = sortGames(topXLibrary.value, homeConfig.value.topX.sort);
   const limit = resolveSectionLimit(homeConfig.value.topX);
+  return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;
+});
+
+const hotGames = computed(() => {
+  const allVisible = visibleGames.value;
+  const sorted = sortGames(allVisible, homeConfig.value.hot.sort);
+  const limit = resolveSectionLimit(homeConfig.value.hot);
   return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;
 });
 
@@ -471,6 +553,10 @@ const topXMaxRows = computed(() => resolveMaxRows(homeConfig.value.topX.maxRows,
 const topXItemsPerRow = computed(() => normalizePositiveInt(homeConfig.value.topX.itemsPerRow, 4));
 const topXInitialRows = computed(() => Math.min(1, topXMaxRows.value ?? 1));
 
+const hotMaxRows = computed(() => resolveMaxRows(homeConfig.value.hot.maxRows, 2));
+const hotItemsPerRow = computed(() => normalizePositiveInt(homeConfig.value.hot.itemsPerRow, 4));
+const hotInitialRows = computed(() => Math.min(1, hotMaxRows.value ?? 1));
+
 const communityMaxRows = computed(() => resolveMaxRows(homeConfig.value.community.maxRows, 2));
 const communityItemsPerRow = computed(() => normalizePositiveInt(homeConfig.value.community.itemsPerRow, 4));
 const communityInitialRows = computed(() => Math.min(1, communityMaxRows.value ?? 1));
@@ -478,6 +564,10 @@ const communityInitialRows = computed(() => Math.min(1, communityMaxRows.value ?
 function navigateToGame(gameId: string, gameTypeId: string) {
   trackEvent(analytics, 'select_game', { game_id: gameId });
   router.push(`/games/info?game=${gameId}`);
+}
+
+function navigateToProfile(uid: string) {
+  router.push({ path: '/profile', query: { user: uid } });
 }
 
 function scrollToGames() {
@@ -489,6 +579,46 @@ function goToBuild(gameTypeId?: string) {
   const query = gameTypeId ? { template: gameTypeId } : undefined;
   router.push({ name: 'Build', query });
 }
+
+function goToContact() {
+  router.push({ name: 'ContactUs' });
+}
+
+const creatorsIds = computed(() => (homeConfig.value.creators?.userIds ?? []).slice(0, 10));
+
+async function loadCreators() {
+  const ids = creatorsIds.value;
+  if (!ids.length) {
+    creators.value = [];
+    return;
+  }
+  try {
+    // Firestore "in" supports up to 10 ids – we already slice to 10
+    const usersSnap = await getDocs(
+      query(collection(db, 'users'), where(documentId(), 'in', ids)),
+    );
+    const map = new Map<string, User>();
+    usersSnap.forEach((docSnap) => {
+      map.set(docSnap.id, { uid: docSnap.id, ...(docSnap.data() as User) });
+    });
+    // Preserve order from config
+    creators.value = ids
+      .map((id) => map.get(id))
+      .filter((u): u is User => Boolean(u));
+  } catch (e) {
+    console.error('Home: failed to load creators', e);
+    creators.value = [];
+  }
+}
+
+const creatorsList = computed(() =>
+  creators.value.map((u) => ({
+    uid: u.uid,
+    displayName: u.displayName || u.username || 'Anonymous',
+    username: u.username ? (u.username.startsWith('@') ? u.username : `@${u.username}`) : '',
+    photoURL: u.photoURL || 'https://www.top-x.co/assets/profile.png',
+  })),
+);
 
 onBeforeUnmount(() => {
   if (resizeObserver) {

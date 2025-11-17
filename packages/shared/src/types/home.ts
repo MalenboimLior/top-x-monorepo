@@ -32,12 +32,23 @@ export interface HomeBuildConfig {
   gameTypeIds: string[];
 }
 
+export interface HomeCreatorsConfig {
+  /**
+   * Ordered list of featured creator user ids to spotlight on the home page.
+   * Limited to 10 for Firestore "in" queries on the client.
+   */
+  userIds: string[];
+}
+
 export interface HomePageConfig {
   featured: HomeFeaturedConfig;
   topX: HomeCollectionConfig;
+  hot: HomeCollectionConfig;
   community: HomeCollectionConfig;
   hiddenGameIds: string[];
   build: HomeBuildConfig;
+  /** Spotlight creators section configuration. */
+  creators?: HomeCreatorsConfig;
   updatedAt?: number;
   updatedBy?: string;
 }
@@ -46,9 +57,21 @@ export const defaultHomePageConfig: HomePageConfig = {
   featured: {
     gameIds: [],
   },
+  creators: {
+    userIds: [],
+  },
   topX: {
     sort: {
       field: 'favorites',
+      direction: 'desc',
+    },
+    limit: 8,
+    maxRows: 2,
+    itemsPerRow: 4,
+  },
+  hot: {
+    sort: {
+      field: 'sessions',
       direction: 'desc',
     },
     limit: 8,

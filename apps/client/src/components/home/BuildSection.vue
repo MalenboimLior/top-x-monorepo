@@ -5,10 +5,7 @@
         <h2 class="section-title">{{ title }}</h2>
         <p class="section-subtitle">{{ subtitle }}</p>
       </div>
-      <div class="build-header__actions">
-        <CustomButton type="is-primary" :label="primaryCta" @click="emit('openAll')" />
-        <CustomButton type="is-secondary" :label="freeCta" @click="emit('openFree')" />
-      </div>
+     
     </header>
 
     <div v-if="gameTypes.length" class="build-grid">
@@ -35,6 +32,9 @@
       </button>
     </div>
     <p v-else class="empty-state">{{ emptyMessage }}</p>
+    <div class="build-header__actions">
+      <CustomButton type="is-primary" :label="freeCta" @click="emit('openAll')" />
+    </div>
   </section>
 </template>
 
@@ -141,12 +141,12 @@ function handleSelect(gameTypeId: string) {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(var(--space-3), 2vw, var(--space-4));
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .section-title {
   margin: 0;
-  font-size: clamp(var(--font-size-700), 2vw + 1rem, var(--font-size-1000));
+  font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
   font-weight: 800;
   color: #ffffff;
   text-shadow: 0 18px 46px rgba(0, 232, 224, 0.35);
@@ -176,7 +176,7 @@ function handleSelect(gameTypeId: string) {
 }
 
 .build-section.is-rtl .build-header__actions {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .build-grid {
@@ -300,7 +300,7 @@ function handleSelect(gameTypeId: string) {
   }
 
   .build-header__actions {
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .section-header__content {
@@ -313,14 +313,6 @@ function handleSelect(gameTypeId: string) {
   .build-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .build-header__actions {
-    width: 100%;
-  }
-
-  .build-header__actions > * {
-    flex: 1;
   }
 
   .build-card {
