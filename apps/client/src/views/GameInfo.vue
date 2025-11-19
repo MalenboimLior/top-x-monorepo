@@ -1,6 +1,6 @@
 <!-- Updated GameInfo.vue -->
 <template>
-  <div class="game-info-page section-stack">
+  <div class="page-container game-info-page section-stack">
     <section class="layout-container section-stack game-summary">
       <div class="summary-grid surface">
         <div class="summary-media">
@@ -101,6 +101,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import { getGame, getGameStats } from '@/services/game';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import Leaderboard from '@/components/Leaderboard.vue';
@@ -144,6 +145,16 @@ const shareText = computed(() => {
   }
   return `Check out ${game.value.name} on TOP-X! 🎮`;
 });
+
+useHead(() => ({
+  title: game.value.name ? `TOP-X: ${game.value.name}` : 'TOP-X: Game Info',
+  meta: [
+    {
+      name: 'description',
+      content: game.value.description || `Play ${game.value.name || 'this game'} on TOP-X. Compete with friends, climb leaderboards, and challenge yourself!`,
+    },
+  ],
+}));
 
 onMounted(async () => {
   if (!gameId.value) {
@@ -203,15 +214,6 @@ function buildGame() {
 
 <style scoped>
 .game-info-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(0, 232, 224, 0.18), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(196, 255, 0, 0.12), transparent 60%),
-    #000;
-  color: var(--bulma-text);
-  padding: clamp(var(--space-6), 8vh, var(--space-9)) clamp(var(--space-4), 4vw, var(--space-6))
-    var(--space-12);
-  box-sizing: border-box;
-  width: 100%;
   --section-stack-gap: var(--space-11);
 }
 
@@ -412,7 +414,6 @@ function buildGame() {
 
 @media (max-width: 48rem) {
   .game-info-page {
-    padding: var(--space-10) clamp(var(--space-3), 6vw, var(--space-4)) var(--space-10);
     --section-stack-gap: var(--space-9);
   }
 

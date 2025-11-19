@@ -1,5 +1,5 @@
 <template>
-  <div class="terms-page">
+  <div class="page-container terms-page">
     <section class="terms-hero">
       <div class="terms-hero__glow"></div>
       <div class="terms-hero__content">
@@ -101,9 +101,6 @@ function handleCtaClick() {
 
 <style scoped>
 .terms-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.16), transparent 55%), #040404;
-  color: #f8f8fc;
   display: flex;
   flex-direction: column;
   gap: 3rem;

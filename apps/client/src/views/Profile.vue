@@ -1,6 +1,6 @@
 <!-- Shows stats and info about the logged in user -->
 <template>
-  <div class="profile-page">
+  <div class="page-container profile-page">
     <section class="profile-hero">
       <div class="profile-hero__glow"></div>
       <div class="profile-hero__content">
@@ -595,9 +595,6 @@ onMounted(() => {
 
 <style scoped>
 .profile-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.18), transparent 55%), #050505;
-  color: #f8f8fc;
   display: flex;
   flex-direction: column;
   gap: 3rem;
@@ -605,7 +602,8 @@ onMounted(() => {
 
 .profile-hero {
   position: relative;
-  padding: clamp(3rem, 8vw, 6rem) 1.5rem 0;
+  padding: clamp(3rem, 8vw, 6rem) 0 0;
+  margin: 0 calc(-1 * var(--space-6));
   display: flex;
   justify-content: center;
 }
@@ -621,6 +619,7 @@ onMounted(() => {
 .profile-hero__content {
   position: relative;
   width: min(960px, 100%);
+  padding: 0 var(--space-6);
   display: flex;
   justify-content: center;
 }
@@ -684,11 +683,13 @@ onMounted(() => {
 .profile-body {
   display: flex;
   justify-content: center;
-  padding: 0 1.5rem 4rem;
+  padding: 0 0 4rem;
+  margin: 0 calc(-1 * var(--space-6));
 }
 
 .profile-surface {
   width: min(960px, 100%);
+  margin: 0 var(--space-6);
   background: rgba(12, 12, 12, 0.82);
   border-radius: 32px;
   border: 1px solid rgba(0, 232, 224, 0.14);

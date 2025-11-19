@@ -23,6 +23,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import FisherGameEndScreen from '@/components/games/FisherGame/FisherGameEndScreen.vue';
 import createFisherGameScene from '@/components/games/FisherGame/FisherGameScene';
 
@@ -34,6 +35,16 @@ const router = useRouter();
 let Phaser: any;
 let game: any;
 let sceneInstance: any;
+
+useHead({
+  title: 'TOP-X: Fisher Game',
+  meta: [
+    {
+      name: 'description',
+      content: 'Play Fisher Game on TOP-X: Catch fish, avoid obstacles, and compete for the top score!',
+    },
+  ],
+});
 
 onMounted(async () => {
   if (!phaserContainer.value) return;

@@ -336,5 +336,5 @@ const addToFrenemies = async (uid: string) => {
 </script>
 
 <style scoped>
-@import '@/styles/Trivia.css';
+@import '@/styles/components/Trivia.css';
 </style>

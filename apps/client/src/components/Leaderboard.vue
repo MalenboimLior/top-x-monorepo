@@ -275,7 +275,7 @@ watch(
 </script>
 
 <style scoped>
-@import '../styles/Leaderboard.css';
+@import '../styles/components/Leaderboard.css';
 
 .loading-state,
 .error-state {

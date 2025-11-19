@@ -30,7 +30,7 @@ useHead({
     { rel: 'icon', type: 'image/png', href: '/favicon.png' },
   ],
 });
-document.documentElement.setAttribute('data-theme', 'dark');
+document.documentElement.setAttribute('data-theme', 'light');
 
 const route = useRoute();
 // const consentGiven = ref(!!localStorage.getItem('cookieConsent'));

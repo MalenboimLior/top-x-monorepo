@@ -1,5 +1,5 @@
 <template>
-  <div class="build-page">
+  <div class="page-container build-page">
     <section class="build-hero">
       <div class="build-hero__glow"></div>
       <div class="build-hero__content">
@@ -292,9 +292,6 @@ async function login() {
 
 <style scoped>
 .build-page {
-  background: radial-gradient(circle at top, rgba(0, 232, 224, 0.12), transparent 60%), #050505;
-  min-height: 100vh;
-  color: #f6f6f9;
   display: flex;
   flex-direction: column;
   gap: 3rem;

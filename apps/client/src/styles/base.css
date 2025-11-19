@@ -1,0 +1,63 @@
+/* ============================================
+   BASE STYLES & UTILITIES
+   ============================================ */
+
+/* Page Container */
+.page-container {
+  min-height: 100vh;
+  padding: clamp(var(--space-6), 8vh, var(--space-9)) var(--space-6) var(--space-13);
+  background: var(--gradient-bg-primary);
+  color: var(--color-text-primary);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 37.5rem) {
+  .page-container {
+    padding: var(--space-8) clamp(var(--space-3), 6vw, var(--space-4)) var(--space-10);
+  }
+}
+
+/* Layout Container */
+.layout-container {
+  width: 100%;
+  max-width: var(--container-xl);
+  margin-inline: auto;
+  padding-inline: var(--layout-inline-padding);
+  box-sizing: border-box;
+}
+
+/* Section Stack */
+.section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-stack-gap);
+}
+
+/* Surface Component */
+.surface {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(14px);
+  padding: var(--space-6);
+}
+
+@media (max-width: 48rem) {
+  .surface {
+    padding: var(--space-5);
+  }
+}
+
+/* Empty State */
+.empty-state {
+  margin: 0;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-dashed);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  width: 100%;
+}
+

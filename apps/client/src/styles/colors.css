@@ -1,0 +1,105 @@
+/* ============================================
+   COLOR SYSTEM
+   ============================================ */
+
+:root {
+  /* Base Colors */
+  --color-primary: #00e8e0; /* Primary cyan */
+  --color-accent: #c4ff00; /* Accent lime */
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  /* Background Colors - Light Theme */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-bg-tertiary: #f0f0f0;
+  --color-bg-elevated: #e8e8e8;
+  --color-bg-surface: rgba(0, 0, 0, 0.03);
+  --color-bg-surface-hover: rgba(0, 0, 0, 0.05);
+  --color-bg-overlay: rgba(255, 255, 255, 0.9);
+  --color-bg-card: rgba(255, 255, 255, 0.9);
+  --color-bg-card-hover: rgba(255, 255, 255, 0.95);
+  --color-bg-input: #f8f9fa;
+  --color-bg-navbar: #ffffff;
+  --color-bg-navbar-hover: #f0f0f0;
+
+  /* Text Colors - Light Theme */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: rgba(0, 0, 0, 0.65);
+  --color-text-tertiary: rgba(0, 0, 0, 0.5);
+  --color-text-muted: rgba(0, 0, 0, 0.6);
+  --color-text-disabled: rgba(0, 0, 0, 0.4);
+  --color-text-on-primary: #ffffff;
+
+  /* Border Colors - Light Theme */
+  --color-border-base: #e0e0e0;
+  --color-border-subtle: rgba(0, 232, 224, 0.15);
+  --color-border-medium: rgba(0, 232, 224, 0.25);
+  --color-border-strong: rgba(0, 232, 224, 0.35);
+  --color-border-active: rgba(0, 232, 224, 0.45);
+  --color-border-hover: rgba(0, 232, 224, 0.5);
+  --color-border-focus: rgba(0, 232, 224, 0.5);
+  --color-border-white-subtle: rgba(0, 0, 0, 0.08);
+  --color-border-dashed: rgba(0, 232, 224, 0.4);
+
+  /* Primary Color with Opacity Variants */
+  --color-primary-10: rgba(0, 232, 224, 0.1);
+  --color-primary-12: rgba(0, 232, 224, 0.12);
+  --color-primary-14: rgba(0, 232, 224, 0.14);
+  --color-primary-16: rgba(0, 232, 224, 0.16);
+  --color-primary-18: rgba(0, 232, 224, 0.18);
+  --color-primary-20: rgba(0, 232, 224, 0.2);
+  --color-primary-22: rgba(0, 232, 224, 0.22);
+  --color-primary-25: rgba(0, 232, 224, 0.25);
+  --color-primary-28: rgba(0, 232, 224, 0.28);
+  --color-primary-40: rgba(0, 232, 224, 0.4);
+  --color-primary-45: rgba(0, 232, 224, 0.45);
+
+  /* Accent Color with Opacity Variants */
+  --color-accent-12: rgba(196, 255, 0, 0.12);
+
+  /* Black with Opacity Variants */
+  --color-black-60: rgba(0, 0, 0, 0.6);
+  --color-black-72: rgba(0, 0, 0, 0.72);
+  --color-black-75: rgba(0, 0, 0, 0.75);
+
+  /* White with Opacity Variants */
+  --color-white-03: rgba(255, 255, 255, 0.03);
+  --color-white-05: rgba(255, 255, 255, 0.05);
+  --color-white-50: rgba(255, 255, 255, 0.5);
+  --color-white-55: rgba(255, 255, 255, 0.55);
+  --color-white-60: rgba(255, 255, 255, 0.6);
+  --color-white-62: rgba(255, 255, 255, 0.62);
+  --color-white-65: rgba(255, 255, 255, 0.65);
+  --color-white-68: rgba(255, 255, 255, 0.68);
+  --color-white-70: rgba(255, 255, 255, 0.7);
+
+  /* Gradient Colors - Light Theme */
+  --gradient-bg-primary: radial-gradient(circle at top, rgba(0, 232, 224, 0.1), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(196, 255, 0, 0.08), transparent 60%),
+    #ffffff;
+  --gradient-bg-card: linear-gradient(180deg, transparent 60%, rgba(0, 232, 224, 0.08));
+  --gradient-bg-surface: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  --gradient-bg-slot: linear-gradient(to bottom, #e8e8e8, #f0f0f0);
+  --gradient-bg-hero: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85));
+
+  /* Bulma Color Overrides (for compatibility) */
+  --bulma-scheme-main: var(--color-bg-primary);
+  --bulma-text: var(--color-text-primary);
+  --bulma-primary: var(--color-primary);
+  --bulma-link: var(--color-primary);
+  --bulma-link-text: var(--color-accent);
+  --bulma-background: var(--color-bg-primary);
+  --bulma-border: var(--color-border-base);
+  --bulma-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --bulma-success: var(--color-primary);
+  --bulma-success-h: 178;
+  --bulma-success-s: 100%;
+  --bulma-success-l: 45%;
+  --bulma-dark: #f0f0f0;
+  --bulma-dark-h: 0;
+  --bulma-dark-s: 0%;
+  --bulma-dark-l: 94%;
+  --bulma-body-family: 'Assistant', sans-serif;
+}
+
