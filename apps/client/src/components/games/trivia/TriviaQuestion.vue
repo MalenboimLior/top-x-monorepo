@@ -190,7 +190,7 @@ const answer = (index: number) => {
 
 .question-prompt {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin-bottom: 0.35rem;
@@ -199,11 +199,10 @@ const answer = (index: number) => {
 .question-title {
   font-size: clamp(1.55rem, 3.2vw, 2.15rem);
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text-primary);
   line-height: 1.28;
   margin: 0;
   letter-spacing: 0.01em;
-  text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 28px rgba(140, 82, 255, 0.35);
 }
 
 .question-difficulty {

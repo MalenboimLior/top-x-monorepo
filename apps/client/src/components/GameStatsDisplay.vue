@@ -100,7 +100,7 @@ const hasStats = computed(() => statItems.value.length > 0);
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.85rem;
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.3), rgba(0, 232, 224, 0.2));
+  background-color: var(--color-primary-bg);
   color: var(--bulma-primary);
   font-size: 1.1rem;
   flex-shrink: 0;
@@ -115,7 +115,7 @@ const hasStats = computed(() => statItems.value.length > 0);
 .game-stats-display__stat-value {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text-primary);
   line-height: 1;
 }
 
@@ -123,7 +123,7 @@ const hasStats = computed(() => statItems.value.length > 0);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.6);
+  /*color: rgba(255, 255, 255, 0.6);*/
 }
 </style>
 

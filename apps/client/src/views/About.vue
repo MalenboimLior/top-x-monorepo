@@ -93,12 +93,7 @@ useHead(() => ({
 }
 
 .about-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(0, 232, 224, 0.32), transparent 55%),
-    radial-gradient(circle at 80% 30%, rgba(196, 255, 0, 0.18), transparent 60%);
-  opacity: 0.8;
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .about-hero__content {
@@ -115,7 +110,8 @@ useHead(() => ({
   display: inline-flex;
   padding: 0.4rem 1.3rem;
   border-radius: 999px;
-  background: rgba(0, 232, 224, 0.15);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
   letter-spacing: 0.12em;
   font-weight: 600;
@@ -131,7 +127,7 @@ useHead(() => ({
 .about-hero__subtitle {
   margin: 0;
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   max-width: 48ch;
 }
 
@@ -143,8 +139,8 @@ useHead(() => ({
 }
 
 .stat {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(0, 232, 224, 0.14);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
   border-radius: 18px;
   padding: 1.4rem 1rem;
   display: flex;
@@ -160,7 +156,7 @@ useHead(() => ({
 
 .stat__label {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -173,9 +169,9 @@ useHead(() => ({
 
 .about-surface {
   width: min(960px, 100%);
-  background: rgba(255, 255, 255, 0.02);
+  background-color: var(--color-bg-card);
   border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.12);
+  border: 1px solid var(--color-border-base);
   padding: 3rem clamp(1.75rem, 3vw, 3rem);
   display: flex;
   flex-direction: column;
@@ -188,7 +184,7 @@ useHead(() => ({
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-primary);
   font-size: 1.1rem;
   line-height: 1.7;
 }
@@ -208,14 +204,13 @@ useHead(() => ({
 }
 
 .highlight-card {
-  background: rgba(0, 232, 224, 0.05);
-  border: 1px solid rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   border-radius: 24px;
   padding: 2rem 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  box-shadow: 0 28px 45px rgba(0, 0, 0, 0.4);
 }
 
 .highlight-card h3 {
@@ -225,7 +220,7 @@ useHead(() => ({
 
 .highlight-card p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 

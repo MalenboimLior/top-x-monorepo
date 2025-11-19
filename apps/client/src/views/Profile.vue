@@ -609,11 +609,7 @@ onMounted(() => {
 }
 
 .profile-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 25% 25%, rgba(0, 232, 224, 0.28), transparent 60%),
-    radial-gradient(circle at 75% 20%, rgba(196, 255, 0, 0.18), transparent 60%);
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .profile-hero__content {
@@ -626,9 +622,9 @@ onMounted(() => {
 
 .profile-card {
   width: 100%;
-  background: rgba(12, 12, 12, 0.8);
+  background-color: var(--color-bg-card);
   border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.15);
+  border: 1px solid var(--color-border-base);
   padding: clamp(2rem, 4vw, 3rem);
   display: flex;
   flex-direction: column;
@@ -666,7 +662,7 @@ onMounted(() => {
 
 .profile-card__meta {
   margin: 0.5rem 0 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
 }
 
 .profile-card__actions {
@@ -677,7 +673,7 @@ onMounted(() => {
 
 .profile-card__hint {
   margin: 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
 }
 
 .profile-body {
@@ -690,9 +686,9 @@ onMounted(() => {
 .profile-surface {
   width: min(960px, 100%);
   margin: 0 var(--space-6);
-  background: rgba(12, 12, 12, 0.82);
+  background-color: var(--color-bg-card);
   border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.14);
+  border: 1px solid var(--color-border-base);
   padding: clamp(2rem, 4vw, 3rem);
   display: flex;
   flex-direction: column;
@@ -704,8 +700,8 @@ onMounted(() => {
   flex-direction: column;
   gap: 1rem;
   padding: 1.5rem;
-  background: rgba(0, 232, 224, 0.06);
-  border: 1px solid rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   border-radius: 18px;
 }
 
@@ -716,7 +712,7 @@ onMounted(() => {
 
 .challenge-reward-panel__subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
 }
 
 .challenge-reward-panel__list {
@@ -732,8 +728,8 @@ onMounted(() => {
   gap: 1rem;
   padding: 1rem 1.25rem;
   border-radius: 16px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
 }
 
 .challenge-reward-card__details {
@@ -755,18 +751,18 @@ onMounted(() => {
 
 .challenge-reward-card__meta {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
   font-size: 0.85rem;
 }
 
 .challenge-reward-panel__empty {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .challenge-reward-panel__hint {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
 }
 
 .profile-tabs {
@@ -776,18 +772,18 @@ onMounted(() => {
 }
 
 .profile-tab {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid transparent;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
   border-radius: 999px;
   padding: 0.55rem 1.4rem;
   color: inherit;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .profile-tab.active {
-  background: rgba(0, 232, 224, 0.15);
-  border-color: rgba(0, 232, 224, 0.45);
+  background-color: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
 }
 
 .profile-panel {
@@ -810,19 +806,19 @@ onMounted(() => {
 .profile-table td {
   padding: 0.75rem 1rem;
   text-align: start;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--color-border-base);
 }
 
 .profile-table th {
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .profile-empty {
   text-align: center;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
 }
 
 .profile-list {
@@ -831,9 +827,9 @@ onMounted(() => {
 }
 
 .profile-list-item {
-  background: rgba(255, 255, 255, 0.04);
+  background-color: var(--color-bg-secondary);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border-base);
   padding: 1.25rem 1.5rem;
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -867,7 +863,7 @@ onMounted(() => {
 
 .profile-list-item__content p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .profile-list-item__actions {
@@ -886,9 +882,9 @@ onMounted(() => {
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.3);
+  background-color: var(--color-bg-secondary);
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-base);
 }
 
 .section-title {
@@ -907,12 +903,12 @@ onMounted(() => {
 
 .game-selector label {
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-primary);
 }
 
 .game-select {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
   border-radius: 8px;
   padding: 0.5rem 1rem;
   color: inherit;
@@ -924,7 +920,7 @@ onMounted(() => {
 
 .game-select:hover,
 .game-select:focus {
-  border-color: rgba(0, 232, 224, 0.4);
+  border-color: var(--color-border-primary);
   outline: none;
 }
 
@@ -934,7 +930,7 @@ onMounted(() => {
 
 .calendar-hint {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
   text-align: center;
   padding: 2rem;
 }
@@ -947,15 +943,15 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   padding: 1.5rem 1rem;
-  background: rgba(8, 8, 8, 0.85);
-  backdrop-filter: blur(8px);
+  background-color: var(--color-bg-primary);
+  border-top: 1px solid var(--color-border-base);
   z-index: 1000;
 }
 
 .profile-login-banner__content {
   width: min(480px, 100%);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(0, 232, 224, 0.25);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-primary);
   border-radius: 24px;
   padding: 1.5rem;
   display: flex;
@@ -973,7 +969,7 @@ onMounted(() => {
 
 .profile-login-banner__text {
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-primary);
   line-height: 1.6;
 }
 

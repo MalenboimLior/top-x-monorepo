@@ -48,7 +48,9 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import topxLogo from '@/assets/topx-logo.png';
+import topxLogoBlack from '@/assets/topx-logo-black.png';
 import { useLocaleStore } from '@/stores/locale';
+import { useThemeStore } from '@/stores/theme';
 
 const emit = defineEmits<{
   (event: 'create'): void;
@@ -56,6 +58,8 @@ const emit = defineEmits<{
 }>();
 
 const localeStore = useLocaleStore();
+const themeStore = useThemeStore();
+const theme = computed(() => themeStore.theme);
 const t = (key: string) => localeStore.translate(key);
 
 const isRTL = computed(() => localeStore.direction === 'rtl');
@@ -146,7 +150,7 @@ function onPlayClick() {
   emit('play');
 }
 
-const logo = topxLogo;
+const logo = computed(() => (theme.value === 'dark' ? topxLogo : topxLogoBlack));
 </script>
 
 <style scoped>
@@ -159,14 +163,9 @@ const logo = topxLogo;
          var(--layout-inline-padding)
          clamp(var(--space-6), 7vh, var(--space-8));
 
-  background: rgba(5, 5, 5, 0.78);
-  border-radius: clamp(28px, 6vw, 44px);
-  border: 1px solid rgba(0, 232, 224, 0.16);
-  box-shadow: 0 42px 80px rgba(0, 0, 0, 0.45);
-  color: #ffffff;
+  background: transparent;
+  color: var(--color-text-primary);
   text-align: center;
-  overflow: hidden;
-  backdrop-filter: blur(14px);
 }
 
 .hero-section.is-rtl {
@@ -181,13 +180,11 @@ const logo = topxLogo;
 }
 
 .hero-background {
-  background: radial-gradient(circle at center, rgba(0, 232, 224, 0.25) 0%, rgba(0, 0, 0, 0.55) 58%, rgba(0, 0, 0, 0.85) 100%);
+  display: none; /* Removed for flat design */
 }
 
 .hero-pulse {
-  background: radial-gradient(circle at 50% 42%, rgba(196, 255, 0, 0.18), transparent 58%);
-  opacity: 0.85;
-  animation: pulse 6s ease-in-out infinite;
+  display: none; /* Removed for flat design */
 }
 
 .hero-content {
@@ -203,7 +200,6 @@ const logo = topxLogo;
 .hero-logo {
   width: min(220px, 26vw);
   height: auto;
-  filter: drop-shadow(0 18px 32px rgba(0, 232, 224, 0.35));
 }
 
 .hero-heading {
@@ -215,13 +211,12 @@ const logo = topxLogo;
   color: #00e8e0;
   margin: 0;
   line-height: 1.15;
-  text-shadow: 0 24px 55px rgba(0, 232, 224, 0.45);
 }
 
 .hero-platform {
   font-size: clamp(1.5rem, 3.4vw, 2.3rem);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--color-text-primary);
   margin: 0;
   line-height: 1.15;
 }
@@ -260,13 +255,12 @@ const logo = topxLogo;
   gap: 0.6rem;
   font-size: clamp(1rem, 2.8vw, 1.35rem);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-primary);
   margin: 0;
   padding: 0.75rem 1.1rem;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(196, 255, 0, 0.28);
-  backdrop-filter: blur(8px);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-accent);
 }
 
 .challenge-crown {
@@ -294,29 +288,29 @@ const logo = topxLogo;
   font-size: 1rem;
   font-weight: 700;
   padding: 0.9rem 1.25rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform 0.2s ease;
 }
 
 .hero-button:focus-visible {
-  outline: 3px solid rgba(196, 255, 0, 0.7);
-  outline-offset: 3px;
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .hero-button--primary {
-  box-shadow: 0 18px 40px rgba(0, 232, 224, 0.35);
+  border: 1px solid var(--color-primary);
 }
 
 .hero-button--secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  color: #ffffff;
+  background-color: transparent;
+  border: 2px solid var(--color-border-base);
+  color: var(--color-text-primary);
   cursor: pointer;
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
 }
 
 .hero-button--secondary:hover {
-  background: rgba(196, 255, 0, 0.18);
-  border-color: rgba(196, 255, 0, 0.75);
+  background-color: var(--color-accent-bg);
+  border-color: var(--color-border-accent);
+  color: var(--color-text-primary);
 }
 
 .hero-button--secondary:active {
@@ -324,7 +318,7 @@ const logo = topxLogo;
 }
 
 .hero-button:hover {
-  transform: translateY(-2px);
+  transform: none;
 }
 
 .hero-peek {

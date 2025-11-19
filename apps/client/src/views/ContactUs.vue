@@ -131,11 +131,7 @@ function handleCtaClick() {
 }
 
 .contact-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(0, 232, 224, 0.25), transparent 60%);
-  pointer-events: none;
-  opacity: 0.9;
+  display: none; /* Removed for flat design */
 }
 
 .contact-hero__content {
@@ -154,7 +150,8 @@ function handleCtaClick() {
   border-radius: 999px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  background: rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
   font-weight: 600;
 }
@@ -166,7 +163,7 @@ function handleCtaClick() {
 
 .contact-hero__subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
   line-height: 1.7;
 }
@@ -179,9 +176,9 @@ function handleCtaClick() {
 
 .contact-card {
   width: min(800px, 100%);
-  background: rgba(10, 10, 10, 0.75);
+  background-color: var(--color-bg-card);
   border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.14);
+  border: 1px solid var(--color-border-base);
   padding: clamp(2rem, 4vw, 3rem);
   display: grid;
   gap: clamp(1.5rem, 3vw, 2.5rem);
@@ -202,13 +199,13 @@ function handleCtaClick() {
 
 .contact-card__section p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
 .contact-card__divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 232, 224, 0.35), transparent);
+  background-color: var(--color-border-base);
 }
 
 .contact-link {

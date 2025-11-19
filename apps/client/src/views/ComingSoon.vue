@@ -115,10 +115,9 @@ onMounted(() => {
   max-width: 600px;
   width: 100%;
   margin: 0 auto;
-  background: rgba(0, 0, 0, 0.8);
+  background-color: var(--color-bg-card);
   border-radius: 12px;
-  border: 2px solid #00e8e0;
-  box-shadow: 0 0 20px rgba(0, 232, 224, 0.3);
+  border: 2px solid var(--color-border-primary);
   position: relative;
   z-index: 1;
 }
@@ -132,7 +131,6 @@ onMounted(() => {
   font-size: 2.5rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  text-shadow: 0 0 10px rgba(0, 232, 224, 0.5);
 }
 .subtitle {
   color: #bbb;
@@ -146,10 +144,10 @@ onMounted(() => {
   margin-bottom: 2rem;
 }
 .timer-box {
-  background: #1f1f1f;
+  background-color: var(--color-bg-secondary);
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid #00e8e0;
+  border: 1px solid var(--color-border-primary);
   min-width: 80px;
   text-align: center;
   transition: transform 0.2s;
@@ -186,7 +184,7 @@ onMounted(() => {
   height: 100%;
   pointer-events: none;
   z-index: -1;
-  background: radial-gradient(circle, rgba(0, 232, 224, 0.1) 0%, transparent 70%);
+  display: none; /* Removed for flat design */
   animation: gradientShift 15s infinite linear;
 }
 @keyframes pulse {

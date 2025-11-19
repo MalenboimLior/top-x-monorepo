@@ -1,5 +1,5 @@
 /* ============================================
-   LEADERBOARD COMPONENT
+   LEADERBOARD COMPONENT - Flat Design
    ============================================ */
 
 .leaderboard-container {
@@ -10,10 +10,9 @@
 }
 
 .card {
-  background: var(--gradient-bg-surface);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid #3a3a3a; /* Leaderboard-specific border */
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-base);
 }
 
 .card-content {
@@ -65,20 +64,24 @@
 }
 
 .is-current-user {
-  background-color: #209cee; /* Bulma info color */
+  background-color: var(--color-primary-bg);
   color: var(--color-text-primary);
+  border-left: 3px solid var(--bulma-primary);
 }
 
 .is-current-user td {
   color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 .avatar {
-  transition: transform var(--transition-fast);
+  transition: border-color var(--transition-fast);
+  border-radius: 50%;
+  border: 1px solid var(--color-border-base);
 }
 
 .avatar:hover {
-  transform: scale(1.1);
+  border-color: var(--color-border-primary);
 }
 
 .empty-state {
@@ -93,7 +96,7 @@
 }
 
 .table tbody tr:not(.is-current-user):hover {
-  background-color: #3a3a3a; /* Leaderboard-specific hover */
+  background-color: var(--color-bg-navbar-hover);
 }
 
 /* Animations */
@@ -116,11 +119,11 @@
 }
 
 .button {
-  transition: transform var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .button:hover {
-  transform: scale(1.05);
+  /* Hover handled by button component */
 }
 
 /* Responsive */

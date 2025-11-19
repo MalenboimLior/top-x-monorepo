@@ -1,12 +1,18 @@
 /* ============================================
-   CARD COMPONENT
+   CARD COMPONENT - Flat Design
    ============================================ */
 
 .card {
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-xs);
-  box-shadow: var(--shadow-xs);
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-base);
   margin: var(--space-4) 0;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
 }
 
 .card-content {

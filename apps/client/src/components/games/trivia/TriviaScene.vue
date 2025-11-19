@@ -553,12 +553,12 @@ const onAnswer = (index: number) => emit('answer-question', index);
 
 .scene-title {
   font-size: clamp(1.75rem, 3vw, 2.5rem);
-  color: #fff;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .scene-subtitle {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-secondary);
   font-weight: 500;
   margin: 0.25rem 0 0;
 }
@@ -571,7 +571,8 @@ const onAnswer = (index: number) => emit('answer-question', index);
 }
 
 .stat {
-  background: rgba(255, 255, 255, 0.06);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
   border-radius: 14px;
   padding: 0.85rem 1.25rem;
   min-width: 120px;
@@ -582,13 +583,13 @@ const onAnswer = (index: number) => emit('answer-question', index);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .stat-value {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text-primary);
 }
 
 .inviter-card {

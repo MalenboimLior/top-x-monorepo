@@ -67,12 +67,7 @@ useHead({
 }
 
 .not-found-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(0, 232, 224, 0.25), transparent 60%),
-    radial-gradient(circle at 70% 30%, rgba(196, 255, 0, 0.18), transparent 60%);
-  pointer-events: none;
-  opacity: 0.8;
+  display: none; /* Removed for flat design */
 }
 
 .not-found-hero__content {
@@ -89,7 +84,8 @@ useHead({
   display: inline-flex;
   padding: 0.4rem 1.3rem;
   border-radius: 999px;
-  background: rgba(0, 232, 224, 0.15);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
   letter-spacing: 0.12em;
   font-weight: 600;
@@ -107,7 +103,7 @@ useHead({
 .not-found-hero__subtitle {
   margin: 0;
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   max-width: 48ch;
 }
 
@@ -128,7 +124,7 @@ useHead({
 .not-found-copy {
   text-align: center;
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-primary);
 }
 
 .not-found-actions {

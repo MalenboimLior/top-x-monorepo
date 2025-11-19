@@ -39,6 +39,8 @@ import {
   faGhost,
   faArrowLeft,
   faArrowRight,
+  faSun,
+  faMoon,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -77,6 +79,8 @@ library.add(
   faGhost,
   faArrowLeft,
   faArrowRight,
+  faSun,
+  faMoon,
 );
 
 import 'bulma/css/bulma.min.css';

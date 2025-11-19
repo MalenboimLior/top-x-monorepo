@@ -160,7 +160,7 @@ defineExpose({ el: rootRef });
 
 <style scoped>
 .game-section {
-  --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-5));
+  --section-stack-gap: clamp(var(--space-2), 2vh, var(--space-3));
 }
 
 .game-section.is-rtl {
@@ -175,49 +175,25 @@ defineExpose({ el: rootRef });
   padding-block: clamp(0.8rem, 2vw, 1.2rem);
   padding-inline: clamp(1.2rem, 2.4vw, 1.6rem);
   padding-inline-start: clamp(1.8rem, 4vw, 2.4rem);
-  border-radius: 18px;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.12), transparent 55%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.58));
-  border: 1px solid rgba(0, 232, 224, 0.14);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
+  background: transparent;
 }
 
-.section-header__content::before {
-  content: '';
-  position: absolute;
-  inset-block: clamp(0.6rem, 1.6vw, 0.9rem);
-  inset-inline-start: clamp(0.75rem, 1.8vw, 1rem);
-  width: 3px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(0, 232, 224, 0.9), rgba(196, 255, 0, 0.9));
-  box-shadow: 0 0 14px rgba(0, 232, 224, 0.5);
-}
-
+.section-header__content::before,
 .section-header__content::after {
-  content: '';
-  position: absolute;
-  inset-inline-end: -25%;
-  inset-block-start: -45%;
-  width: 60%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(196, 255, 0, 0.18), transparent 60%);
-  opacity: 0.7;
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .section-title {
   margin: 0;
   font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
   font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 12px 28px rgba(0, 232, 224, 0.3);
+  color: var(--color-text-primary);
 }
 
 .section-subtitle {
   margin: 0;
   font-size: clamp(0.75rem, 0.7vw + 0.7rem, 1rem);
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   font-weight: 500;
   max-width: 36rem;
 }
@@ -228,15 +204,6 @@ defineExpose({ el: rootRef });
   text-align: right;
 }
 
-.game-section.is-rtl .section-header__content::before {
-  inset-inline-start: auto;
-  inset-inline-end: clamp(0.75rem, 1.8vw, 1rem);
-}
-
-.game-section.is-rtl .section-header__content::after {
-  inset-inline-end: auto;
-  inset-inline-start: -25%;
-}
 
 .game-section__grid {
   display: grid;

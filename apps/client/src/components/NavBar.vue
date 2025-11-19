@@ -4,7 +4,7 @@
     <div class="navbar-inner layout-container">
       <div class="navbar-brand">
         <router-link class="navbar-item" to="/">
-          <img src="@/assets/topx-logo.png" alt="TOP-X Logo">
+          <img :src="logo" alt="TOP-X Logo">
         </router-link>
         <a
           role="button"
@@ -36,6 +36,19 @@
 
 
         <div class="navbar-end">
+          <div class="navbar-item theme-toggle">
+            <button
+              type="button"
+              class="theme-toggle-button"
+              :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+              @click="themeStore.toggleTheme"
+            >
+              <font-awesome-icon
+                :icon="theme === 'dark' ? ['fas', 'sun'] : ['fas', 'moon']"
+                class="theme-icon"
+              />
+            </button>
+          </div>
           <div class="navbar-item language-toggle">
             <div class="language-toggle-inner" role="group" aria-label="Language toggle">
               <button
@@ -98,14 +111,20 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { analytics, trackEvent } from '@top-x/shared';
 import usFlagUrl from '@/assets/flags/us.svg';
 import ilFlagUrl from '@/assets/flags/il.svg';
+import topxLogo from '@/assets/topx-logo.png';
+import topxLogoBlack from '@/assets/topx-logo-black.png';
 import { useLocaleStore } from '@/stores/locale';
 import { useUserStore } from '@/stores/user';
+import { useThemeStore } from '@/stores/theme';
 
 const userStore = useUserStore();
 const router = useRouter();
 
 const isMenuActive = ref(false);
 const localeStore = useLocaleStore();
+const themeStore = useThemeStore();
+const theme = computed(() => themeStore.theme);
+const logo = computed(() => (theme.value === 'dark' ? topxLogo : topxLogoBlack));
 const t = (key: string) => localeStore.translate(key);
 const currentLanguage = computed(() => localeStore.language);
 const languageOptions = [
@@ -164,9 +183,8 @@ watch(
   top: 0;
   z-index: 100;
   width: 100%;
-  background: rgba(0, 0, 0, 0.92);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(0, 232, 224, 0.12);
+  background-color: var(--color-bg-navbar);
+  border-bottom: 1px solid var(--color-border-base);
   padding: 0;
 }
 
@@ -186,12 +204,13 @@ watch(
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--bulma-text);
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .navbar-item:hover,
 .navbar-item.router-link-active {
   color: var(--bulma-primary);
+  background-color: var(--color-bg-navbar-hover);
 }
 
 .profile-link {
@@ -206,7 +225,7 @@ watch(
   height: 12px;
   border-radius: 50%;
   background: var(--bulma-primary);
-  box-shadow: 0 0 8px rgba(0, 232, 224, 0.6);
+  border: 2px solid var(--color-bg-navbar);
 }
 
 .navbar-brand .navbar-item {
@@ -219,7 +238,6 @@ watch(
 .navbar-brand img {
   height: 22px;
   width: auto;
-  filter: drop-shadow(0 6px 12px rgba(0, 232, 224, 0.25));
 }
 
 .navbar-menu {
@@ -246,9 +264,8 @@ watch(
   gap: var(--space-2);
   padding: var(--space-1);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(6px);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
 }
 
 .language-button {
@@ -263,22 +280,21 @@ watch(
   padding: 0;
   background: transparent;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: background-color var(--transition-fast);
 }
 
 .language-button:hover {
-  transform: translateY(-1px);
-  background: rgba(0, 232, 224, 0.1);
+  background-color: var(--color-primary-bg);
 }
 
 .language-button.is-active {
-  background: rgba(0, 232, 224, 0.16);
-  box-shadow: 0 0 0 2px rgba(0, 232, 224, 0.45);
+  background-color: var(--color-primary-bg-hover);
+  border: 1px solid var(--color-border-primary);
 }
 
 .language-button:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 232, 224, 0.65);
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .language-flag {
@@ -286,7 +302,7 @@ watch(
   height: 28px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border-base);
 }
 
 :global([dir='rtl']) .language-toggle-inner {
@@ -296,16 +312,18 @@ watch(
 .navbar-burger {
   display: none;
   color: var(--bulma-primary);
-  background: rgba(0, 232, 224, 0.08);
-  border-radius: 999px;
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
   margin-inline-start: var(--space-3);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .navbar-burger:hover,
 .navbar-burger.is-active {
-  background: rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg-hover);
+  border-color: var(--color-border-primary);
 }
 
 .navbar-icon {
@@ -323,10 +341,14 @@ watch(
 
 .profile-link .image {
   margin: 0;
-  border: 2px solid rgba(0, 232, 224, 0.4);
-  box-shadow: 0 10px 25px rgba(0, 232, 224, 0.2);
+  border: 2px solid var(--color-border-base);
   border-radius: 50%;
   overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.profile-link:hover .image {
+  border-color: var(--color-border-primary);
 }
 
 .profile-link .image img {
@@ -336,20 +358,18 @@ watch(
 }
 
 .build-link {
-  border: 1px solid rgba(0, 232, 224, 0.4);
-  border-radius: 12px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
   padding: calc(var(--space-3) - 2px) calc(var(--space-4) - 2px);
-  background: rgba(0, 232, 224, 0.1);
-  box-shadow: 0 6px 16px rgba(0, 232, 224, 0.2);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  background-color: var(--color-primary-bg);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .build-link:hover,
 .build-link.router-link-active {
-  box-shadow: 0 10px 24px rgba(0, 232, 224, 0.35);
-  transform: translateY(-1px);
   color: var(--bulma-primary);
-  background: rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg-hover);
+  border-color: var(--color-border-primary);
 }
 
 @media screen and (max-width: 64rem) {
@@ -365,9 +385,9 @@ watch(
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    background: rgba(0, 0, 0, 0.96);
-    border: 1px solid rgba(0, 232, 224, 0.12);
-    border-radius: 18px;
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border-base);
+    border-radius: var(--radius-md);
     padding: var(--space-4);
   }
 
@@ -396,7 +416,7 @@ watch(
 
   .navbar-item:hover,
   .navbar-item.router-link-active {
-    background: rgba(0, 232, 224, 0.12);
+    background-color: var(--color-primary-bg);
   }
 
   .profile-div .buttons {
@@ -407,5 +427,38 @@ watch(
   .navbar-burger {
     display: inline-flex;
   }
+}
+
+.theme-toggle {
+  padding: 0;
+}
+
+.theme-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-base);
+  background-color: transparent;
+  color: var(--bulma-text);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.theme-toggle-button:hover {
+  background-color: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
+  color: var(--bulma-primary);
+}
+
+.theme-toggle-button:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.theme-icon {
+  font-size: 1.1rem;
 }
 </style>

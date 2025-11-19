@@ -1,5 +1,5 @@
 /* ============================================
-   TRIVIA COMPONENT
+   TRIVIA COMPONENT - Flat Design
    ============================================ */
 
 .trivia-container {
@@ -10,7 +10,7 @@
   align-items: center;
   padding: clamp(var(--space-6), 4vw, var(--space-10));
   color: var(--color-text-primary);
-  background-color: var(--trivia-background, #0b0b0f);
+  background-color: var(--trivia-background, var(--color-bg-primary));
   background-image: var(--trivia-background-image, none);
   background-size: cover;
   background-position: center;
@@ -35,7 +35,7 @@
 .trivia-overlay {
   position: absolute;
   inset: 0;
-  background: var(--color-bg-overlay);
+  background-color: var(--color-bg-overlay);
   z-index: var(--z-overlay);
 }
 
@@ -51,13 +51,11 @@
 .notification.is-danger,
 .notification.is-info {
   border-radius: var(--radius-md);
-  backdrop-filter: blur(8px);
 }
 
 .trivia-content .card {
-  background: rgba(9, 11, 21, 0.85); /* Trivia-specific background */
-  border: 1px solid var(--color-border-white-subtle);
-  box-shadow: var(--shadow-3xl);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
 }
 
 .trivia-container.is-rtl .trivia-content {

@@ -104,7 +104,7 @@ const handleLogin = () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #000;
+  background-color: var(--color-bg-primary);
   overflow: hidden;
 }
 .game-header {
@@ -112,14 +112,15 @@ const handleLogin = () => {
   display: flex;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: #111;
-  color: #0ff;
+  background-color: var(--color-bg-navbar);
+  color: var(--color-primary);
   font-weight: 600;
+  border-bottom: 1px solid var(--color-border-base);
 }
 .phaser-container {
   flex: 1;
   position: relative;
-  background: #001;
+  background-color: var(--color-bg-primary);
 }
 .phaser-container canvas {
   width: 100% !important;

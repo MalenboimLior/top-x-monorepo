@@ -692,7 +692,7 @@ onBeforeUnmount(() => {
 .progress-meta__title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .progress-bar {
@@ -726,20 +726,19 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--color-text-muted);
   font-weight: 600;
   transition: all 0.25s ease;
 }
 
 .progress-dots__dot--active {
   border-color: rgba(0, 232, 224, 0.85);
-  color: #ffffff;
-  box-shadow: 0 0 12px rgba(0, 232, 224, 0.45);
+  color: var(--color-text-primary);
 }
 
 .progress-dots__dot--complete {
-  border-color: rgba(255, 255, 255, 0.65);
-  color: rgba(255, 255, 255, 0.8);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
 }
 
 .builder-panel {
@@ -781,7 +780,7 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .field-block input,
@@ -791,7 +790,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 0.75rem 1rem;
-  color: #ffffff;
+  color: var(--color-text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -810,7 +809,7 @@ onBeforeUnmount(() => {
 .field-hint {
   margin: 0;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-muted);
 }
 
 .preview-card {
@@ -830,13 +829,13 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   margin: 0;
 }
 
 .preview-meta dd {
   margin: 0.25rem 0 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 

@@ -86,7 +86,7 @@ function handleSelect(gameTypeId: string) {
 
 <style scoped>
 .build-section {
-  --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-5));
+  --section-stack-gap: clamp(var(--space-2), 2vh, var(--space-3));
 }
 
 .build-section.is-rtl {
@@ -106,35 +106,12 @@ function handleSelect(gameTypeId: string) {
   padding-block: clamp(1.1rem, 2.4vw, 1.6rem);
   padding-inline: clamp(1.5rem, 3vw, 2.1rem);
   padding-inline-start: clamp(2.4rem, 5vw, 3.2rem);
-  border-radius: 24px;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.16), transparent 55%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
-  border: 1px solid rgba(0, 232, 224, 0.18);
-  box-shadow: 0 26px 48px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
+  background: transparent;
 }
 
-.section-header__content::before {
-  content: '';
-  position: absolute;
-  inset-block: clamp(0.75rem, 2vw, 1.1rem);
-  inset-inline-start: clamp(0.9rem, 2vw, 1.2rem);
-  width: 4px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(0, 232, 224, 0.9), rgba(196, 255, 0, 0.9));
-  box-shadow: 0 0 18px rgba(0, 232, 224, 0.6);
-}
-
+.section-header__content::before,
 .section-header__content::after {
-  content: '';
-  position: absolute;
-  inset-inline-end: -25%;
-  inset-block-start: -45%;
-  width: 60%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(196, 255, 0, 0.18), transparent 60%);
-  opacity: 0.7;
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .build-header__actions {
@@ -148,13 +125,13 @@ function handleSelect(gameTypeId: string) {
   margin: 0;
   font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
   font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 18px 46px rgba(0, 232, 224, 0.35);
+  color: var(--color-text-primary);
 }
 
 .section-subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(0.75rem, 0.7vw + 0.7rem, 1rem);
+  color: var(--color-text-secondary);
   font-weight: 500;
   max-width: 36rem;
 }
@@ -165,15 +142,6 @@ function handleSelect(gameTypeId: string) {
   text-align: right;
 }
 
-.build-section.is-rtl .section-header__content::before {
-  inset-inline-start: auto;
-  inset-inline-end: clamp(0.9rem, 2vw, 1.2rem);
-}
-
-.build-section.is-rtl .section-header__content::after {
-  inset-inline-end: auto;
-  inset-inline-start: -25%;
-}
 
 .build-section.is-rtl .build-header__actions {
   justify-content: center;
@@ -193,50 +161,25 @@ function handleSelect(gameTypeId: string) {
   gap: clamp(var(--space-5), 2.5vw, var(--space-6));
   padding: clamp(var(--space-6), 3vw, var(--space-7));
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.72));
-  border: 1px solid rgba(0, 232, 224, 0.16);
-  color: #ffffff;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  color: var(--color-text-primary);
   text-align: center;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.3s ease, border-color 0.25s ease;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
   overflow: hidden;
 }
 
-.build-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.18), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
+.build-card::before,
 .build-card::after {
-  content: '';
-  position: absolute;
-  inset-inline-end: -15%;
-  inset-block-start: -35%;
-  width: 40%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(196, 255, 0, 0.25), transparent 65%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  display: none; /* Removed for flat design */
 }
 
 .build-card:hover,
 .build-card:focus-visible {
   outline: none;
-  transform: translateY(-6px);
-  border-color: rgba(0, 232, 224, 0.45);
-  box-shadow: 0 42px 68px rgba(0, 0, 0, 0.55);
-}
-
-.build-card:hover::before,
-.build-card:focus-visible::before,
-.build-card:hover::after,
-.build-card:focus-visible::after {
-  opacity: 1;
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
 }
 
 .build-card__icon {
@@ -246,11 +189,10 @@ function handleSelect(gameTypeId: string) {
   width: clamp(3.4rem, 8vw, 4.2rem);
   height: clamp(3.4rem, 8vw, 4.2rem);
   border-radius: 20px;
-  background: radial-gradient(circle, rgba(0, 232, 224, 0.28), rgba(0, 232, 224, 0));
-  border: 1px solid rgba(0, 232, 224, 0.45);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   font-size: clamp(1.35rem, 4vw, 1.6rem);
-  color: #00e8e0;
-  box-shadow: 0 18px 34px rgba(0, 232, 224, 0.25);
+  color: var(--bulma-primary);
 }
 
 .build-card__body {
@@ -266,7 +208,7 @@ function handleSelect(gameTypeId: string) {
 }
 
 .build-card__description {
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--color-text-secondary);
   font-size: clamp(0.95rem, 2vw, 1.05rem);
   line-height: 1.55;
 }
@@ -276,9 +218,9 @@ function handleSelect(gameTypeId: string) {
   align-items: center;
   gap: clamp(0.4rem, 1.1vw, 0.6rem);
   font-weight: 600;
-  color: #c4ff00;
-  background: rgba(196, 255, 0, 0.12);
-  border: 1px solid rgba(196, 255, 0, 0.45);
+  color: var(--color-accent);
+  background-color: var(--color-accent-bg);
+  border: 1px solid var(--color-border-accent);
   border-radius: 999px;
   padding: 0.55rem 1.1rem;
   text-transform: uppercase;

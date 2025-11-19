@@ -908,8 +908,8 @@ input {
 }
 
 .button.is-success {
-  background-color: var(--bulma-success, #c4ff00);
-  color: #000;
+  background-color: var(--color-accent);
+  color: var(--color-text-on-primary);
 }
 
 .score-preview {
@@ -928,8 +928,7 @@ input {
 .reveal-preview {
   max-width: 180px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-border-base);
 }
 
 .buttons {
@@ -942,7 +941,8 @@ input {
   margin-top: 1.5rem;
   padding: 1rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
   text-align: start;
 }
 
@@ -950,12 +950,12 @@ input {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-primary);
 }
 
 .challenge-meta__item {
   margin: 0.25rem 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary);
 }
 
 .leaderboards {
@@ -1001,8 +1001,9 @@ input {
   gap: 0.25rem;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  background: rgba(196, 255, 0, 0.12);
-  color: rgba(255, 255, 255, 0.9);
+  background-color: var(--color-accent-bg);
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
@@ -1010,7 +1011,7 @@ input {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary);
 }
 
 .submission-status__countdown-timer {
@@ -1021,7 +1022,7 @@ input {
 .submitted-answer {
   margin-top: 1rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
 }
 
 .submitted-answer__text {
@@ -1034,7 +1035,7 @@ input {
 
 .reveal-answer {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-primary);
 }
 
 .reveal-answer__text {
@@ -1048,7 +1049,7 @@ input {
 .reveal-distance,
 .reveal-date,
 .reveal-followup {
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary);
 }
 
 .reveal-claim {

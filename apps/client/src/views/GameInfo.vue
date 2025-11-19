@@ -214,11 +214,17 @@ function buildGame() {
 
 <style scoped>
 .game-info-page {
-  --section-stack-gap: var(--space-11);
+  --section-stack-gap: var(--space-4);
+}
+
+.game-info-page :deep(.surface) {
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .game-summary {
-  --section-stack-gap: var(--space-7);
+  --section-stack-gap: var(--space-3);
 }
 
 .summary-grid {
@@ -252,7 +258,7 @@ function buildGame() {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: var(--font-size-300);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--color-text-muted);
 }
 
 .summary-title {
@@ -260,14 +266,13 @@ function buildGame() {
   font-size: clamp(2.2rem, 2.2vw + 1.6rem, 3.4rem);
   font-weight: 800;
   line-height: 1.05;
-  color: #ffffff;
-  text-shadow: 0 18px 35px rgba(0, 232, 224, 0.15);
+  color: var(--color-text-primary);
 }
 
 .summary-description {
   margin: 0;
   max-width: 42rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   font-size: clamp(1.05rem, 1.1vw + 0.8rem, 1.2rem);
   line-height: 1.65;
 }
@@ -275,8 +280,8 @@ function buildGame() {
 .how-to-play {
   padding: var(--space-5);
   border-radius: var(--space-4);
-  background: rgba(0, 232, 224, 0.05);
-  border: 1px solid rgba(0, 232, 224, 0.16);
+  background-color: var(--color-primary-bg);
+  border: none;
 }
 
 .how-to-play__header {
@@ -295,12 +300,12 @@ function buildGame() {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .how-to-play__content {
   margin: 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -309,7 +314,7 @@ function buildGame() {
 .daily-challenges-section,
 .similar-games-section,
 .build-section {
-  --section-stack-gap: var(--space-6);
+  --section-stack-gap: var(--space-3);
 }
 
 .game-actions {
@@ -337,7 +342,7 @@ function buildGame() {
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .section-title svg {
@@ -347,7 +352,7 @@ function buildGame() {
 
 .section-subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .build-section {
@@ -381,7 +386,7 @@ function buildGame() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .build-copy h3 svg {
@@ -390,13 +395,13 @@ function buildGame() {
 
 .build-copy p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--color-text-secondary);
   max-width: 32rem;
 }
 
 .build-hint {
   margin: 0;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -414,7 +419,7 @@ function buildGame() {
 
 @media (max-width: 48rem) {
   .game-info-page {
-    --section-stack-gap: var(--space-9);
+    --section-stack-gap: var(--space-3);
   }
 
   .summary-grid {

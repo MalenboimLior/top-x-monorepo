@@ -338,7 +338,7 @@ onMounted(async () => {
     type: PhaserLib.AUTO,
     width: sceneWidth,
     height: sceneHeight,
-    backgroundColor: '#222',
+    backgroundColor: '#222', // Keep dark for game canvas
     parent: phaserContainer.value,
     physics: { default: 'arcade', arcade: {} },
     scene
@@ -389,25 +389,11 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
 </script>
 
 <style scoped>
-/* X theme tokens local to this component */
 .game-wrapper {
-  --x-bg: #000000;
-  --x-surface: #0b0d10;
-  --x-elev: #0f1216;
-  --x-border: #21262d;
-  --x-border-strong: #2e3440;
-  --x-text: #f5f7fa;
-  --x-muted: #a5acb8;
-  --x-accent: #1d9bf0;
-
   --size: 60px; /* D‑pad button size */
   --radius: 16px;
   --icon: 24px;
-    touch-action: none;
-
-}
-
-.game-wrapper {
+  touch-action: none;
   max-width: 100vw;
   padding: 10px 0;
   margin: 0;
@@ -416,8 +402,8 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
   align-items: center;
   height: 100vh;
   overflow: hidden;
-  background: var(--x-bg);
-  color: var(--x-text);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .game-header {
@@ -459,20 +445,17 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
   height: var(--size);
   padding: 0 14px;
   border-radius: var(--radius);
-  border: 1px solid var(--x-border);
-  background: linear-gradient(180deg, var(--x-elev), var(--x-surface));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.55);
-  color: var(--x-text);
-  transition: transform .08s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, filter .18s ease;
+  border: 1px solid var(--color-border-base);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform 0.08s ease;
 }
-.x-btn .icon { width: var(--icon); height: var(--icon); display: block; color:#00e8e0}
-.x-btn:hover { border-color: var(--x-border-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(0,0,0,.6); }
-.x-btn:active { transform: translateY(1px) scale(.985); filter: brightness(.98); }
+.x-btn .icon { width: var(--icon); height: var(--icon); display: block; color: var(--color-primary); }
+.x-btn:hover { border-color: var(--color-border-primary); background-color: var(--color-bg-card-hover); }
+.x-btn:active { transform: translateY(1px) scale(.985); }
 .x-btn:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 3px color-mix(in oklab, var(--x-accent) 55%, transparent),
-    inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(0,0,0,.6);
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 .x-btn:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -486,12 +469,11 @@ function restartGame() { window.dispatchEvent(new Event('restartGame')) }
 .phaser-container {
   width: 100%;
   max-width: 500px;
-  border: 1px solid var(--x-border);
+  border: 1px solid var(--color-border-base);
   border-radius: 16px;
   box-sizing: border-box;
-  background: #111;
-    touch-action: none;
-
+  background-color: var(--color-bg-secondary);
+  touch-action: none;
 }
 
 .controls {

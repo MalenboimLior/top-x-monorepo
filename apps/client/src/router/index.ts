@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '../stores/user';
+import { useThemeStore } from '../stores/theme';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 const Home = () => import('@/views/Home.vue');
@@ -143,7 +144,26 @@ router.beforeEach((to, from, next) => {
   }
 });
 
+// Helper function to check if a route is a game route
+function isGameRoute(path: string): boolean {
+  return path.startsWith('/games/') && path !== '/games/info';
+}
+
 router.afterEach((to, from) => {
+  // Handle theme switching for game routes
+  const themeStore = useThemeStore();
+  const toIsGame = isGameRoute(to.path);
+  const fromIsGame = isGameRoute(from.path);
+
+  if (toIsGame && !fromIsGame) {
+    // Entering a game route - force dark mode
+    themeStore.forceDarkModeForGame();
+  } else if (!toIsGame && fromIsGame) {
+    // Leaving a game route - restore user preference
+    themeStore.restoreUserPreference();
+  }
+  // If navigating between game routes, stay in dark mode (no action needed)
+
   if (analytics) {
     const userStore = useUserStore();
     const game = to.query.game || 'unknown';

@@ -344,12 +344,11 @@ function handlePlay() {
   flex-direction: column;
   inline-size: min(320px, 100%);
   /*min-block-size: 520px;*/
-  background: rgba(0, 0, 0, 0.75);
   border-radius: 28px;
-  border: 1px solid rgba(0, 232, 224, 0.12);
+  border: none;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .game-card--featured {
@@ -387,33 +386,31 @@ function handlePlay() {
 }
 
 .game-card__media-badge--featured {
-  background: linear-gradient(135deg, rgba(255, 201, 20, 0.35), rgba(255, 215, 0, 0.25));
+  background-color: rgba(255, 201, 20, 0.3);
   color: #ffd85c;
   border: 1.5px solid rgba(255, 201, 20, 0.5);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .game-card__media-badge--daily {
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.25));
-  color: #00e8e0;
-  border: 1.5px solid rgba(0, 232, 224, 0.5);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-border-primary);
 }
 
 .game-card__media-badge--badge-onFire {
-  background: linear-gradient(135deg, rgba(255, 135, 66, 0.35), rgba(255, 94, 0, 0.2));
+  background-color: rgba(255, 135, 66, 0.3);
   color: #ffbb7c;
   border: 1.5px solid rgba(255, 135, 66, 0.5);
 }
 
 .game-card__media-badge--badge-hardcore {
-  background: linear-gradient(135deg, rgba(123, 97, 255, 0.3), rgba(84, 0, 153, 0.25));
+  background-color: rgba(123, 97, 255, 0.3);
   color: #bfa8ff;
   border: 1.5px solid rgba(123, 97, 255, 0.45);
 }
 
 .game-card__media-badge--badge-womenOnly {
-  background: linear-gradient(135deg, rgba(255, 105, 180, 0.3), rgba(255, 20, 147, 0.2));
+  background-color: rgba(255, 105, 180, 0.3);
   color: #ffb6d9;
   border: 1.5px solid rgba(255, 105, 180, 0.45);
 }
@@ -475,10 +472,9 @@ function handlePlay() {
   width: 40px;
   height: 40px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.2));
-  border: 1.5px solid rgba(0, 232, 224, 0.45);
+  background-color: var(--color-primary-bg);
+  border: 1.5px solid var(--color-border-primary);
   color: var(--bulma-primary);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .game-card__content {
@@ -508,8 +504,7 @@ function handlePlay() {
   font-size: 1rem;
   font-weight: 700;
   border-radius: 14px;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 16px rgba(0, 232, 224, 0.2);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -517,14 +512,13 @@ function handlePlay() {
 }
 
 .game-card__footer-button :deep(.button:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 232, 224, 0.35);
+  transform: none;
 }
 
 .game-card__footer-button :deep(.button.is-primary) {
-  background: linear-gradient(135deg, var(--bulma-primary), #00b8b0) !important;
-  border: none !important;
-  color: #000000 !important;
+  background-color: var(--bulma-primary) !important;
+  border: 1px solid var(--bulma-primary) !important;
+  color: var(--color-text-on-primary) !important;
 }
 
 .game-card__footer-button :deep(.button):focus-visible {
@@ -533,8 +527,9 @@ function handlePlay() {
 }
 
 .game-card__footer-button :deep(.button.is-primary:hover) {
-  background: linear-gradient(135deg, #00e8e0, var(--bulma-primary)) !important;
-  color: #000000 !important;
+  background-color: var(--color-primary-hover, var(--bulma-primary)) !important;
+  border-color: var(--color-primary-hover, var(--bulma-primary)) !important;
+  color: var(--color-text-on-primary) !important;
 }
 
 .game-card__creator {
@@ -600,10 +595,9 @@ function handlePlay() {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(6px);
-  color: #ffffff;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: var(--font-size-200);
@@ -618,7 +612,8 @@ function handlePlay() {
   width: 2rem;
   height: 2rem;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.3), rgba(0, 232, 224, 0.2));
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
 }
 
@@ -629,7 +624,7 @@ function handlePlay() {
 .game-card__title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text-primary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -642,7 +637,7 @@ function handlePlay() {
 
 .game-card__description {
   margin: 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-secondary);
   line-height: 1.55;
   line-clamp: 2;
   display: -webkit-box;
@@ -668,7 +663,7 @@ function handlePlay() {
   gap: var(--space-2);
   flex-shrink: 0;
   white-space: nowrap;
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-weight: 600;
   font-size: 1rem;
 }
@@ -684,7 +679,7 @@ function handlePlay() {
 }
 
 .game-card__stat-value {
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-weight: 700;
   font-size: 1rem;
   line-height: 1;
