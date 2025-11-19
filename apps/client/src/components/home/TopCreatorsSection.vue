@@ -147,8 +147,8 @@ defineEmits<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: repeating-linear-gradient(135deg, #0ea5e9 0 10px, #22c55e 10px 20px, #f59e0b 20px 30px);
-  border: 3px dashed rgba(255, 255, 255, 0.8);
+  background-color: var(--color-bg-secondary);
+  border: 3px dashed var(--color-border-base);
 }
 
 .top-creators__placeholder-text {

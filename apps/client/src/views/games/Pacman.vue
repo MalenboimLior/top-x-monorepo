@@ -205,7 +205,7 @@ onMounted(async () => {
     type: PhaserLib.AUTO,
     width: sceneWidth,
     height: sceneHeight,
-    backgroundColor: '#000',
+    backgroundColor: '#000', // Keep black for game canvas
     parent: phaserContainer.value,
     pixelArt: true,
     physics: { default: 'arcade', arcade: { debug: false } },
@@ -359,15 +359,6 @@ function goBack() {
 
 <style scoped>
 .game-wrapper {
-  --x-bg: #050608;
-  --x-surface: #0b0d10;
-  --x-elev: #10141c;
-  --x-border: #20262f;
-  --x-border-strong: #2e3440;
-  --x-text: #f5f7fa;
-  --x-muted: #a5acb8;
-  --x-accent: #1d9bf0;
-
   --size: 60px;
   --radius: 16px;
   --icon: 24px;
@@ -379,8 +370,8 @@ function goBack() {
   justify-content: flex-start;
   gap: 1.5rem;
   padding: 1.5rem 1rem 3rem;
-  background: radial-gradient(circle at top, #0b0d10, #050608 65%);
-  color: var(--x-text);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .game-header {
@@ -424,12 +415,11 @@ function goBack() {
 }
 
 .hud-card {
-  background: rgba(12, 16, 24, 0.8);
-  border: 1px solid rgba(61, 90, 254, 0.2);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
   border-radius: 12px;
   padding: 0.75rem 1rem;
   text-align: center;
-  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.08);
 }
 
 .hud-card .label {
@@ -437,7 +427,7 @@ function goBack() {
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8aa4ff;
+  color: var(--color-text-tertiary);
 }
 
 .hud-card .value {
@@ -458,35 +448,31 @@ function goBack() {
   height: var(--size);
   padding: 0 14px;
   border-radius: var(--radius);
-  border: 1px solid var(--x-border);
-  background: linear-gradient(180deg, var(--x-elev), var(--x-surface));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.55);
-  color: var(--x-text);
-  transition: transform 0.08s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease,
-    filter 0.18s ease;
+  border: 1px solid var(--color-border-base);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform 0.08s ease;
 }
 
 .x-btn .icon {
   width: var(--icon);
   height: var(--icon);
   display: block;
-  color: #00e8e0;
+  color: var(--color-primary);
 }
 
 .x-btn:hover {
-  border-color: var(--x-border-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 30px rgba(0, 0, 0, 0.6);
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
 }
 
 .x-btn:active {
   transform: translateY(1px) scale(0.985);
-  filter: brightness(0.98);
 }
 
 .x-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--x-accent) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 14px 30px rgba(0, 0, 0, 0.6);
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .x-btn:disabled {
@@ -529,11 +515,10 @@ function goBack() {
   height: min(90vw, 720px);
   max-width: 720px;
   max-height: 720px;
-  border: 2px solid rgba(90, 108, 250, 0.35);
+  border: 2px solid var(--color-border-primary);
   border-radius: 16px;
   overflow: hidden;
-  background: #000;
-  box-shadow: 0 16px 40px rgba(9, 12, 23, 0.65);
+  background: #000; /* Keep black for game canvas */
   touch-action: none;
 }
 

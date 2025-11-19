@@ -91,12 +91,7 @@ useHead(() => ({
 }
 
 .faq-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(0, 232, 224, 0.25), transparent 60%),
-    radial-gradient(circle at 70% 30%, rgba(196, 255, 0, 0.18), transparent 60%);
-  pointer-events: none;
-  opacity: 0.9;
+  display: none; /* Removed for flat design */
 }
 
 .faq-hero__content {
@@ -115,7 +110,8 @@ useHead(() => ({
   border-radius: 999px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  background: rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
   font-weight: 600;
 }
@@ -127,7 +123,7 @@ useHead(() => ({
 
 .faq-hero__subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
 }
 
@@ -139,9 +135,9 @@ useHead(() => ({
 
 .faq-surface {
   width: min(960px, 100%);
-  background: rgba(12, 12, 12, 0.78);
+  background-color: var(--color-bg-card);
   border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.15);
+  border: 1px solid var(--color-border-base);
   padding: clamp(2rem, 4vw, 3rem);
   display: flex;
   flex-direction: column;
@@ -151,7 +147,7 @@ useHead(() => ({
 .faq-intro {
   margin: 0;
   text-align: center;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-primary);
   font-size: 1.1rem;
   line-height: 1.7;
 }
@@ -163,16 +159,16 @@ useHead(() => ({
 }
 
 .faq-item {
-  background: rgba(255, 255, 255, 0.04);
+  background-color: var(--color-bg-secondary);
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border-base);
   padding: 1.25rem 1.5rem;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .faq-item[open] {
-  border-color: rgba(0, 232, 224, 0.4);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
 }
 
 .faq-item summary {
@@ -195,7 +191,7 @@ useHead(() => ({
 
 .faq-item p {
   margin: 1rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 

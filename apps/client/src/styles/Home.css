@@ -1,9 +1,9 @@
 /* ============================================
-   HOME PAGE COMPONENT
+   HOME PAGE COMPONENT - Flat Design
    ============================================ */
 
 .home-page {
-  --section-stack-gap: clamp(var(--space-4), 4vh, var(--space-6));
+  --section-stack-gap: clamp(var(--space-2), 2vh, var(--space-3));
 }
 
 .hero {
@@ -35,11 +35,11 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-2) var(--space-4);
-  background: var(--color-primary-12);
+  background-color: var(--color-primary-bg);
   border-radius: var(--radius-full);
   color: var(--bulma-primary);
   font-weight: 600;
-  border: 1px solid var(--color-border-active);
+  border: 1px solid var(--color-border-primary);
 }
 
 .hero-title {
@@ -47,7 +47,6 @@
   font-weight: 800;
   line-height: 1.05;
   color: var(--color-text-primary);
-  text-shadow: var(--text-shadow-sm);
 }
 
 .hero-subtitle {
@@ -66,7 +65,6 @@
 .hero-button {
   padding-inline: var(--space-8);
   font-weight: 700;
-  box-shadow: var(--shadow-lg);
 }
 
 .hero-link {
@@ -94,11 +92,10 @@
 }
 
 .hero-stat {
-  background: var(--color-bg-surface);
-  backdrop-filter: blur(12px);
+  background-color: var(--color-bg-surface);
   padding: var(--space-5);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-primary-14);
+  border: 1px solid var(--color-border-base);
   text-align: start;
 }
 
@@ -123,28 +120,19 @@
   justify-content: center;
 }
 
-.hero-glow {
-  position: absolute;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, var(--color-primary-45), rgba(0, 0, 0, 0));
-  filter: blur(18px);
-  border-radius: 50%;
-}
-
 .filter-panel {
   width: 100%;
   max-width: var(--container-md);
 }
 
 .filter-card {
-  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border-base);
 }
 
 .filter-label {
   margin-bottom: var(--space-3);
   font-weight: 600;
-  color: var(--color-white-70);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
@@ -161,26 +149,25 @@
 .language-chip {
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-black-60);
-  color: var(--color-white-70);
+  border: 1px solid var(--color-border-base);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-secondary);
   font-weight: 600;
   letter-spacing: 0.08em;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .language-chip:hover,
 .language-chip.active {
-  background: var(--color-primary-20);
+  background-color: var(--color-primary-bg);
   color: var(--color-text-primary);
-  border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-primary);
 }
 
 .game-section {
   width: 100%;
-  --section-stack-gap: var(--space-7);
+  --section-stack-gap: var(--space-3);
 }
 
 .game-section.layout-container {
@@ -227,12 +214,11 @@
   display: flex;
   flex-direction: column;
   inline-size: min(320px, 100%);
-  background: var(--color-bg-card);
-  border-radius: var(--radius-3xl);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border-base);
   cursor: pointer;
-  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+  transition: border-color var(--transition-fast);
 }
 
 .game-card--featured {
@@ -247,31 +233,20 @@
   font-size: clamp(1.4rem, 2vw + 1rem, 1.75rem);
 }
 
-.game-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--gradient-bg-card);
-  opacity: 0;
-  transition: opacity var(--transition-slow);
-  pointer-events: none;
-}
-
 .game-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-2xl);
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-primary);
 }
 
-.game-card:hover::after {
-  opacity: 1;
+.game-card:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .game-card__media {
   position: relative;
   padding-top: 60%;
   overflow: hidden;
-  background: var(--color-black-60);
+  background-color: var(--color-bg-secondary);
 }
 
 .game-card__media img {
@@ -281,11 +256,6 @@
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  transition: transform var(--transition-slow);
-}
-
-.game-card:hover .game-card__media img {
-  transform: scale(1.05);
 }
 
 .game-card__content {
@@ -344,14 +314,6 @@
   font-size: var(--font-size-400);
   background: none;
   border: 0;
-  box-shadow: none;
-}
-
-.game-card__stat:hover {
-  background: none;
-  border: 0;
-  transform: none;
-  box-shadow: none;
 }
 
 .game-card__stat-icon {
@@ -385,8 +347,8 @@
   margin: 0;
   padding: var(--space-6);
   border-radius: var(--radius-lg);
-  background: var(--color-bg-surface);
-  border: 1px dashed var(--color-border-dashed);
+  background-color: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-base);
   color: var(--color-text-tertiary);
   text-align: center;
   width: 100%;
@@ -408,19 +370,18 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-card-hover);
-  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
   color: var(--color-text-primary);
   text-align: start;
   cursor: pointer;
-  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .build-tile:hover {
-  transform: translateY(-4px);
-  border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-xl);
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
 }
 
 .build-tile__name {
@@ -483,7 +444,7 @@
 
 @media (max-width: 37.5rem) {
   .home-page {
-    --section-stack-gap: var(--space-6);
+    --section-stack-gap: var(--space-2);
   }
 
   .language-toggle {

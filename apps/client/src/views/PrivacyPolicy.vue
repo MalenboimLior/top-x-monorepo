@@ -74,11 +74,7 @@ useHead({
 }
 
 .policy-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(0, 232, 224, 0.22), transparent 60%),
-    radial-gradient(circle at 70% 20%, rgba(196, 255, 0, 0.15), transparent 60%);
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .policy-hero__content {
@@ -97,7 +93,8 @@ useHead({
   border-radius: 999px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  background: rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
   font-weight: 600;
 }
@@ -109,7 +106,7 @@ useHead({
 
 .policy-hero__subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
 }
 
@@ -121,9 +118,9 @@ useHead({
 
 .policy-surface {
   width: min(960px, 100%);
-  background: rgba(12, 12, 12, 0.82);
+  background-color: var(--color-bg-card);
   border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.14);
+  border: 1px solid var(--color-border-base);
   padding: clamp(2rem, 4vw, 3rem);
   display: flex;
   flex-direction: column;
@@ -143,7 +140,7 @@ useHead({
 
 .policy-section p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   line-height: 1.7;
 }
 

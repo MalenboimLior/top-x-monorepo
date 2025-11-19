@@ -1,15 +1,12 @@
 /* ============================================
-   BUTTON COMPONENT
+   BUTTON COMPONENT - Flat Design
    ============================================ */
 
 .button {
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   font-weight: 500;
-  transition: all var(--transition-fast);
-}
-
-.button:hover {
-  transform: scale(1.05);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  border: 1px solid transparent;
 }
 
 .button.is-link {
@@ -26,7 +23,19 @@
 }
 
 .button.is-primary {
-  color: var(--color-text-primary);
+  background-color: var(--bulma-primary);
+  color: var(--color-text-on-primary);
+  border-color: var(--bulma-primary);
+}
+
+.button.is-primary:hover {
+  background-color: #00d4cc; /* Slightly darker primary for hover */
+  border-color: #00d4cc;
+}
+
+.button.is-primary:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .button.is-light {

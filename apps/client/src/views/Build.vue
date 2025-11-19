@@ -305,12 +305,7 @@ async function login() {
 }
 
 .build-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(0, 232, 224, 0.3), transparent 55%),
-    radial-gradient(circle at 70% 20%, rgba(196, 255, 0, 0.2), transparent 60%);
-  opacity: 0.9;
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .build-hero__content {
@@ -329,7 +324,8 @@ async function login() {
   border-radius: 999px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  background: rgba(0, 232, 224, 0.18);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   color: var(--bulma-primary);
   font-weight: 600;
 }
@@ -343,7 +339,7 @@ async function login() {
   max-width: 620px;
   margin: 0;
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -362,13 +358,13 @@ async function login() {
 }
 
 .build-hero__reminder {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
 .build-stat {
-  background: rgba(10, 10, 10, 0.65);
-  border: 1px solid rgba(0, 232, 224, 0.18);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
   border-radius: 20px;
   padding: 1.4rem 1rem;
   display: flex;
@@ -387,7 +383,7 @@ async function login() {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
 }
 
 .build-body {
@@ -405,9 +401,9 @@ async function login() {
 
 .build-card {
   width: min(520px, 100%);
-  background: rgba(255, 255, 255, 0.04);
+  background-color: var(--color-bg-card);
   border-radius: 24px;
-  border: 1px solid rgba(0, 232, 224, 0.14);
+  border: 1px solid var(--color-border-base);
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
@@ -416,7 +412,7 @@ async function login() {
 }
 
 .build-card p {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -427,9 +423,9 @@ async function login() {
 }
 
 .build-panel {
-  background: rgba(255, 255, 255, 0.03);
+  background-color: var(--color-bg-card);
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-base);
   padding: clamp(1.5rem, 2.5vw, 2.5rem);
   display: flex;
   flex-direction: column;
@@ -443,7 +439,7 @@ async function login() {
 
 .build-panel__header p {
   margin: 0.5rem 0 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
 }
 
 .build-templates {
@@ -456,18 +452,17 @@ async function login() {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid transparent;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
   border-radius: 18px;
   color: inherit;
-  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .build-template:hover,
 .build-template:focus {
-  border-color: rgba(0, 232, 224, 0.5);
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
 }
 
 .build-template__name {
@@ -480,7 +475,7 @@ async function login() {
 }
 
 .build-empty {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
   text-align: center;
 }
 
@@ -490,9 +485,9 @@ async function login() {
 }
 
 .build-game-card {
-  background: rgba(10, 10, 10, 0.7);
+  background-color: var(--color-bg-card);
   border-radius: 22px;
-  border: 1px solid rgba(0, 232, 224, 0.12);
+  border: 1px solid var(--color-border-base);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -515,20 +510,20 @@ async function login() {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-base);
   padding: 0.2rem 0.75rem;
   border-radius: 999px;
 }
 
 .build-game-card__status.is-live {
-  color: rgba(196, 255, 0, 0.9);
-  border-color: rgba(196, 255, 0, 0.3);
+  color: var(--color-accent);
+  border-color: var(--color-border-accent);
 }
 
 .build-game-card__description {
   margin: 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
 }
 
 .build-game-card__actions {
@@ -547,7 +542,7 @@ async function login() {
   align-self: flex-start;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 0.95rem;
   padding: 0;
@@ -559,13 +554,13 @@ async function login() {
 
 .build-flow__header p {
   margin: 0.5rem 0 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .build-flow__surface {
-  background: rgba(0, 0, 0, 0.7);
+  background-color: var(--color-bg-card);
   border-radius: 28px;
-  border: 1px solid rgba(0, 232, 224, 0.15);
+  border: 1px solid var(--color-border-base);
   padding: clamp(1.5rem, 3vw, 3rem);
 }
 

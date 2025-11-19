@@ -46,24 +46,20 @@ export default defineComponent({
 <style scoped>
 .footer {
   position: relative;
-  background: #000;
+  background-color: var(--color-bg-primary);
   padding: var(--space-10) var(--space-6) var(--space-9);
   overflow: hidden;
-  border-top: 1px solid rgba(0, 232, 224, 0.12);
+  border-top: 1px solid var(--color-border-base);
 }
 
 .footer-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top, rgba(0, 232, 224, 0.22), transparent 55%);
-  opacity: 0.7;
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .footer-content {
   position: relative;
   width: 100%;
-  --section-stack-gap: var(--space-7);
+  --section-stack-gap: var(--space-3);
   align-items: center;
   text-align: center;
 }
@@ -84,14 +80,14 @@ export default defineComponent({
 
 .footer-tagline {
   margin: 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-400);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .grok-badge:hover {
-  color: #66fff6;
+  color: var(--bulma-primary);
   text-decoration: none;
 }
 
@@ -103,7 +99,7 @@ export default defineComponent({
 }
 
 .footer-link {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-400);
   transition: color 0.3s ease;
 }
@@ -115,7 +111,7 @@ export default defineComponent({
 
 .footer-copy {
   margin: 0;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   font-size: var(--font-size-300);
   letter-spacing: 0.08em;
   text-transform: uppercase;

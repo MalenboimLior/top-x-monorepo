@@ -1,89 +1,61 @@
 /* ============================================
-   COLOR SYSTEM
+   FLAT COLOR SYSTEM - Dark & Light Modes
    ============================================ */
 
 :root {
-  /* Base Colors */
+  /* Base Colors - Keep as specified */
   --color-primary: #00e8e0; /* Primary cyan */
   --color-accent: #c4ff00; /* Accent lime */
   --color-black: #000000;
   --color-white: #ffffff;
+}
 
-  /* Background Colors */
+/* ============================================
+   DARK MODE
+   ============================================ */
+
+[data-theme="dark"] {
+  /* Background Colors - Solid colors only */
   --color-bg-primary: #000000;
   --color-bg-secondary: #1a1a1a;
-  --color-bg-tertiary: #1f1f1f;
-  --color-bg-elevated: #2a2a2a;
-  --color-bg-surface: rgba(255, 255, 255, 0.03);
-  --color-bg-surface-hover: rgba(255, 255, 255, 0.05);
-  --color-bg-overlay: rgba(11, 11, 15, 0.7);
-  --color-bg-card: rgba(0, 0, 0, 0.75);
-  --color-bg-card-hover: rgba(0, 0, 0, 0.72);
-  --color-bg-input: #2a363b;
+  --color-bg-tertiary: #2a2a2a;
+  --color-bg-elevated: #333333;
+  --color-bg-surface: #1a1a1a;
+  --color-bg-surface-hover: #252525;
+  --color-bg-overlay: #000000;
+  --color-bg-card: #1a1a1a;
+  --color-bg-card-hover: #252525;
+  --color-bg-input: #2a2a2a;
   --color-bg-navbar: #000000;
-  --color-bg-navbar-hover: #2a363b;
+  --color-bg-navbar-hover: #1a1a1a;
 
   /* Text Colors */
   --color-text-primary: #ffffff;
-  --color-text-secondary: rgba(255, 255, 255, 0.65);
-  --color-text-tertiary: rgba(255, 255, 255, 0.5);
-  --color-text-muted: rgba(255, 255, 255, 0.6);
-  --color-text-disabled: rgba(255, 255, 255, 0.55);
+  --color-text-secondary: #cccccc;
+  --color-text-tertiary: #999999;
+  --color-text-muted: #aaaaaa;
+  --color-text-disabled: #666666;
   --color-text-on-primary: #000000;
+  --color-text-on-accent: #000000;
 
-  /* Border Colors */
-  --color-border-base: #333;
-  --color-border-subtle: rgba(0, 232, 224, 0.12);
-  --color-border-medium: rgba(0, 232, 224, 0.18);
-  --color-border-strong: rgba(0, 232, 224, 0.22);
-  --color-border-active: rgba(0, 232, 224, 0.28);
-  --color-border-hover: rgba(0, 232, 224, 0.4);
-  --color-border-focus: rgba(0, 232, 224, 0.4);
-  --color-border-white-subtle: rgba(255, 255, 255, 0.05);
-  --color-border-dashed: rgba(0, 232, 224, 0.3);
+  /* Border Colors - Simple, minimal variants */
+  --color-border-base: #333333;
+  --color-border-subtle: #2a2a2a;
+  --color-border-medium: #404040;
+  --color-border-strong: #4a4a4a;
+  --color-border-primary: #00e8e0;
+  --color-border-accent: #c4ff00;
+  --color-border-focus: #00e8e0;
 
-  /* Primary Color with Opacity Variants */
-  --color-primary-10: rgba(0, 232, 224, 0.1);
-  --color-primary-12: rgba(0, 232, 224, 0.12);
-  --color-primary-14: rgba(0, 232, 224, 0.14);
-  --color-primary-16: rgba(0, 232, 224, 0.16);
-  --color-primary-18: rgba(0, 232, 224, 0.18);
-  --color-primary-20: rgba(0, 232, 224, 0.2);
-  --color-primary-22: rgba(0, 232, 224, 0.22);
-  --color-primary-25: rgba(0, 232, 224, 0.25);
-  --color-primary-28: rgba(0, 232, 224, 0.28);
-  --color-primary-40: rgba(0, 232, 224, 0.4);
-  --color-primary-45: rgba(0, 232, 224, 0.45);
+  /* Primary Color Variants - For backgrounds */
+  --color-primary-bg: rgba(0, 232, 224, 0.1);
+  --color-primary-bg-hover: rgba(0, 232, 224, 0.2);
 
-  /* Accent Color with Opacity Variants */
-  --color-accent-12: rgba(196, 255, 0, 0.12);
+  /* Accent Color Variants - For backgrounds */
+  --color-accent-bg: rgba(196, 255, 0, 0.1);
+  --color-accent-bg-hover: rgba(196, 255, 0, 0.2);
 
-  /* Black with Opacity Variants */
-  --color-black-60: rgba(0, 0, 0, 0.6);
-  --color-black-72: rgba(0, 0, 0, 0.72);
-  --color-black-75: rgba(0, 0, 0, 0.75);
-
-  /* White with Opacity Variants */
-  --color-white-03: rgba(255, 255, 255, 0.03);
-  --color-white-05: rgba(255, 255, 255, 0.05);
-  --color-white-50: rgba(255, 255, 255, 0.5);
-  --color-white-55: rgba(255, 255, 255, 0.55);
-  --color-white-60: rgba(255, 255, 255, 0.6);
-  --color-white-62: rgba(255, 255, 255, 0.62);
-  --color-white-65: rgba(255, 255, 255, 0.65);
-  --color-white-68: rgba(255, 255, 255, 0.68);
-  --color-white-70: rgba(255, 255, 255, 0.7);
-
-  /* Gradient Colors */
-  --gradient-bg-primary: radial-gradient(circle at top, rgba(0, 232, 224, 0.18), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(196, 255, 0, 0.12), transparent 60%),
-    #000;
-  --gradient-bg-card: linear-gradient(180deg, transparent 60%, rgba(0, 232, 224, 0.12));
-  --gradient-bg-surface: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-  --gradient-bg-slot: linear-gradient(to bottom, #2a2a2a, #1f1f1f);
-  --gradient-bg-hero: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7));
-
-  /* Bulma Color Overrides (for compatibility) */
+  /* Bulma Color Overrides */
   --bulma-scheme-main: var(--color-bg-primary);
   --bulma-text: var(--color-text-primary);
   --bulma-primary: var(--color-primary);
@@ -91,15 +63,65 @@
   --bulma-link-text: var(--color-accent);
   --bulma-background: var(--color-bg-primary);
   --bulma-border: var(--color-border-base);
-  --bulma-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --bulma-shadow: none;
   --bulma-success: var(--color-primary);
-  --bulma-success-h: 178;
-  --bulma-success-s: 100%;
-  --bulma-success-l: 45%;
-  --bulma-dark: #1f1f1f;
-  --bulma-dark-h: 0;
-  --bulma-dark-s: 0%;
-  --bulma-dark-l: 12%;
   --bulma-body-family: 'Assistant', sans-serif;
 }
 
+/* ============================================
+   LIGHT MODE
+   ============================================ */
+
+[data-theme="light"] {
+  /* Background Colors - Solid colors only */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-bg-tertiary: #e0e0e0;
+  --color-bg-elevated: #fafafa;
+  --color-bg-surface: #f5f5f5;
+  --color-bg-surface-hover: #eeeeee;
+  --color-bg-overlay: #ffffff;
+  --color-bg-card: #ffffff;
+  --color-bg-card-hover: #fafafa;
+  --color-bg-input: #f5f5f5;
+  --color-bg-navbar: #ffffff;
+  --color-bg-navbar-hover: #f5f5f5;
+
+  /* Text Colors */
+  --color-text-primary: #000000;
+  --color-text-secondary: #333333;
+  --color-text-tertiary: #666666;
+  --color-text-muted: #555555;
+  --color-text-disabled: #999999;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-accent: #000000;
+
+  /* Border Colors - Simple, minimal variants */
+  --color-border-base: #e0e0e0;
+  --color-border-subtle: #f0f0f0;
+  --color-border-medium: #d0d0d0;
+  --color-border-strong: #c0c0c0;
+  --color-border-primary: #00e8e0;
+  --color-border-accent: #c4ff00;
+  --color-border-focus: #00e8e0;
+
+  /* Primary Color Variants - For backgrounds */
+  --color-primary-bg: rgba(0, 232, 224, 0.1);
+  --color-primary-bg-hover: rgba(0, 232, 224, 0.2);
+
+  /* Accent Color Variants - For backgrounds */
+  --color-accent-bg: rgba(196, 255, 0, 0.1);
+  --color-accent-bg-hover: rgba(196, 255, 0, 0.2);
+
+  /* Bulma Color Overrides */
+  --bulma-scheme-main: var(--color-bg-primary);
+  --bulma-text: var(--color-text-primary);
+  --bulma-primary: var(--color-primary);
+  --bulma-link: var(--color-primary);
+  --bulma-link-text: var(--color-accent);
+  --bulma-background: var(--color-bg-primary);
+  --bulma-border: var(--color-border-base);
+  --bulma-shadow: none;
+  --bulma-success: var(--color-primary);
+  --bulma-body-family: 'Assistant', sans-serif;
+}

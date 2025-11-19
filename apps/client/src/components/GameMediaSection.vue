@@ -215,8 +215,7 @@ async function handleLogin() {
   border-radius: var(--space-6);
   overflow: hidden;
   border: 1px solid rgba(0, 232, 224, 0.22);
-  background: radial-gradient(circle at 30% 20%, rgba(0, 232, 224, 0.35), rgba(0, 0, 0, 0.85));
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.55);
+  background-color: var(--color-bg-secondary);
   aspect-ratio: 4 / 3;
 }
 
@@ -247,14 +246,12 @@ async function handleLogin() {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: none;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .game-media-section__badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: none;
 }
 
 .game-media-section__badge svg {
@@ -262,31 +259,31 @@ async function handleLogin() {
 }
 
 .game-media-section__badge--featured {
-  background: linear-gradient(135deg, rgba(255, 201, 20, 0.35), rgba(255, 215, 0, 0.25));
+  background-color: rgba(255, 201, 20, 0.3);
   color: #ffd85c;
   border: 1.5px solid rgba(255, 201, 20, 0.5);
 }
 
 .game-media-section__badge--daily {
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.25));
-  color: #00e8e0;
-  border: 1.5px solid rgba(0, 232, 224, 0.5);
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-border-primary);
 }
 
 .game-media-section__badge--badge-onFire {
-  background: linear-gradient(135deg, rgba(255, 135, 66, 0.35), rgba(255, 94, 0, 0.2));
+  background-color: rgba(255, 135, 66, 0.3);
   color: #ffbb7c;
   border: 1.5px solid rgba(255, 135, 66, 0.5);
 }
 
 .game-media-section__badge--badge-hardcore {
-  background: linear-gradient(135deg, rgba(123, 97, 255, 0.3), rgba(84, 0, 153, 0.25));
+  background-color: rgba(123, 97, 255, 0.3);
   color: #bfa8ff;
   border: 1.5px solid rgba(123, 97, 255, 0.45);
 }
 
 .game-media-section__badge--badge-womenOnly {
-  background: linear-gradient(135deg, rgba(255, 105, 180, 0.3), rgba(255, 20, 147, 0.2));
+  background-color: rgba(255, 105, 180, 0.3);
   color: #ffb6d9;
   border: 1.5px solid rgba(255, 105, 180, 0.45);
 }
@@ -301,10 +298,9 @@ async function handleLogin() {
   width: 40px;
   height: 40px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.35), rgba(0, 232, 224, 0.2));
-  border: 1.5px solid rgba(0, 232, 224, 0.45);
+  background-color: var(--color-primary-bg);
+  border: 1.5px solid var(--color-border-primary);
   color: var(--bulma-primary);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   z-index: 3;
 }
 

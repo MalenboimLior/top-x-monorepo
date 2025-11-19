@@ -305,11 +305,11 @@ watch(
 }
 
 .summary-card {
-  background: rgba(10, 12, 25, 0.78);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
   border-radius: 18px;
   padding: 2rem;
-  color: #fff;
-  box-shadow: 0 24px 45px rgba(0, 0, 0, 0.3);
+  color: var(--color-text-primary);
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
@@ -328,7 +328,7 @@ watch(
 
 .summary-subtitle {
   margin: 0.35rem 0 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -348,7 +348,8 @@ watch(
 }
 
 .summary-stat {
-  background: rgba(255, 255, 255, 0.06);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
   border-radius: 16px;
   padding: 1rem 1.25rem;
   flex: 1 1 0;

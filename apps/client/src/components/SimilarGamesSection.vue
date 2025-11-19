@@ -7,7 +7,7 @@
       </h2>
       <p class="section-subtitle">More games like this one</p>
     </div>
-    <div class="similar-games-section__grid">
+    <div class="similar-games-section__grid game-grid game-grid--quad">
       <GameCard
         v-for="game in similarGames"
         :key="game.id"
@@ -114,6 +114,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+@import '../styles/components/Home.css';
+
 .similar-games-section {
   display: flex;
   flex-direction: column;
@@ -134,7 +136,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .section-title svg {
@@ -147,16 +149,11 @@ onBeforeUnmount(() => {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.similar-games-section__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-5);
-}
+/* Grid styles are inherited from .game-grid and .game-grid--quad in Home.css */
 
-@media (max-width: 48rem) {
+@media (max-width: 37.5rem) {
   .similar-games-section__grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: 1fr;
   }
 }
 </style>

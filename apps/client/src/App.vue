@@ -10,10 +10,12 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import NavBar from '@/components/NavBar.vue';
 import Footer from '@/components/Footer.vue';
 import { useHead } from '@vueuse/head';
+import { useThemeStore } from '@/stores/theme';
 
 // import CookieBanner from '@/components/CookieBanner.vue'; // New import
 //import { ref } from 'vue';
@@ -30,9 +32,25 @@ useHead({
     { rel: 'icon', type: 'image/png', href: '/favicon.png' },
   ],
 });
-document.documentElement.setAttribute('data-theme', 'dark');
 
+// Initialize theme from store
+const themeStore = useThemeStore();
 const route = useRoute();
+
+// Helper function to check if a route is a game route
+function isGameRoute(path: string): boolean {
+  return path.startsWith('/games/') && path !== '/games/info';
+}
+
+onMounted(() => {
+  themeStore.initializeTheme();
+  
+  // If initial route is a game route, force dark mode
+  if (isGameRoute(route.path)) {
+    themeStore.forceDarkModeForGame();
+  }
+});
+
 // const consentGiven = ref(!!localStorage.getItem('cookieConsent'));
 // const handleConsent = (level: string) => {
 //   consentGiven.value = true;

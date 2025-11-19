@@ -189,9 +189,8 @@ function formatDateTime(value?: string) {
 <style scoped>
 .daily-page {
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(0, 232, 224, 0.2), transparent 55%),
-    linear-gradient(180deg, rgba(5, 5, 5, 1) 0%, rgba(12, 12, 12, 1) 100%);
-  color: #f8f8fc;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
   gap: 3rem;
@@ -205,11 +204,7 @@ function formatDateTime(value?: string) {
 }
 
 .daily-hero__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 25% 25%, rgba(0, 232, 224, 0.28), transparent 60%),
-    radial-gradient(circle at 75% 15%, rgba(196, 255, 0, 0.18), transparent 60%);
-  pointer-events: none;
+  display: none; /* Removed for flat design */
 }
 
 .daily-hero__content {

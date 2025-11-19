@@ -1,30 +1,30 @@
 <!-- Animated leaderboard with the updated TOP-X visual design -->
 <template>
   <div class="leaderboard-container">
-    <h2 class="title is-3 has-text-white animate-item" style="--animation-delay: 0s;">{{ title }}</h2>
+    <h2 class="title is-3 animate-item" style="--animation-delay: 0s;">{{ title }}</h2>
     <div class="card animate-item" style="--animation-delay: 0.2s;">
       <div class="card-content">
         <p class="board-label">{{ boardLabel }}</p>
-        <div v-if="isLoading" class="loading-state has-text-white">
+        <div v-if="isLoading" class="loading-state">
           <span class="loader" aria-hidden="true"></span>
           <p>Loading leaderboard...</p>
         </div>
         <div v-else-if="error" class="error-state">
           <p>{{ error }}</p>
         </div>
-        <div v-else-if="!leaderboard.length" class="empty-state has-text-white">
+        <div v-else-if="!leaderboard.length" class="empty-state">
           <p>No leaderboard entries yet. Play to climb the ranks!</p>
         </div>
         <table v-else class="table is-striped is-fullwidth">
           <thead>
             <tr>
-              <th class="has-text-white">Rank</th>
-              <th class="has-text-white">Player</th>
-              <th class="has-text-white">Score</th>
-              <th class="has-text-white">Streak</th>
-              <th class="has-text-white">Attempts</th>
-              <th class="has-text-white">Recorded</th>
-              <th class="has-text-white" v-if="showActions">Action</th>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Score</th>
+              <th>Streak</th>
+              <th>Attempts</th>
+              <th>Recorded</th>
+              <th v-if="showActions">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -277,14 +277,24 @@ watch(
 <style scoped>
 @import '../styles/components/Leaderboard.css';
 
+.leaderboard-container .title {
+  color: var(--color-text-primary);
+}
+
+.leaderboard-container .media-content p {
+  color: var(--color-text-primary);
+}
+
 .loading-state,
-.error-state {
+.error-state,
+.empty-state {
   text-align: center;
   padding: 2rem 0;
+  color: var(--color-text-primary);
 }
 
 .error-state {
-  color: #ff6b6b;
+  color: var(--color-text-danger, #ff6b6b);
 }
 
 .board-label {
@@ -292,15 +302,15 @@ watch(
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .loader {
   display: inline-block;
   width: 1.5rem;
   height: 1.5rem;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #66fff6;
+  border: 3px solid var(--color-border-base);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 0.75rem;
@@ -319,7 +329,7 @@ watch(
 .timestamp {
   display: block;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-secondary);
 }
 
 .time-badges {
@@ -330,13 +340,13 @@ watch(
 }
 
 .time-badge {
-  background-color: rgba(102, 255, 246, 0.15);
-  border: 1px solid rgba(102, 255, 246, 0.4);
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
   border-radius: 999px;
   padding: 0.1rem 0.45rem;
   font-size: 0.65rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #66fff6;
+  color: var(--color-primary);
 }
 </style>

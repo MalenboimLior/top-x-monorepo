@@ -68,24 +68,6 @@
   --radius-full: 999px; /* Pill shape */
 
   /* ============================================
-     SHADOWS
-     ============================================ */
-  /* Box shadows */
-  --shadow-xs: 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 14px 32px rgba(0, 232, 224, 0.25);
-  --shadow-lg: 0 24px 55px rgba(0, 232, 224, 0.28);
-  --shadow-xl: 0 28px 55px rgba(0, 0, 0, 0.45);
-  --shadow-2xl: 0 32px 65px rgba(0, 0, 0, 0.6);
-  --shadow-3xl: 0 25px 45px rgba(0, 0, 0, 0.35);
-
-  /* Text shadows */
-  --text-shadow-sm: 0 18px 35px rgba(0, 232, 224, 0.1);
-
-  /* Focus shadows */
-  --shadow-focus: 0 0 0 0.125em rgba(29, 161, 242, 0.25);
-
-  /* ============================================
      TRANSITIONS & ANIMATIONS
      ============================================ */
   --transition-fast: 0.2s ease;
@@ -110,12 +92,12 @@
      LAYOUT HELPERS
      ============================================ */
   --layout-inline-padding: clamp(var(--space-4), 4vw, var(--space-8));
-  --section-stack-gap: var(--space-9);
+  --section-stack-gap: var(--space-3);
 }
 
 @media (max-width: 48rem) {
   :root {
     --layout-inline-padding: clamp(var(--space-3), 6vw, var(--space-6));
-    --section-stack-gap: var(--space-8);
+    --section-stack-gap: var(--space-2);
   }
 }
