@@ -10,7 +10,7 @@
   align-items: center;
   padding: clamp(var(--space-6), 4vw, var(--space-10));
   color: var(--color-text-primary);
-  background-color: var(--trivia-background, #f5f5f5);
+  background-color: var(--trivia-background, #0b0b0f);
   background-image: var(--trivia-background-image, none);
   background-size: cover;
   background-position: center;
