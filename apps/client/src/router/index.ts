@@ -114,6 +114,11 @@ const routes = [
     name: 'Build',
     component: () => import(/* webpackChunkName: "build" */ '@/views/Build.vue'),
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import(/* webpackChunkName: "not-found" */ '@/views/NotFound.vue'),
+  },
 ];
 
 const router = createRouter({

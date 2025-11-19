@@ -10,7 +10,7 @@
   "scripts": {
     "build:shared": "npm run build --workspace=packages/shared",
     "build:admin": "npm run build --workspace=apps/admin",
-    "build:client": "npm run build --workspace=apps/client",
+    "build:client": "npm run build:prerender --workspace=apps/client",
     "build:functions": "npm run build --workspace=functions",
     "build": "npm run build --workspaces --if-present",
     "deploy": "npm run build && firebase deploy"

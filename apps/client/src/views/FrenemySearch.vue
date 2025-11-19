@@ -1,5 +1,5 @@
 <template>
-  <div class="users-page" :class="{ 'is-rtl': isRTL }">
+  <div class="page-container users-page" :class="{ 'is-rtl': isRTL }">
     <section class="users-hero">
       <div class="users-hero__glow" aria-hidden="true"></div>
       <div class="users-hero__content">
@@ -301,10 +301,6 @@ async function followUser(uid: string) {
 
 <style scoped>
 .users-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at 18% 0%, rgba(0, 232, 224, 0.18), transparent 55%),
-    linear-gradient(180deg, #040404 0%, #0d0d0d 100%);
-  color: #f8f8fc;
   display: flex;
   flex-direction: column;
   gap: clamp(2.5rem, 6vw, 4rem);
@@ -317,7 +313,8 @@ async function followUser(uid: string) {
 
 .users-hero {
   position: relative;
-  padding: clamp(3rem, 8vw, 6rem) clamp(1.5rem, 5vw, 3rem) clamp(2.5rem, 6vw, 4rem);
+  padding: clamp(3rem, 8vw, 6rem) 0 clamp(2.5rem, 6vw, 4rem);
+  margin: 0 calc(-1 * var(--space-6));
   display: flex;
   justify-content: center;
 }
@@ -334,25 +331,26 @@ async function followUser(uid: string) {
   position: relative;
   width: min(880px, 100%);
   padding: clamp(2.75rem, 6vw, 4rem) clamp(2rem, 5vw, 3rem);
-  border-radius: 36px;
-  border: 1px solid rgba(0, 232, 224, 0.18);
-  background: rgba(12, 12, 12, 0.82);
+  margin: 0 var(--space-6);
+  border-radius: 36px; /* Component-specific */
+  border: 1px solid var(--color-border-medium);
+  background: rgba(12, 12, 12, 0.82); /* Component-specific background */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(1rem, 2vw, 1.5rem);
+  gap: clamp(var(--space-4), 2vw, var(--space-6));
   text-align: center;
-  box-shadow: 0 42px 80px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 42px 80px rgba(0, 0, 0, 0.45); /* Component-specific shadow */
   backdrop-filter: blur(16px);
 }
 
 .users-hero__pill {
   display: inline-flex;
   padding: 0.4rem 1.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  background: rgba(0, 232, 224, 0.18);
+  background: var(--color-primary-18);
   color: var(--bulma-primary);
   font-weight: 600;
 }
@@ -364,7 +362,7 @@ async function followUser(uid: string) {
 
 .users-hero__subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.75); /* Component-specific opacity */
   font-size: clamp(1.05rem, 1.4vw, 1.2rem);
   line-height: 1.7;
   max-width: 640px;
@@ -380,11 +378,11 @@ async function followUser(uid: string) {
 .users-hero__feature {
   display: inline-flex;
   align-items: center;
-  padding: 0.45rem 1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.9rem;
+  padding: 0.45rem var(--space-4);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06); /* Component-specific */
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Component-specific */
+  font-size: var(--font-size-300);
   letter-spacing: 0.01em;
 }
 
@@ -396,44 +394,46 @@ async function followUser(uid: string) {
 .users-body {
   display: flex;
   justify-content: center;
-  padding: 0 clamp(1.5rem, 5vw, 3.5rem);
+  padding: 0;
+  margin: 0 calc(-1 * var(--space-6));
 }
 
 .users-surface {
   width: min(960px, 100%);
-  background: rgba(12, 12, 12, 0.82);
-  border-radius: 32px;
-  border: 1px solid rgba(0, 232, 224, 0.18);
-  padding: clamp(2rem, 5vw, 3.25rem);
+  margin: 0 var(--space-6);
+  background: rgba(12, 12, 12, 0.82); /* Component-specific background */
+  border-radius: 32px; /* Component-specific */
+  border: 1px solid var(--color-border-medium);
+  padding: clamp(var(--space-8), 5vw, 3.25rem);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--space-8);
   backdrop-filter: blur(12px);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35); /* Component-specific shadow */
 }
 
 .users-search {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .users-input {
   flex: 1;
   min-width: 220px;
   padding: 0.85rem 1.1rem;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.06); /* Component-specific */
   color: inherit;
-  font-size: 1rem;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  font-size: var(--font-size-400);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .users-input:focus {
   outline: none;
-  border-color: rgba(0, 232, 224, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 232, 224, 0.5); /* Component-specific */
+  background: rgba(255, 255, 255, 0.08); /* Component-specific */
 }
 
 .users-search__button {
@@ -448,14 +448,14 @@ async function followUser(uid: string) {
 
 .users-results {
   display: grid;
-  gap: 1.25rem;
+  gap: var(--space-5);
 }
 
 .users-result {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.35rem 1.5rem;
+  background: var(--color-bg-surface);
+  border-radius: 24px; /* Component-specific */
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Component-specific */
+  padding: 1.35rem var(--space-6);
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -481,7 +481,7 @@ async function followUser(uid: string) {
   font-weight: 600;
   color: inherit;
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color var(--transition-fast);
 }
 
 .users-result__name:hover,
@@ -491,16 +491,16 @@ async function followUser(uid: string) {
 
 .users-result__username {
   margin: 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-secondary);
   font-size: 0.95rem;
 }
 
 .users-result__meta {
   margin: 0;
   display: flex;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
+  gap: var(--space-2);
+  font-size: var(--font-size-300);
+  color: var(--color-text-muted);
 }
 
 .users-result__actions {
@@ -512,7 +512,7 @@ async function followUser(uid: string) {
 
 .users-result__state {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -525,12 +525,12 @@ async function followUser(uid: string) {
 .users-notice {
   padding: 1.85rem;
   text-align: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 24px;
-  border: 1px solid rgba(0, 232, 224, 0.16);
+  background: var(--color-bg-surface);
+  border-radius: 24px; /* Component-specific */
+  border: 1px solid var(--color-primary-16);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .users-notice h2 {

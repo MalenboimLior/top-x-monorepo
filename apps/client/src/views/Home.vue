@@ -1,6 +1,6 @@
 <!-- Home.vue -->
 <template>
-  <div class="home-page section-stack">
+  <div class="page-container home-page section-stack">
     <HeroSection @create="goToBuild" @play="scrollToGames" />
     <GameSection
       ref="gamesSection"
@@ -648,6 +648,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import '../styles/Home.css';
+@import '../styles/components/Home.css';
 </style>
 

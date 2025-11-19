@@ -1,5 +1,5 @@
 <template>
-  <div class="contact-page">
+  <div class="page-container contact-page">
     <section class="contact-hero">
       <div class="contact-hero__glow"></div>
       <div class="contact-hero__content">
@@ -118,11 +118,6 @@ function handleCtaClick() {
 
 <style scoped>
 .contact-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.15), transparent 55%),
-    radial-gradient(circle at top right, rgba(196, 255, 0, 0.12), transparent 45%),
-    #060606;
-  color: #f8f8fc;
   display: flex;
   flex-direction: column;
   gap: 3rem;

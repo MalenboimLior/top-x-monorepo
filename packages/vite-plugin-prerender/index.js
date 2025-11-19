@@ -207,10 +207,10 @@ export default function prerenderPlugin(options = {}) {
           }
 
           const normalized = normalizeRoute(route);
-          // Do not overwrite the SPA root index.html; write root prerender to /build/index.html instead
+          // Write root route to root index.html, other routes to their respective folders
           const destination = normalized
             ? path.join(resolvedOutDir, normalized, 'index.html')
-            : path.join(resolvedOutDir, 'build', 'index.html');
+            : path.join(resolvedOutDir, 'index.html');
 
           await fs.mkdir(path.dirname(destination), { recursive: true });
           await fs.writeFile(destination, html, 'utf-8');

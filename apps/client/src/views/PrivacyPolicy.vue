@@ -1,5 +1,5 @@
 <template>
-  <div class="policy-page">
+  <div class="page-container policy-page">
     <section class="policy-hero">
       <div class="policy-hero__glow"></div>
       <div class="policy-hero__content">
@@ -61,9 +61,6 @@ useHead({
 
 <style scoped>
 .policy-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.16), transparent 55%), #050505;
-  color: #f8f8fc;
   display: flex;
   flex-direction: column;
   gap: 3rem;

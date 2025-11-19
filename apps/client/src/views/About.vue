@@ -1,5 +1,5 @@
 <template>
-  <div class="about-page">
+  <div class="page-container about-page">
     <section class="about-hero">
       <div class="about-hero__glow"></div>
       <div class="about-hero__content">
@@ -79,9 +79,6 @@ useHead(() => ({
 
 <style scoped>
 .about-page {
-  background-color: #000;
-  min-height: 100vh;
-  color: var(--bulma-text);
   display: flex;
   flex-direction: column;
   gap: 4rem;

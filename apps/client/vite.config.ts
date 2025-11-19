@@ -15,13 +15,31 @@ export default defineConfig({
     ...(process.env.PRERENDER === '1'
       ? [prerender({
           routes: [
-            '/', '/about', '/faq', '/contactus',
-            '/profile', '/build', '/termsofuse', '/privacypolicy'
+            // Static pages
+            '/',
+            '/about',
+            '/faq',
+            '/contact',
+            '/profile',
+            '/build',
+            '/terms',
+            '/privacy',
+            // Game routes
+            '/games/info',
+            '/games/trivia',
+            '/games/ZoneReveal',
+            '/games/PyramidTier',
+            '/games/Pacman',
+            '/games/FisherGame',
+            // Redirect routes (prerender for SEO)
+            '/PrezPyramid',
+            '/FootballStarsIL',
           ],
           staticDir: path.resolve(__dirname, 'dist'),
           waitUntil: 'domcontentloaded',
           timeout: 90_000,
           settleDelay: 800,
+          renderAfterDocumentEvent: 'prerender-ready',
           debug: process.env.PRERENDER_DEBUG === '1',
         })]
       : [])

@@ -1,5 +1,5 @@
 <template>
-  <div class="faq-page">
+  <div class="page-container faq-page">
     <section class="faq-hero">
       <div class="faq-hero__glow"></div>
       <div class="faq-hero__content">
@@ -78,10 +78,6 @@ useHead(() => ({
 
 <style scoped>
 .faq-page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(0, 232, 224, 0.16), transparent 55%),
-    #030303;
-  color: #f8f8fc;
   display: flex;
   flex-direction: column;
   gap: 3rem;

@@ -81,6 +81,8 @@ library.add(
 
 import 'bulma/css/bulma.min.css';
 import './styles/tokens.css';
+import './styles/colors.css';
+import './styles/base.css';
 import './styles/layout.css';
 import './styles/dark-theme.css';
 import './styles/responsive-utils.css';
