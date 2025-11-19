@@ -21,8 +21,7 @@
 }
 
 .button.is-primary:hover {
-  background-color: #00c4bd;
-  border-color: #00c4bd;
+  background-color: var(--color-white);
 }
 
 .card {
@@ -35,7 +34,6 @@
 .navbar {
   background-color: var(--color-bg-navbar);
   color: var(--bulma-text);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-item {
@@ -47,7 +45,7 @@
   color: var(--bulma-primary);
 }
 
-/* Ensure inputs and other form elements are light-themed */
+/* Ensure inputs and other form elements are dark-themed */
 .input, .textarea, .select select {
   background-color: var(--color-bg-input);
   color: var(--bulma-text);
