@@ -8,8 +8,10 @@ const Profile = () => import('@/views/Profile.vue');
 const About = () => import('@/views/About.vue');
 const TermsOfUse = () => import('@/views/TermsOfUse.vue');
 const PrivacyPolicy = () => import('@/views/PrivacyPolicy.vue');
+const Cookies = () => import('@/views/Cookies.vue');
 const ContactUs = () => import('@/views/ContactUs.vue');
 const FAQ = () => import('@/views/FAQ.vue');
+const Guidelines = () => import('@/views/Guidelines.vue');
 const Trivia = () => import('@/views/games/Trivia.vue');
 const PyramidTier = () => import('@/views/games/PyramidTier.vue');
 const Users = () =>
@@ -31,6 +33,12 @@ const routes = [
   name: 'FisherGame',
   component: FisherGame,
 },
+  {
+    path: '/games/SampleGame',
+    name: 'SampleGame',
+    component: () =>
+      import(/* webpackChunkName: "sample-game" */ '@/views/games/SampleGame.vue'),
+  },
   {
     path: '/games/info',
     name: 'GameInfo',
@@ -57,6 +65,11 @@ const routes = [
     component: () => import(/* webpackChunkName: "privacy" */ '@/views/PrivacyPolicy.vue'),
   },
   {
+    path: '/cookies',
+    name: 'Cookies',
+    component: () => import(/* webpackChunkName: "cookies" */ '@/views/Cookies.vue'),
+  },
+  {
     path: '/contact',
     name: 'ContactUs',
     component: () => import(/* webpackChunkName: "contact" */ '@/views/ContactUs.vue'),
@@ -65,6 +78,11 @@ const routes = [
     path: '/faq',
     name: 'FAQ',
     component: () => import(/* webpackChunkName: "faq" */ '@/views/FAQ.vue'),
+  },
+  {
+    path: '/guidelines',
+    name: 'Guidelines',
+    component: () => import(/* webpackChunkName: "guidelines" */ '@/views/Guidelines.vue'),
   },
 
   {
