@@ -13,7 +13,7 @@ export default defineConfig({
 
     // Enable prerender only when explicitly requested
     ...(process.env.PRERENDER === '1'
-      ? [prerender({
+      ? [        prerender({
           routes: [
             // Static pages
             '/',
@@ -24,6 +24,8 @@ export default defineConfig({
             '/build',
             '/terms',
             '/privacy',
+            '/cookies',
+            '/guidelines',
             // Game routes
             '/games/info',
             '/games/trivia',

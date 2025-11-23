@@ -32,6 +32,6 @@ export const GAME_BADGE_DEFINITIONS: Record<GameBadgeKey, GameBadgeDefinition> =
 export const DEFAULT_TOPX_CREATOR: GameCreator = {
   userid: 'topx-official',
   username: 'TOP-X',
-  image: 'https://www.top-x.co/assets/profile.png',
+  image: 'https://top-x.co/assets/profile.png',
 };
 

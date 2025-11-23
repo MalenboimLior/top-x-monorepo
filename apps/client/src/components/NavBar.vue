@@ -85,7 +85,7 @@
                 :title="hasRewardNotification ? 'Daily challenge results ready' : undefined"
               >
                 <figure class="image is-48x48">
-                  <img :src="user.photoURL || 'https://www.top-x.co/assets/profile.png'" alt="Profile" class="is-rounded" />
+                  <img :src="user.photoURL || '/assets/profile.png'" alt="Profile" class="is-rounded" />
                 </figure>
                 <span
                   v-if="hasRewardNotification"

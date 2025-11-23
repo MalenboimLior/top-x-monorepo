@@ -80,7 +80,7 @@ export const useUserStore = defineStore('user', () => {
         uid: currentUser.uid,
         displayName: currentUser.displayName,
         photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal', '_400x400')
-            : 'https://www.top-x.co/assets/profile.png',
+            : '/assets/profile.png',
       };
       const userDoc = doc(db, 'users', currentUser.uid);
       unsubscribeProfile = onSnapshot(
@@ -139,7 +139,7 @@ export const useUserStore = defineStore('user', () => {
         uid: result.user.uid,
         displayName: result.user.displayName,
         photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal', '_400x400')
-            : 'https://www.top-x.co/assets/profile.png',
+            : '/assets/profile.png',
       };
       console.log('Login result.user.photoURL:', result.user.photoURL);
 
@@ -159,7 +159,7 @@ export const useUserStore = defineStore('user', () => {
           displayName: result.user.displayName || 'Anonymous',
           photoURL: result.user.photoURL
             ? result.user.photoURL.replace('_normal', '_400x400')
-            : 'https://www.top-x.co/assets/profile.png',
+            : '/assets/profile.png',
         });
         console.log('Updated user profile with X credentials');
       } else {
@@ -217,7 +217,7 @@ export const useUserStore = defineStore('user', () => {
       email: user.email || '',
       photoURL: user.photoURL
         ? user.photoURL.replace('_normal', '_400x400')
-        : 'https://www.top-x.co/assets/profile.png',
+        : '/assets/profile.png',
       isAdmin: false,
       followersCount: 0,
       followingCount: 0,

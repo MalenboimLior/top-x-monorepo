@@ -7,7 +7,7 @@ import type {
 
 const db = admin.firestore();
 
-export const DEFAULT_LEADERBOARD_PHOTO = 'https://www.top-x.co/assets/profile.png';
+export const DEFAULT_LEADERBOARD_PHOTO = 'https://top-x.co/assets/profile.png';
 
 export const formatLeaderboardDailyIndex = (date: Date): string => date.toISOString().slice(0, 10);
 

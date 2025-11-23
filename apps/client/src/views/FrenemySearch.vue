@@ -153,7 +153,7 @@ const emptyStateMessage = computed(() => {
     : `${template} "${lastSearchedQuery.value}"`;
 });
 
-const defaultAvatar = 'https://www.top-x.co/assets/profile.png';
+const defaultAvatar = '/assets/profile.png';
 
 const debouncedSearch = debounce(() => {
   void searchUsers();

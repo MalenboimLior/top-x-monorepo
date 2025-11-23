@@ -295,7 +295,7 @@ const worstShow = ref(true);
 
 const displayName = computed(() => profile.value?.displayName || 'Anonymous');
 const username = computed(() => (profile.value?.username ? `${profile.value.username}` : '@Anonymous'));
-const photoURL = computed(() => profile.value?.photoURL || 'https://www.top-x.co/assets/profile.png');
+const photoURL = computed(() => profile.value?.photoURL || '/assets/profile.png');
 const isLoggedIn = computed(() => !!userStore.user);
 const isOwnProfile = computed(() => {
   const uidParam = route.query.user as string | undefined;

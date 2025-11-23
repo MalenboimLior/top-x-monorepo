@@ -147,7 +147,7 @@ function toEntry(snap: QueryDocumentSnapshot<DocumentData>): LeaderboardEntry {
     uid: data.uid ?? snap.id,
     displayName: data.displayName || 'Anonymous',
     username: data.username || data.displayName || 'Anonymous',
-    photoURL: data.photoURL || 'https://www.top-x.co/assets/profile.png',
+    photoURL: data.photoURL || '/assets/profile.png',
     score: data.score ?? 0,
     streak: data.streak ?? 0,
     updatedAt,

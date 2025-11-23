@@ -28,6 +28,10 @@ function getContentType(filePath) {
   return MIME_TYPES[ext] ?? 'application/octet-stream';
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function createStaticServer(rootDir) {
   const resolvedRoot = path.resolve(rootDir);
 
@@ -170,30 +174,69 @@ export default function prerenderPlugin(options = {}) {
             page.on('requestfailed', (req) => console.warn('[prerender:requestfailed]', req.url()));
           }
 
-          const navigate = page.goto(targetUrl, { waitUntil });
-
-          if (renderAfterDocumentEvent) {
-            await page.evaluate((eventName) => {
-              return new Promise((resolve) => {
-                const done = () => resolve(true);
-                document.addEventListener(eventName, done, { once: true });
+          // Wait for navigation to complete first
+          let navigationResponse;
+          try {
+            navigationResponse = await Promise.race([
+              page.goto(targetUrl, { waitUntil, timeout: timeoutMs }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('route-timeout')), timeoutMs)),
+            ]);
+            
+            // Wait a bit for any client-side redirects to complete
+            // This is especially important for redirect routes like /PrezPyramid
+            await delay(500);
+            
+            // Check if page navigated again (client-side redirect)
+            try {
+              await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 2000 }).catch(() => {
+                // No additional navigation, that's fine
               });
-            }, renderAfterDocumentEvent);
+            } catch (_) {
+              // Ignore navigation wait errors
+            }
+          } catch (e) {
+            if (debug) console.warn('[vite-plugin-prerender] navigation guard:', route, e?.message || e);
+            // Try to wait a bit for the page to stabilize
+            await delay(1000);
           }
 
-          // Per-route max wait guard
-          await Promise.race([
-            navigate,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('route-timeout')), timeoutMs)),
-          ]).catch((e) => {
-            if (debug) console.warn('[vite-plugin-prerender] navigation guard:', route, e?.message || e);
-          });
+          // Now that navigation is complete (or failed), set up the event listener
+          if (renderAfterDocumentEvent && !page.isClosed()) {
+            try {
+              await page.evaluate((eventName) => {
+                return new Promise((resolve) => {
+                  const done = () => resolve(true);
+                  // Set up the event listener
+                  document.addEventListener(eventName, done, { once: true });
+                  // Fallback timeout in case event never fires
+                  setTimeout(() => resolve(true), 10000);
+                });
+              }, renderAfterDocumentEvent);
+            } catch (e) {
+              if (debug) console.warn('[vite-plugin-prerender] event listener setup failed:', route, e?.message || e);
+              // Continue anyway - the page might still be usable
+            }
+          }
 
           if (settleDelay > 0) {
-            await page.waitForTimeout(settleDelay);
+            await delay(settleDelay);
           }
 
-          let html = await page.content();
+          // Check if page is still valid before getting content
+          if (page.isClosed()) {
+            if (debug) console.warn('[vite-plugin-prerender] Page was closed for route:', route);
+            await page.close();
+            continue;
+          }
+
+          let html;
+          try {
+            html = await page.content();
+          } catch (e) {
+            if (debug) console.warn('[vite-plugin-prerender] Failed to get page content for route:', route, e?.message || e);
+            await page.close();
+            continue;
+          }
 
           if (postProcess) {
             try {

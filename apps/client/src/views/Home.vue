@@ -616,7 +616,7 @@ const creatorsList = computed(() =>
     uid: u.uid,
     displayName: u.displayName || u.username || 'Anonymous',
     username: u.username ? (u.username.startsWith('@') ? u.username : `@${u.username}`) : '',
-    photoURL: u.photoURL || 'https://www.top-x.co/assets/profile.png',
+    photoURL: u.photoURL || '/assets/profile.png',
   })),
 );
 

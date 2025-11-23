@@ -996,7 +996,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       inviter.value = {
         uid: inviterUid,
         displayName: data.displayName,
-        photoURL: data.photoURL || 'https://www.top-x.co/assets/profile.png',
+        photoURL: data.photoURL || '/assets/profile.png',
         score: inviterScore,
       };
     } catch (error) {

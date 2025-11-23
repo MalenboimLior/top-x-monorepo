@@ -47,7 +47,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  userImage: 'https://www.top-x.co/assets/profile.png',
+  userImage: '/assets/profile.png',
   percentile: 0,
   usersTopped: 0,
   bestScore: 0,

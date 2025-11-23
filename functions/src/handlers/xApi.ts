@@ -46,7 +46,7 @@ export const syncXUserData = functions.https.onCall(async (context: functions.ht
     const xData = {
       displayName: response.data.data.name,
       username: response.data.data.username,
-      photoURL: response.data.data.profile_image_url ? response.data.data.profile_image_url.replace('_normal', '_400x400') : 'https://www.top-x.co/assets/profile.png',
+      photoURL: response.data.data.profile_image_url ? response.data.data.profile_image_url.replace('_normal', '_400x400') : 'https://top-x.co/assets/profile.png',
       followersCount: response.data.data.public_metrics.followers_count,
       followingCount: response.data.data.public_metrics.following_count,
     };

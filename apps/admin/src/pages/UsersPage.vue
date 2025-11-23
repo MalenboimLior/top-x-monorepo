@@ -194,12 +194,12 @@ async function search() {
     const map = new Map<string, UsersResult>();
     snapA.forEach((d) => {
       const u = d.data() as User;
-      map.set(d.id, { uid: d.id, displayName: u.displayName || u.username || 'Anonymous', username: u.username || '', photoURL: u.photoURL || 'https://www.top-x.co/assets/profile.png' });
+      map.set(d.id, { uid: d.id, displayName: u.displayName || u.username || 'Anonymous', username: u.username || '', photoURL: u.photoURL || '/assets/profile.png' });
     });
     snapB.forEach((d) => {
       if (!map.has(d.id)) {
         const u = d.data() as User;
-        map.set(d.id, { uid: d.id, displayName: u.displayName || u.username || 'Anonymous', username: u.username || '', photoURL: u.photoURL || 'https://www.top-x.co/assets/profile.png' });
+        map.set(d.id, { uid: d.id, displayName: u.displayName || u.username || 'Anonymous', username: u.username || '', photoURL: u.photoURL || '/assets/profile.png' });
       }
     });
     results.value = Array.from(map.values()).slice(0, 25);
@@ -209,7 +209,7 @@ async function search() {
       const extra = await getDocs(query(usersRef, where(documentId(), 'in', missing)));
       extra.forEach((d) => {
         const u = d.data() as User;
-        map.set(d.id, { uid: d.id, displayName: u.displayName || u.username || 'Anonymous', username: u.username || '', photoURL: u.photoURL || 'https://www.top-x.co/assets/profile.png' });
+        map.set(d.id, { uid: d.id, displayName: u.displayName || u.username || 'Anonymous', username: u.username || '', photoURL: u.photoURL || '/assets/profile.png' });
       });
       results.value = Array.from(map.values()).slice(0, 25);
     }

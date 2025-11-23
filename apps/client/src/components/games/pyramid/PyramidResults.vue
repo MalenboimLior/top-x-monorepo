@@ -145,7 +145,7 @@ function processVotes(leaderboard: LeaderboardEntry[]) {
     .map(entry => ({
       uid: entry.uid,
       displayName: entry.displayName || 'Anonymous',
-      photoURL: entry.photoURL || 'https://www.top-x.co/assets/profile.png',
+      photoURL: entry.photoURL || '/assets/profile.png',
       pyramid: (entry.custom!.pyramid as Array<{ tier: number; slots: string[] }>).map(tier => 
         tier.slots.map(itemId => ({
           image: itemId ? allItems.find(item => item.id === itemId) || null : null,
