@@ -1,7 +1,14 @@
 <template>
   <article class="game-card" :class="[`game-card--${size}`]" @click="handleSelect">
     <div class="game-card__media" :dir="mediaDirection">
-      <img :src="game.image" :alt="`${game.name} image`" loading="lazy" />
+      <img 
+        :src="game.image" 
+        :alt="`${game.name} image`" 
+        loading="lazy"
+        :width="size === 'featured' ? 800 : 640"
+        :height="size === 'featured' ? 448 : 384"
+        :style="size === 'featured' ? 'aspect-ratio: 25/14;' : 'aspect-ratio: 5/3;'"
+      />
       <div v-if="mediaLabels.length" class="game-card__labels-top">
         <span
           v-for="label in mediaLabels"
@@ -52,7 +59,13 @@
         </div>
         <div v-if="resolvedCreator" class="game-card__creator" dir="ltr">
           <div class="game-card__creator-avatar">
-            <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
+            <img 
+              :src="creatorImage" 
+              :alt="creatorAltText" 
+              loading="lazy"
+              width="44"
+              height="44"
+            />
           </div>
           <div class="game-card__creator-meta">
             <span class="game-card__creator-label">{{ creatorLabel }}</span>

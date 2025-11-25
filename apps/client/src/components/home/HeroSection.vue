@@ -4,7 +4,14 @@
     <div class="hero-pulse" aria-hidden="true"></div>
 
     <div class="hero-content">
-      <img :src="logo" alt="TOP-X logo" class="hero-logo" />
+      <img 
+        :src="logo" 
+        alt="TOP-X logo" 
+        class="hero-logo" 
+        fetchpriority="high"
+        width="220"
+        height="220"
+      />
 
       <h1 class="hero-heading" dir="ltr">Top Them All!</h1>
 

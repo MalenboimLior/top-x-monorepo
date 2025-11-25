@@ -18,6 +18,11 @@ cd ../apps/client
 firebase deploy --only hosting 
 
 
+/********************************** */
+PRERENDER=1 npm run build
+/********************************** */
+
+
 cd packages/shared
 sudo npm install
 npm run build

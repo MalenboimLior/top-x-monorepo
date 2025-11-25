@@ -92,20 +92,24 @@ export default function prerenderPlugin(options = {}) {
   const staticDir = options.staticDir ?? null;
   const settleDelay = typeof options.settleDelay === 'number' ? options.settleDelay : 0;
   const debug = options.debug === true;
+  const concurrency = typeof options.concurrency === 'number' ? Math.max(1, options.concurrency) : 4;
 
   return {
     name: 'vite-plugin-prerender-local',
     apply: 'build',
     async closeBundle() {
+      console.log('[vite-plugin-prerender] closeBundle() called');
       if (process.env.PRERENDER !== '1') {
         if (debug) console.log('[vite-plugin-prerender] Skipping prerender (PRERENDER env not set).');
         return;
       }
 
       if (routes.length === 0) {
+        console.log('[vite-plugin-prerender] No routes to prerender');
         return;
       }
 
+      console.log(`[vite-plugin-prerender] Starting prerender for ${routes.length} routes`);
       const resolvedOutDir = staticDir ? path.resolve(staticDir) : path.resolve(rootDir, outDir);
       const indexHtmlPath = path.join(resolvedOutDir, 'index.html');
 
@@ -120,6 +124,7 @@ export default function prerenderPlugin(options = {}) {
       let browser;
 
       try {
+        console.log('[vite-plugin-prerender] Creating static server...');
         server = createStaticServer(resolvedOutDir);
 
         await new Promise((resolve) => {
@@ -134,13 +139,18 @@ export default function prerenderPlugin(options = {}) {
         }
 
         const origin = `http://127.0.0.1:${port}`;
+        console.log(`[vite-plugin-prerender] Server started on ${origin}`);
 
+        console.log('[vite-plugin-prerender] Launching browser...');
         browser = await puppeteer.launch({
           protocolTimeout: timeoutMs,
           ...puppeteerOptions,
         });
+        console.log(`[vite-plugin-prerender] Browser launched (concurrency: ${concurrency})`);
 
-        for (const route of routes) {
+        // Process routes in parallel batches
+        async function prerenderRoute(route, index) {
+          console.log(`[vite-plugin-prerender] Prerendering route ${index + 1}/${routes.length}: ${route}`);
           const page = await browser.newPage();
           page.setDefaultNavigationTimeout(timeoutMs);
           page.setDefaultTimeout(timeoutMs);
@@ -226,7 +236,7 @@ export default function prerenderPlugin(options = {}) {
           if (page.isClosed()) {
             if (debug) console.warn('[vite-plugin-prerender] Page was closed for route:', route);
             await page.close();
-            continue;
+            return;
           }
 
           let html;
@@ -235,7 +245,7 @@ export default function prerenderPlugin(options = {}) {
           } catch (e) {
             if (debug) console.warn('[vite-plugin-prerender] Failed to get page content for route:', route, e?.message || e);
             await page.close();
-            continue;
+            return;
           }
 
           if (postProcess) {
@@ -258,17 +268,107 @@ export default function prerenderPlugin(options = {}) {
           await fs.mkdir(path.dirname(destination), { recursive: true });
           await fs.writeFile(destination, html, 'utf-8');
           await page.close();
+          console.log(`[vite-plugin-prerender] ✓ Completed route ${index + 1}/${routes.length}: ${route}`);
         }
+
+        // Process routes in parallel batches
+        for (let i = 0; i < routes.length; i += concurrency) {
+          const batch = routes.slice(i, i + concurrency);
+          const batchPromises = batch.map((route, batchIndex) => 
+            prerenderRoute(route, i + batchIndex).catch((error) => {
+              console.error(`[vite-plugin-prerender] Failed to prerender route ${route}:`, error?.message || error);
+              return null; // Continue with other routes even if one fails
+            })
+          );
+          await Promise.all(batchPromises);
+        }
+        
+        console.log('[vite-plugin-prerender] All routes prerendered, starting cleanup...');
       } catch (error) {
         console.error('[vite-plugin-prerender] Failed to prerender routes:', error);
       } finally {
+        console.log('[vite-plugin-prerender] Entering cleanup (finally block)...');
+        // Close browser with timeout to prevent hanging
         if (browser) {
-          await browser.close();
+          try {
+            console.log('[vite-plugin-prerender] Closing browser pages...');
+            const startTime = Date.now();
+            // Get all pages and close them first
+            const pages = await browser.pages();
+            console.log(`[vite-plugin-prerender] Found ${pages.length} open pages`);
+            await Promise.all(pages.map(page => page.close().catch(() => {})));
+            console.log(`[vite-plugin-prerender] All pages closed (took ${Date.now() - startTime}ms)`);
+            
+            console.log('[vite-plugin-prerender] Closing browser...');
+            const browserCloseStart = Date.now();
+            // Close browser with timeout - if it hangs, kill the process
+            try {
+              await Promise.race([
+                browser.close(),
+                new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Browser close timeout')), 2000)
+                )
+              ]);
+            } catch (e) {
+              console.warn('[vite-plugin-prerender] Browser close timed out, forcing disconnect...');
+              // Force disconnect if close times out
+              try {
+                if (browser && browser.isConnected()) {
+                  browser.disconnect();
+                }
+                // Try to kill the process directly as last resort
+                try {
+                  const browserProcess = browser.process();
+                  if (browserProcess && browserProcess.pid && !browserProcess.killed) {
+                    browserProcess.kill('SIGKILL');
+                  }
+                } catch (processError) {
+                  // Ignore process kill errors
+                }
+              } catch (disconnectError) {
+                // Ignore disconnect errors
+              }
+            }
+            console.log(`[vite-plugin-prerender] Browser closed (took ${Date.now() - browserCloseStart}ms)`);
+          } catch (e) {
+            console.warn('[vite-plugin-prerender] Error closing browser:', e?.message || e);
+            // Force disconnect as last resort
+            if (browser && browser.isConnected()) {
+              console.log('[vite-plugin-prerender] Force disconnecting browser...');
+              browser.disconnect();
+            }
+          }
+        } else {
+          console.log('[vite-plugin-prerender] No browser to close');
         }
 
+        // Close server - server.close() is synchronous for the close() call itself
+        // The callback fires immediately when there are no active connections
         if (server) {
-          await new Promise((resolve) => server.close(resolve));
+          try {
+            console.log('[vite-plugin-prerender] Closing server...');
+            const serverCloseStart = Date.now();
+            if (server.listening) {
+              // Close all connections first if available
+              if (typeof server.closeAllConnections === 'function') {
+                server.closeAllConnections();
+              }
+              // Then close the server - callback fires immediately if no connections
+              await new Promise((resolve) => {
+                server.close(() => {
+                  console.log('[vite-plugin-prerender] Server close callback called');
+                  resolve();
+                });
+              });
+            }
+            console.log(`[vite-plugin-prerender] Server closed (took ${Date.now() - serverCloseStart}ms)`);
+          } catch (e) {
+            console.warn('[vite-plugin-prerender] Error closing server:', e?.message || e);
+          }
+        } else {
+          console.log('[vite-plugin-prerender] No server to close');
         }
+        console.log('[vite-plugin-prerender] Cleanup complete, exiting closeBundle()');
       }
     },
   };

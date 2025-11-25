@@ -111,7 +111,20 @@ app
 
 const localeStore = useLocaleStore(pinia);
 
-loadAdSenseScript(import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID);
+// Delay AdSense loading until after initial render
+if (import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID) {
+  // Load AdSense after page is interactive
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      loadAdSenseScript(import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID);
+    }, { timeout: 2000 });
+  } else {
+    // Fallback for browsers without requestIdleCallback
+    setTimeout(() => {
+      loadAdSenseScript(import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID);
+    }, 2000);
+  }
+}
 
 router.isReady().then(() => {
   localeStore.initialize().finally(() => {

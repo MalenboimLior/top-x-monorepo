@@ -6,12 +6,21 @@ import { PacmanConfig } from "./pacman";
 import { FisherGameConfig } from "./fisherGame";
 import type { LeaderboardEntry, LeaderboardDateIndexes, LeaderboardEntryDate } from "./leaderboard";
 
+export interface DefaultConfig {
+  name: string;
+  config: GameCustomConfig;
+  show: boolean;
+  order: number;
+  image?: string; // Thumbnail/preview image URL
+}
+
 export interface GameType {
   id: string;
   name: string;
   description: string;
   custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig'; // String to specify config type
   availableToBuild: boolean;
+  defaultConfigs?: DefaultConfig[];
 }
 
 export type GameCustomConfig =

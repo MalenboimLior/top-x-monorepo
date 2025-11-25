@@ -1,337 +1,333 @@
 <template>
-  <div class="trivia-wizard">
-    <section v-if="activeStep === 'session'" class="wizard-layout">
-      <div class="wizard-layout__form">
-        <header class="wizard-header">
-          <p class="wizard-header__eyebrow">{{ t('build.trivia.session.eyebrow') }}</p>
-          <h2 class="wizard-header__title">{{ t('build.trivia.session.title') }}</h2>
-          <p class="wizard-header__subtitle">{{ t('build.trivia.session.subtitle') }}</p>
-        </header>
-
-        <div class="settings-grid">
-          <div class="settings-card">
-            <h3>{{ t('build.trivia.session.lives.title') }}</h3>
-            <p class="muted">{{ t('build.trivia.session.lives.hint') }}</p>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.unlimitedLives" />
-              <span>{{ t('build.trivia.session.lives.unlimited') }}</span>
-            </label>
-            <div v-if="!config.unlimitedLives" class="field">
-              <label :for="ids.lives">{{ t('build.trivia.session.lives.count') }}</label>
-              <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <h3>{{ t('build.trivia.session.correctAnswers.title') }}</h3>
-            <p class="muted">{{ t('build.trivia.session.correctAnswers.hint') }}</p>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.showCorrectAnswers" :disabled="!config.unlimitedLives" />
-              <span>{{ t('build.trivia.session.correctAnswers.perQuestion') }}</span>
-            </label>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" :disabled="!config.unlimitedLives" />
-              <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
-            </label>
-            <p v-if="!config.unlimitedLives" class="muted">
-              {{ t('build.trivia.session.correctAnswers.disabled') }}
-            </p>
-          </div>
-
-          <div class="settings-card">
-            <h3>{{ t('build.trivia.session.powerUps.title') }}</h3>
-            <p class="muted">{{ t('build.trivia.session.powerUps.hint') }}</p>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.powerUpsActive" />
-              <span>{{ t('build.trivia.session.powerUps.enable') }}</span>
-            </label>
-
-            <div v-if="config.powerUpsActive" class="powerup-list">
-              <article
-                v-for="(powerUp, index) in config.powerUps"
-                :key="powerUp.id || index"
-                class="powerup-card"
-              >
-                <div class="field">
-                  <label :for="`${ids.powerUpId}-${index}`">{{ t('build.trivia.session.powerUps.idLabel') }}</label>
-                  <input :id="`${ids.powerUpId}-${index}`" v-model="powerUp.id" placeholder="shield" />
-                </div>
-                <div class="field">
-                  <label :for="`${ids.powerUpLabel}-${index}`">{{ t('build.trivia.session.powerUps.labelLabel') }}</label>
-                  <input :id="`${ids.powerUpLabel}-${index}`" v-model="powerUp.label" placeholder="Shield" />
-                </div>
-                <div class="powerup-card__row">
-                  <div class="field">
-                    <label :for="`${ids.powerUpSpawn}-${index}`">{{ t('build.trivia.session.powerUps.spawnRate') }}</label>
-                    <input
-                      :id="`${ids.powerUpSpawn}-${index}`"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="1"
-                      v-model.number="powerUp.spawnRate"
-                    />
-                  </div>
-                  <div class="field">
-                    <label :for="`${ids.powerUpMax}-${index}`">{{ t('build.trivia.session.powerUps.maxUses') }}</label>
-                    <input
-                      :id="`${ids.powerUpMax}-${index}`"
-                      type="number"
-                      min="0"
-                      v-model.number="powerUp.maxUses"
-                    />
-                  </div>
-                  <div class="field">
-                    <label :for="`${ids.powerUpCooldown}-${index}`">{{ t('build.trivia.session.powerUps.cooldown') }}</label>
-                    <input
-                      :id="`${ids.powerUpCooldown}-${index}`"
-                      type="number"
-                      min="0"
-                      v-model.number="powerUp.cooldownSeconds"
-                    />
-                  </div>
-                </div>
-                <div class="field">
-                  <label :for="`${ids.powerUpDescription}-${index}`">{{ t('build.trivia.session.powerUps.description') }}</label>
-                  <textarea :id="`${ids.powerUpDescription}-${index}`" rows="2" v-model="powerUp.description" />
-                </div>
-                <button type="button" class="ghost ghost--danger" @click="removePowerUp(index)">
-                  {{ t('build.trivia.session.powerUps.remove') }}
-                </button>
-              </article>
-
-              <CustomButton type="is-success is-light" :label="t('build.trivia.session.powerUps.add')" @click="addPowerUp" />
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <h3>{{ t('build.trivia.session.access.title') }}</h3>
-            <p class="muted">{{ t('build.trivia.session.access.hint') }}</p>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.mustLogin" />
-              <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
-            </label>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.allowRepeats" />
-              <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
-            </label>
-          </div>
-
-          <div class="settings-card">
-            <h3>{{ t('build.trivia.session.timer.title') }}</h3>
-            <p class="muted">{{ t('build.trivia.session.timer.hint') }}</p>
-            <label class="toggle">
-              <input type="checkbox" v-model="config.globalTimer.enabled" />
-              <span>{{ t('build.trivia.session.timer.enable') }}</span>
-            </label>
-            <div v-if="config.globalTimer.enabled" class="field field--inline">
-              <label :for="ids.timerDuration">{{ t('build.trivia.session.timer.duration') }}</label>
-              <input :id="ids.timerDuration" type="number" min="0" v-model.number="config.globalTimer.durationSeconds" />
-              <span class="field--suffix">{{ t('build.trivia.session.timer.seconds') }}</span>
-            </div>
-          </div>
+  <div class="trivia-builder">
+    <!-- Questions Section - Primary Focus -->
+    <section class="questions-section">
+      <header class="questions-header">
+        <div class="questions-header__content">
+          <h2 class="questions-header__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</h2>
+          <p class="questions-header__subtitle">{{ t('build.trivia.questions.subtitle') }}</p>
         </div>
-      </div>
-
-      <aside class="wizard-layout__preview">
-        <div class="session-preview">
-          <header>
-            <p class="wizard-header__eyebrow">{{ t('build.trivia.preview.eyebrow') }}</p>
-            <h3>{{ t('build.trivia.preview.sessionTitle') }}</h3>
-            <p class="muted">{{ t('build.trivia.preview.sessionSubtitle') }}</p>
-          </header>
-          <div class="session-preview__board">
-            <div class="session-preview__row">
-              <span>{{ t('build.trivia.preview.lives') }}</span>
-              <strong>{{ livesPreview }}</strong>
-            </div>
-            <div class="session-preview__row">
-              <span>{{ t('build.trivia.preview.correctAnswers') }}</span>
-              <strong>{{ answersPreview }}</strong>
-            </div>
-            <div class="session-preview__row">
-              <span>{{ t('build.trivia.preview.powerUps') }}</span>
-              <strong>{{ powerUpSummary }}</strong>
-            </div>
-            <div class="session-preview__row">
-              <span>{{ t('build.trivia.preview.timer') }}</span>
-              <strong>{{ timerSummary }}</strong>
-            </div>
-          </div>
+        <div class="questions-header__actions">
+          <CustomButton 
+            type="is-primary" 
+            :label="t('build.trivia.questions.addQuestion')" 
+            @click="handleAddQuestion" 
+          />
         </div>
-      </aside>
-    </section>
+      </header>
 
-    <section v-else-if="activeStep === 'questions'" class="wizard-layout">
-      <div class="wizard-layout__form">
-        <header class="wizard-header">
-          <p class="wizard-header__eyebrow">{{ t('build.trivia.questions.eyebrow') }}</p>
-          <h2 class="wizard-header__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</h2>
-          <p class="wizard-header__subtitle">{{ t('build.trivia.questions.subtitle') }}</p>
-          <CustomButton type="is-success" :label="t('build.trivia.questions.addQuestion')" @click="handleAddQuestion" />
-        </header>
-
-        <ul v-if="config.questions.length" class="question-list">
-          <li
-            v-for="(question, index) in config.questions"
-            :key="question.id"
-            :class="['question-list__item', { 'question-list__item--active': index === selectedQuestionIndex }]"
-          >
-            <button type="button" class="question-list__select" @click="selectQuestion(index)">
-              <span class="question-list__index">{{ index + 1 }}</span>
-              <div>
-                <strong>{{ question.text || t('build.trivia.questions.untitled') }}</strong>
-                <p class="muted">{{ t('build.trivia.questions.optionCount', { count: question.options.length }) }}</p>
+      <div v-if="config.questions.length" class="questions-list">
+        <article
+          v-for="(question, index) in config.questions"
+          :key="question.id"
+          :data-question-index="index"
+          class="question-card"
+        >
+          <div class="question-card__main">
+            <div class="question-card__number">{{ index + 1 }}</div>
+            
+            <div class="question-card__body">
+              <div class="question-card__question">
+                <input
+                  v-model="question.text"
+                  :placeholder="t('build.trivia.questions.promptPlaceholder')"
+                  class="question-input"
+                />
               </div>
-            </button>
-            <div class="question-list__actions">
-              <button type="button" class="ghost" :disabled="index === 0" @click="reorderQuestion(index, -1)">
-                {{ t('build.trivia.questions.moveUp') }}
+              
+              <div class="question-card__answers">
+                <div
+                  v-for="(option, optionIndex) in question.options"
+                  :key="`${question.id}-${optionIndex}`"
+                  class="answer-option"
+                  :class="{ 'answer-option--correct': question.correctAnswer === option }"
+                >
+                  <label class="radio answer-option__radio">
+                    <input
+                      type="radio"
+                      :name="`correct-${question.id}`"
+                      :value="option"
+                      v-model="question.correctAnswer"
+                    />
+                    <span class="answer-option__number">{{ optionIndex + 1 }}</span>
+                  </label>
+                  <input
+                    v-model="question.options[optionIndex]"
+                    :placeholder="t('build.trivia.questions.answerPlaceholder')"
+                    class="answer-option__input"
+                  />
+                  <button
+                    type="button"
+                    class="answer-option__remove"
+                    :disabled="question.options.length <= 2"
+                    @click="removeOption(question, optionIndex)"
+                    :title="t('build.trivia.questions.removeAnswer')"
+                  >
+                    ×
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="answer-add"
+                  @click="addOption(question)"
+                  :title="t('build.trivia.questions.addAnswer')"
+                >
+                  + {{ t('build.trivia.questions.addAnswer') }}
+                </button>
+              </div>
+            </div>
+
+            <div class="question-card__actions">
+              <button
+                type="button"
+                class="action-btn"
+                :disabled="index === 0"
+                @click="reorderQuestion(index, -1)"
+                :title="t('build.trivia.questions.moveUp')"
+              >
+                ↑
               </button>
               <button
                 type="button"
-                class="ghost"
+                class="action-btn"
                 :disabled="index === config.questions.length - 1"
                 @click="reorderQuestion(index, 1)"
+                :title="t('build.trivia.questions.moveDown')"
               >
-                {{ t('build.trivia.questions.moveDown') }}
+                ↓
               </button>
-              <button type="button" class="ghost ghost--danger" @click="removeQuestion(index)">
-                {{ t('build.trivia.questions.remove') }}
-              </button>
-            </div>
-          </li>
-        </ul>
-
-        <div v-else class="empty-state">
-          <p>{{ t('build.trivia.questions.empty') }}</p>
-        </div>
-      </div>
-
-      <aside class="wizard-layout__preview">
-        <div v-if="activeQuestion" class="question-preview">
-          <header>
-            <p class="wizard-header__eyebrow question-preview__label">
-              {{ questionLabel }}
-            </p>
-            <input
-              class="question-preview__title"
-              v-model="activeQuestion.text"
-              :placeholder="t('build.trivia.questions.promptPlaceholder')"
-            />
-          </header>
-
-          <div class="field">
-            <label>{{ t('build.trivia.questions.imageLabel') }}</label>
-            <ImageUploader
-              v-model="activeQuestion.media.imageUrl"
-              :uploadFolder="`trivia/${validatedGameId}/questions/${activeQuestion.id}`"
-              :cropWidth="512"
-              :cropHeight="512"
-            />
-          </div>
-
-          <section class="answer-list">
-            <h3>{{ t('build.trivia.questions.answersTitle') }}</h3>
-            <article v-for="(option, index) in activeQuestion.options" :key="`${activeQuestion.id}-${index}`">
-              <div class="field">
-                <label>{{ t('build.trivia.questions.answerLabel', { index: index + 1 }) }}</label>
-                <input
-                  v-model="activeQuestion.options[index]"
-                  :placeholder="t('build.trivia.questions.answerPlaceholder')"
-                />
-              </div>
-              <div class="field">
-                <label>{{ t('build.trivia.questions.answerImage') }}</label>
-                <ImageUploader
-                  v-model="activeQuestion.media.optionImageUrls[index]"
-                  :uploadFolder="`trivia/${validatedGameId}/options/${activeQuestion.id}/${index}`"
-                  :cropWidth="256"
-                  :cropHeight="256"
-                />
-              </div>
-              <label class="radio">
-                <input
-                  type="radio"
-                  :name="`correct-${activeQuestion.id}`"
-                  :value="option"
-                  v-model="activeQuestion.correctAnswer"
-                />
-                <span>{{ t('build.trivia.questions.markCorrect') }}</span>
-              </label>
               <button
                 type="button"
-                class="ghost ghost--danger"
-                :disabled="activeQuestion.options.length <= 2"
-                @click="removeOption(activeQuestion, index)"
+                class="action-btn action-btn--secondary"
+                @click="duplicateQuestion(index)"
+                :title="t('build.trivia.questions.duplicate')"
               >
-                {{ t('build.trivia.questions.removeAnswer') }}
+                📋
               </button>
-            </article>
-            <CustomButton
-              type="is-success is-light"
-              :label="t('build.trivia.questions.addAnswer')"
-              @click="addOption(activeQuestion)"
-            />
-          </section>
+              <button
+                type="button"
+                class="action-btn action-btn--danger"
+                @click="removeQuestion(index)"
+                :title="t('build.trivia.questions.remove')"
+              >
+                ×
+              </button>
+            </div>
+          </div>
 
-          <div class="question-actions">
-            <CustomButton
-              type="is-primary"
-              :label="t('build.trivia.questions.saveAndAdd')"
-              @click="handleSaveAndAddQuestion"
-            />
+          <!-- Optional Images Section - Collapsible -->
+          <div class="question-card__images">
+            <button
+              type="button"
+              class="images-toggle"
+              @click="toggleQuestionImages(index)"
+            >
+              <span>{{ t('build.trivia.questions.imagesToggle') }}</span>
+              <span class="images-toggle__icon" :class="{ 'images-toggle__icon--open': expandedImages.has(index) }">
+                ▼
+              </span>
+            </button>
+            
+            <div v-if="expandedImages.has(index)" class="images-content">
+              <div class="field">
+                <label>{{ t('build.trivia.questions.imageLabel') }}</label>
+                <ImageUploader
+                  v-model="question.media.imageUrl"
+                  :uploadFolder="`trivia/${validatedGameId}/questions/${question.id}`"
+                  :cropWidth="512"
+                  :cropHeight="512"
+                />
+              </div>
+              
+              <div class="answer-images">
+                <div
+                  v-for="(option, optionIndex) in question.options"
+                  :key="`img-${question.id}-${optionIndex}`"
+                  class="answer-image-item"
+                >
+                  <label>{{ t('build.trivia.questions.answerImage') }} {{ optionIndex + 1 }}</label>
+                  <ImageUploader
+                    v-model="question.media.optionImageUrls[optionIndex]"
+                    :uploadFolder="`trivia/${validatedGameId}/options/${question.id}/${optionIndex}`"
+                    :cropWidth="256"
+                    :cropHeight="256"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div v-else class="empty-state">
+        <p>{{ t('build.trivia.questions.empty') }}</p>
+        <CustomButton
+          type="is-primary"
+          :label="t('build.trivia.questions.addFirstQuestion') || 'Add Your First Question'"
+          @click="handleAddQuestion"
+        />
+      </div>
+    </section>
+
+    <!-- Advanced Settings - Collapsible -->
+    <section class="settings-section">
+      <button
+        type="button"
+        class="settings-toggle"
+        @click="showAdvancedSettings = !showAdvancedSettings"
+      >
+        <span>{{ t('build.trivia.settings.title') || 'Advanced Settings' }}</span>
+        <span class="settings-toggle__icon" :class="{ 'settings-toggle__icon--open': showAdvancedSettings }">
+          ▼
+        </span>
+      </button>
+
+      <div v-if="showAdvancedSettings" class="settings-content">
+        <!-- Session Settings -->
+        <div class="settings-group">
+          <h3>{{ t('build.trivia.session.title') || 'Game Settings' }}</h3>
+          
+          <div class="settings-grid">
+            <div class="settings-card">
+              <h4>{{ t('build.trivia.session.lives.title') }}</h4>
+              <p class="muted">{{ t('build.trivia.session.lives.hint') }}</p>
+              <label class="toggle">
+                <input type="checkbox" v-model="config.unlimitedLives" />
+                <span>{{ t('build.trivia.session.lives.unlimited') }}</span>
+              </label>
+              <div v-if="!config.unlimitedLives" class="field">
+                <label :for="ids.lives">{{ t('build.trivia.session.lives.count') }}</label>
+                <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h4>{{ t('build.trivia.session.correctAnswers.title') }}</h4>
+              <p class="muted">{{ t('build.trivia.session.correctAnswers.hint') }}</p>
+              <label class="toggle">
+                <input type="checkbox" v-model="config.showCorrectAnswers" :disabled="!config.unlimitedLives" />
+                <span>{{ t('build.trivia.session.correctAnswers.perQuestion') }}</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" :disabled="!config.unlimitedLives" />
+                <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
+              </label>
+              <p v-if="!config.unlimitedLives" class="muted">
+                {{ t('build.trivia.session.correctAnswers.disabled') }}
+              </p>
+            </div>
+
+            <div class="settings-card">
+              <h4>{{ t('build.trivia.session.timer.title') }}</h4>
+              <p class="muted">{{ t('build.trivia.session.timer.hint') }}</p>
+              <label class="toggle">
+                <input type="checkbox" v-model="config.globalTimer.enabled" />
+                <span>{{ t('build.trivia.session.timer.enable') }}</span>
+              </label>
+              <div v-if="config.globalTimer.enabled" class="field field--inline">
+                <label :for="ids.timerDuration">{{ t('build.trivia.session.timer.duration') }}</label>
+                <input :id="ids.timerDuration" type="number" min="0" v-model.number="config.globalTimer.durationSeconds" />
+                <span class="field--suffix">{{ t('build.trivia.session.timer.seconds') }}</span>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h4>{{ t('build.trivia.session.access.title') }}</h4>
+              <p class="muted">{{ t('build.trivia.session.access.hint') }}</p>
+              <label class="toggle">
+                <input type="checkbox" v-model="config.mustLogin" />
+                <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" v-model="config.allowRepeats" />
+                <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
+              </label>
+            </div>
           </div>
         </div>
 
-        <div v-else class="empty-state">
-          <p>{{ t('build.trivia.questions.noSelection') }}</p>
+        <!-- Power Ups -->
+        <div class="settings-group">
+          <h3>{{ t('build.trivia.session.powerUps.title') }}</h3>
+          <label class="toggle">
+            <input type="checkbox" v-model="config.powerUpsActive" />
+            <span>{{ t('build.trivia.session.powerUps.enable') }}</span>
+          </label>
+
+          <div v-if="config.powerUpsActive" class="powerup-list">
+            <article
+              v-for="(powerUp, index) in config.powerUps"
+              :key="powerUp.id || index"
+              class="powerup-card"
+            >
+              <div class="field">
+                <label :for="`${ids.powerUpId}-${index}`">{{ t('build.trivia.session.powerUps.idLabel') }}</label>
+                <input :id="`${ids.powerUpId}-${index}`" v-model="powerUp.id" placeholder="shield" />
+              </div>
+              <div class="field">
+                <label :for="`${ids.powerUpLabel}-${index}`">{{ t('build.trivia.session.powerUps.labelLabel') }}</label>
+                <input :id="`${ids.powerUpLabel}-${index}`" v-model="powerUp.label" placeholder="Shield" />
+              </div>
+              <div class="powerup-card__row">
+                <div class="field">
+                  <label :for="`${ids.powerUpSpawn}-${index}`">{{ t('build.trivia.session.powerUps.spawnRate') }}</label>
+                  <input
+                    :id="`${ids.powerUpSpawn}-${index}`"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    v-model.number="powerUp.spawnRate"
+                  />
+                </div>
+                <div class="field">
+                  <label :for="`${ids.powerUpMax}-${index}`">{{ t('build.trivia.session.powerUps.maxUses') }}</label>
+                  <input
+                    :id="`${ids.powerUpMax}-${index}`"
+                    type="number"
+                    min="0"
+                    v-model.number="powerUp.maxUses"
+                  />
+                </div>
+                <div class="field">
+                  <label :for="`${ids.powerUpCooldown}-${index}`">{{ t('build.trivia.session.powerUps.cooldown') }}</label>
+                  <input
+                    :id="`${ids.powerUpCooldown}-${index}`"
+                    type="number"
+                    min="0"
+                    v-model.number="powerUp.cooldownSeconds"
+                  />
+                </div>
+              </div>
+              <div class="field">
+                <label :for="`${ids.powerUpDescription}-${index}`">{{ t('build.trivia.session.powerUps.description') }}</label>
+                <textarea :id="`${ids.powerUpDescription}-${index}`" rows="2" v-model="powerUp.description" />
+              </div>
+              <button type="button" class="ghost ghost--danger" @click="removePowerUp(index)">
+                {{ t('build.trivia.session.powerUps.remove') }}
+              </button>
+            </article>
+            <CustomButton type="is-success is-light" :label="t('build.trivia.session.powerUps.add')" @click="addPowerUp" />
+          </div>
         </div>
-      </aside>
-    </section>
 
-    <section v-else class="wizard-layout">
-      <div class="wizard-layout__form">
-        <header class="wizard-header">
-          <p class="wizard-header__eyebrow">{{ t('build.trivia.theme.eyebrow') }}</p>
-          <h2 class="wizard-header__title">{{ t('build.trivia.theme.title') }}</h2>
-          <p class="wizard-header__subtitle">{{ t('build.trivia.theme.subtitle') }}</p>
-        </header>
-
-        <div class="theme-grid">
-          <div v-for="field in themeFields" :key="field.key" class="field theme-field">
-            <label :for="`${ids.theme}-${field.key}`">{{ t(field.label) }}</label>
-            <input
-              :id="`${ids.theme}-${field.key}`"
-              :type="field.type"
-              v-model="config.theme[field.key as keyof typeof config.theme]"
-              :placeholder="field.placeholder"
-            />
-            <p class="muted">{{ t(field.hint) }}</p>
+        <!-- Theme Settings -->
+        <div class="settings-group">
+          <h3>{{ t('build.trivia.theme.title') }}</h3>
+          <div class="theme-grid">
+            <div v-for="field in themeFields" :key="field.key" class="field theme-field">
+              <label :for="`${ids.theme}-${field.key}`">{{ t(field.label) }}</label>
+              <input
+                :id="`${ids.theme}-${field.key}`"
+                :type="field.type"
+                v-model="config.theme[field.key as keyof typeof config.theme]"
+                :placeholder="field.placeholder"
+              />
+              <p class="muted">{{ t(field.hint) }}</p>
+            </div>
           </div>
         </div>
       </div>
-
-      <aside class="wizard-layout__preview">
-        <div class="theme-preview">
-          <div class="theme-preview__swatch" :style="{ background: config.theme.primaryColor || '#00e8e0' }">
-            <span>{{ t('build.trivia.theme.primarySwatch') }}</span>
-          </div>
-          <div class="theme-preview__swatch" :style="{ background: config.theme.secondaryColor || '#ff2d92' }">
-            <span>{{ t('build.trivia.theme.secondarySwatch') }}</span>
-          </div>
-          <div
-            class="theme-preview__canvas"
-            :style="{
-              backgroundColor: config.theme.backgroundColor || '#050505',
-              backgroundImage: config.theme.backgroundImageUrl ? `url(${config.theme.backgroundImageUrl})` : undefined,
-              boxShadow: config.theme.backgroundOverlayColor ? `0 0 0 8px ${config.theme.backgroundOverlayColor}` : undefined
-            }"
-          >
-            <span>{{ t('build.trivia.theme.canvasLabel') }}</span>
-          </div>
-        </div>
-      </aside>
     </section>
   </div>
 </template>
@@ -343,8 +339,6 @@ import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import { useLocaleStore } from '@/stores/locale';
 import type { TriviaAnswer, TriviaConfig, TriviaPowerUpRule, TriviaQuestion } from '@top-x/shared/types/trivia';
 import { computeAnswerHash, ensureSalt, hasHashSecret } from '@top-x/shared/utils/triviaHash';
-
-type TriviaStep = 'session' | 'questions' | 'theme';
 
 interface TriviaConfigWithTheme extends TriviaConfig {
   theme: NonNullable<TriviaConfig['theme']>;
@@ -363,7 +357,7 @@ interface TriviaConfigWithTheme extends TriviaConfig {
 const props = defineProps<{
   modelValue: TriviaConfig;
   gameId?: string;
-  activeStep: TriviaStep;
+  activeStep?: 'session' | 'questions' | 'theme'; // Made optional for backward compatibility
 }>();
 
 const emit = defineEmits<{
@@ -468,32 +462,13 @@ function applyThemeDefaults(theme: NonNullable<TriviaConfig['theme']>) {
 
 const config = ref<TriviaConfigWithTheme>(hydrateConfig(props.modelValue));
 const isSyncing = ref(false);
-const selectedQuestionIndex = ref(0);
-
-const questionLabel = computed(() => {
-  const index = selectedQuestionIndex.value + 1;
-  const translatedWithIndex = t('build.trivia.preview.questionLabel', { index }) as unknown as string | undefined;
-  if (translatedWithIndex && !translatedWithIndex.includes('{')) {
-    return translatedWithIndex;
-  }
-  const base = t('build.trivia.preview.questionLabel') as unknown as string | undefined;
-  const fallback =
-    t('build.trivia.preview.questionLabelFallback') as unknown as string | undefined;
-  const prefix =
-    (base && !base.includes('{') && base) ||
-    (fallback && !fallback.includes('{') && fallback) ||
-    'Question';
-  return `${prefix} ${index}`;
-});
+const expandedImages = ref<Set<number>>(new Set());
+const showAdvancedSettings = ref(false);
 
 const validatedGameId = computed(() => {
   const id = props.gameId || `temp-${Date.now()}`;
   return id.replace(/[\\/]/g, '');
 });
-
-const activeQuestion = computed<EditableTriviaQuestion | null>(
-  () => config.value.questions[selectedQuestionIndex.value] ?? null,
-);
 
 watch(
   () => props.modelValue,
@@ -502,7 +477,6 @@ watch(
     isSyncing.value = true;
     config.value = hydrateConfig(value);
     nextTick(() => {
-      ensureSelectedQuestionInRange();
       isSyncing.value = false;
     });
   },
@@ -529,11 +503,6 @@ watch(
 );
 
 watch(
-  () => config.value.questions.length,
-  () => ensureSelectedQuestionInRange(),
-);
-
-watch(
   () => config.value.unlimitedLives,
   (unlimited) => {
     if (!unlimited) {
@@ -554,14 +523,11 @@ watch(
   { immediate: true },
 );
 
-function ensureSelectedQuestionInRange() {
-  const maxIndex = config.value.questions.length - 1;
-  if (maxIndex < 0) {
-    selectedQuestionIndex.value = 0;
-    return;
-  }
-  if (selectedQuestionIndex.value > maxIndex) {
-    selectedQuestionIndex.value = maxIndex;
+function toggleQuestionImages(index: number) {
+  if (expandedImages.value.has(index)) {
+    expandedImages.value.delete(index);
+  } else {
+    expandedImages.value.add(index);
   }
 }
 
@@ -878,16 +844,14 @@ function createQuestionId() {
 function handleAddQuestion() {
   const question = createEmptyQuestion(config.value.correctAnswers ?? {});
   config.value.questions.push(question);
+  const newIndex = config.value.questions.length - 1;
   nextTick(() => {
-    selectedQuestionIndex.value = config.value.questions.length - 1;
-  });
-}
-
-function handleSaveAndAddQuestion() {
-  handleAddQuestion();
-  nextTick(() => {
+    // Scroll to new question
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        const element = document.querySelector(`[data-question-index="${newIndex}"]`);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     }
   });
 }
@@ -907,29 +871,47 @@ function createEmptyQuestion(
   );
 }
 
-function selectQuestion(index: number) {
-  selectedQuestionIndex.value = index;
-}
-
 function reorderQuestion(index: number, direction: -1 | 1) {
   const questions = config.value.questions;
   const target = index + direction;
   if (target < 0 || target >= questions.length) return;
   const [item] = questions.splice(index, 1);
   questions.splice(target, 0, item);
-  if (selectedQuestionIndex.value === index) {
-    selectedQuestionIndex.value = target;
-  } else if (selectedQuestionIndex.value === target) {
-    selectedQuestionIndex.value = index;
+  
+  // Update expanded images state
+  const wasExpanded = expandedImages.value.has(index);
+  expandedImages.value.delete(index);
+  if (wasExpanded) {
+    expandedImages.value.add(target);
   }
 }
 
 function removeQuestion(index: number) {
   config.value.questions.splice(index, 1);
+  expandedImages.value.delete(index);
+  
+  // Reindex expanded images
+  const newExpanded = new Set<number>();
+  expandedImages.value.forEach((i) => {
+    if (i < index) {
+      newExpanded.add(i);
+    } else if (i > index) {
+      newExpanded.add(i - 1);
+    }
+  });
+  expandedImages.value = newExpanded;
+  
   if (config.value.questions.length === 0) {
     config.value.questions.push(createEmptyQuestion(config.value.correctAnswers ?? {}));
   }
-  ensureSelectedQuestionInRange();
+}
+
+function duplicateQuestion(index: number) {
+  const question = config.value.questions[index];
+  const duplicated = JSON.parse(JSON.stringify(question)) as EditableTriviaQuestion;
+  duplicated.id = createQuestionId();
+  duplicated.text = `${duplicated.text} (Copy)`;
+  config.value.questions.splice(index + 1, 0, duplicated);
 }
 
 function addOption(question: EditableTriviaQuestion) {
@@ -972,181 +954,479 @@ function addPowerUp() {
 function removePowerUp(index: number) {
   config.value.powerUps.splice(index, 1);
 }
-
-const livesPreview = computed(() =>
-  config.value.unlimitedLives ? t('build.trivia.preview.unlimited') : String(config.value.lives ?? 3),
-);
-
-const answersPreview = computed(() => {
-  if (!config.value.unlimitedLives) {
-    return t('build.trivia.preview.hidden');
-  }
-  if (config.value.showCorrectAnswers && config.value.showCorrectAnswersOnEnd) {
-    return t('build.trivia.preview.answersAll');
-  }
-  if (config.value.showCorrectAnswers) {
-    return t('build.trivia.preview.answersPerQuestion');
-  }
-  if (config.value.showCorrectAnswersOnEnd) {
-    return t('build.trivia.preview.answersSummary');
-  }
-  return t('build.trivia.preview.answersHidden');
-});
-
-const powerUpSummary = computed(() => {
-  if (!config.value.powerUpsActive) {
-    return t('build.trivia.preview.disabled');
-  }
-  const count = config.value.powerUps.length;
-  if (count === 0) {
-    return t('build.trivia.preview.powerUpsNone');
-  }
-  if (count === 1) {
-    return config.value.powerUps[0].label || t('build.trivia.preview.powerUpsSingle');
-  }
-  return t('build.trivia.preview.powerUpsCount', { count });
-});
-
-const timerSummary = computed(() => {
-  if (!config.value.globalTimer.enabled) {
-    return t('build.trivia.preview.disabled');
-  }
-  return t('build.trivia.preview.timerValue', {
-    seconds: config.value.globalTimer.durationSeconds || 0,
-  });
-});
 </script>
 
 <style scoped>
-.trivia-wizard {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.wizard-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 2rem;
-  width: 100%;
-}
-
-.wizard-layout__form,
-.wizard-layout__preview {
-  background: rgba(12, 12, 12, 0.8);
-  border-radius: 18px;
-  padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
-}
-
-.wizard-layout__preview {
-  background: linear-gradient(180deg, rgba(20, 20, 20, 0.75), rgba(8, 8, 8, 0.9));
+.trivia-builder {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.wizard-header {
+/* Header */
+.questions-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
-.wizard-header__eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.75rem;
-  color: rgba(0, 232, 224, 0.9);
-  margin: 0;
+.questions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.wizard-header__title {
-  font-size: 1.9rem;
+.questions-header__title {
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.questions-header__subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
-.wizard-header__subtitle {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0;
-}
-
-.settings-grid {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-.settings-card {
-  background: rgba(23, 23, 23, 0.75);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 1.25rem;
+/* Question Cards - Compact Design */
+.questions-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.settings-card h3 {
+.question-card {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  padding: 1rem 0;
+  transition: all 0.2s ease;
+}
+
+.question-card:hover {
+  border-bottom-color: var(--color-border-medium);
+}
+
+.question-card:last-child {
+  border-bottom: none;
+}
+
+.question-card__main {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.question-card__number {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--bulma-primary);
+  flex-shrink: 0;
+}
+
+.question-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.question-card__question {
+  width: 100%;
+}
+
+.question-input {
+  width: 100%;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.2s ease;
+}
+
+.question-input:focus {
+  outline: none;
+  border-color: var(--color-border-primary);
+}
+
+.question-card__answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.answer-option:hover {
+  background: var(--color-bg-elevated);
+}
+
+.answer-option--correct {
+  border-color: var(--color-border-primary);
+  background: var(--color-primary-bg);
+}
+
+.answer-option__radio {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
   margin: 0;
+}
+
+.answer-option__number {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.answer-option__radio input[type='radio'] {
+  display: none;
+}
+
+.answer-option__radio input[type='radio']:checked + .answer-option__number {
+  background: var(--bulma-primary);
+  border-color: var(--bulma-primary);
+  color: var(--color-text-on-primary);
+}
+
+.answer-option__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.answer-option__input:focus {
+  outline: none;
+}
+
+.answer-option__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.answer-option__remove {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--color-border-base);
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
-  color: #ffffff;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.answer-option__remove:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-primary);
+}
+
+.answer-option__remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.answer-add {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px dashed var(--color-border-base);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.answer-add:hover {
+  border-color: var(--color-border-primary);
+  color: var(--bulma-primary);
+  background: var(--color-primary-bg);
+}
+
+.question-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
+  color: var(--bulma-primary);
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.action-btn--danger:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-primary);
+}
+
+/* Images Section - Collapsible */
+.question-card__images {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.question-card:last-child .question-card__images {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.images-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.images-toggle:hover {
+  color: var(--color-text-secondary);
+}
+
+.images-toggle__icon {
+  transition: transform 0.2s ease;
+  font-size: 0.75rem;
+}
+
+.images-toggle__icon--open {
+  transform: rotate(180deg);
+}
+
+.images-content {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.answer-images {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.answer-image-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.answer-image-item label {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Empty State */
+.empty-state {
+  background: var(--color-bg-card);
+  border: 1px dashed var(--color-border-base);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Settings Section */
+.settings-section {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.settings-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-toggle:hover {
+  border-bottom-color: var(--color-border-medium);
+}
+
+.settings-toggle__icon {
+  transition: transform 0.2s ease;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.settings-toggle__icon--open {
+  transform: rotate(180deg);
+}
+
+.settings-content {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-group h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.settings-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-card h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
 }
 
 .toggle input[type='checkbox'] {
   width: 18px;
   height: 18px;
-  accent-color: var(--bulma-primary, #00e8e0);
+  accent-color: var(--bulma-primary);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.375rem;
 }
 
 .field label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
 }
 
 .field input,
 .field textarea,
 .field select {
-  background: rgba(5, 5, 5, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-  color: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
 }
 
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
   outline: none;
-  border-color: rgba(0, 232, 224, 0.6);
-  box-shadow: 0 0 0 1px rgba(0, 232, 224, 0.3);
+  border-color: var(--color-border-primary);
 }
 
 .field--inline {
   position: relative;
-  padding-right: 2.5rem;
+  padding-right: 3rem;
 }
 
 .field--suffix {
@@ -1154,21 +1434,21 @@ const timerSummary = computed(() => {
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
 }
 
 .powerup-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .powerup-card {
-  background: rgba(10, 10, 10, 0.65);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  padding: 0.875rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -1181,25 +1461,27 @@ const timerSummary = computed(() => {
 }
 
 .muted {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
   margin: 0;
 }
 
 .ghost {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 0.45rem 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
-  font-size: 0.85rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  padding: 0.375rem 0.75rem;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .ghost:hover:not(:disabled) {
-  background: rgba(0, 232, 224, 0.16);
-  border-color: rgba(0, 232, 224, 0.4);
+  background: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
+  color: var(--bulma-primary);
 }
 
 .ghost:disabled {
@@ -1208,212 +1490,45 @@ const timerSummary = computed(() => {
 }
 
 .ghost--danger {
-  border-color: rgba(255, 92, 141, 0.3);
-  color: rgba(255, 126, 153, 0.95);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-secondary);
 }
 
 .ghost--danger:hover:not(:disabled) {
-  background: rgba(255, 92, 141, 0.15);
-  border-color: rgba(255, 92, 141, 0.45);
-}
-
-.session-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.session-preview header h3 {
-  margin: 0.25rem 0 0;
-  color: #ffffff;
-  font-size: 1.35rem;
-}
-
-.session-preview__board {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.25rem;
-}
-
-.session-preview__row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.session-preview__row strong {
-  color: #ffffff;
-}
-
-.question-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.question-list__item {
-  background: rgba(20, 20, 20, 0.7);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.question-list__item--active {
-  border-color: rgba(0, 232, 224, 0.45);
-  box-shadow: 0 16px 28px rgba(0, 232, 224, 0.18);
-}
-
-.question-list__select {
-  background: none;
-  border: none;
-  text-align: left;
-  display: flex;
-  gap: 0.85rem;
-  align-items: flex-start;
-  color: inherit;
-  cursor: pointer;
-}
-
-.question-list__index {
-  font-weight: 700;
-  color: rgba(0, 232, 224, 0.85);
-  font-size: 1.1rem;
-}
-
-.question-list__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.empty-state {
-  background: rgba(15, 15, 15, 0.6);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 2rem;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.question-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  background: rgba(12, 12, 12, 0.65);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.5rem;
-}
-
-.question-preview__label {
-  margin-bottom: 0.5rem;
-}
-
-.question-preview__title {
-  width: 100%;
-  background: rgba(6, 6, 6, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: #ffffff;
-  font-size: 1.3rem;
-  font-weight: 600;
-  padding: 0.85rem 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.question-preview__title:focus {
-  outline: none;
-  border-color: rgba(0, 232, 224, 0.6);
-  box-shadow: 0 0 0 1px rgba(0, 232, 224, 0.25);
-}
-
-.answer-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.answer-list article {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
-  padding: 1rem;
-  background: rgba(6, 6, 6, 0.55);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.answer-list .radio {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.answer-list .radio input[type='radio'] {
-  width: 16px;
-  height: 16px;
-  accent-color: rgba(0, 232, 224, 0.9);
-}
-
-.question-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-primary);
 }
 
 .theme-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .theme-field {
-  background: rgba(15, 15, 15, 0.55);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  padding: 0.875rem;
 }
 
-.theme-preview {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  align-items: stretch;
-}
+@media (max-width: 768px) {
+  .questions-header {
+    flex-direction: column;
+  }
 
-.theme-preview__swatch,
-.theme-preview__canvas {
-  border-radius: 16px;
-  min-height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
+  .question-card__main {
+    flex-wrap: wrap;
+  }
 
-.theme-preview__canvas {
-  min-height: 160px;
-  background-size: cover;
-  background-position: center;
-}
+  .question-card__actions {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
+  }
 
-@media (max-width: 1180px) {
-  .wizard-layout {
+  .answer-images {
     grid-template-columns: 1fr;
   }
 }

@@ -22,6 +22,7 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
+  deleteDoc,
   setDoc,
   type Firestore,
   type Unsubscribe,
@@ -416,6 +417,11 @@ export type UpdateGameResult = {
   error?: string;
 };
 
+export type DeleteGameResult = {
+  success: boolean;
+  error?: string;
+};
+
 /**
  * Creates a new game in Firestore
  */
@@ -438,6 +444,19 @@ export async function updateGame(gameId: string, gameData: Partial<Omit<Game, 'i
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e?.message || 'Failed to update game' };
+  }
+}
+
+/**
+ * Deletes a game from Firestore
+ */
+export async function deleteGame(gameId: string): Promise<DeleteGameResult> {
+  try {
+    const gameRef = doc(db, 'games', gameId);
+    await deleteDoc(gameRef);
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message || 'Failed to delete game' };
   }
 }
 

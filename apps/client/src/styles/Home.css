@@ -256,6 +256,8 @@
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
+  /* Preserve aspect ratio to prevent layout shift */
+  aspect-ratio: inherit;
 }
 
 .game-card__content {

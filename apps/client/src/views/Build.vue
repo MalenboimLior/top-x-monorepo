@@ -1,28 +1,19 @@
 <template>
   <div class="page-container build-page">
-    <section class="build-hero">
-      <div class="build-hero__glow"></div>
+    <!-- Hero Section (hidden when editing) -->
+    <section v-if="!isEditing" class="build-hero">
       <div class="build-hero__content">
         <p class="build-hero__pill">{{ content.hero.pill }}</p>
         <h1 class="build-hero__title">{{ content.hero.title }}</h1>
         <p class="build-hero__subtitle">{{ content.hero.subtitle }}</p>
-        <div class="build-hero__stats" v-if="user">
-          <div class="build-stat">
-            <span class="build-stat__value">{{ availableGameTypes.length }}</span>
-            <span class="build-stat__label">{{ content.stats.templatesLabel }}</span>
-          </div>
-          <div class="build-stat">
-            <span class="build-stat__value">{{ myGames.length }}</span>
-            <span class="build-stat__label">{{ content.stats.gamesLabel }}</span>
-          </div>
-        </div>
-        <div v-else class="build-hero__cta">
+        <div v-if="!user" class="build-hero__cta">
           <p class="build-hero__reminder">{{ content.heroCta.reminder }}</p>
           <CustomButton type="is-primary is-medium" :label="content.heroCta.button" @click="login" />
         </div>
       </div>
     </section>
 
+    <!-- Locked State (when not logged in) -->
     <section v-if="!user" class="build-locked">
       <div class="build-card">
         <h2>{{ content.locked.title }}</h2>
@@ -31,29 +22,44 @@
       </div>
     </section>
 
+    <!-- Main Content (when logged in) -->
     <section v-else class="build-body">
-      <div v-if="!selectedGameType" class="build-dashboard">
-        <div class="build-panel">
+      <!-- Dashboard View (when not editing) -->
+      <div v-if="!isEditing" class="build-dashboard">
+        <!-- Game Type Selection (BuildSection-like) -->
+        <div class="build-panel build-panel--full">
           <div class="build-panel__header">
             <h2>{{ content.templates.title }}</h2>
             <p>{{ content.templates.subtitle }}</p>
           </div>
-          <div class="build-templates" role="list">
+          <div class="build-templates-grid">
             <button
               v-for="gameType in availableGameTypes"
               :key="gameType.id"
-              class="build-template"
+              class="build-template-card"
               type="button"
               @click="selectGameType(gameType)"
             >
-              <span class="build-template__name">{{ gameType.name }}</span>
-              <span class="build-template__cta">Create</span>
+              <span class="build-template-card__icon" aria-hidden="true">
+                <font-awesome-icon :icon="resolveIcon(gameType.id)" />
+              </span>
+              <span class="build-template-card__body">
+                <span class="build-template-card__name">{{ gameType.name }}</span>
+                <span v-if="gameType.description" class="build-template-card__description">
+                  {{ gameType.description }}
+                </span>
+              </span>
+              <span class="build-template-card__cta">
+                {{ content.templates.cta }}
+                <font-awesome-icon :icon="['fas', 'arrow-right']" />
+              </span>
             </button>
             <p v-if="!availableGameTypes.length" class="build-empty">{{ content.templates.empty }}</p>
           </div>
         </div>
 
-        <div class="build-panel">
+        <!-- My Games List -->
+        <div class="build-panel build-panel--full">
           <div class="build-panel__header">
             <h2>{{ content.games.title }}</h2>
             <p>{{ content.games.subtitle }}</p>
@@ -81,6 +87,11 @@
                     :label="game.active ? 'Unpublish' : 'Publish'"
                     @click="togglePublish(game)"
                   />
+                  <CustomButton
+                    type="is-danger is-small"
+                    :label="content.games.delete"
+                    @click="confirmDelete(game)"
+                  />
                 </footer>
               </article>
             </div>
@@ -88,40 +99,128 @@
         </div>
       </div>
 
-      <div v-if="selectedGameType" class="build-flow">
+      <!-- Default Config Selection View -->
+      <div v-if="isEditing && showDefaultConfigSelection" class="build-flow">
+        <button class="build-flow__back" type="button" @click="handleCancel">
+          {{ content.editor.back }}
+        </button>
+        <div class="build-flow__header">
+          <h2>{{ t('build.defaultConfigs.title') || 'Choose a Template' }}</h2>
+          <p>{{ t('build.defaultConfigs.subtitle') || 'Select a template to start with, or create from scratch' }}</p>
+        </div>
+        <div class="build-flow__surface">
+          <div class="default-configs-selection">
+            <div class="default-configs-grid">
+              <button
+                v-for="defaultConfig in availableDefaultConfigs"
+                :key="defaultConfig.name"
+                class="default-config-card"
+                type="button"
+                @click="selectDefaultConfig(defaultConfig)"
+              >
+                <div v-if="defaultConfig.image" class="default-config-card__image">
+                  <img :src="defaultConfig.image" :alt="defaultConfig.name" />
+                </div>
+                <div v-else class="default-config-card__image default-config-card__image--placeholder">
+                  <span>{{ defaultConfig.name.charAt(0) }}</span>
+                </div>
+                <h3 class="default-config-card__title">{{ defaultConfig.name }}</h3>
+                <p class="default-config-card__description">
+                  {{ t('build.defaultConfigs.useTemplate') || 'Use this template' }}
+                </p>
+              </button>
+              <button
+                class="default-config-card default-config-card--scratch"
+                type="button"
+                @click="startFromScratch"
+              >
+                <div class="default-config-card__image default-config-card__image--placeholder">
+                  <span>+</span>
+                </div>
+                <h3 class="default-config-card__title">{{ t('build.defaultConfigs.startFromScratch') || 'Start from Scratch' }}</h3>
+                <p class="default-config-card__description">
+                  {{ t('build.defaultConfigs.createEmpty') || 'Create an empty game' }}
+                </p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Editor View -->
+      <div v-if="isEditing && !showDefaultConfigSelection" class="build-flow">
         <button class="build-flow__back" type="button" @click="handleCancel">
           {{ content.editor.back }}
         </button>
         <div class="build-flow__header">
           <h2>{{ editorHeading }}</h2>
-          <p>
-            {{ content.editor.subtitle }}
-          </p>
+          <p>{{ content.editor.subtitle }}</p>
         </div>
         <div class="build-flow__surface">
           <BuildAddNewGame
-            :gameType="selectedGameType"
+            :gameType="selectedGameType!"
             :existingGame="selectedGame"
+            :selectedDefaultConfig="selectedDefaultConfig"
             @save="handleSave"
             @cancel="handleCancel"
           />
         </div>
       </div>
-
     </section>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" :class="{ 'is-active': showDeleteModal }">
+      <div class="modal-background" @click="showDeleteModal = false"></div>
+      <div class="modal-content box">
+        <h3 class="title is-4">{{ t('build.games.deleteConfirmTitle') || 'Delete game' }}</h3>
+        <p>{{ t('build.games.deleteConfirm') || 'Are you sure you want to delete this game? This action cannot be undone.' }}</p>
+        <div class="buttons mt-4">
+          <CustomButton
+            type="is-danger"
+            :label="t('build.games.deleteConfirmButton') || 'Delete'"
+            @click="performDelete"
+          />
+          <CustomButton
+            type="is-light"
+            :label="t('build.games.deleteCancel') || 'Cancel'"
+            @click="showDeleteModal = false"
+          />
+        </div>
+      </div>
+      <button class="modal-close is-large" aria-label="close" @click="showDeleteModal = false"></button>
+    </div>
+
+    <!-- Game Limit Modal -->
+    <div class="modal" :class="{ 'is-active': showLimitModal }">
+      <div class="modal-background" @click="showLimitModal = false"></div>
+      <div class="modal-content box">
+        <h3 class="title is-4">{{ t('build.games.limitReachedTitle') || 'Game limit reached' }}</h3>
+        <p>{{ t('build.games.limitReached') || 'You\'ve reached the limit of 10 games. Please delete a game before creating a new one.' }}</p>
+        <div class="buttons mt-4">
+          <CustomButton
+            type="is-primary"
+            label="OK"
+            @click="showLimitModal = false"
+          />
+        </div>
+      </div>
+      <button class="modal-close is-large" aria-label="close" @click="showLimitModal = false"></button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch, nextTick } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useUserStore } from '@/stores/user';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
-import type { GameType, Game } from '@top-x/shared/types/game';
+import type { GameType, Game, GameCustomConfig } from '@top-x/shared/types/game';
 import { useLocaleStore } from '@/stores/locale';
+import { deleteGame } from '@/services/game';
+import { DEFAULT_GAME_TYPE_ICON, GAME_TYPE_ICON_MAP } from '@top-x/shared/constants/gameTypes';
 
 const userStore = useUserStore();
 const user = ref(userStore.user);
@@ -129,9 +228,16 @@ const availableGameTypes = ref<GameType[]>([]);
 const myGames = ref<Game[]>([]);
 const selectedGameType = ref<GameType | null>(null);
 const selectedGame = ref<Game | null>(null);
+const showDefaultConfigSelection = ref(false);
+const selectedDefaultConfig = ref<GameCustomConfig | null>(null);
+const showDeleteModal = ref(false);
+const showLimitModal = ref(false);
+const gameToDelete = ref<Game | null>(null);
 
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
+
+const isEditing = computed(() => selectedGameType.value !== null);
 
 const defaultContent = computed(() => ({
   hero: {
@@ -143,10 +249,6 @@ const defaultContent = computed(() => ({
     reminder: t('build.hero.cta.reminder'),
     button: t('build.hero.cta.button'),
   },
-  stats: {
-    templatesLabel: t('build.stats.templates.label'),
-    gamesLabel: t('build.stats.games.label'),
-  },
   locked: {
     title: t('build.locked.title'),
     body: t('build.locked.body'),
@@ -156,12 +258,14 @@ const defaultContent = computed(() => ({
     title: t('build.templates.title'),
     subtitle: t('build.templates.subtitle'),
     empty: t('build.templates.empty'),
+    cta: t('home.buildSection.cta') || 'Start building',
   },
   games: {
     title: t('build.games.title'),
     subtitle: t('build.games.subtitle'),
     empty: t('build.games.empty'),
     open: t('build.games.open'),
+    delete: t('build.games.delete') || 'Delete',
   },
   editor: {
     back: t('build.editor.back'),
@@ -185,6 +289,15 @@ const editorHeading = computed(() => {
   return format.replace('{template}', templateName);
 });
 
+const availableDefaultConfigs = computed(() => {
+  if (!selectedGameType.value?.defaultConfigs) {
+    return [];
+  }
+  return [...selectedGameType.value.defaultConfigs]
+    .filter((dc) => dc.show)
+    .sort((a, b) => a.order - b.order);
+});
+
 useHead(() => ({
   title: seo.value.title,
   meta: [
@@ -201,12 +314,26 @@ useHead(() => ({
   ].filter(Boolean) as { name: string; content: string }[],
 }));
 
+function normalizeGameTypeId(value: string | undefined) {
+  return (value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function resolveIcon(gameTypeId: string | undefined) {
+  const normalized = normalizeGameTypeId(gameTypeId);
+  return GAME_TYPE_ICON_MAP[normalized] ?? DEFAULT_GAME_TYPE_ICON;
+}
+
 onMounted(() => {
   if (user.value) {
     fetchAvailableGameTypes();
     fetchMyGames();
   }
 });
+
+// Watch for view changes and scroll to top
+watch([isEditing, showDefaultConfigSelection], () => {
+  scrollToTop();
+}, { flush: 'post' });
 
 function fetchAvailableGameTypes() {
   const q = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
@@ -235,9 +362,45 @@ function fetchMyGames() {
   );
 }
 
+function scrollToTop() {
+  nextTick(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
 function selectGameType(gameType: GameType) {
+  // Check game limit
+  if (myGames.value.length >= 10) {
+    showLimitModal.value = true;
+    return;
+  }
+
   selectedGameType.value = gameType;
   selectedGame.value = null;
+  selectedDefaultConfig.value = null;
+  
+  // Check if game type has default configs that should be shown
+  const availableDefaults = gameType.defaultConfigs?.filter((dc) => dc.show) ?? [];
+  if (availableDefaults.length > 0) {
+    showDefaultConfigSelection.value = true;
+  } else {
+    showDefaultConfigSelection.value = false;
+  }
+  
+  scrollToTop();
+}
+
+function selectDefaultConfig(defaultConfig: { name: string; config: GameCustomConfig }) {
+  // Deep clone the config to avoid references
+  selectedDefaultConfig.value = JSON.parse(JSON.stringify(defaultConfig.config));
+  showDefaultConfigSelection.value = false;
+  scrollToTop();
+}
+
+function startFromScratch() {
+  selectedDefaultConfig.value = null;
+  showDefaultConfigSelection.value = false;
+  scrollToTop();
 }
 
 function editGame(game: Game) {
@@ -245,6 +408,8 @@ function editGame(game: Game) {
   if (gameType) {
     selectedGameType.value = gameType;
     selectedGame.value = game;
+    showDefaultConfigSelection.value = false;
+    scrollToTop();
   } else {
     console.error('Game type not found for editing');
   }
@@ -266,14 +431,43 @@ function openGame(game: Game) {
   window.open(`/games/info?game=${game.id}`, '_blank', 'noopener');
 }
 
+function confirmDelete(game: Game) {
+  gameToDelete.value = game;
+  showDeleteModal.value = true;
+}
+
+async function performDelete() {
+  if (!gameToDelete.value?.id) return;
+  
+  try {
+    const result = await deleteGame(gameToDelete.value.id);
+    if (result.success) {
+      showDeleteModal.value = false;
+      gameToDelete.value = null;
+    } else {
+      console.error('Error deleting game:', result.error);
+      alert(result.error || 'Failed to delete game');
+    }
+  } catch (err) {
+    console.error('Error deleting game:', err);
+    alert('Failed to delete game');
+  }
+}
+
 function handleSave() {
   selectedGameType.value = null;
   selectedGame.value = null;
+  showDefaultConfigSelection.value = false;
+  selectedDefaultConfig.value = null;
+  scrollToTop();
 }
 
 function handleCancel() {
   selectedGameType.value = null;
   selectedGame.value = null;
+  showDefaultConfigSelection.value = false;
+  selectedDefaultConfig.value = null;
+  scrollToTop();
 }
 
 async function login() {
@@ -302,10 +496,6 @@ async function login() {
   padding: clamp(3rem, 8vw, 6rem) 1.5rem 3rem;
   display: flex;
   justify-content: center;
-}
-
-.build-hero__glow {
-  display: none; /* Removed for flat design */
 }
 
 .build-hero__content {
@@ -343,13 +533,6 @@ async function login() {
   line-height: 1.6;
 }
 
-.build-hero__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1.25rem;
-  width: 100%;
-}
-
 .build-hero__cta {
   display: flex;
   flex-direction: column;
@@ -360,30 +543,6 @@ async function login() {
 .build-hero__reminder {
   color: var(--color-text-secondary);
   margin: 0;
-}
-
-.build-stat {
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border-base);
-  border-radius: 20px;
-  padding: 1.4rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.build-stat__value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--bulma-primary);
-}
-
-.build-stat__label {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-tertiary);
 }
 
 .build-body {
@@ -417,9 +576,9 @@ async function login() {
 }
 
 .build-dashboard {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .build-panel {
@@ -432,6 +591,10 @@ async function login() {
   gap: 1.75rem;
 }
 
+.build-panel--full {
+  width: 100%;
+}
+
 .build-panel__header h2 {
   font-size: 1.6rem;
   margin: 0;
@@ -442,41 +605,85 @@ async function login() {
   color: var(--color-text-tertiary);
 }
 
-.build-templates {
+.build-templates-grid {
   display: grid;
-  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: clamp(1rem, 3vw, 1.5rem);
 }
 
-.build-template {
+.build-template-card {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 1rem 1.25rem;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  padding: clamp(1.5rem, 3vw, 2rem);
+  border-radius: 28px;
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border-base);
-  border-radius: 18px;
-  color: inherit;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  color: var(--color-text-primary);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+  overflow: hidden;
 }
 
-.build-template:hover,
-.build-template:focus {
+.build-template-card:hover,
+.build-template-card:focus-visible {
+  outline: none;
   border-color: var(--color-border-primary);
   background-color: var(--color-bg-card-hover);
 }
 
-.build-template__name {
-  font-weight: 600;
+.build-template-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(3.4rem, 8vw, 4.2rem);
+  height: clamp(3.4rem, 8vw, 4.2rem);
+  border-radius: 20px;
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
+  font-size: clamp(1.35rem, 4vw, 1.6rem);
+  color: var(--bulma-primary);
 }
 
-.build-template__cta {
-  color: var(--bulma-primary);
+.build-template-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.45rem, 1.2vw, 0.7rem);
+  align-items: center;
+}
+
+.build-template-card__name {
+  font-size: clamp(1.2rem, 2.5vw, 1.4rem);
+  font-weight: 700;
+}
+
+.build-template-card__description {
+  color: var(--color-text-secondary);
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.55;
+}
+
+.build-template-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(0.4rem, 1.1vw, 0.6rem);
   font-weight: 600;
+  color: var(--color-accent);
+  background-color: var(--color-accent-bg);
+  border: 1px solid var(--color-border-accent);
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .build-empty {
   color: var(--color-text-tertiary);
   text-align: center;
+  padding: 2rem;
 }
 
 .build-games__list {
@@ -546,6 +753,11 @@ async function login() {
   cursor: pointer;
   font-size: 0.95rem;
   padding: 0;
+  transition: color 0.2s ease;
+}
+
+.build-flow__back:hover {
+  color: var(--color-text-primary);
 }
 
 .build-flow__header h2 {
@@ -564,18 +776,99 @@ async function login() {
   padding: clamp(1.5rem, 3vw, 3rem);
 }
 
-@media (max-width: 768px) {
-  .build-hero__stats {
-    grid-template-columns: 1fr;
-  }
+.default-configs-selection {
+  width: 100%;
+}
 
+.default-configs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.default-config-card {
+  background-color: var(--color-bg-secondary);
+  border: 2px solid var(--color-border-base);
+  border-radius: 20px;
+  padding: 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.default-config-card:hover,
+.default-config-card:focus {
+  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.default-config-card--scratch {
+  border-style: dashed;
+  border-color: var(--color-border-base);
+}
+
+.default-config-card--scratch:hover,
+.default-config-card--scratch:focus {
+  border-color: var(--color-border-primary);
+}
+
+.default-config-card__image {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--color-bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.default-config-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.default-config-card__image--placeholder {
+  background: linear-gradient(135deg, var(--color-primary-bg) 0%, var(--color-accent-bg) 100%);
+  color: var(--bulma-primary);
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.default-config-card__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.default-config-card__description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
   .build-dashboard {
-    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .build-game-card__actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .build-templates-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

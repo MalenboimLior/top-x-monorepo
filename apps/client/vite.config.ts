@@ -3,13 +3,32 @@ import vue from '@vitejs/plugin-vue';
 import prerender from 'vite-plugin-prerender';
 import path from 'path';
 import dotenv from 'dotenv';
+import { existsSync, rmSync } from 'fs';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+// Custom plugin to remove zonereveal folder from dist after build
+function excludeZonerevealPlugin() {
+  return {
+    name: 'exclude-zonereveal',
+    closeBundle() {
+      // Remove zonereveal folder from dist after build completes
+      const zonerevealPath = path.resolve(__dirname, 'dist/assets/zonereveal');
+      if (existsSync(zonerevealPath)) {
+        console.log('Removing zonereveal assets from build output...');
+        rmSync(zonerevealPath, { recursive: true, force: true });
+        console.log('✓ ZoneReveal assets excluded from build');
+      }
+    }
+  };
+}
 
 export default defineConfig({
   base: '/',
   plugins: [
     vue(),
+    // Exclude zonereveal assets from build
+    excludeZonerevealPlugin(),
 
     // Enable prerender only when explicitly requested
     ...(process.env.PRERENDER === '1'
@@ -42,6 +61,7 @@ export default defineConfig({
           timeout: 90_000,
           settleDelay: 800,
           renderAfterDocumentEvent: 'prerender-ready',
+          concurrency: 4, // Process 4 routes in parallel (adjust based on your needs)
           debug: process.env.PRERENDER_DEBUG === '1',
         })]
       : [])
@@ -97,7 +117,40 @@ export default defineConfig({
       onwarn(warning, handler) {
         if (warning.message.includes('.DS_Store')) return;
         handler(warning);
+      },
+      output: {
+        manualChunks: (id) => {
+          // Separate vendor chunks for better caching
+          if (id.includes('node_modules')) {
+            // Firebase SDK chunk
+            if (id.includes('firebase') || id.includes('@firebase')) {
+              return 'vendor-firebase';
+            }
+            // Phaser game engine chunk (large library)
+            if (id.includes('phaser')) {
+              return 'vendor-phaser';
+            }
+            // FontAwesome chunk
+            if (id.includes('@fortawesome')) {
+              return 'vendor-fontawesome';
+            }
+            // Vue ecosystem chunk
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) {
+              return 'vendor-vue';
+            }
+            // Other vendor libraries
+            return 'vendor';
+          }
+        }
       }
-    }
+    },
+    // Enable source maps for production debugging (optional, remove if bundle size is critical)
+    sourcemap: false,
+    // Optimize minification (esbuild is faster than terser)
+    minify: 'esbuild',
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Target modern browsers for smaller bundles
+    target: 'esnext',
   }
 });

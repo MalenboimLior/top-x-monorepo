@@ -31,9 +31,6 @@
             <li><router-link to="/terms" class="footer-link">{{ t('footer.legal.terms') }}</router-link></li>
             <li><router-link to="/cookies" class="footer-link">{{ t('footer.legal.cookies') }}</router-link></li>
             <li><router-link to="/guidelines" class="footer-link">{{ t('footer.legal.guidelines') }}</router-link></li>
-            <li><router-link to="/contact" class="footer-link">{{ t('footer.legal.contact') }}</router-link></li>
-            <li><router-link to="/contact?type=developer" class="footer-link">{{ t('footer.legal.developer') }}</router-link></li>
-            <li><router-link to="/contact?type=advertiser" class="footer-link">{{ t('footer.legal.advertiser') }}</router-link></li>
           </ul>
         </div>
 

@@ -1,44 +1,55 @@
 <template>
-  <div class="builder-wizard">
-    <header class="builder-wizard__progress">
-      <div class="progress-meta">
-        <span class="progress-meta__label">
-          {{ t('build.wizard.stepLabel', { current: currentStepIndex + 1, total: wizardSteps.length }) }}
-        </span>
-        <span class="progress-meta__title">{{ currentStep.label }}</span>
+  <div class="game-builder">
+    <!-- Section 1: Game Name -->
+    <section class="builder-section">
+      <div class="builder-section__header">
+        <h2 class="builder-section__title">{{ t('build.game.fields.name.label') }}</h2>
+        <p class="builder-section__hint">{{ t('build.game.fields.name.hint') }}</p>
       </div>
-      <div class="progress-bar">
-        <div class="progress-bar__fill" :style="{ width: progressPercent }"></div>
+      <div class="builder-section__content">
+        <input
+          :id="ids.name"
+          type="text"
+          v-model="game.name"
+          :placeholder="t('build.game.fields.name.placeholder')"
+          class="game-name-input"
+        />
       </div>
-      <div class="progress-dots" role="list">
-        <span
-          v-for="(step, index) in wizardSteps"
-          :key="step.key"
-          role="listitem"
-          :class="[
-            'progress-dots__dot',
-            { 'progress-dots__dot--active': index === currentStepIndex, 'progress-dots__dot--complete': index < currentStepIndex },
-          ]"
-        >
-          {{ index + 1 }}
-        </span>
-      </div>
-    </header>
+    </section>
 
-    <section v-if="currentStep.key === 'game-info'" class="builder-panel">
-      <div class="builder-panel__form">
-        <div class="field-grid">
-          <div class="field-block">
-            <label :for="ids.name">{{ t('build.game.fields.name.label') }}</label>
-            <input
-              :id="ids.name"
-              type="text"
-              v-model="game.name"
-              :placeholder="t('build.game.fields.name.placeholder')"
-            />
-            <p class="field-hint">{{ t('build.game.fields.name.hint') }}</p>
-          </div>
+    <!-- Section 2: Custom Config (Trivia/Pyramid/Zone) -->
+    <section class="builder-section builder-section--no-frame">
+      <AddTrivia
+        v-if="props.gameType.custom === 'TriviaConfig'"
+        v-model="(game.custom as TriviaConfig)"
+        :gameId="validatedGameId"
+      />
+      <AddPyramid
+        v-else-if="props.gameType.custom === 'PyramidConfig'"
+        v-model="(game.custom as PyramidConfig)"
+        :gameId="validatedGameId"
+      />
+      <AddZoneReveal
+        v-else-if="props.gameType.custom === 'ZoneRevealConfig'"
+        v-model="(game.custom as ZoneRevealConfig)"
+      />
+    </section>
 
+    <!-- Section 3: Other Game Settings (Collapsible) -->
+    <section class="builder-section">
+      <button
+        type="button"
+        class="builder-section__toggle"
+        @click="showGameSettings = !showGameSettings"
+      >
+        <span class="builder-section__toggle-title">{{ t('build.game.settings.title') || 'Game Settings' }}</span>
+        <span class="builder-section__toggle-icon" :class="{ 'builder-section__toggle-icon--open': showGameSettings }">
+          ▼
+        </span>
+      </button>
+
+      <div v-if="showGameSettings" class="builder-section__content">
+        <div class="settings-grid">
           <div class="field-block field-block--wide">
             <label :for="ids.description">{{ t('build.game.fields.description.label') }}</label>
             <textarea
@@ -115,77 +126,11 @@
           </div>
         </div>
       </div>
-
-      <aside class="builder-panel__preview">
-        <div class="preview-card">
-          <GameCard
-            :game="previewGame"
-            size="featured"
-            :showFeaturedLabel="false"
-            :playLabel="t('build.game.preview.play')"
-            :buttonType="'is-primary'"
-          />
-          <dl class="preview-meta">
-            <div class="preview-meta__creator">
-              <dt>{{ t('build.game.preview.creatorLabel') || t('build.game.preview.creatorFallback') }}</dt>
-              <dd class="preview-meta__creator-content">
-                <img
-                  v-if="previewGame.creator?.image"
-                  :src="previewGame.creator.image"
-                  alt=""
-                  class="preview-meta__creator-avatar"
-                />
-                <span>{{ previewGame.creator?.username || t('build.game.preview.creatorFallback') }}</span>
-              </dd>
-            </div>
-            <div>
-              <dt>{{ t('build.game.preview.language') }}</dt>
-              <dd>{{ languageLabel }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('build.game.preview.shareLink') }}</dt>
-              <dd>{{ game.shareLink || t('build.game.preview.empty') }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('build.game.preview.header') }}</dt>
-              <dd>{{ game.gameHeader || t('build.game.preview.empty') }}</dd>
-            </div>
-          </dl>
-          <div v-if="gameInfoUrl" class="preview-card__actions">
-            <CustomButton
-              type="is-link is-small"
-              :label="t('build.wizard.openGame')"
-              @click="openGameInNewTab"
-            />
-          </div>
-        </div>
-      </aside>
     </section>
 
-    <section v-else-if="currentStep.type === 'trivia'" class="builder-panel builder-panel--single">
-      <AddTrivia
-        v-model="(game.custom as TriviaConfig)"
-        :gameId="validatedGameId"
-        :activeStep="currentStep.triviaStep"
-      />
-    </section>
-
-    <section v-else-if="currentStep.type === 'pyramid'" class="builder-panel builder-panel--single">
-      <AddPyramid v-model="(game.custom as PyramidConfig)" :gameId="validatedGameId" />
-    </section>
-
-    <section v-else-if="currentStep.type === 'zone'" class="builder-panel builder-panel--single">
-      <AddZoneReveal v-model="(game.custom as ZoneRevealConfig)" />
-    </section>
-
-    <footer class="builder-wizard__actions">
-      <CustomButton
-        type="is-light"
-        :label="t('build.wizard.previous')"
-        @click="goToPreviousStep"
-        :disabled="isFirstStep"
-      />
-      <div class="builder-wizard__actions-spacer"></div>
+    <!-- Footer Actions -->
+    <footer class="builder-footer">
+      <div class="builder-footer__spacer"></div>
       <CustomButton
         type="is-primary is-light"
         :label="t('build.wizard.saveProgress')"
@@ -194,13 +139,6 @@
         @click="saveGame({ stayOnWizard: true })"
       />
       <CustomButton
-        v-if="!isLastStep"
-        type="is-primary"
-        :label="t('build.wizard.next')"
-        @click="goToNextStep"
-      />
-      <CustomButton
-        v-else
         type="is-primary"
         :loading="isSaving"
         :label="t('build.wizard.save')"
@@ -219,10 +157,10 @@ import GameCard from '@/components/GameCard.vue';
 import AddPyramid from '@/components/build/AddPyramid.vue';
 import AddZoneReveal from '@/components/build/AddZoneReveal.vue';
 import AddTrivia from '@/components/build/AddTrivia.vue';
-import { createGame, updateGame } from '@/services/game';
+import { createGame, updateGame, getGames } from '@/services/game';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
-import type { Game, GameType } from '@top-x/shared/types/game';
+import type { Game, GameType, GameCustomConfig } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
@@ -233,6 +171,7 @@ const FALLBACK_IMAGE =
 const props = defineProps<{
   gameType: GameType;
   existingGame?: Game | null;
+  selectedDefaultConfig?: GameCustomConfig | null;
 }>();
 
 const emit = defineEmits(['save', 'cancel']);
@@ -241,32 +180,6 @@ const userStore = useUserStore();
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
-interface TriviaStepMeta {
-  key: string;
-  label: string;
-  type: 'trivia';
-  triviaStep: 'session' | 'questions' | 'theme';
-}
-
-interface CoreStepMeta {
-  key: 'game-info';
-  label: string;
-  type: 'core';
-}
-
-interface PyramidStepMeta {
-  key: string;
-  label: string;
-  type: 'pyramid';
-}
-
-interface ZoneStepMeta {
-  key: string;
-  label: string;
-  type: 'zone';
-}
-
-type WizardStep = CoreStepMeta | TriviaStepMeta | PyramidStepMeta | ZoneStepMeta;
 
 const ids = {
   name: 'builder-game-name',
@@ -279,7 +192,16 @@ const ids = {
 } as const;
 
 const isSaving = ref(false);
-const currentStepIndex = ref(0);
+const showGameSettings = ref(false);
+
+function generateRandomGameName(): string {
+  const adjectives = ['Epic', 'Awesome', 'Cool', 'Amazing', 'Fantastic', 'Incredible', 'Super', 'Ultimate'];
+  const nouns = ['Challenge', 'Game', 'Quiz', 'Trivia', 'Battle', 'Showdown', 'Contest', 'Match'];
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  const randomNum = Math.floor(Math.random() * 999) + 1;
+  return `${randomAdjective} ${randomNoun} ${randomNum}`;
+}
 
 const validatedGameId = computed(() => {
   const source = props.existingGame?.id || `temp-${Date.now()}`;
@@ -290,14 +212,16 @@ const initialGame = props.existingGame
   ? JSON.parse(JSON.stringify(props.existingGame))
   : {
       id: '',
-      name: '',
+      name: generateRandomGameName(),
       description: '',
       gameTypeId: props.gameType.id,
       active: false,
       language: 'en',
       image: '',
       vip: [],
-      custom: getDefaultCustom(props.gameType.custom),
+      custom: props.selectedDefaultConfig
+        ? JSON.parse(JSON.stringify(props.selectedDefaultConfig))
+        : getDefaultCustom(props.gameType.custom),
       community: true,
       creator: {
         userid: userStore.user?.uid || '',
@@ -385,109 +309,29 @@ if (props.existingGame?.custom && 'levelsConfig' in props.existingGame.custom) {
     JSON.parse(JSON.stringify(props.existingGame.custom)) as TriviaConfig,
   );
 }
+// Default config is already applied in initialGame
 
-const wizardSteps = computed<WizardStep[]>(() => {
-  const steps: WizardStep[] = [
-    {
-      key: 'game-info',
-      label: t('build.wizard.steps.gameInfo'),
-      type: 'core',
-    },
-  ];
-
+const gameTypeConfigTitle = computed(() => {
   if (props.gameType.custom === 'TriviaConfig') {
-    steps.push(
-      {
-        key: 'trivia-questions',
-        label: t('build.trivia.questions.stepTitle'),
-        type: 'trivia',
-        triviaStep: 'questions',
-      },
-      {
-        key: 'trivia-session',
-        label: t('build.trivia.session.stepTitle'),
-        type: 'trivia',
-        triviaStep: 'session',
-      },
-      {
-        key: 'trivia-theme',
-        label: t('build.trivia.theme.stepTitle'),
-        type: 'trivia',
-        triviaStep: 'theme',
-      },
-    );
+    return t('build.trivia.questions.stepTitle') || t('build.trivia.questions.title', { count: 0 });
   } else if (props.gameType.custom === 'PyramidConfig') {
-    steps.push({ key: 'pyramid-config', label: t('build.pyramid.stepTitle'), type: 'pyramid' });
+    return t('build.pyramid.stepTitle') || 'Pyramid Configuration';
   } else if (props.gameType.custom === 'ZoneRevealConfig') {
-    steps.push({ key: 'zone-config', label: t('build.zone.stepTitle'), type: 'zone' });
+    return t('build.zone.stepTitle') || 'Zone Reveal Configuration';
   }
-
-  return steps;
+  return 'Game Configuration';
 });
 
-watch(
-  wizardSteps,
-  (steps) => {
-    if (!steps.length) {
-      currentStepIndex.value = 0;
-      return;
-    }
-    if (currentStepIndex.value >= steps.length) {
-      currentStepIndex.value = steps.length - 1;
-    }
-  },
-  { immediate: true },
-);
-
-const currentStep = computed(() => wizardSteps.value[currentStepIndex.value]);
-const isFirstStep = computed(() => currentStepIndex.value === 0);
-const isLastStep = computed(() => currentStepIndex.value === wizardSteps.value.length - 1);
-const progressPercent = computed(() => `${((currentStepIndex.value + 1) / wizardSteps.value.length) * 100}%`);
-
-const previewGame = computed<Game>(() => {
-  const creator = game.value.creator || {
-    userid: userStore.user?.uid || 'creator',
-    username: userStore.profile?.username || t('build.game.preview.creatorFallback'),
-    image: userStore.user?.photoURL || userStore.profile?.photoURL || '',
-  };
-
-  return {
-    ...game.value,
-    id: game.value.id || 'preview-game',
-    name: game.value.name || t('build.game.preview.untitled'),
-    description: game.value.description || t('build.game.preview.noDescription'),
-    gameTypeId: props.gameType.id,
-    image: game.value.image || FALLBACK_IMAGE,
-    creator,
-    community: game.value.community ?? true,
-  };
-});
-
-const languageLabel = computed(() =>
-  game.value.language === 'il'
-    ? t('build.game.fields.language.options.il')
-    : t('build.game.fields.language.options.en'),
-);
-
-function goToNextStep() {
-  if (isLastStep.value) return;
-  currentStepIndex.value += 1;
-}
-
-function goToPreviousStep() {
-  if (isFirstStep.value) return;
-  currentStepIndex.value -= 1;
-}
-
-const gameInfoUrl = computed(() =>
-  game.value.id ? `/games/info?game=${game.value.id}` : null,
-);
-
-function openGameInNewTab() {
-  if (gameInfoUrl.value && typeof window !== 'undefined') {
-    window.open(gameInfoUrl.value, '_blank', 'noopener');
+const gameTypeConfigHint = computed(() => {
+  if (props.gameType.custom === 'TriviaConfig') {
+    return t('build.trivia.questions.subtitle') || 'Configure your trivia questions and settings';
+  } else if (props.gameType.custom === 'PyramidConfig') {
+    return 'Configure your pyramid game';
+  } else if (props.gameType.custom === 'ZoneRevealConfig') {
+    return 'Configure your zone reveal game';
   }
-}
+  return 'Configure your game';
+});
 
 async function saveGame(options: { stayOnWizard?: boolean } = {}) {
   const { stayOnWizard = false } = options;
@@ -505,12 +349,24 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
       const result = await updateGame(targetId, payloadWithoutId);
       if (!result.success) {
         console.error('Error updating game:', result.error);
+        alert(result.error || 'Failed to update game');
         return;
       }
     } else {
+      // Check game limit before creating
+      const userId = userStore.user?.uid;
+      if (userId) {
+        const gamesResult = await getGames({ creatorUserId: userId });
+        if (gamesResult.games.length >= 10) {
+          alert(t('build.games.limitReached') || 'You\'ve reached the limit of 10 games. Please delete a game before creating a new one.');
+          return;
+        }
+      }
+      
       const result = await createGame(payloadWithoutId);
       if (!result.gameId) {
         console.error('Error creating game:', result.error);
+        alert(result.error || 'Failed to create game');
         return;
       }
       game.value.id = result.gameId;
@@ -658,109 +514,108 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.builder-wizard {
+.game-builder {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 2rem;
-  background: rgba(7, 7, 7, 0.85);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  width: 100%;
 }
 
-.builder-wizard__progress {
+.builder-section {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.progress-meta {
+.builder-section--no-frame {
+  gap: 0;
+}
+
+.builder-section__header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
-.progress-meta__label {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: rgba(0, 232, 224, 0.85);
-}
-
-.progress-meta__title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.progress-bar {
-  position: relative;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.progress-bar__fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(0, 232, 224, 0.9), rgba(255, 45, 146, 0.9));
-  border-radius: 999px;
-  transition: width 0.35s ease;
-}
-
-.progress-dots {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.progress-dots__dot {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
+.builder-section__title {
+  font-size: 1.125rem;
   font-weight: 600;
-  transition: all 0.25s ease;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
-.progress-dots__dot--active {
-  border-color: rgba(0, 232, 224, 0.85);
+.builder-section__hint {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.builder-section__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.builder-section__toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.builder-section__toggle:hover {
+  border-bottom-color: var(--color-border-medium);
+}
+
+.builder-section__toggle-title {
   color: var(--color-text-primary);
 }
 
-.progress-dots__dot--complete {
-  border-color: var(--color-border-base);
+.builder-section__toggle-icon {
+  transition: transform 0.2s ease;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.builder-section__toggle-icon--open {
+  transform: rotate(180deg);
+}
+
+.game-name-input {
+  width: 100%;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
   color: var(--color-text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
 }
 
-.builder-panel {
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+.game-name-input:focus {
+  outline: none;
+  border-color: var(--color-border-primary);
 }
 
-.builder-panel--single {
-  grid-template-columns: 1fr;
+.game-name-input::placeholder {
+  color: var(--color-text-tertiary);
 }
 
-.builder-panel__form,
-.builder-panel__preview {
-  background: rgba(15, 15, 15, 0.75);
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-}
-
-.field-grid {
+.settings-grid {
   display: grid;
   gap: 1.5rem;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -777,29 +632,29 @@ onBeforeUnmount(() => {
 }
 
 .field-block label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.05em;
   color: var(--color-text-tertiary);
 }
 
 .field-block input,
 .field-block textarea,
 .field-block select {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 0.875rem;
   color: var(--color-text-primary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
 }
 
 .field-block input:focus,
 .field-block textarea:focus,
 .field-block select:focus {
   outline: none;
-  border-color: rgba(0, 232, 224, 0.6);
-  box-shadow: 0 0 0 1px rgba(0, 232, 224, 0.3);
+  border-color: var(--color-border-primary);
 }
 
 .field-block textarea {
@@ -808,89 +663,39 @@ onBeforeUnmount(() => {
 
 .field-hint {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.preview-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.preview-meta {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  margin: 0;
-}
-
-.preview-meta dt {
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-text-muted);
-  margin: 0;
+  color: var(--color-text-tertiary);
 }
 
-.preview-meta dd {
-  margin: 0.25rem 0 0;
-  color: var(--color-text-primary);
-  font-weight: 600;
-}
-
-.preview-meta__creator-content {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.preview-meta__creator-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.preview-card__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.builder-wizard__actions {
+.builder-footer {
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
-.builder-wizard__actions-spacer {
+.builder-footer__spacer {
   flex: 1;
 }
 
-@media (max-width: 1180px) {
-  .builder-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .builder-panel__preview {
-    order: -1;
-  }
-}
-
-@media (max-width: 720px) {
-  .builder-wizard {
+@media (max-width: 768px) {
+  .game-builder {
     padding: 1.25rem;
   }
 
-  .builder-wizard__actions {
+  .builder-footer {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .builder-wizard__actions-spacer {
+  .builder-footer__spacer {
     display: none;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

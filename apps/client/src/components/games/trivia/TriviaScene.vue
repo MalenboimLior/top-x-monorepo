@@ -23,7 +23,7 @@
           </div>
 
           <div v-if="inviter" class="inviter-card">
-            <img :src="inviter.photoURL" alt="Inviter avatar" class="inviter-avatar" />
+            <img :src="inviter.photoURL" alt="Inviter avatar" class="inviter-avatar" loading="lazy" />
             <div class="inviter-details">
               <p class="inviter-label">{{ inviterText }}</p>
               <p class="inviter-score">{{ inviterScoreText }}</p>
@@ -136,7 +136,7 @@
         </div>
 
         <div v-if="isLoading" class="loading-state">
-          <img src="/assets/loading.gif" alt="Loading" />
+          <img src="/assets/loading.gif" alt="Loading" loading="lazy" />
           <p>Fetching questions...</p>
         </div>
 
@@ -152,13 +152,6 @@
             @answer-question="onAnswer"
           />
         </div>
-.question-wrapper {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-
         <div v-if="powerUps.length" class="power-ups">
           <h3 class="power-ups-title">Power-ups</h3>
           <ul class="power-ups-list">
