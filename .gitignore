@@ -22,3 +22,8 @@ functions/tsconfig.build.tsbuildinfo
 packages/shared/tsconfig.tsbuildinfo
 functions/tsconfig.build.tsbuildinfo
 packages/shared/tsconfig.tsbuildinfo
+
+# Secrets - NEVER COMMIT THESE
+serviceAccountKey.json
+*.key.json
+*serviceAccount*.json

@@ -614,7 +614,7 @@ function toggleSection(section: string) {
   const wasOpen = activeSection.value === section;
   activeSection.value = wasOpen ? null : section;
   
-  // Scroll to section when opening
+  // Scroll to section header when opening
   if (!wasOpen) {
     nextTick(() => {
       let sectionElement: HTMLElement | null = null;
@@ -634,7 +634,18 @@ function toggleSection(section: string) {
       }
       
       if (sectionElement) {
-        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Find the toggle button (header) within the section
+        const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
+        const targetElement = toggleButton || sectionElement;
+        
+        // Scroll with a small offset to account for any fixed headers
+        const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - 20; // 20px offset from top
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
     });
   }
