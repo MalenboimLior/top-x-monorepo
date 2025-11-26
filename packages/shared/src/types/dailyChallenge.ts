@@ -6,13 +6,15 @@ import { TriviaConfig } from './trivia';
 import { ZoneRevealConfig } from './zoneReveal';
 import { PacmanConfig } from './pacman';
 import { FisherGameConfig } from './fisherGame';
+import { QuizConfig } from './quiz';
 
 export type DailyChallengeCustomConfig =
   | PyramidConfig
   | TriviaConfig
   | ZoneRevealConfig
   | PacmanConfig
-  | FisherGameConfig;
+  | FisherGameConfig
+  | QuizConfig;
 
 export interface DailyChallengeSchedule {
   availableAt: string; // ISO timestamp — when the level becomes available to play

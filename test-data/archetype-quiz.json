@@ -1,0 +1,291 @@
+{
+  "id": "personality_compass",
+  "name": "Personality Compass",
+  "description": "Discover your personality type across 4 key dimensions!",
+  "gameTypeId": "quiz",
+  "active": true,
+  "language": "en",
+  "vip": [],
+  "unlisted": false,
+  "community": false,
+  "creator": {
+    "userid": "3elioaYGNBaqsuY8mL3XSG7SD7E2",
+    "username": "Topxisrael",
+    "image": "https://pbs.twimg.com/profile_images/1940446174214766592/LuC320Bt_400x400.png"
+  },
+  "custom": {
+    "mode": "archetype",
+    "showProgress": true,
+    "shuffleQuestions": false,
+    "shuffleAnswers": false,
+    "allowRepeats": true,
+    "theme": {
+      "primaryColor": "#8b5cf6",
+      "secondaryColor": "#06b6d4",
+      "backgroundColor": "#1a1a2e"
+    },
+    "questions": [
+      {
+        "id": "q1",
+        "text": "At a party, you typically...",
+        "answers": [
+          {
+            "text": "Talk to many different people",
+            "axisPoints": { "EI": 2 }
+          },
+          {
+            "text": "Have deep conversations with a few people",
+            "axisPoints": { "EI": -2 }
+          },
+          {
+            "text": "Observe and listen more than talk",
+            "axisPoints": { "EI": -1 }
+          },
+          {
+            "text": "Energize the room and keep things fun",
+            "axisPoints": { "EI": 2 }
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "When making decisions, you rely more on...",
+        "answers": [
+          {
+            "text": "Logic and objective analysis",
+            "axisPoints": { "TF": 2 }
+          },
+          {
+            "text": "How it affects people's feelings",
+            "axisPoints": { "TF": -2 }
+          },
+          {
+            "text": "A mix of both, depending on the situation",
+            "axisPoints": { "TF": 0 }
+          },
+          {
+            "text": "Your personal values and principles",
+            "axisPoints": { "TF": -1 }
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "You prefer to...",
+        "answers": [
+          {
+            "text": "Have a detailed plan before starting",
+            "axisPoints": { "JP": -2 }
+          },
+          {
+            "text": "Keep your options open and adapt",
+            "axisPoints": { "JP": 2 }
+          },
+          {
+            "text": "Have a loose plan with room for spontaneity",
+            "axisPoints": { "JP": 1 }
+          },
+          {
+            "text": "Create schedules and stick to them",
+            "axisPoints": { "JP": -2 }
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "When learning something new, you prefer...",
+        "answers": [
+          {
+            "text": "Hands-on practice and real examples",
+            "axisPoints": { "SN": -2 }
+          },
+          {
+            "text": "Understanding the theory and concepts first",
+            "axisPoints": { "SN": 2 }
+          },
+          {
+            "text": "Step-by-step instructions",
+            "axisPoints": { "SN": -1 }
+          },
+          {
+            "text": "Exploring possibilities and connections",
+            "axisPoints": { "SN": 2 }
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "After a long day, you recharge by...",
+        "answers": [
+          {
+            "text": "Going out with friends",
+            "axisPoints": { "EI": 2 }
+          },
+          {
+            "text": "Spending quiet time alone",
+            "axisPoints": { "EI": -2 }
+          },
+          {
+            "text": "Calling a close friend to chat",
+            "axisPoints": { "EI": 0 }
+          },
+          {
+            "text": "Attending a social event",
+            "axisPoints": { "EI": 1 }
+          }
+        ]
+      },
+      {
+        "id": "q6",
+        "text": "In a conflict, you tend to...",
+        "answers": [
+          {
+            "text": "Focus on finding the truth and fair solution",
+            "axisPoints": { "TF": 2 }
+          },
+          {
+            "text": "Consider everyone's feelings first",
+            "axisPoints": { "TF": -2 }
+          },
+          {
+            "text": "Try to avoid the conflict entirely",
+            "axisPoints": { "TF": -1 }
+          },
+          {
+            "text": "Analyze the facts objectively",
+            "axisPoints": { "TF": 1 }
+          }
+        ]
+      },
+      {
+        "id": "q7",
+        "text": "Your work style is more...",
+        "answers": [
+          {
+            "text": "Organized and methodical",
+            "axisPoints": { "JP": -2 }
+          },
+          {
+            "text": "Flexible and adaptable",
+            "axisPoints": { "JP": 2 }
+          },
+          {
+            "text": "Deadline-driven bursts of productivity",
+            "axisPoints": { "JP": 1 }
+          },
+          {
+            "text": "Consistent and predictable",
+            "axisPoints": { "JP": -1 }
+          }
+        ]
+      },
+      {
+        "id": "q8",
+        "text": "You're more drawn to...",
+        "answers": [
+          {
+            "text": "Practical solutions that work now",
+            "axisPoints": { "SN": -2 }
+          },
+          {
+            "text": "Innovative ideas and future possibilities",
+            "axisPoints": { "SN": 2 }
+          },
+          {
+            "text": "Proven methods and traditions",
+            "axisPoints": { "SN": -1 }
+          },
+          {
+            "text": "Abstract theories and patterns",
+            "axisPoints": { "SN": 1 }
+          }
+        ]
+      }
+    ],
+    "archetypeAxes": [
+      {
+        "id": "EI",
+        "lowLabel": "Introvert",
+        "highLabel": "Extrovert",
+        "description": "How you get your energy"
+      },
+      {
+        "id": "SN",
+        "lowLabel": "Sensing",
+        "highLabel": "Intuitive",
+        "description": "How you take in information"
+      },
+      {
+        "id": "TF",
+        "lowLabel": "Feeling",
+        "highLabel": "Thinking",
+        "description": "How you make decisions"
+      },
+      {
+        "id": "JP",
+        "lowLabel": "Judging",
+        "highLabel": "Perceiving",
+        "description": "How you approach the world"
+      }
+    ],
+    "archetypeResults": [
+      {
+        "id": "ENTP",
+        "pattern": { "EI": "high", "SN": "high", "TF": "high", "JP": "high" },
+        "title": "The Debater",
+        "description": "Quick-witted and bold, you love intellectual challenges and have endless curiosity. You're not afraid to challenge established ideas and thrive in dynamic environments where you can explore new possibilities.",
+        "shareText": "I'm The Debater! Quick-witted, bold, and endlessly curious. What's your personality type?"
+      },
+      {
+        "id": "INTJ",
+        "pattern": { "EI": "low", "SN": "high", "TF": "high", "JP": "low" },
+        "title": "The Architect",
+        "description": "Strategic and determined, you have a natural ability to see the big picture and create long-term plans. Your analytical mind and independence make you a natural problem-solver.",
+        "shareText": "I'm The Architect! Strategic, determined, and always planning ahead. What's your personality type?"
+      },
+      {
+        "id": "ENFP",
+        "pattern": { "EI": "high", "SN": "high", "TF": "low", "JP": "high" },
+        "title": "The Campaigner",
+        "description": "Enthusiastic and creative, you see life as full of possibilities. Your warmth and energy inspire others, and you have a natural talent for connecting with people and causes you believe in.",
+        "shareText": "I'm The Campaigner! Enthusiastic, creative, and full of possibilities. What's your personality type?"
+      },
+      {
+        "id": "INFJ",
+        "pattern": { "EI": "low", "SN": "high", "TF": "low", "JP": "low" },
+        "title": "The Advocate",
+        "description": "Idealistic and principled, you have a deep desire to help others and make the world a better place. Your insight and determination make you a powerful force for positive change.",
+        "shareText": "I'm The Advocate! Idealistic, principled, and driven to help others. What's your personality type?"
+      },
+      {
+        "id": "ESTJ",
+        "pattern": { "EI": "high", "SN": "low", "TF": "high", "JP": "low" },
+        "title": "The Executive",
+        "description": "Organized and dedicated, you're a natural leader who values order and tradition. Your practical approach and strong work ethic make you excellent at managing projects and people.",
+        "shareText": "I'm The Executive! Organized, dedicated, and a natural leader. What's your personality type?"
+      },
+      {
+        "id": "ISFP",
+        "pattern": { "EI": "low", "SN": "low", "TF": "low", "JP": "high" },
+        "title": "The Adventurer",
+        "description": "Artistic and sensitive, you experience the world through your senses and emotions. Your spontaneous nature and appreciation for beauty make you creative and in tune with the present moment.",
+        "shareText": "I'm The Adventurer! Artistic, sensitive, and living in the moment. What's your personality type?"
+      },
+      {
+        "id": "ESTP",
+        "pattern": { "EI": "high", "SN": "low", "TF": "high", "JP": "high" },
+        "title": "The Entrepreneur",
+        "description": "Bold and practical, you're all about action and results. Your energy and sharp perception make you excellent at reading situations and seizing opportunities as they arise.",
+        "shareText": "I'm The Entrepreneur! Bold, practical, and action-oriented. What's your personality type?"
+      },
+      {
+        "id": "INFP",
+        "pattern": { "EI": "low", "SN": "high", "TF": "low", "JP": "high" },
+        "title": "The Mediator",
+        "description": "Poetic and kind, you're guided by your principles and desire for harmony. Your imagination and empathy allow you to see the good in people and situations others might miss.",
+        "shareText": "I'm The Mediator! Poetic, kind, and guided by principles. What's your personality type?"
+      }
+    ]
+  }
+}
+

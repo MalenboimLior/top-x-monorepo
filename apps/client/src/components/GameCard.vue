@@ -2,6 +2,7 @@
   <article class="game-card" :class="[`game-card--${size}`]" @click="handleSelect">
     <div class="game-card__media" :dir="mediaDirection">
       <img 
+        v-if="game.image"
         :src="game.image" 
         :alt="`${game.name} image`" 
         loading="lazy"
@@ -9,6 +10,13 @@
         :height="size === 'featured' ? 448 : 384"
         :style="size === 'featured' ? 'aspect-ratio: 25/14;' : 'aspect-ratio: 5/3;'"
       />
+      <div
+        v-else
+        class="game-card__image-placeholder"
+        :style="size === 'featured' ? 'aspect-ratio: 25/14;' : 'aspect-ratio: 5/3;'"
+      >
+        <span>{{ game.name }}</span>
+      </div>
       <div v-if="mediaLabels.length" class="game-card__labels-top">
         <span
           v-for="label in mediaLabels"
@@ -372,6 +380,23 @@ function handlePlay() {
   position: relative;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.6);
+}
+
+.game-card__image-placeholder {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary-bg) 0%, var(--color-accent-bg) 100%);
+  color: var(--bulma-primary);
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  padding: 1.5rem;
+  text-align: center;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .game-card__media-badge {

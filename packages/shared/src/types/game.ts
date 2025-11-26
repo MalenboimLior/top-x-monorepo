@@ -4,6 +4,7 @@ import { TriviaConfig } from "./trivia";
 import { ZoneRevealConfig } from "./zoneReveal";
 import { PacmanConfig } from "./pacman";
 import { FisherGameConfig } from "./fisherGame";
+import { QuizConfig } from "./quiz";
 import type { LeaderboardEntry, LeaderboardDateIndexes, LeaderboardEntryDate } from "./leaderboard";
 
 export interface DefaultConfig {
@@ -18,7 +19,7 @@ export interface GameType {
   id: string;
   name: string;
   description: string;
-  custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig'; // String to specify config type
+  custom: 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig' | 'QuizConfig'; // String to specify config type
   availableToBuild: boolean;
   defaultConfigs?: DefaultConfig[];
 }
@@ -28,7 +29,8 @@ export type GameCustomConfig =
   | TriviaConfig
   | ZoneRevealConfig
   | PacmanConfig
-  | FisherGameConfig;
+  | FisherGameConfig
+  | QuizConfig;
 
 export type GameBadgeKey = 'onFire' | 'hardcore' | 'womenOnly';
 
@@ -52,7 +54,7 @@ export interface Game {
   language: 'en' | 'il';
   /** Optional link shown on shared images */
   shareLink?: string;
-  image: string;
+  image?: string; // Optional - if missing, will show first letter of name as placeholder
   vip: string[];
   /** Optional visual badges applied by admins */
   badges?: GameBadgeKey[];
@@ -84,5 +86,5 @@ export interface Game {
 // Re-exported here for backward compatibility
 export type { LeaderboardEntry, LeaderboardDateIndexes, LeaderboardEntryDate } from "./leaderboard";
 
-export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig';
-export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'ZoneRevealConfig', 'PacmanConfig', 'FisherGameConfig'];
+export type ConfigType = 'PyramidConfig' | 'TriviaConfig' | 'ZoneRevealConfig' | 'PacmanConfig' | 'FisherGameConfig' | 'QuizConfig';
+export const CONFIG_TYPES: ConfigType[] = ['PyramidConfig', 'TriviaConfig', 'ZoneRevealConfig', 'PacmanConfig', 'FisherGameConfig', 'QuizConfig'];

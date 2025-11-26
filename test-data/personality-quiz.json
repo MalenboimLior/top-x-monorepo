@@ -1,0 +1,190 @@
+{
+  "id": "what_animal_are_you",
+  "name": "What Animal Are You?",
+  "description": "Discover your spirit animal based on your personality traits!",
+  "gameTypeId": "quiz",
+  "active": true,
+  "language": "en",
+  "vip": [],
+  "unlisted": false,
+  "community": false,
+  "creator": {
+    "userid": "3elioaYGNBaqsuY8mL3XSG7SD7E2",
+    "username": "Topxisrael",
+    "image": "https://pbs.twimg.com/profile_images/1940446174214766592/LuC320Bt_400x400.png"
+  },
+  "custom": {
+    "mode": "personality",
+    "showProgress": true,
+    "shuffleQuestions": false,
+    "shuffleAnswers": false,
+    "allowRepeats": true,
+    "theme": {
+      "primaryColor": "#6366f1",
+      "secondaryColor": "#ec4899",
+      "backgroundColor": "#0f0f23"
+    },
+    "questions": [
+      {
+        "id": "q1",
+        "text": "How do you prefer to spend your free time?",
+        "answers": [
+          {
+            "text": "Leading a group activity",
+            "bucketPoints": { "lion": 3, "eagle": 1 }
+          },
+          {
+            "text": "Exploring new places alone",
+            "bucketPoints": { "wolf": 2, "eagle": 2 }
+          },
+          {
+            "text": "Relaxing at home with close friends",
+            "bucketPoints": { "bear": 3, "wolf": 1 }
+          },
+          {
+            "text": "Working on a creative project",
+            "bucketPoints": { "eagle": 3, "bear": 1 }
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "When facing a difficult problem, you...",
+        "answers": [
+          {
+            "text": "Take charge and delegate tasks",
+            "bucketPoints": { "lion": 3 }
+          },
+          {
+            "text": "Analyze it from every angle before acting",
+            "bucketPoints": { "eagle": 3 }
+          },
+          {
+            "text": "Trust your instincts and act quickly",
+            "bucketPoints": { "wolf": 3 }
+          },
+          {
+            "text": "Take your time and wait for the right moment",
+            "bucketPoints": { "bear": 3 }
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "Your ideal vacation would be...",
+        "answers": [
+          {
+            "text": "A luxury resort where you're treated like royalty",
+            "bucketPoints": { "lion": 3 }
+          },
+          {
+            "text": "A solo backpacking trip through mountains",
+            "bucketPoints": { "eagle": 3 }
+          },
+          {
+            "text": "Camping in the wilderness with a small group",
+            "bucketPoints": { "wolf": 3 }
+          },
+          {
+            "text": "A cozy cabin in the woods for relaxation",
+            "bucketPoints": { "bear": 3 }
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "In a group project, you usually...",
+        "answers": [
+          {
+            "text": "Naturally become the leader",
+            "bucketPoints": { "lion": 3, "wolf": 1 }
+          },
+          {
+            "text": "Prefer to work on the strategic vision",
+            "bucketPoints": { "eagle": 3 }
+          },
+          {
+            "text": "Support and motivate the team",
+            "bucketPoints": { "wolf": 3 }
+          },
+          {
+            "text": "Handle the details patiently",
+            "bucketPoints": { "bear": 3 }
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "What quality do you value most in others?",
+        "answers": [
+          {
+            "text": "Confidence and ambition",
+            "bucketPoints": { "lion": 3 }
+          },
+          {
+            "text": "Intelligence and vision",
+            "bucketPoints": { "eagle": 3 }
+          },
+          {
+            "text": "Loyalty and trust",
+            "bucketPoints": { "wolf": 3 }
+          },
+          {
+            "text": "Patience and reliability",
+            "bucketPoints": { "bear": 3 }
+          }
+        ]
+      }
+    ],
+    "personalityBuckets": [
+      {
+        "id": "lion",
+        "label": "Lion",
+        "description": "The king of the jungle, natural born leader",
+        "results": [
+          {
+            "title": "You are a Lion!",
+            "description": "You're a natural born leader with confidence and charisma. People look up to you for guidance and direction. Your presence commands respect, and you're not afraid to take charge when the situation calls for it.",
+            "shareText": "I'm a Lion! 🦁 Natural born leader with confidence and charisma. What animal are you?"
+          }
+        ]
+      },
+      {
+        "id": "eagle",
+        "label": "Eagle",
+        "description": "Soaring high, seeing the big picture",
+        "results": [
+          {
+            "title": "You are an Eagle!",
+            "description": "You have a visionary mind and see things others miss. Your ability to analyze situations from a higher perspective makes you invaluable. You value independence and soar above the noise to find clarity.",
+            "shareText": "I'm an Eagle! 🦅 Visionary with a big-picture perspective. What animal are you?"
+          }
+        ]
+      },
+      {
+        "id": "wolf",
+        "label": "Wolf",
+        "description": "Loyal pack member with sharp instincts",
+        "results": [
+          {
+            "title": "You are a Wolf!",
+            "description": "Loyalty runs deep in your veins. You're fiercely protective of your pack and have sharp instincts that rarely lead you astray. You thrive in close-knit groups where trust is paramount.",
+            "shareText": "I'm a Wolf! 🐺 Loyal, instinctive, and protective. What animal are you?"
+          }
+        ]
+      },
+      {
+        "id": "bear",
+        "label": "Bear",
+        "description": "Strong, patient, and protective",
+        "results": [
+          {
+            "title": "You are a Bear!",
+            "description": "Patient, strong, and grounded. You don't rush into things but when you act, you do so with tremendous power. Your calm demeanor hides incredible strength and protective instincts.",
+            "shareText": "I'm a Bear! 🐻 Strong, patient, and grounded. What animal are you?"
+          }
+        ]
+      }
+    ]
+  }
+}

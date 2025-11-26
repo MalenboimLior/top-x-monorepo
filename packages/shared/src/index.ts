@@ -7,3 +7,4 @@ export * from './utils/triviaHash';
 export * from './constants/gameBadges';
 export * from './constants/gameTypes';
 export * from './trivia/scoring';
+export * from './quiz/scoring';

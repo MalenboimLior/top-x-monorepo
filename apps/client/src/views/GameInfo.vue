@@ -117,7 +117,6 @@ import { Game } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
-import fallbackImg from '@/assets/images/fallback.png';
 
 const route = useRoute();
 const router = useRouter();
@@ -183,7 +182,8 @@ onMounted(async () => {
     const data = gameResult.game;
     game.value = {
       ...data,
-      image: data.image || fallbackImg,
+      // Don't set fallback image - let GameMediaSection show placeholder if no image
+      image: data.image || undefined,
     };
     console.log('GameInfo: Game data fetched:', game.value);
 

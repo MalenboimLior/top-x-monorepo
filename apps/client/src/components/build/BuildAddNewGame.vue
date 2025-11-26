@@ -7,13 +7,18 @@
         <p class="builder-section__hint">{{ t('build.game.fields.name.hint') }}</p>
       </div>
       <div class="builder-section__content">
-        <input
-          :id="ids.name"
-          type="text"
-          v-model="game.name"
-          :placeholder="t('build.game.fields.name.placeholder')"
-          class="game-name-input"
-        />
+        <div class="game-name-wrapper">
+          <input
+            :id="ids.name"
+            type="text"
+            v-model="game.name"
+            :placeholder="t('build.game.fields.name.placeholder')"
+            class="game-name-input"
+          />
+          <span v-if="persistedGameId" class="game-status-badge" :class="gameStatusClass">
+            {{ gameStatusText }}
+          </span>
+        </div>
       </div>
     </section>
 
@@ -32,6 +37,11 @@
       <AddZoneReveal
         v-else-if="props.gameType.custom === 'ZoneRevealConfig'"
         v-model="(game.custom as ZoneRevealConfig)"
+      />
+      <AddQuiz
+        v-else-if="props.gameType.custom === 'QuizConfig'"
+        v-model="(game.custom as QuizConfig)"
+        :gameId="validatedGameId"
       />
     </section>
 
@@ -131,21 +141,79 @@
     <!-- Footer Actions -->
     <footer class="builder-footer">
       <div class="builder-footer__spacer"></div>
-      <CustomButton
-        type="is-primary is-light"
-        :label="t('build.wizard.saveProgress')"
-        :loading="isSaving"
-        :disabled="isSaving"
-        @click="saveGame({ stayOnWizard: true })"
-      />
-      <CustomButton
-        type="is-primary"
-        :loading="isSaving"
-        :label="t('build.wizard.save')"
-        @click="saveGame()"
-      />
-      <CustomButton type="is-light" :label="t('build.wizard.cancel')" @click="$emit('cancel')" />
+      <div class="builder-footer__actions">
+        <CustomButton
+          type="is-primary is-light"
+          :label="t('build.wizard.save')"
+          :icon="['fas', 'save']"
+          :loading="isSaving"
+          :disabled="isSaving"
+          @click="handleSave"
+        />
+        <CustomButton
+          type="is-primary"
+          :label="t('build.wizard.saveAndPreview')"
+          :icon="['fas', 'eye']"
+          :loading="isSaving"
+          :disabled="isSaving"
+          @click="handleSaveAndPreview"
+        />
+        <div v-if="persistedGameId" class="builder-footer__action-wrapper">
+          <CustomButton
+            type="is-light"
+            :label="t('build.wizard.share')"
+            :icon="['fas', 'share']"
+            @click="handleShare"
+          />
+          <div v-if="showShareSuccess" class="share-success-toast">
+            {{ t('build.wizard.shareSuccess') }}
+          </div>
+        </div>
+        <CustomButton
+          v-if="persistedGameId"
+          :type="isPublished ? 'is-warning' : 'is-success'"
+          :label="isPublished ? t('build.wizard.unpublish') : t('build.wizard.publish')"
+          :icon="isPublished ? ['fas', 'eye-slash'] : ['fas', 'globe']"
+          :loading="isSaving"
+          :disabled="isSaving"
+          @click="handleTogglePublish"
+        />
+        <CustomButton
+          v-if="persistedGameId"
+          type="is-danger"
+          :label="t('build.wizard.delete')"
+          :icon="['fas', 'trash']"
+          :loading="isDeleting"
+          :disabled="isDeleting"
+          @click="showDeleteModal = true"
+        />
+      </div>
     </footer>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" :class="{ 'is-active': showDeleteModal }">
+      <div class="modal-background" @click="showDeleteModal = false"></div>
+      <div class="modal-content box">
+        <h3 class="title is-4">{{ t('build.games.deleteConfirmTitle') || 'Delete game' }}</h3>
+        <p>{{ t('build.wizard.deleteConfirm', { name: game.name }) }}</p>
+        <div class="buttons mt-4">
+          <CustomButton
+            type="is-danger"
+            :label="t('build.games.deleteConfirmButton') || 'Delete'"
+            :loading="isDeleting"
+            :disabled="isDeleting"
+            @click="performDelete"
+          />
+          <CustomButton
+            type="is-light"
+            :label="t('build.games.deleteCancel') || 'Cancel'"
+            :disabled="isDeleting"
+            @click="showDeleteModal = false"
+          />
+        </div>
+      </div>
+      <button class="modal-close is-large" aria-label="close" @click="showDeleteModal = false"></button>
+    </div>
   </div>
 </template>
 
@@ -157,13 +225,15 @@ import GameCard from '@/components/GameCard.vue';
 import AddPyramid from '@/components/build/AddPyramid.vue';
 import AddZoneReveal from '@/components/build/AddZoneReveal.vue';
 import AddTrivia from '@/components/build/AddTrivia.vue';
-import { createGame, updateGame, getGames } from '@/services/game';
+import AddQuiz from '@/components/build/AddQuiz.vue';
+import { createGame, updateGame, getGames, deleteGame } from '@/services/game';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
 import type { Game, GameType, GameCustomConfig } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
+import type { QuizConfig } from '@top-x/shared/types/quiz';
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2300e8e0"/><stop offset="100%" stop-color="%23ff2d92"/></linearGradient></defs><rect width="600" height="400" fill="url(%23g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="36" fill="%23ffffff">TOP-X</text></svg>';
@@ -192,7 +262,10 @@ const ids = {
 } as const;
 
 const isSaving = ref(false);
+const isDeleting = ref(false);
 const showGameSettings = ref(false);
+const showDeleteModal = ref(false);
+const showShareSuccess = ref(false);
 
 function generateRandomGameName(): string {
   const adjectives = ['Epic', 'Awesome', 'Cool', 'Amazing', 'Fantastic', 'Incredible', 'Super', 'Ultimate'];
@@ -232,10 +305,24 @@ const initialGame = props.existingGame
       shareText: '',
       gameInstruction: '',
       shareLink: '',
+      unlisted: true, // New games start as drafts
     } as Game;
 
 const game = ref<Game>(initialGame);
 const persistedGameId = ref(props.existingGame?.id ?? '');
+
+// Computed properties for game status
+const isPublished = computed(() => {
+  return !game.value.unlisted;
+});
+
+const gameStatusText = computed(() => {
+  return isPublished.value ? t('build.wizard.status.live') : t('build.wizard.status.draft');
+});
+
+const gameStatusClass = computed(() => {
+  return isPublished.value ? 'game-status-badge--live' : 'game-status-badge--draft';
+});
 
 const storageKey = computed(() => {
   if (typeof window === 'undefined') {
@@ -384,6 +471,93 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
   }
 }
 
+// Handler functions for footer buttons
+async function handleSave() {
+  await saveGame({ stayOnWizard: true });
+}
+
+async function handleSaveAndPreview() {
+  await saveGame({ stayOnWizard: true });
+  if (persistedGameId.value) {
+    const gameUrl = `/games/info?game=${persistedGameId.value}`;
+    window.open(gameUrl, '_blank', 'noopener');
+  }
+}
+
+async function handleShare() {
+  if (!persistedGameId.value) {
+    alert('Please save the game first before sharing.');
+    return;
+  }
+  
+  const gameUrl = `${window.location.origin}/games/info?game=${persistedGameId.value}`;
+  try {
+    await navigator.clipboard.writeText(gameUrl);
+    showShareSuccess.value = true;
+    setTimeout(() => {
+      showShareSuccess.value = false;
+    }, 3000);
+  } catch (error) {
+    console.error('Failed to copy link:', error);
+    // Fallback: show the URL in a prompt
+    prompt('Copy this link:', gameUrl);
+  }
+}
+
+async function handleTogglePublish() {
+  if (isSaving.value) {
+    return;
+  }
+
+  try {
+    isSaving.value = true;
+    const newUnlistedValue = !game.value.unlisted;
+    game.value.unlisted = newUnlistedValue;
+    
+    const payload = JSON.parse(JSON.stringify(game.value));
+    const { id: _discardId, ...payloadWithoutId } = payload;
+    
+    const result = await updateGame(persistedGameId.value, payloadWithoutId);
+    if (!result.success) {
+      console.error('Error updating game:', result.error);
+      alert(result.error || 'Failed to update game');
+      // Revert the change
+      game.value.unlisted = !newUnlistedValue;
+      return;
+    }
+  } catch (error) {
+    console.error('Error toggling publish status:', error);
+    alert('Failed to update publish status');
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function performDelete() {
+  if (!persistedGameId.value) {
+    return;
+  }
+
+  try {
+    isDeleting.value = true;
+    const result = await deleteGame(persistedGameId.value);
+    if (!result.success) {
+      console.error('Error deleting game:', result.error);
+      alert(result.error || 'Failed to delete game');
+      return;
+    }
+    
+    showDeleteModal.value = false;
+    clearDraftFromCache();
+    emit('cancel'); // Navigate away after deletion
+  } catch (error) {
+    console.error('Error deleting game:', error);
+    alert('Failed to delete game');
+  } finally {
+    isDeleting.value = false;
+  }
+}
+
 const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
 
 function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
@@ -396,7 +570,7 @@ function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig
   return clone;
 }
 
-function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig | TriviaConfig {
+function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig | TriviaConfig | QuizConfig {
   if (customType === 'PyramidConfig') {
     return {
       items: [],
@@ -438,6 +612,26 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       unlimitedLives: true,
       mustLogin: false,
     } as TriviaConfig);
+  }
+  if (customType === 'QuizConfig') {
+    return {
+      mode: 'personality',
+      questions: [],
+      language: 'en',
+      theme: {
+        primaryColor: '#6366f1',
+        secondaryColor: '#ec4899',
+        backgroundColor: '#0f0f23',
+      },
+      personalityBuckets: [],
+      archetypeAxes: [],
+      archetypeResults: [],
+      showProgress: true,
+      shuffleQuestions: false,
+      shuffleAnswers: false,
+      mustLogin: false,
+      allowRepeats: true,
+    } as QuizConfig;
   }
   throw new Error('Unknown custom type');
 }
@@ -615,6 +809,34 @@ onBeforeUnmount(() => {
   color: var(--color-text-tertiary);
 }
 
+.game-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.game-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.game-status-badge--live {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.game-status-badge--draft {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
 .settings-grid {
   display: grid;
   gap: 1.5rem;
@@ -680,6 +902,56 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
+.builder-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.builder-footer__action-wrapper {
+  position: relative;
+}
+
+/* Share Success Toast */
+.share-success-toast {
+  position: absolute;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--color-border-base);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.share-success-toast::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  right: 20px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--color-bg-elevated);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 768px) {
   .game-builder {
     padding: 1.25rem;
@@ -692,6 +964,31 @@ onBeforeUnmount(() => {
 
   .builder-footer__spacer {
     display: none;
+  }
+
+  .builder-footer__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .builder-footer__actions > * {
+    width: 100%;
+  }
+
+  .share-success-toast {
+    width: 100%;
+    right: 0;
+    left: 0;
+  }
+
+  .share-success-toast::after {
+    right: 50%;
+    transform: translateX(50%);
+  }
+
+  .game-name-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .settings-grid {

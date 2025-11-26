@@ -1,7 +1,18 @@
 <template>
   <div class="game-media-section">
     <div class="game-media-section__image-wrapper">
-      <img :src="game.image" :alt="`${game.name} image`" class="game-media-section__image" />
+      <img 
+        v-if="game.image"
+        :src="game.image" 
+        :alt="`${game.name} image`" 
+        class="game-media-section__image" 
+      />
+      <div
+        v-else
+        class="game-media-section__image-placeholder"
+      >
+        <span>{{ game.name}}</span>
+      </div>
       <div v-if="mediaLabels.length" class="game-media-section__labels">
         <span
           v-for="label in mediaLabels"
@@ -224,6 +235,24 @@ async function handleLogin() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.game-media-section__image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary-bg) 0%, var(--color-accent-bg) 100%);
+  color: var(--bulma-primary);
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 700;
+  padding: 2rem;
+  text-align: center;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .game-media-section__labels {

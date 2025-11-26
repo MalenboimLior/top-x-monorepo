@@ -70,26 +70,45 @@
               <article v-for="game in myGames" :key="game.id" class="build-game-card">
                 <header class="build-game-card__header">
                   <h3 class="build-game-card__title">{{ game.name }}</h3>
-                  <span class="build-game-card__status" :class="{ 'is-live': game.active }">
-                    {{ game.active ? 'Published' : 'Draft' }}
+                  <span class="build-game-card__status" :class="{ 'is-live': !game.unlisted }">
+                    {{ !game.unlisted ? t('build.wizard.status.live') : t('build.wizard.status.draft') }}
                   </span>
                 </header>
                 <p class="build-game-card__description">{{ game.description || 'No description yet.' }}</p>
                 <footer class="build-game-card__actions">
-                  <CustomButton type="is-primary is-small" label="Edit" @click="editGame(game)" />
+                  <CustomButton
+                    type="is-primary is-small"
+                    label="Edit"
+                    :icon="['fas', 'edit']"
+                    @click="editGame(game)"
+                  />
                   <CustomButton
                     type="is-link is-small"
                     :label="content.games.open"
+                    :icon="['fas', 'eye']"
                     @click="openGame(game)"
                   />
+                  <div class="build-game-card__action-wrapper">
+                    <CustomButton
+                      type="is-light is-small"
+                      :label="t('build.wizard.share')"
+                      :icon="['fas', 'share']"
+                      @click="handleShare(game)"
+                    />
+                    <div v-if="showShareSuccess === game.id" class="share-success-toast">
+                      {{ t('build.wizard.shareSuccess') }}
+                    </div>
+                  </div>
                   <CustomButton
-                    :type="game.active ? 'is-warning is-small' : 'is-success is-small'"
-                    :label="game.active ? 'Unpublish' : 'Publish'"
+                    :type="!game.unlisted ? 'is-warning is-small' : 'is-success is-small'"
+                    :label="!game.unlisted ? t('build.wizard.unpublish') : t('build.wizard.publish')"
+                    :icon="!game.unlisted ? ['fas', 'eye-slash'] : ['fas', 'globe']"
                     @click="togglePublish(game)"
                   />
                   <CustomButton
                     type="is-danger is-small"
                     :label="content.games.delete"
+                    :icon="['fas', 'trash']"
                     @click="confirmDelete(game)"
                   />
                 </footer>
@@ -168,12 +187,13 @@
       </div>
     </section>
 
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" :class="{ 'is-active': showDeleteModal }">
       <div class="modal-background" @click="showDeleteModal = false"></div>
       <div class="modal-content box">
         <h3 class="title is-4">{{ t('build.games.deleteConfirmTitle') || 'Delete game' }}</h3>
-        <p>{{ t('build.games.deleteConfirm') || 'Are you sure you want to delete this game? This action cannot be undone.' }}</p>
+        <p>{{ gameToDelete ? t('build.wizard.deleteConfirm', { name: gameToDelete.name }) : t('build.games.deleteConfirm') }}</p>
         <div class="buttons mt-4">
           <CustomButton
             type="is-danger"
@@ -233,6 +253,7 @@ const selectedDefaultConfig = ref<GameCustomConfig | null>(null);
 const showDeleteModal = ref(false);
 const showLimitModal = ref(false);
 const gameToDelete = ref<Game | null>(null);
+const showShareSuccess = ref<string | null>(null);
 
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
@@ -418,7 +439,7 @@ function editGame(game: Game) {
 async function togglePublish(game: Game) {
   try {
     const gameRef = doc(db, 'games', game.id);
-    await updateDoc(gameRef, { active: !game.active });
+    await updateDoc(gameRef, { unlisted: game.unlisted ?? false ? false : true });
   } catch (err) {
     console.error('Error toggling publish:', err);
   }
@@ -429,6 +450,25 @@ function openGame(game: Game) {
     return;
   }
   window.open(`/games/info?game=${game.id}`, '_blank', 'noopener');
+}
+
+async function handleShare(game: Game) {
+  if (!game.id) {
+    return;
+  }
+  
+  const gameUrl = `${window.location.origin}/games/info?game=${game.id}`;
+  try {
+    await navigator.clipboard.writeText(gameUrl);
+    showShareSuccess.value = game.id;
+    setTimeout(() => {
+      showShareSuccess.value = null;
+    }, 3000);
+  } catch (error) {
+    console.error('Failed to copy link:', error);
+    // Fallback: show the URL in a prompt
+    prompt('Copy this link:', gameUrl);
+  }
 }
 
 function confirmDelete(game: Game) {
@@ -737,6 +777,49 @@ async function login() {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.build-game-card__action-wrapper {
+  position: relative;
+}
+
+/* Share Success Toast */
+.share-success-toast {
+  position: absolute;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--color-border-base);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.share-success-toast::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  right: 20px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--color-bg-elevated);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .build-flow {

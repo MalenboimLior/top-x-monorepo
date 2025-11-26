@@ -122,6 +122,7 @@ function mapGameDocument(docSnap: QueryDocumentSnapshot<DocumentData>): Game {
     shareLink: data.shareLink || '',
     vip: Array.isArray(data.vip) ? data.vip : [],
     badges: Array.isArray(data.badges) ? data.badges : undefined,
+    unlisted: data.unlisted ?? false,
     custom: data.custom || {},
     creator: data.creator,
     community: data.community ?? false,

@@ -1,0 +1,315 @@
+<template>
+  <div class="quiz-scene" :class="{ 'is-rtl': direction === 'rtl' }" :lang="language">
+    <transition name="fade-slide" mode="out-in">
+      <!-- Start Screen -->
+      <section v-if="screen === 'start'" key="start" class="scene-section">
+        <Card class="start-card">
+          <header class="start-header">
+            <h1 class="scene-title">{{ title }}</h1>
+            <p class="scene-subtitle">{{ subtitle }}</p>
+          </header>
+
+          <div v-if="inviter" class="inviter-card">
+            <img :src="inviter.photoURL" alt="Inviter avatar" class="inviter-avatar" loading="lazy" />
+            <div class="inviter-details">
+              <p class="inviter-label">Shared by {{ inviter.displayName }}</p>
+              <p class="inviter-score">Take the quiz and share your result!</p>
+            </div>
+          </div>
+
+          <CustomButton
+            class="start-button"
+            type="is-primary"
+            :icon="['fas', 'play']"
+            label="Start Quiz"
+            :loading="isLoading"
+            @click="startRun"
+          />
+        </Card>
+      </section>
+
+      <!-- Playing Screen -->
+      <section v-else key="playing" class="scene-section">
+        <!-- Progress Header -->
+        <div v-if="showProgress" class="quiz-progress">
+          <div class="progress-info">
+            <span class="progress-text">Question {{ questionNumber }} of {{ totalQuestions }}</span>
+            <span class="progress-percent">{{ progress }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill" :style="{ width: `${progress}%` }"></div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="isLoading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading question...</p>
+        </div>
+
+        <!-- Question -->
+        <QuizQuestion
+          v-else-if="currentQuestion"
+          :question="currentQuestion"
+          :direction="direction"
+          :can-go-back="questionNumber > 1"
+          @select-answer="onSelectAnswer"
+          @go-back="onGoBack"
+        />
+      </section>
+    </transition>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import Card from '@top-x/shared/components/Card.vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import QuizQuestion from './QuizQuestion.vue';
+import type { QuizQuestionViewModel } from '@/stores/quiz';
+import type { QuizThemeConfig } from '@top-x/shared/types/quiz';
+
+interface InviterDetails {
+  displayName: string;
+  photoURL: string;
+}
+
+interface Props {
+  screen: 'start' | 'playing';
+  mode: 'personality' | 'archetype';
+  currentQuestion: QuizQuestionViewModel | null;
+  questionNumber: number;
+  totalQuestions: number;
+  progress: number;
+  showProgress: boolean;
+  isLoading: boolean;
+  direction: 'ltr' | 'rtl';
+  inviter: InviterDetails | null;
+  theme: QuizThemeConfig;
+  language: string;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+  (e: 'start-game'): void;
+  (e: 'select-answer', index: number): void;
+  (e: 'go-back'): void;
+}>();
+
+const title = computed(() => {
+  return props.mode === 'personality' ? 'Personality Quiz' : 'Discover Your Type';
+});
+
+const subtitle = computed(() => {
+  if (props.mode === 'personality') {
+    return `Answer ${props.totalQuestions} questions to discover your result!`;
+  }
+  return `${props.totalQuestions} questions to reveal your archetype`;
+});
+
+const startRun = () => emit('start-game');
+const onSelectAnswer = (index: number) => emit('select-answer', index);
+const onGoBack = () => emit('go-back');
+</script>
+
+<style scoped>
+.quiz-scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.scene-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.scene-section > * {
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Start Card */
+.start-card {
+  background: rgba(10, 12, 25, 0.85);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scene-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  color: var(--color-text-primary);
+  margin: 0;
+  background: linear-gradient(135deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scene-subtitle {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  margin: 0.5rem 0 0;
+  font-size: 1.1rem;
+}
+
+.inviter-card {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.inviter-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.inviter-details {
+  text-align: start;
+  color: #fff;
+}
+
+.inviter-label {
+  font-weight: 600;
+  margin: 0;
+}
+
+.inviter-score {
+  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.start-button {
+  align-self: center;
+  min-width: 200px;
+  margin-top: 0.5rem;
+}
+
+/* Progress Bar */
+.quiz-progress {
+  background: rgba(10, 12, 25, 0.7);
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  backdrop-filter: blur(8px);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.progress-text {
+  font-size: 0.9rem;
+}
+
+.progress-percent {
+  font-size: 0.85rem;
+  color: var(--quiz-primary, #6366f1);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--quiz-primary, #6366f1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* RTL Support */
+.quiz-scene.is-rtl {
+  direction: rtl;
+}
+
+.quiz-scene.is-rtl .inviter-details {
+  text-align: end;
+}
+
+@media (max-width: 768px) {
+  .start-card {
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .scene-title {
+    font-size: 1.75rem;
+  }
+
+  .scene-subtitle {
+    font-size: 1rem;
+  }
+
+  .quiz-progress {
+    padding: 0.85rem 1.25rem;
+  }
+
+  .progress-bar {
+    height: 6px;
+  }
+}
+</style>
+

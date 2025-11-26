@@ -41,6 +41,10 @@ import {
   faArrowRight,
   faSun,
   faMoon,
+  faEye,
+  faEyeSlash,
+  faTrash,
+  faGlobe,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -81,6 +85,10 @@ library.add(
   faArrowRight,
   faSun,
   faMoon,
+  faEye,
+  faEyeSlash,
+  faTrash,
+  faGlobe,
 );
 
 import 'bulma/css/bulma.min.css';

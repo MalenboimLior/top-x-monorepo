@@ -164,7 +164,7 @@ interface LocaleState {
 interface LocaleActions {
   initialize(): Promise<void>;
   setLanguage(language: string): Promise<void>;
-  translate(key: string): string;
+  translate(key: string, params?: Record<string, unknown>): string;
   getGameTypeContent(gameTypeId: string): GameTypeContent | null;
 }
 
@@ -388,25 +388,30 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         console.info('[locale] ===== SET LANGUAGE COMPLETE =====');
       }
     },
-    translate(key: string): string {
-      const value = this.messages[key];
-      if (value !== undefined) {
-        return value;
-      }
-
-      const fallbackValue = fallbackMessages[key];
-
-      if (fallbackValue !== undefined) {
+    translate(key: string, params?: Record<string, unknown>): string {
+      let value = this.messages[key];
+      if (value === undefined) {
+        value = fallbackMessages[key];
+        if (value === undefined) {
+          if (import.meta.env.DEV) {
+            console.warn('[locale] Missing translation for key', key, 'in language', this.language);
+          }
+          return key;
+        }
         if (import.meta.env.DEV && this.language !== FALLBACK_LANGUAGE) {
           console.warn('[locale] Missing translation for key', key, 'in language', this.language, '- using fallback');
         }
-        return fallbackValue;
       }
 
-      if (import.meta.env.DEV) {
-        console.warn('[locale] Missing translation for key', key, 'in language', this.language);
+      // Replace parameters in the translation string
+      if (params && typeof value === 'string') {
+        return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+          const paramValue = params[paramKey];
+          return paramValue !== undefined && paramValue !== null ? String(paramValue) : match;
+        });
       }
-      return key;
+
+      return value;
     },
     getGameTypeContent(gameTypeId: string): GameTypeContent | null {
       const normalizedId = gameTypeId.toLowerCase();

@@ -12,3 +12,4 @@ export * from './pacman';
 export * from './home';
 export * from './favorites';
 export * from './fisherGame';
+export * from './quiz';

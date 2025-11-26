@@ -97,6 +97,12 @@ const routes = [
       import(/* webpackChunkName: "trivia" */ '@/views/games/Trivia.vue'),
   },
   {
+    path: '/games/quiz',
+    name: 'Quiz',
+    component: () =>
+      import(/* webpackChunkName: "quiz" */ '@/views/games/Quiz.vue'),
+  },
+  {
     path: '/games/ZoneReveal',
     name: 'ZoneReveal',
     component: () =>

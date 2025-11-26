@@ -1,0 +1,163 @@
+{
+  "id": "general_knowledge_trivia",
+  "name": "General Knowledge Trivia",
+  "description": "Test your knowledge with this fun trivia game!",
+  "gameTypeId": "trivia",
+  "active": true,
+  "language": "en",
+  "vip": [],
+  "unlisted": false,
+  "community": false,
+  "gameInstruction": "Answer as many questions correctly as you can!",
+  "creator": {
+    "userid": "3elioaYGNBaqsuY8mL3XSG7SD7E2",
+    "username": "Topxisrael",
+    "image": "https://pbs.twimg.com/profile_images/1940446174214766592/LuC320Bt_400x400.png"
+  },
+  "custom": {
+    "mode": "fixed",
+    "lives": 3,
+    "unlimitedLives": false,
+    "showCorrectAnswers": true,
+    "showCorrectAnswersOnEnd": true,
+    "allowRepeats": true,
+    "theme": {
+      "primaryColor": "#8c52ff",
+      "secondaryColor": "#ff9f1c",
+      "backgroundColor": "#0a0c19"
+    },
+    "questions": [
+      {
+        "id": "t1",
+        "text": "What is the capital of France?",
+        "answers": [
+          { "text": "Paris" },
+          { "text": "London" },
+          { "text": "Berlin" },
+          { "text": "Madrid" }
+        ],
+        "correctAnswer": "Paris",
+        "category": "geography",
+        "difficulty": "easy"
+      },
+      {
+        "id": "t2",
+        "text": "Which planet is known as the Red Planet?",
+        "answers": [
+          { "text": "Venus" },
+          { "text": "Mars" },
+          { "text": "Jupiter" },
+          { "text": "Saturn" }
+        ],
+        "correctAnswer": "Mars",
+        "category": "science",
+        "difficulty": "easy"
+      },
+      {
+        "id": "t3",
+        "text": "Who painted the Mona Lisa?",
+        "answers": [
+          { "text": "Vincent van Gogh" },
+          { "text": "Pablo Picasso" },
+          { "text": "Leonardo da Vinci" },
+          { "text": "Michelangelo" }
+        ],
+        "correctAnswer": "Leonardo da Vinci",
+        "category": "art",
+        "difficulty": "easy"
+      },
+      {
+        "id": "t4",
+        "text": "What is the largest ocean on Earth?",
+        "answers": [
+          { "text": "Atlantic Ocean" },
+          { "text": "Indian Ocean" },
+          { "text": "Arctic Ocean" },
+          { "text": "Pacific Ocean" }
+        ],
+        "correctAnswer": "Pacific Ocean",
+        "category": "geography",
+        "difficulty": "easy"
+      },
+      {
+        "id": "t5",
+        "text": "In what year did World War II end?",
+        "answers": [
+          { "text": "1943" },
+          { "text": "1944" },
+          { "text": "1945" },
+          { "text": "1946" }
+        ],
+        "correctAnswer": "1945",
+        "category": "history",
+        "difficulty": "medium"
+      },
+      {
+        "id": "t6",
+        "text": "What is the chemical symbol for gold?",
+        "answers": [
+          { "text": "Go" },
+          { "text": "Gd" },
+          { "text": "Au" },
+          { "text": "Ag" }
+        ],
+        "correctAnswer": "Au",
+        "category": "science",
+        "difficulty": "medium"
+      },
+      {
+        "id": "t7",
+        "text": "Which country is home to the kangaroo?",
+        "answers": [
+          { "text": "New Zealand" },
+          { "text": "South Africa" },
+          { "text": "Australia" },
+          { "text": "Indonesia" }
+        ],
+        "correctAnswer": "Australia",
+        "category": "geography",
+        "difficulty": "easy"
+      },
+      {
+        "id": "t8",
+        "text": "What is the smallest prime number?",
+        "answers": [
+          { "text": "0" },
+          { "text": "1" },
+          { "text": "2" },
+          { "text": "3" }
+        ],
+        "correctAnswer": "2",
+        "category": "math",
+        "difficulty": "medium"
+      },
+      {
+        "id": "t9",
+        "text": "Who wrote 'Romeo and Juliet'?",
+        "answers": [
+          { "text": "Charles Dickens" },
+          { "text": "William Shakespeare" },
+          { "text": "Jane Austen" },
+          { "text": "Mark Twain" }
+        ],
+        "correctAnswer": "William Shakespeare",
+        "category": "literature",
+        "difficulty": "easy"
+      },
+      {
+        "id": "t10",
+        "text": "What is the hardest natural substance on Earth?",
+        "answers": [
+          { "text": "Gold" },
+          { "text": "Iron" },
+          { "text": "Diamond" },
+          { "text": "Platinum" }
+        ],
+        "correctAnswer": "Diamond",
+        "category": "science",
+        "difficulty": "easy"
+      }
+    ]
+  }
+}
+

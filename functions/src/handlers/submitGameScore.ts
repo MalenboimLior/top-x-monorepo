@@ -37,6 +37,7 @@ import {
 } from './submitGameScore/trivia';
 import { processZoneRevealSubmission } from './submitGameScore/zoneReveal';
 import { processDailyChallengeSubmission } from './submitGameScore/dailyChallenge';
+import { processQuizSubmission, QuizProcessingOutcome } from './submitGameScore/quiz';
 
 const db = admin.firestore();
 
@@ -238,6 +239,40 @@ export const submitGameScore = functions.https.onCall(async (
 
       let triviaOutcome: TriviaProcessingOutcome | null = null;
       let triviaQuestionUpdates: TriviaQuestionUpdate[] = [];
+      let quizOutcome: QuizProcessingOutcome | null = null;
+
+      // Check if this is a quiz game (personality/archetype) - no leaderboard updates needed
+      quizOutcome = processQuizSubmission({
+        gameSnapshot,
+        submittedGameData: enrichedGameData,
+      });
+
+      if (quizOutcome) {
+        // Quiz games don't have scores or leaderboards
+        // Just log the completion and return success
+        console.log('submitGameScore: quiz game completed', {
+          uid,
+          gameId,
+          mode: quizOutcome.mode,
+          resultId: quizOutcome.resultId,
+          resultTitle: quizOutcome.resultTitle,
+        });
+
+        return {
+          success: true,
+          scores: {
+            previous: null,
+            current: 0,
+          },
+          custom: {
+            quiz: {
+              mode: quizOutcome.mode,
+              resultId: quizOutcome.resultId,
+              resultTitle: quizOutcome.resultTitle,
+            },
+          },
+        } as SubmitGameScoreResponse;
+      }
 
       triviaOutcome = await processTriviaSubmission({
         tx,

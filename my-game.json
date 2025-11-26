@@ -1,0 +1,159 @@
+{
+  "description": "",
+  "gameTypeId": "quiz",
+  "active": false,
+  "language": "en",
+  "image": "",
+  "vip": [],
+  "community": true,
+  "creator": {
+    "userid": "ohY3Co2zYLRuNBxR9pwXHv42IMi1",
+    "username": "LMalenboim",
+    "image": "https://pbs.twimg.com/profile_images/1940519956291948544/j8lmOJyP_400x400.png"
+  },
+  "gameHeader": "",
+  "shareText": "",
+  "gameInstruction": "",
+  "shareLink": "",
+  "custom": {
+    "mode": "fixed",
+    "questions": [
+      {
+        "id": "q_d6dg49ka",
+        "text": "כמה פעמים אתה מצייץ ביום?",
+        "answers": [
+          {
+            "text": "בין כלום לציוץ ",
+            "bucketPoints": {
+              "twitter": 1
+            },
+            "axisPoints": {}
+          },
+          {
+            "text": "2-4 ביום לא יותר מזה",
+            "bucketPoints": {
+              "twitter": 2
+            },
+            "axisPoints": {}
+          },
+          {
+            "text": "מרוב שאני מצייץ אני לא זוכר",
+            "bucketPoints": {
+              "twitter": 3
+            },
+            "axisPoints": {}
+          }
+        ]
+      },
+      {
+        "id": "q_dztv5myh",
+        "text": "כמה פעמיים אתה מגיב לאנשים?",
+        "answers": [
+          {
+            "text": "כמעט ולא מגיב",
+            "bucketPoints": {
+              "twitter": 1
+            },
+            "axisPoints": {}
+          },
+          {
+            "text": "עונה רק לדברים שיש לי עניין בהם",
+            "bucketPoints": {
+              "twitter": 2
+            },
+            "axisPoints": {}
+          },
+          {
+            "text": "עונה לכל פוסט וגם עונה לעצמי לפעמים",
+            "bucketPoints": {
+              "twitter": 3
+            },
+            "axisPoints": {}
+          }
+        ]
+      },
+      {
+        "id": "q_89ub2kll",
+        "text": "על מה אתה כותב בדרך כלל?",
+        "answers": [
+          {
+            "text": "דברים חשובים שנוגעים לליבי",
+            "bucketPoints": {
+              "twitter": 1
+            },
+            "axisPoints": {}
+          },
+          {
+            "text": "מגוון - אבל רק שיש לי משהו חכם להגיד",
+            "bucketPoints": {
+              "twitter": 2
+            },
+            "axisPoints": {}
+          },
+          {
+            "text": "מעדכן על בסיס שעתי מה אני חושב באותו רגע",
+            "bucketPoints": {
+              "twitter": 3
+            },
+            "axisPoints": {}
+          }
+        ]
+      }
+    ],
+    "language": "en",
+    "theme": {
+      "primaryColor": "#6366f1",
+      "secondaryColor": "#ec4899",
+      "backgroundColor": "#0f0f23",
+      "backgroundImageUrl": "",
+      "backgroundVideoUrl": "",
+      "backgroundOverlayColor": "rgba(0,0,0,0.7)"
+    },
+    "showProgress": true,
+    "shuffleQuestions": false,
+    "shuffleAnswers": false,
+    "mustLogin": false,
+    "allowRepeats": true,
+    "personalityBuckets": [
+      {
+        "id": "twitter",
+        "label": "טרול",
+        "description": "",
+        "imageUrl": "",
+        "results": [
+          {
+            "title": "אתה צייצן טוב - אולי קצת שקט מידי",
+            "description": "זה התיאור של הצייצן הטוב",
+            "imageUrl": "",
+            "shareText": "",
+            "maxScore": 4
+          },
+          {
+            "title": "אוהב לדבר - אבל שומר על אווירה טובה",
+            "description": "אחלה !",
+            "imageUrl": "",
+            "shareText": "",
+            "minScore": 5,
+            "maxScore": 8
+          },
+          {
+            "title": "אתה טרול!!",
+            "description": "עזוב אותנו אמאשלך",
+            "imageUrl": "",
+            "shareText": "",
+            "minScore": 9
+          }
+        ]
+      }
+    ],
+    "globalTimer": {
+      "enabled": false
+    },
+    "powerUps": [],
+    "powerUpsActive": false,
+    "unlimitedLives": true,
+    "showCorrectAnswers": true,
+    "showCorrectAnswersOnEnd": true
+  },
+  "name": "האם אתה טרול?"
+}
