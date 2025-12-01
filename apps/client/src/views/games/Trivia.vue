@@ -39,12 +39,18 @@
         :question-number="currentQuestionNumber"
         :total-questions="totalQuestions"
         :show-correct-answers="showCorrectAnswers"
+        :show-progress="showProgress"
         :direction="direction"
         :inviter="inviter"
         :theme="theme"
+        :is-logged-in="isLoggedIn"
+        :must-login="mustLogin"
+        :allow-repeats="allowRepeats"
+        :has-submitted="hasSubmitted"
         language="en"
         @start-game="startGame"
         @answer-question="answerQuestion"
+        @login="handleLogin"
       />
 
       <TriviaEndScreen
@@ -85,6 +91,7 @@ import TriviaScene from '@/components/games/trivia/TriviaScene.vue';
 import TriviaEndScreen from '@/components/games/trivia/TriviaEndScreen.vue';
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
+import { useLocaleStore } from '@/stores/locale';
 import { getUserPercentile } from '@/services/leaderboard';
 import { db } from '@top-x/shared';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
@@ -93,6 +100,7 @@ import type { Game } from '@top-x/shared/types/game';
 
 const triviaStore = useTriviaStore();
 const userStore = useUserStore();
+const localeStore = useLocaleStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -215,6 +223,16 @@ const mode = computed(() => triviaStore.mode);
 const language = computed(() => triviaStore.language);
 const showCorrectAnswers = computed(() => triviaStore.showCorrectAnswers);
 const showCorrectAnswersOnEnd = computed(() => triviaStore.showCorrectAnswersOnEnd);
+const showProgress = computed(() => triviaStore.showProgress);
+const mustLogin = computed(() => triviaStore.mustLogin);
+const allowRepeats = computed(() => triviaStore.allowRepeats);
+const hasSubmitted = computed(() => {
+  if (!mustLogin.value || !isLoggedIn.value) {
+    return false;
+  }
+  const gameData = userStore.profile?.games?.['trivia']?.[activeGameId.value];
+  return gameData !== undefined && (gameData.score !== undefined || gameData.custom !== undefined);
+});
 const correctAnswerIndex = computed(() => triviaStore.correctAnswerIndex);
 const isReviewingAnswer = computed(() => triviaStore.isReviewingAnswer);
 const answerSummary = computed(() => triviaStore.answerReview);
@@ -225,8 +243,8 @@ const configLives = computed(() => triviaStore.configLives);
 const unlimitedLives = computed(() => triviaStore.unlimitedLives);
 const theme = computed(() => triviaStore.theme);
 
-const direction = computed(() => 'ltr');
-const isRtl = computed(() => false);
+const direction = computed(() => localeStore.direction);
+const isRtl = computed(() => localeStore.direction === 'rtl');
 
 const themeStyles = computed(() => {
   const styles: Record<string, string> = {
@@ -317,8 +335,26 @@ watch(
   }
 );
 
-const startGame = () => {
+const startGame = async () => {
+  // Check if login is required
+  if (mustLogin.value && !isLoggedIn.value) {
+    return; // Login button will be shown instead
+  }
+
+  // Check allowRepeats only if mustLogin is true (as per requirement)
+  if (mustLogin.value && isLoggedIn.value && !allowRepeats.value && hasSubmitted.value) {
+    return; // Disabled button will be shown instead
+  }
+
   triviaStore.startGame();
+};
+
+const handleLogin = async () => {
+  await login();
+  // After login, if user can play, start the game automatically
+  if (isLoggedIn.value && (!mustLogin.value || allowRepeats.value || !hasSubmitted.value)) {
+    triviaStore.startGame();
+  }
 };
 
 const answerQuestion = (index: number) => triviaStore.answerQuestion(index);

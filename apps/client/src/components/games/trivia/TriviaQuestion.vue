@@ -1,5 +1,5 @@
 <template>
-  <Card v-if="question" class="trivia-question-card" :class="{ 'has-media': hasQuestionImage }">
+  <Card v-if="question" class="trivia-question-card" :class="{ 'has-media': hasQuestionImage, 'is-rtl': direction === 'rtl' }" :dir="direction">
     <div class="question-header">
       <div class="question-text">
         <h2 class="question-title">{{ question.question }}</h2>
@@ -25,12 +25,11 @@
             <img :src="option.imageUrl" :alt="`Option ${index + 1}`" />
           </div>
           <span class="option-label">{{ option.label }}</span>
+          <span v-if="getOptionFeedbackIcon(index)" class="option-feedback">
+            <span class="feedback-icon">{{ getOptionFeedbackIcon(index) }}</span>
+          </span>
         </div>
         <div class="option-right">
-          <span v-if="getOptionFeedback(index)" class="option-feedback">
-            <span class="feedback-icon">{{ getOptionFeedbackIcon(index) }}</span>
-            <span class="feedback-text">{{ getOptionFeedback(index) }}</span>
-          </span>
           <span class="option-index">{{ optionIndexLabel(index) }}</span>
         </div>
       </button>
@@ -111,7 +110,11 @@ const optionItems = computed<OptionItem[]>(() => {
 
 const disabled = computed(() => props.disabled || props.selectedAnswer !== null);
 
-const showFeedback = computed(() => props.selectedAnswer !== null && props.isCorrect !== null);
+const showFeedback = computed(() => {
+  // Show feedback when we have both a selected answer and know the correct answer
+  // (We always show feedback for the selected answer, but only reveal correct answer when showCorrectAnswers is enabled)
+  return props.selectedAnswer !== null && props.correctAnswerIndex !== null;
+});
 
 const optionClass = (index: number) => {
   const isSelected = props.selectedAnswer === index;
@@ -120,7 +123,9 @@ const optionClass = (index: number) => {
   
   const classes: Record<string, boolean> = {
     'is-selected': isSelected,
-    'is-correct': hasAnswer && correctIndexMatch,
+    // Always show correct/incorrect styling for selected answers
+    // For non-selected correct answers, only show when showCorrectAnswers is enabled
+    'is-correct': hasAnswer && correctIndexMatch && (isSelected || props.showCorrectAnswers),
     'is-incorrect': hasAnswer && isSelected && !correctIndexMatch && props.correctAnswerIndex !== null,
   };
   return classes;
@@ -134,13 +139,15 @@ const getOptionFeedback = (index: number): string => {
   const isSelected = props.selectedAnswer === index;
   const isCorrect = props.correctAnswerIndex === index;
   
+  // Always show feedback for selected answers
   if (isSelected && isCorrect) {
     return 'Correct!';
   }
   if (isSelected && !isCorrect) {
     return 'Wrong';
   }
-  if (!isSelected && isCorrect && props.selectedAnswer !== null) {
+  // Only show correct answer indicator for non-selected options when showCorrectAnswers is enabled
+  if (!isSelected && isCorrect && props.selectedAnswer !== null && props.showCorrectAnswers) {
     return 'Correct Answer';
   }
   
@@ -155,13 +162,15 @@ const getOptionFeedbackIcon = (index: number): string => {
   const isSelected = props.selectedAnswer === index;
   const isCorrect = props.correctAnswerIndex === index;
   
+  // Always show feedback icons for selected answers
   if (isSelected && isCorrect) {
     return '✅';
   }
   if (isSelected && !isCorrect) {
     return '❌';
   }
-  if (!isSelected && isCorrect && props.selectedAnswer !== null) {
+  // Only show correct answer icon for non-selected options when showCorrectAnswers is enabled
+  if (!isSelected && isCorrect && props.selectedAnswer !== null && props.showCorrectAnswers) {
     return '✓';
   }
   
@@ -259,10 +268,56 @@ const answer = (index: number) => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
+  position: relative;
+  overflow: visible;
+}
+
+.trivia-question-card.is-rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.trivia-question-card.is-rtl .question-header {
+  flex-direction: row-reverse;
+}
+
+.trivia-question-card.is-rtl .question-text {
+  text-align: right;
+}
+
+.trivia-question-card.is-rtl .question-title {
+  text-align: right;
 }
 
 .question-options.is-rtl {
   direction: rtl;
+}
+
+.question-options.is-rtl .option-button {
+  flex-direction: row-reverse;
+  direction: rtl;
+}
+
+.question-options.is-rtl .option-content {
+  text-align: right;
+  direction: rtl;
+  flex-direction: row;
+}
+
+.question-options.is-rtl .option-label {
+  text-align: right;
+  direction: rtl;
+}
+
+
+.question-options.is-rtl .option-right {
+  align-items: flex-start;
+  direction: ltr;
+}
+
+.question-options.is-rtl .option-feedback {
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .option-button {
@@ -279,6 +334,7 @@ const answer = (index: number) => {
   color: #fff;
   position: relative;
   min-height: 60px;
+  overflow: visible;
 }
 
 .option-button:hover:not(:disabled) {
@@ -315,6 +371,7 @@ const answer = (index: number) => {
   gap: 0.75rem;
   flex: 1;
   text-align: start;
+  position: relative;
 }
 
 .option-image {
@@ -345,22 +402,17 @@ const answer = (index: number) => {
   gap: 0.25rem;
   flex-shrink: 0;
   min-width: 40px;
-  position: relative;
 }
 
 .option-feedback {
-  position: absolute;
-  top: -0.5rem;
-  right: 0;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  z-index: 10;
+  justify-content: center;
+  padding: 0.35rem;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
   pointer-events: none;
 }
 
@@ -380,12 +432,11 @@ const answer = (index: number) => {
 }
 
 .feedback-icon {
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1;
-}
-
-.feedback-text {
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .option-index {
@@ -430,9 +481,17 @@ const answer = (index: number) => {
     width: 100%;
   }
 
+  .trivia-question-card.is-rtl .question-header {
+    flex-direction: column;
+  }
+
   .option-button {
     padding: 0.75rem 0.85rem;
     min-height: 56px;
+  }
+
+  .question-options.is-rtl .option-button {
+    flex-direction: row-reverse;
   }
 
   .option-right {
@@ -441,19 +500,13 @@ const answer = (index: number) => {
   }
 
   .option-feedback {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.4rem;
-    gap: 0.3rem;
-    top: -0.4rem;
-    right: -0.2rem;
+    padding: 0.3rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .feedback-icon {
-    font-size: 0.9rem;
-  }
-
-  .feedback-text {
-    font-size: 0.75rem;
+    font-size: 1rem;
   }
 
   .option-index {

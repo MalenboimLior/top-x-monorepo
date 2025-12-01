@@ -1089,6 +1089,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
   const language = computed(() => 'en');
   const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers));
   const showCorrectAnswersOnEnd = computed(() => Boolean(activeConfig.value?.showCorrectAnswersOnEnd));
+  const showProgress = computed(() => activeConfig.value?.showProgress ?? true);
+  const mustLogin = computed(() => Boolean(activeConfig.value?.mustLogin));
+  const allowRepeats = computed(() => activeConfig.value?.allowRepeats ?? true);
   const configLives = computed(() => activeConfig.value?.lives ?? DEFAULT_LIVES);
   const theme = computed(() => ({
     primaryColor: activeConfig.value?.theme?.primaryColor ?? '#8C52FF',
@@ -1162,6 +1165,9 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     language,
     showCorrectAnswers,
     showCorrectAnswersOnEnd,
+    showProgress,
+    mustLogin,
+    allowRepeats,
     configLives,
     unlimitedLives,
     hasPowerUps,

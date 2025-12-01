@@ -524,7 +524,7 @@
             <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
           </label>
           <label class="toggle">
-            <input type="checkbox" v-model="config.allowRepeats" />
+            <input type="checkbox" v-model="config.allowRepeats" :disabled="!config.mustLogin" />
             <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
           </label>
         </div>
@@ -596,7 +596,8 @@ const advancedSection = ref<HTMLElement | null>(null);
 // Computed properties for each section
 const showAdvancedSettings = computed(() => activeSection.value === 'advanced');
 const showPersonalityBuckets = computed(() => activeSection.value === 'personalityBuckets');
-const showArchetypeAxes = computed(() => activeSection.value === 'archetypeAxes');
+// Archetype axes should show if either axes or results is open (results is a sub-section)
+const showArchetypeAxes = computed(() => activeSection.value === 'archetypeAxes' || activeSection.value === 'archetypeResults');
 const showArchetypeResults = computed(() => activeSection.value === 'archetypeResults');
 const showQuestions = computed(() => activeSection.value === 'questions');
 
@@ -604,6 +605,10 @@ const showQuestions = computed(() => activeSection.value === 'questions');
 function toggleSection(section: string) {
   const wasOpen = activeSection.value === section;
   activeSection.value = wasOpen ? null : section;
+  
+  // Special handling: archetypeResults is a sub-section of archetypeAxes
+  // When opening results, we should ensure axes section is also accessible
+  // (handled via showArchetypeAxes computed property)
   
   // Scroll to section header when opening
   if (!wasOpen) {
@@ -616,6 +621,10 @@ function toggleSection(section: string) {
         case 'archetypeAxes':
           sectionElement = archetypeAxesSection.value;
           break;
+        case 'archetypeResults':
+          // For results, scroll to the axes section since that's where the results button is
+          sectionElement = archetypeAxesSection.value;
+          break;
         case 'questions':
           sectionElement = questionsSection.value;
           break;
@@ -625,6 +634,20 @@ function toggleSection(section: string) {
       }
       
       if (sectionElement) {
+        // For archetypeResults, find the results toggle button
+        if (section === 'archetypeResults') {
+          const resultsToggle = sectionElement.querySelector('.section-toggle--sub') as HTMLElement;
+          if (resultsToggle) {
+            const elementPosition = resultsToggle.getBoundingClientRect().top + window.pageYOffset;
+            const offsetPosition = elementPosition - 20;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+            return;
+          }
+        }
+        
         // Find the toggle button (header) within the section
         const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
         const targetElement = toggleButton || sectionElement;
@@ -670,6 +693,16 @@ watch(
   { deep: true }
 );
 
+watch(
+  () => config.value.mustLogin,
+  (mustLogin) => {
+    if (!mustLogin) {
+      config.value.allowRepeats = true;
+    }
+  },
+  { immediate: true }
+);
+
 function hydrateConfig(value: QuizConfig): EditableQuizConfig {
   const base = value ? JSON.parse(JSON.stringify(value)) : {};
   
@@ -696,7 +729,7 @@ function hydrateConfig(value: QuizConfig): EditableQuizConfig {
     shuffleQuestions: base.shuffleQuestions ?? false,
     shuffleAnswers: base.shuffleAnswers ?? false,
     mustLogin: base.mustLogin ?? false,
-    allowRepeats: base.allowRepeats ?? true,
+    allowRepeats: base.mustLogin === false ? true : (base.allowRepeats ?? true),
   };
 }
 
@@ -749,7 +782,8 @@ function sanitizeConfig(value: EditableQuizConfig): QuizConfig {
     shuffleQuestions: value.shuffleQuestions,
     shuffleAnswers: value.shuffleAnswers,
     mustLogin: value.mustLogin,
-    allowRepeats: value.allowRepeats,
+    // Enforce: if mustLogin is false, allowRepeats must be true
+    allowRepeats: value.mustLogin === false ? true : value.allowRepeats,
   };
 
   if (value.mode === 'personality') {

@@ -30,7 +30,28 @@
             </div>
           </div>
 
+          <div v-if="mustLogin && !isLoggedIn" class="login-section">
+            <CustomButton
+              class="start-button"
+              type="is-primary"
+              :icon="['fab', 'x-twitter']"
+              :label="loginButtonLabel"
+              @click="handleLogin"
+            />
+            <p class="login-message">{{ loginRequiredMessage }}</p>
+          </div>
+          <div v-else-if="mustLogin && !allowRepeats && hasSubmitted" class="disabled-section">
+            <CustomButton
+              class="start-button"
+              type="is-primary"
+              :icon="startButtonIcon"
+              :label="startButtonLabel"
+              disabled
+            />
+            <p class="disabled-message">{{ alreadySubmittedMessage }}</p>
+          </div>
           <CustomButton
+            v-else
             class="start-button"
             type="is-primary"
             :icon="startButtonIcon"
@@ -72,7 +93,7 @@
             </div>
           </div>
 
-          <div class="hud-progress">
+          <div v-if="showProgress" class="hud-progress">
             <div
               v-if="!unlimitedLives || progressPercent !== null"
               class="progress-track"
@@ -171,6 +192,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import TriviaQuestion from './TriviaQuestion.vue';
+import { useLocaleStore } from '@/stores/locale';
 import type { TriviaQuestionViewModel, PowerUpState } from '@/stores/trivia/types';
 
 interface InviterDetails {
@@ -203,12 +225,17 @@ interface Props {
   questionNumber: number | null;
   totalQuestions: number | null;
   showCorrectAnswers: boolean;
+  showProgress: boolean;
   direction: 'ltr' | 'rtl';
   inviter: InviterDetails | null;
   theme: Record<string, string | undefined>;
   language: string;
   lastSpeedBonus: number;
   lastStreakBonus: number;
+  isLoggedIn: boolean;
+  mustLogin: boolean;
+  allowRepeats: boolean;
+  hasSubmitted: boolean;
 }
 
 const props = defineProps<Props>();
@@ -216,7 +243,11 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'start-game'): void;
   (e: 'answer-question', index: number): void;
+  (e: 'login'): void;
 }>();
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const circumference = 2 * Math.PI * 54;
 
@@ -501,8 +532,13 @@ const startButtonLabel = computed(() => {
 });
 
 const startRun = () => emit('start-game');
+const handleLogin = () => emit('login');
 
 const onAnswer = (index: number) => emit('answer-question', index);
+
+const loginButtonLabel = computed(() => t('games.loginButton'));
+const loginRequiredMessage = computed(() => t('games.loginRequired'));
+const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
 </script>
 
 <style scoped>
@@ -624,6 +660,31 @@ const onAnswer = (index: number) => emit('answer-question', index);
   margin-top: 1rem;
 }
 
+.login-section,
+.disabled-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.login-message,
+.disabled-message {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  width: 100%;
+}
+
+.disabled-message {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .scene-hud {
   display: flex;
   flex-direction: column;
@@ -632,6 +693,8 @@ const onAnswer = (index: number) => emit('answer-question', index);
   border-radius: 18px;
   padding: 1.5rem;
   box-shadow: 0 20px 35px rgba(0, 0, 0, 0.25);
+  direction: ltr;
+  text-align: left;
 }
 
 .hud-main {

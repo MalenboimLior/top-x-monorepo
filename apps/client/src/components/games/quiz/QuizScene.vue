@@ -17,7 +17,46 @@
             </div>
           </div>
 
+          <!-- Saved Result Display -->
+          <div v-if="savedResult" class="saved-result-section">
+            <h3 class="saved-result-title">Your Previous Result</h3>
+            <PersonalityResult
+              v-if="savedResult.type === 'personality'"
+              :result="savedResult.result as any"
+              :theme="theme"
+              :show-breakdown="false"
+            />
+            <ArchetypeResult
+              v-else-if="savedResult.type === 'archetype'"
+              :result="savedResult.result as any"
+              :theme="theme"
+            />
+          </div>
+
+          <div v-if="mustLogin && !isLoggedIn" class="login-section">
+            <CustomButton
+              class="start-button"
+              type="is-primary"
+              :icon="['fab', 'x-twitter']"
+              :label="loginButtonLabel"
+              :loading="isLoading"
+              @click="handleLogin"
+            />
+            <p class="login-message">{{ loginRequiredMessage }}</p>
+          </div>
+          <div v-else-if="mustLogin && !allowRepeats && hasSubmitted" class="disabled-section">
+            <CustomButton
+              class="start-button"
+              type="is-primary"
+              :icon="['fas', 'play']"
+              label="Start Quiz"
+              :loading="isLoading"
+              disabled
+            />
+            <p class="disabled-message">{{ alreadySubmittedMessage }}</p>
+          </div>
           <CustomButton
+            v-else
             class="start-button"
             type="is-primary"
             :icon="['fas', 'play']"
@@ -66,6 +105,9 @@ import { computed } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import QuizQuestion from './QuizQuestion.vue';
+import PersonalityResult from './PersonalityResult.vue';
+import ArchetypeResult from './ArchetypeResult.vue';
+import { useLocaleStore } from '@/stores/locale';
 import type { QuizQuestionViewModel } from '@/stores/quiz';
 import type { QuizThemeConfig } from '@top-x/shared/types/quiz';
 
@@ -87,6 +129,11 @@ interface Props {
   inviter: InviterDetails | null;
   theme: QuizThemeConfig;
   language: string;
+  isLoggedIn: boolean;
+  mustLogin: boolean;
+  allowRepeats: boolean;
+  hasSubmitted: boolean;
+  savedResult?: { type: 'personality' | 'archetype'; result: unknown } | null;
 }
 
 const props = defineProps<Props>();
@@ -95,7 +142,11 @@ const emit = defineEmits<{
   (e: 'start-game'): void;
   (e: 'select-answer', index: number): void;
   (e: 'go-back'): void;
+  (e: 'login'): void;
 }>();
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const title = computed(() => {
   return props.mode === 'personality' ? 'Personality Quiz' : 'Discover Your Type';
@@ -109,8 +160,13 @@ const subtitle = computed(() => {
 });
 
 const startRun = () => emit('start-game');
+const handleLogin = () => emit('login');
 const onSelectAnswer = (index: number) => emit('select-answer', index);
 const onGoBack = () => emit('go-back');
+
+const loginButtonLabel = computed(() => t('games.loginButton'));
+const loginRequiredMessage = computed(() => t('games.loginRequired'));
+const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
 </script>
 
 <style scoped>
@@ -204,6 +260,31 @@ const onGoBack = () => emit('go-back');
   margin-top: 0.5rem;
 }
 
+.login-section,
+.disabled-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.login-message,
+.disabled-message {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  width: 100%;
+}
+
+.disabled-message {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* Progress Bar */
 .quiz-progress {
   background: rgba(10, 12, 25, 0.7);
@@ -290,6 +371,24 @@ const onGoBack = () => emit('go-back');
   text-align: end;
 }
 
+/* Saved Result Section */
+.saved-result-section {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+}
+
+.saved-result-title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-secondary);
+  margin: 0 0 1rem;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
   .scene-section > * {
     width: 100%;
@@ -316,6 +415,10 @@ const onGoBack = () => emit('go-back');
 
   .progress-bar {
     height: 6px;
+  }
+
+  .saved-result-section {
+    padding: 1.25rem;
   }
 }
 </style>

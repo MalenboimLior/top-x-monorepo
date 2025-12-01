@@ -67,11 +67,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PersonalityResult from './PersonalityResult.vue';
 import ArchetypeResult from './ArchetypeResult.vue';
+import { useUserStore } from '@/stores/user';
 import type { PersonalityScoreResult, ArchetypeScoreResult } from '@top-x/shared/quiz/scoring';
 import type { QuizThemeConfig } from '@top-x/shared/types/quiz';
 
@@ -89,11 +90,13 @@ interface Props {
   inviter: InviterDetails | null;
   shareUrl: string;
   shareText: string;
+  gameId?: string;
   language: string;
   userImage: string;
 }
 
 const props = defineProps<Props>();
+const userStore = useUserStore();
 
 const emit = defineEmits<{
   (e: 'play-again'): void;
@@ -101,6 +104,38 @@ const emit = defineEmits<{
 }>();
 
 const copied = ref(false);
+
+// Save quiz result when component mounts (if user is logged in)
+onMounted(async () => {
+  if (props.isLoggedIn && props.gameId && userStore.user) {
+    await saveQuizResult();
+  }
+});
+
+async function saveQuizResult() {
+  if (!props.gameId || !userStore.user) {
+    return;
+  }
+
+  const custom: Record<string, unknown> = {};
+  if (props.mode === 'personality' && props.personalityResult) {
+    custom.personalityResult = props.personalityResult;
+  } else if (props.mode === 'archetype' && props.archetypeResult) {
+    custom.archetypeResult = props.archetypeResult;
+  }
+
+  if (Object.keys(custom).length > 0) {
+    try {
+      await userStore.updateGameProgress('quiz', props.gameId, {
+        score: 0, // Quiz doesn't use score
+        streak: 0,
+        custom,
+      });
+    } catch (err) {
+      console.error('Failed to save quiz result:', err);
+    }
+  }
+}
 
 const twitterShareUrl = computed(() => {
   const text = encodeURIComponent(props.shareText);

@@ -105,7 +105,13 @@
                       :value="option"
                       v-model="question.correctAnswer"
                     />
-                    <span class="answer-option__number">{{ optionIndex + 1 }}</span>
+                    <span 
+                      class="answer-option__indicator"
+                      :class="{ 'answer-option__indicator--correct': question.correctAnswer === option }"
+                    >
+                      <span v-if="question.correctAnswer === option" class="answer-option__checkmark">✓</span>
+                      <span v-else class="answer-option__number">{{ optionIndex + 1 }}</span>
+                    </span>
                   </label>
                   <div class="answer-option__content">
                     <div class="answer-input-wrapper">
@@ -236,7 +242,7 @@
             <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
           </label>
           <label class="toggle">
-            <input type="checkbox" v-model="config.allowRepeats" />
+            <input type="checkbox" v-model="config.allowRepeats" :disabled="!config.mustLogin" />
             <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
           </label>
           <label v-if="config.mode === 'classic'" class="toggle">
@@ -247,16 +253,10 @@
             <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" />
             <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
           </label>
-        </div>
-
-        <!-- Trivia-specific: Lives (Speed mode only) -->
-        <div v-if="config.mode === 'speed'" class="settings-group">
-          <h3>{{ t('build.trivia.session.lives.title') }}</h3>
-          <div class="field">
-            <label :for="ids.lives">{{ t('build.trivia.session.lives.count') }}</label>
+          <label v-if="config.mode === 'speed'" class="toggle">
+            <span>{{ t('build.trivia.session.lives.count') }}</span>
             <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
-            <p class="muted">{{ t('build.trivia.session.lives.hint') }}</p>
-          </div>
+          </label>
         </div>
 
         <!-- Theme Settings -->
@@ -513,6 +513,16 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => config.value.mustLogin,
+  (mustLogin) => {
+    if (!mustLogin) {
+      config.value.allowRepeats = true;
+    }
+  },
+  { immediate: true },
+);
+
 function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   const base: TriviaConfig = value
     ? JSON.parse(JSON.stringify(value))
@@ -520,7 +530,7 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
         mode: 'classic',
         questions: [],
         powerUpsActive: false,
-        allowRepeats: false,
+        allowRepeats: true,
         unlimitedLives: true,
         showCorrectAnswers: true,
         showCorrectAnswersOnEnd: true,
@@ -581,6 +591,11 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   } else if (base.mode === 'speed') {
     base.unlimitedLives = true; // Always true for speed mode (per plan)
     base.lives = sanitizePositiveInteger(base.lives) ?? 3;
+  }
+
+  // Enforce: if mustLogin is false, allowRepeats must be true
+  if (base.mustLogin === false) {
+    base.allowRepeats = true;
   }
 
   return base as TriviaConfigWithTheme;
@@ -681,8 +696,9 @@ async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfi
   }
 
   clone.powerUpsActive = Boolean(clone.powerUpsActive);
-  clone.allowRepeats = Boolean(clone.allowRepeats);
   clone.mustLogin = Boolean(clone.mustLogin);
+  // Enforce: if mustLogin is false, allowRepeats must be true
+  clone.allowRepeats = clone.mustLogin === false ? true : Boolean(clone.allowRepeats);
   clone.showProgress = Boolean(clone.showProgress);
   clone.shuffleQuestions = Boolean(clone.shuffleQuestions);
   clone.shuffleAnswers = Boolean(clone.shuffleAnswers);
@@ -1224,8 +1240,8 @@ function removePowerUp(index: number) {
 }
 
 .answer-option--correct {
-  border-color: var(--color-border-primary);
-  background: var(--color-primary-bg);
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .answer-option__content {
@@ -1249,7 +1265,7 @@ function removePowerUp(index: number) {
   margin: 0;
 }
 
-.answer-option__number {
+.answer-option__indicator {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -1262,16 +1278,35 @@ function removePowerUp(index: number) {
   font-weight: 600;
   color: var(--color-text-secondary);
   flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.answer-option__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.answer-option__checkmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
 .answer-option__radio input[type='radio'] {
   display: none;
 }
 
-.answer-option__radio input[type='radio']:checked + .answer-option__number {
-  background: var(--bulma-primary);
-  border-color: var(--bulma-primary);
-  color: var(--color-text-on-primary);
+.answer-option__indicator--correct {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
 }
 
 .answer-option__input {
@@ -1539,6 +1574,21 @@ function removePowerUp(index: number) {
   width: 18px;
   height: 18px;
   accent-color: var(--bulma-primary);
+}
+
+.toggle input[type='number'] {
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  width: 80px;
+}
+
+.toggle input[type='number']:focus {
+  outline: none;
+  border-color: var(--color-border-primary);
 }
 
 .field {

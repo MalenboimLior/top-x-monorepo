@@ -25,10 +25,16 @@
         :direction="direction"
         :inviter="inviter"
         :theme="theme"
+        :is-logged-in="isLoggedIn"
+        :must-login="mustLogin"
+        :allow-repeats="allowRepeats"
+        :has-submitted="hasSubmitted"
+        :saved-result="savedResult"
         language="en"
         @start-game="startGame"
         @select-answer="selectAnswer"
         @go-back="goBack"
+        @login="handleLogin"
       />
 
       <QuizEndScreen
@@ -41,6 +47,7 @@
         :inviter="inviter"
         :share-url="shareUrl"
         :share-text="shareText"
+        :game-id="quizStore.activeGameId"
         language="en"
         :user-image="userImage"
         @play-again="resetGame"
@@ -58,9 +65,11 @@ import QuizScene from '@/components/games/quiz/QuizScene.vue';
 import QuizEndScreen from '@/components/games/quiz/QuizEndScreen.vue';
 import { useQuizStore } from '@/stores/quiz';
 import { useUserStore } from '@/stores/user';
+import { useLocaleStore } from '@/stores/locale';
 
 const quizStore = useQuizStore();
 const userStore = useUserStore();
+const localeStore = useLocaleStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -83,10 +92,14 @@ if (initialGameId) {
 // Watch for game ID changes
 watch(
   () => route.query.game,
-  (nextGame) => {
+  async (nextGame) => {
     const normalized = typeof nextGame === 'string' && nextGame.trim().length > 0 ? nextGame : '';
     if (normalized && normalized !== quizStore.activeGameId) {
       quizStore.setGameId(normalized);
+      // Load config when game ID changes
+      if (!quizStore.configLoaded) {
+        await quizStore.loadConfig();
+      }
     }
   }
 );
@@ -98,13 +111,51 @@ const currentQuestionNumber = computed(() => quizStore.currentQuestionNumber);
 const totalQuestions = computed(() => quizStore.totalQuestions);
 const progress = computed(() => quizStore.progress);
 const showProgress = computed(() => quizStore.showProgress);
+const mustLogin = computed(() => {
+  const config = quizStore.config;
+  return Boolean(config?.mustLogin);
+});
+const allowRepeats = computed(() => {
+  const config = quizStore.config;
+  return config?.allowRepeats ?? true;
+});
+const hasSubmitted = computed(() => {
+  if (!mustLogin.value || !isLoggedIn.value || !quizStore.activeGameId) {
+    return false;
+  }
+  const gameData = userStore.profile?.games?.['quiz']?.[quizStore.activeGameId];
+  // Check if quiz result is saved in custom data
+  if (gameData?.custom) {
+    const custom = gameData.custom as Record<string, unknown>;
+    return custom.personalityResult !== undefined || custom.archetypeResult !== undefined;
+  }
+  return false;
+});
+
+// Load saved quiz result from user profile
+const savedResult = computed(() => {
+  if (!isLoggedIn.value || !quizStore.activeGameId) {
+    return null;
+  }
+  const gameData = userStore.profile?.games?.['quiz']?.[quizStore.activeGameId];
+  if (gameData?.custom) {
+    const custom = gameData.custom as Record<string, unknown>;
+    if (custom.personalityResult) {
+      return { type: 'personality' as const, result: custom.personalityResult };
+    }
+    if (custom.archetypeResult) {
+      return { type: 'archetype' as const, result: custom.archetypeResult };
+    }
+  }
+  return null;
+});
 const mode = computed(() => quizStore.mode);
 const isLoading = computed(() => quizStore.isLoading);
 const error = computed(() => quizStore.error);
 const inviter = computed(() => quizStore.inviter);
 const theme = computed(() => quizStore.theme);
-const direction = computed(() => 'ltr');
-const isRtl = computed(() => false);
+const direction = computed(() => localeStore.direction);
+const isRtl = computed(() => localeStore.direction === 'rtl');
 const personalityResult = computed(() => quizStore.personalityResult);
 const archetypeResult = computed(() => quizStore.archetypeResult);
 const shareUrl = computed(() => quizStore.shareUrl);
@@ -126,8 +177,26 @@ const themeStyles = computed(() => {
 });
 
 // Actions
-const startGame = () => {
+const startGame = async () => {
+  // Check if login is required
+  if (mustLogin.value && !isLoggedIn.value) {
+    return; // Login button will be shown instead
+  }
+
+  // Check allowRepeats only if mustLogin is true (as per requirement)
+  if (mustLogin.value && isLoggedIn.value && !allowRepeats.value && hasSubmitted.value) {
+    return; // Disabled button will be shown instead
+  }
+
   quizStore.startGame();
+};
+
+const handleLogin = async () => {
+  await login();
+  // After login, if user can play, start the game automatically
+  if (isLoggedIn.value && (!mustLogin.value || allowRepeats.value || !hasSubmitted.value)) {
+    quizStore.startGame();
+  }
 };
 
 const selectAnswer = (index: number) => {
@@ -156,8 +225,13 @@ watch(
   }
 );
 
-// Load inviter if specified
-onMounted(() => {
+// Load config and inviter on mount
+onMounted(async () => {
+  // Ensure config is loaded before showing start screen
+  if (!quizStore.configLoaded && quizStore.activeGameId) {
+    await quizStore.loadConfig();
+  }
+  
   const inviterUid = route.query.inviter as string;
   if (inviterUid) {
     quizStore.setInviter(inviterUid);
