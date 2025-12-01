@@ -49,7 +49,8 @@ import PyramidNav from '@/components/games/pyramid/PyramidNav.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
-import { analytics } from '@top-x/shared';
+import { analytics, db } from '@top-x/shared';
+import { doc, getDoc } from 'firebase/firestore';
 
 const route = useRoute();
 const router = useRouter();
@@ -119,8 +120,19 @@ onMounted(async () => {
   try {
     const gameResult = await getGame(gameId.value);
 
-    if (gameResult.game) {
-      const gameData = gameResult.game;
+    if (!gameResult.game) {
+      console.error('PyramidTier: Game not found');
+      return;
+    }
+
+    const gameData = gameResult.game;
+    
+    // Check if game is active - if not, redirect home (game is not playable)
+    if (!gameData.active) {
+      console.error('PyramidTier: Game is not active, redirecting home');
+      router.push('/');
+      return;
+    }
       gameTitle.value = gameData.name || '';
       gameDescription.value = gameData.description || '';
       gameHeader.value = gameData.gameHeader || 'Your Pyramid';
@@ -159,9 +171,6 @@ onMounted(async () => {
         worstPoints: worstPoints.value,
         worstShow: worstShow.value
       });
-    } else {
-      console.error('PyramidTier: Game document not found for ID:', gameId.value);
-    }
 
     // Load pyramid state based on user login status
     if (userStore.user) {

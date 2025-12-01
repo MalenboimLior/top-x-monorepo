@@ -113,11 +113,15 @@ function mapGameDocument(docSnap: QueryDocumentSnapshot<DocumentData>): Game {
     name: data.name || 'Unnamed Game',
     description: data.description || 'No description available',
     gameTypeId: data.gameTypeId || '',
-    active: data.active ?? false,
+    active: data.active ?? true, // Default to true for new games
     gameHeader: data.gameHeader,
     gameInstruction: data.gameInstruction,
     shareText: data.shareText,
     image: data.image || '',
+    imageGradient: Array.isArray(data.imageGradient) && data.imageGradient.length === 2 
+      ? data.imageGradient as [string, string]
+      : undefined,
+    imageGradientTextColor: data.imageGradientTextColor || undefined,
     language: data.language || 'en',
     shareLink: data.shareLink || '',
     vip: Array.isArray(data.vip) ? data.vip : [],

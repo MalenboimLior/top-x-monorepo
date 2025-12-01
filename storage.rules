@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Allow authenticated users to upload and read quiz images
+    match /images/quiz/{gameId}/{allPaths=**} {
+      allow read: if true; // Anyone can read images
+      allow write: if isAuthenticated(); // Only authenticated users can upload
+    }
+    
+    // Allow authenticated users to upload and read trivia images
+    match /trivia/{gameId}/{allPaths=**} {
+      allow read: if true; // Anyone can read images
+      allow write: if isAuthenticated(); // Only authenticated users can upload
+    }
+    
+    // Allow authenticated users to upload and read pyramid images
+    match /pyramid/{allPaths=**} {
+      allow read: if true; // Anyone can read images
+      allow write: if isAuthenticated(); // Only authenticated users can upload
+    }
+    
+    // Allow authenticated users to upload and read game cover images
+    match /images/games/{gameId}/{allPaths=**} {
+      allow read: if true; // Anyone can read images
+      allow write: if isAuthenticated(); // Only authenticated users can upload
+    }
+    
+    // Default: deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

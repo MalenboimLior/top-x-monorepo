@@ -26,13 +26,14 @@
           </div>
           <span class="option-label">{{ option.label }}</span>
         </div>
-        <span class="option-index">{{ optionIndexLabel(index) }}</span>
+        <div class="option-right">
+          <span v-if="getOptionFeedback(index)" class="option-feedback">
+            <span class="feedback-icon">{{ getOptionFeedbackIcon(index) }}</span>
+            <span class="feedback-text">{{ getOptionFeedback(index) }}</span>
+          </span>
+          <span class="option-index">{{ optionIndexLabel(index) }}</span>
+        </div>
       </button>
-    </div>
-
-    <div v-if="showFeedback" class="question-feedback" :class="feedbackClass">
-      <span class="feedback-icon" aria-hidden="true">{{ feedbackIcon }}</span>
-      <span class="feedback-text">{{ feedbackMessage }}</span>
     </div>
   </Card>
   <div v-else class="question-empty">No question available.</div>
@@ -112,36 +113,59 @@ const disabled = computed(() => props.disabled || props.selectedAnswer !== null)
 
 const showFeedback = computed(() => props.selectedAnswer !== null && props.isCorrect !== null);
 
-const feedbackMessage = computed(() => {
-  if (!showFeedback.value) {
-    return '';
-  }
-  return props.isCorrect ? 'Correct! Keep the streak going!' : 'Not quite. Try the next one!';
-});
-
-const feedbackClass = computed(() => ({
-  'is-correct': props.isCorrect,
-  'is-incorrect': props.isCorrect === false,
-}));
-
-const feedbackIcon = computed(() => {
-  if (!showFeedback.value) {
-    return '';
-  }
-  return props.isCorrect ? '✅' : '❌';
-});
-
 const optionClass = (index: number) => {
-  const reveal = props.showCorrectAnswers && props.isReviewingAnswer;
   const isSelected = props.selectedAnswer === index;
   const correctIndexMatch = props.correctAnswerIndex === index;
+  const hasAnswer = props.selectedAnswer !== null;
+  
   const classes: Record<string, boolean> = {
     'is-selected': isSelected,
-    'is-correct': reveal && correctIndexMatch,
-    'is-incorrect':
-      reveal && isSelected && !correctIndexMatch && props.correctAnswerIndex !== null,
+    'is-correct': hasAnswer && correctIndexMatch,
+    'is-incorrect': hasAnswer && isSelected && !correctIndexMatch && props.correctAnswerIndex !== null,
   };
   return classes;
+};
+
+const getOptionFeedback = (index: number): string => {
+  if (!showFeedback.value) {
+    return '';
+  }
+  
+  const isSelected = props.selectedAnswer === index;
+  const isCorrect = props.correctAnswerIndex === index;
+  
+  if (isSelected && isCorrect) {
+    return 'Correct!';
+  }
+  if (isSelected && !isCorrect) {
+    return 'Wrong';
+  }
+  if (!isSelected && isCorrect && props.selectedAnswer !== null) {
+    return 'Correct Answer';
+  }
+  
+  return '';
+};
+
+const getOptionFeedbackIcon = (index: number): string => {
+  if (!showFeedback.value) {
+    return '';
+  }
+  
+  const isSelected = props.selectedAnswer === index;
+  const isCorrect = props.correctAnswerIndex === index;
+  
+  if (isSelected && isCorrect) {
+    return '✅';
+  }
+  if (isSelected && !isCorrect) {
+    return '❌';
+  }
+  if (!isSelected && isCorrect && props.selectedAnswer !== null) {
+    return '✓';
+  }
+  
+  return '';
 };
 
 const optionIndexLabel = (index: number) => String.fromCharCode(65 + index);
@@ -165,10 +189,10 @@ const answer = (index: number) => {
   position: relative;
   overflow: hidden;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-  width: 100%;
+  width: 720px;
   max-width: 720px;
   margin: 0 auto;
-  min-width: 0;
+  box-sizing: border-box;
 }
 
 .question-header {
@@ -253,6 +277,8 @@ const answer = (index: number) => {
   cursor: pointer;
   transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
   color: #fff;
+  position: relative;
+  min-height: 60px;
 }
 
 .option-button:hover:not(:disabled) {
@@ -274,11 +300,13 @@ const answer = (index: number) => {
 .option-button.is-correct {
   border-color: #4ade80;
   background: rgba(74, 222, 128, 0.12);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
 }
 
 .option-button.is-incorrect {
   border-color: #f87171;
   background: rgba(248, 113, 113, 0.12);
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
 }
 
 .option-content {
@@ -309,33 +337,63 @@ const answer = (index: number) => {
   line-height: 1.4;
 }
 
-.option-index {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.4);
+.option-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  min-width: 40px;
+  position: relative;
 }
 
-.question-feedback {
+.option-feedback {
+  position: absolute;
+  top: -0.5rem;
+  right: 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.9rem 1.1rem;
-  border-radius: 12px;
+  gap: 0.4rem;
+  font-size: 0.85rem;
   font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
 }
 
-.question-feedback.is-correct {
+.option-button.is-correct .option-feedback {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.option-button.is-incorrect .option-feedback {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.option-button.is-correct:not(.is-selected) .option-feedback {
   background: rgba(74, 222, 128, 0.15);
   color: #4ade80;
 }
 
-.question-feedback.is-incorrect {
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
+.feedback-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
-.feedback-icon {
-  font-size: 1.25rem;
+.feedback-text {
+  font-size: 0.85rem;
+}
+
+.option-index {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .question-empty {
@@ -345,6 +403,13 @@ const answer = (index: number) => {
 }
 
 @media (max-width: 768px) {
+  .trivia-question-card {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    padding: 1.25rem;
+  }
+
   .question-header {
     flex-direction: column;
     align-items: flex-start;
@@ -363,6 +428,36 @@ const answer = (index: number) => {
   .question-media {
     max-width: 100%;
     width: 100%;
+  }
+
+  .option-button {
+    padding: 0.75rem 0.85rem;
+    min-height: 56px;
+  }
+
+  .option-right {
+    gap: 0.2rem;
+    min-width: 36px;
+  }
+
+  .option-feedback {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+    gap: 0.3rem;
+    top: -0.4rem;
+    right: -0.2rem;
+  }
+
+  .feedback-icon {
+    font-size: 0.9rem;
+  }
+
+  .feedback-text {
+    font-size: 0.75rem;
+  }
+
+  .option-index {
+    font-size: 1rem;
   }
 }
 </style>

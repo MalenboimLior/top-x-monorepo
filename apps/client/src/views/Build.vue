@@ -24,8 +24,8 @@
 
     <!-- Main Content (when logged in) -->
     <section v-else class="build-body">
-      <!-- Dashboard View (when not editing) -->
-      <div v-if="!isEditing" class="build-dashboard">
+      <!-- Dashboard View -->
+      <div class="build-dashboard">
         <!-- Game Type Selection (BuildSection-like) -->
         <div class="build-panel build-panel--full">
           <div class="build-panel__header">
@@ -117,74 +117,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Default Config Selection View -->
-      <div v-if="isEditing && showDefaultConfigSelection" class="build-flow">
-        <button class="build-flow__back" type="button" @click="handleCancel">
-          {{ content.editor.back }}
-        </button>
-        <div class="build-flow__header">
-          <h2>{{ t('build.defaultConfigs.title') || 'Choose a Template' }}</h2>
-          <p>{{ t('build.defaultConfigs.subtitle') || 'Select a template to start with, or create from scratch' }}</p>
-        </div>
-        <div class="build-flow__surface">
-          <div class="default-configs-selection">
-            <div class="default-configs-grid">
-              <button
-                v-for="defaultConfig in availableDefaultConfigs"
-                :key="defaultConfig.name"
-                class="default-config-card"
-                type="button"
-                @click="selectDefaultConfig(defaultConfig)"
-              >
-                <div v-if="defaultConfig.image" class="default-config-card__image">
-                  <img :src="defaultConfig.image" :alt="defaultConfig.name" />
-                </div>
-                <div v-else class="default-config-card__image default-config-card__image--placeholder">
-                  <span>{{ defaultConfig.name.charAt(0) }}</span>
-                </div>
-                <h3 class="default-config-card__title">{{ defaultConfig.name }}</h3>
-                <p class="default-config-card__description">
-                  {{ t('build.defaultConfigs.useTemplate') || 'Use this template' }}
-                </p>
-              </button>
-              <button
-                class="default-config-card default-config-card--scratch"
-                type="button"
-                @click="startFromScratch"
-              >
-                <div class="default-config-card__image default-config-card__image--placeholder">
-                  <span>+</span>
-                </div>
-                <h3 class="default-config-card__title">{{ t('build.defaultConfigs.startFromScratch') || 'Start from Scratch' }}</h3>
-                <p class="default-config-card__description">
-                  {{ t('build.defaultConfigs.createEmpty') || 'Create an empty game' }}
-                </p>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Game Editor View -->
-      <div v-if="isEditing && !showDefaultConfigSelection" class="build-flow">
-        <button class="build-flow__back" type="button" @click="handleCancel">
-          {{ content.editor.back }}
-        </button>
-        <div class="build-flow__header">
-          <h2>{{ editorHeading }}</h2>
-          <p>{{ content.editor.subtitle }}</p>
-        </div>
-        <div class="build-flow__surface">
-          <BuildAddNewGame
-            :gameType="selectedGameType!"
-            :existingGame="selectedGame"
-            :selectedDefaultConfig="selectedDefaultConfig"
-            @save="handleSave"
-            @cancel="handleCancel"
-          />
-        </div>
-      </div>
     </section>
 
 
@@ -230,26 +162,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, nextTick } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { useUserStore } from '@/stores/user';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
-import type { GameType, Game, GameCustomConfig } from '@top-x/shared/types/game';
+import type { GameType, Game } from '@top-x/shared/types/game';
 import { useLocaleStore } from '@/stores/locale';
 import { deleteGame } from '@/services/game';
 import { DEFAULT_GAME_TYPE_ICON, GAME_TYPE_ICON_MAP } from '@top-x/shared/constants/gameTypes';
 
+const router = useRouter();
 const userStore = useUserStore();
-const user = ref(userStore.user);
+const user = computed(() => userStore.user);
 const availableGameTypes = ref<GameType[]>([]);
 const myGames = ref<Game[]>([]);
-const selectedGameType = ref<GameType | null>(null);
-const selectedGame = ref<Game | null>(null);
-const showDefaultConfigSelection = ref(false);
-const selectedDefaultConfig = ref<GameCustomConfig | null>(null);
 const showDeleteModal = ref(false);
 const showLimitModal = ref(false);
 const gameToDelete = ref<Game | null>(null);
@@ -257,8 +186,6 @@ const showShareSuccess = ref<string | null>(null);
 
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
-
-const isEditing = computed(() => selectedGameType.value !== null);
 
 const defaultContent = computed(() => ({
   hero: {
@@ -304,20 +231,6 @@ const seo = computed(() => ({
 
 const content = defaultContent;
 
-const editorHeading = computed(() => {
-  const templateName = selectedGameType.value?.name ?? '';
-  const format = selectedGame.value ? content.value.editor.headingEdit : content.value.editor.headingCreate;
-  return format.replace('{template}', templateName);
-});
-
-const availableDefaultConfigs = computed(() => {
-  if (!selectedGameType.value?.defaultConfigs) {
-    return [];
-  }
-  return [...selectedGameType.value.defaultConfigs]
-    .filter((dc) => dc.show)
-    .sort((a, b) => a.order - b.order);
-});
 
 useHead(() => ({
   title: seo.value.title,
@@ -351,10 +264,6 @@ onMounted(() => {
   }
 });
 
-// Watch for view changes and scroll to top
-watch([isEditing, showDefaultConfigSelection], () => {
-  scrollToTop();
-}, { flush: 'post' });
 
 function fetchAvailableGameTypes() {
   const q = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
@@ -383,12 +292,6 @@ function fetchMyGames() {
   );
 }
 
-function scrollToTop() {
-  nextTick(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
 function selectGameType(gameType: GameType) {
   // Check game limit
   if (myGames.value.length >= 10) {
@@ -396,44 +299,15 @@ function selectGameType(gameType: GameType) {
     return;
   }
 
-  selectedGameType.value = gameType;
-  selectedGame.value = null;
-  selectedDefaultConfig.value = null;
-  
-  // Check if game type has default configs that should be shown
-  const availableDefaults = gameType.defaultConfigs?.filter((dc) => dc.show) ?? [];
-  if (availableDefaults.length > 0) {
-    showDefaultConfigSelection.value = true;
-  } else {
-    showDefaultConfigSelection.value = false;
-  }
-  
-  scrollToTop();
-}
-
-function selectDefaultConfig(defaultConfig: { name: string; config: GameCustomConfig }) {
-  // Deep clone the config to avoid references
-  selectedDefaultConfig.value = JSON.parse(JSON.stringify(defaultConfig.config));
-  showDefaultConfigSelection.value = false;
-  scrollToTop();
-}
-
-function startFromScratch() {
-  selectedDefaultConfig.value = null;
-  showDefaultConfigSelection.value = false;
-  scrollToTop();
+  router.push(`/build/new/${gameType.id}`);
 }
 
 function editGame(game: Game) {
-  const gameType = availableGameTypes.value.find((type) => type.id === game.gameTypeId);
-  if (gameType) {
-    selectedGameType.value = gameType;
-    selectedGame.value = game;
-    showDefaultConfigSelection.value = false;
-    scrollToTop();
-  } else {
-    console.error('Game type not found for editing');
+  if (!game.id) {
+    console.error('Game ID is required for editing');
+    return;
   }
+  router.push(`/build/edit/${game.id}`);
 }
 
 async function togglePublish(game: Game) {
@@ -494,27 +368,11 @@ async function performDelete() {
   }
 }
 
-function handleSave() {
-  selectedGameType.value = null;
-  selectedGame.value = null;
-  showDefaultConfigSelection.value = false;
-  selectedDefaultConfig.value = null;
-  scrollToTop();
-}
-
-function handleCancel() {
-  selectedGameType.value = null;
-  selectedGame.value = null;
-  showDefaultConfigSelection.value = false;
-  selectedDefaultConfig.value = null;
-  scrollToTop();
-}
 
 async function login() {
   try {
     await userStore.loginWithX();
-    user.value = userStore.user;
-    if (user.value) {
+    if (userStore.user) {
       fetchAvailableGameTypes();
       fetchMyGames();
     }
@@ -522,6 +380,17 @@ async function login() {
     console.error('Login error:', err);
   }
 }
+
+// Watch for user changes to fetch data when user logs in
+watch(
+  () => userStore.user,
+  (newUser) => {
+    if (newUser) {
+      fetchAvailableGameTypes();
+      fetchMyGames();
+    }
+  },
+);
 </script>
 
 <style scoped>

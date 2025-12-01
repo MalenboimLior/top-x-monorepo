@@ -302,7 +302,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         };
       } else if (!baseConfig.value) {
         console.warn('[Trivia] No config returned, using defaults');
-        baseConfig.value = { mode: 'fixed', questions: [], lives: DEFAULT_LIVES };
+        baseConfig.value = { mode: 'classic', questions: [], lives: DEFAULT_LIVES };
       }
 
       if (questionQueue.value.length === 0 && allQuestions.value.length === 0) {
@@ -357,11 +357,14 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     });
 
     if (newViewModels.length > 0) {
-      const shuffled = shuffleArray(newViewModels);
-      questionQueue.value.push(...shuffled);
+      const questionsToAdd = activeConfig.value?.shuffleQuestions
+        ? shuffleArray(newViewModels)
+        : newViewModels;
+      questionQueue.value.push(...questionsToAdd);
       console.log('[Trivia] Added questions to queue:', {
-        added: shuffled.length,
+        added: questionsToAdd.length,
         queueLength: questionQueue.value.length,
+        shuffled: activeConfig.value?.shuffleQuestions ?? false,
       });
     }
   }
@@ -545,10 +548,12 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       optionsCount: next.options.length,
     });
 
-    const shuffledOptions = shuffleArray([...next.options]);
+    const optionsToDisplay = activeConfig.value?.shuffleAnswers
+      ? shuffleArray([...next.options])
+      : [...next.options];
     const displayedQuestion: TriviaQuestionViewModel = {
       ...next,
-      options: shuffledOptions,
+      options: optionsToDisplay,
     };
 
     currentQuestion.value = displayedQuestion;
@@ -914,7 +919,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         ...(existingGameData?.custom ?? {}),
         trivia: {
           ...existingTriviaCustom,
-          mode: 'fixed',
+          mode: mode.value,
           lastScore: gameData.score,
           lastAttempts: attempts.value.length,
           lastCorrect: correctAttempts.value,
@@ -950,7 +955,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       lastPlayed: Date.now(),
       custom: {
         trivia: {
-          mode: 'fixed',
+          mode: mode.value,
           attemptCount: attempts.value.length,
           attempts: attempts.value,
           questionIds: questionOrder.value,
@@ -1074,10 +1079,14 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
   );
 
   const timeLeft = computed(() => questionTimeLeft.value);
-  const mode = computed(() => activeConfig.value?.mode ?? 'fixed');
-  const language = computed(
-    () => currentQuestion.value?.category ?? activeConfig.value?.language ?? 'en'
-  );
+  const mode = computed(() => {
+    const configMode = activeConfig.value?.mode;
+    // Migrate old modes
+    if (configMode === 'fixed') return 'classic';
+    if (configMode === 'endless') return 'speed';
+    return configMode ?? 'classic';
+  });
+  const language = computed(() => 'en');
   const showCorrectAnswers = computed(() => Boolean(activeConfig.value?.showCorrectAnswers));
   const showCorrectAnswersOnEnd = computed(() => Boolean(activeConfig.value?.showCorrectAnswersOnEnd));
   const configLives = computed(() => activeConfig.value?.lives ?? DEFAULT_LIVES);
@@ -1085,9 +1094,6 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     primaryColor: activeConfig.value?.theme?.primaryColor ?? '#8C52FF',
     secondaryColor: activeConfig.value?.theme?.secondaryColor ?? '#FF9F1C',
     backgroundColor: activeConfig.value?.theme?.backgroundColor ?? '#0B0B0F',
-    backgroundImageUrl: activeConfig.value?.theme?.backgroundImageUrl,
-    backgroundVideoUrl: activeConfig.value?.theme?.backgroundVideoUrl,
-    backgroundOverlayColor: activeConfig.value?.theme?.backgroundOverlayColor ?? 'rgba(0, 0, 0, 0.55)',
   }));
   const attemptCount = computed(() => attempts.value.length);
   const correctAttemptCount = computed(() => correctAttempts.value);

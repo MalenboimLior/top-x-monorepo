@@ -19,6 +19,94 @@
             {{ gameStatusText }}
           </span>
         </div>
+        <!-- Image Preview with Gradient -->
+        <div class="image-preview-section">
+          <label class="image-preview-label">{{ t('build.game.fields.cover.label') || 'Game Cover' }}</label>
+          <div class="image-preview-wrapper">
+            <img 
+              v-if="game.image"
+              :src="game.image" 
+              :alt="`${game.name} image`" 
+              class="image-preview"
+            />
+            <div
+              v-else
+              class="image-preview-placeholder"
+              :style="placeholderStyle"
+            >
+              <span>{{ game.name || 'Game Name' }}</span>
+            </div>
+            <div class="image-preview-controls">
+              <button
+                type="button"
+                class="image-upload-button"
+                @click="showImageUploader = true"
+                :title="t('build.game.fields.cover.upload') || 'Upload Image'"
+              >
+                <font-awesome-icon :icon="['fas', 'upload']" />
+              </button>
+              <button
+                v-if="game.image"
+                type="button"
+                class="image-remove-button"
+                @click="removeImage"
+                :title="t('build.game.fields.cover.remove') || 'Remove Image'"
+              >
+                <font-awesome-icon :icon="['fas', 'trash']" />
+              </button>
+            </div>
+          </div>
+          <!-- Gradient Color Pickers -->
+          <div v-if="!game.image" class="gradient-controls">
+            <div class="gradient-control-item">
+              <label :for="ids.gradientStart">Start Color</label>
+              <input
+                :id="ids.gradientStart"
+                type="color"
+                :value="gradientStartColor"
+                @input="updateGradientStart"
+              />
+            </div>
+            <div class="gradient-control-item">
+              <label :for="ids.gradientEnd">End Color</label>
+              <input
+                :id="ids.gradientEnd"
+                type="color"
+                :value="gradientEndColor"
+                @input="updateGradientEnd"
+              />
+            </div>
+            <div class="gradient-control-item">
+              <label :for="ids.gradientText">Text Color</label>
+              <input
+                :id="ids.gradientText"
+                type="color"
+                :value="gradientTextColor"
+                @input="updateGradientText"
+              />
+            </div>
+          </div>
+          <p v-if="!game.image" class="field-hint">{{ t('build.game.fields.cover.hint') }}</p>
+        </div>
+        <!-- Image Uploader (Hidden Modal) -->
+        <div v-if="showImageUploader" class="image-uploader-modal">
+          <div class="image-uploader-modal-backdrop" @click="showImageUploader = false"></div>
+          <div class="image-uploader-modal-content">
+            <ImageUploader
+              v-model="game.image"
+              :uploadFolder="`images/games/${validatedGameId}`"
+              :cropWidth="512"
+              :cropHeight="320"
+            />
+            <button
+              type="button"
+              class="image-uploader-close"
+              @click="showImageUploader = false"
+            >
+              <font-awesome-icon :icon="['fas', 'times']" />
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -71,48 +159,6 @@
             <p class="field-hint">{{ t('build.game.fields.description.hint') }}</p>
           </div>
 
-          <div class="field-block">
-            <label :for="ids.language">{{ t('build.game.fields.language.label') }}</label>
-            <select :id="ids.language" v-model="game.language">
-              <option value="en">{{ t('build.game.fields.language.options.en') }}</option>
-              <option value="il">{{ t('build.game.fields.language.options.il') }}</option>
-            </select>
-            <p class="field-hint">{{ t('build.game.fields.language.hint') }}</p>
-          </div>
-
-          <div class="field-block">
-            <label>{{ t('build.game.fields.cover.label') }}</label>
-            <ImageUploader
-              v-model="game.image"
-              :uploadFolder="`images/games/${validatedGameId}`"
-              :cropWidth="512"
-              :cropHeight="320"
-            />
-            <p class="field-hint">{{ t('build.game.fields.cover.hint') }}</p>
-          </div>
-
-          <div class="field-block">
-            <label :for="ids.header">{{ t('build.game.fields.header.label') }}</label>
-            <input
-              :id="ids.header"
-              type="text"
-              v-model="game.gameHeader"
-              :placeholder="t('build.game.fields.header.placeholder')"
-            />
-            <p class="field-hint">{{ t('build.game.fields.header.hint') }}</p>
-          </div>
-
-          <div class="field-block">
-            <label :for="ids.shareText">{{ t('build.game.fields.shareText.label') }}</label>
-            <input
-              :id="ids.shareText"
-              type="text"
-              v-model="game.shareText"
-              :placeholder="t('build.game.fields.shareText.placeholder')"
-            />
-            <p class="field-hint">{{ t('build.game.fields.shareText.hint') }}</p>
-          </div>
-
           <div class="field-block field-block--wide">
             <label :for="ids.instructions">{{ t('build.game.fields.instructions.label') }}</label>
             <textarea
@@ -122,17 +168,6 @@
               :placeholder="t('build.game.fields.instructions.placeholder')"
             />
             <p class="field-hint">{{ t('build.game.fields.instructions.hint') }}</p>
-          </div>
-
-          <div class="field-block">
-            <label :for="ids.shareLink">{{ t('build.game.fields.shareLink.label') }}</label>
-            <input
-              :id="ids.shareLink"
-              type="text"
-              v-model="game.shareLink"
-              :placeholder="t('build.game.fields.shareLink.placeholder')"
-            />
-            <p class="field-hint">{{ t('build.game.fields.shareLink.hint') }}</p>
           </div>
         </div>
       </div>
@@ -214,11 +249,43 @@
       </div>
       <button class="modal-close is-large" aria-label="close" @click="showDeleteModal = false"></button>
     </div>
+
+    <!-- Unsaved Changes Confirmation Modal -->
+    <div class="modal" :class="{ 'is-active': showUnsavedChangesModal }">
+      <div class="modal-background" @click="handleCancelUnsaved"></div>
+      <div class="modal-content box">
+        <h3 class="title is-4">{{ t('build.wizard.unsavedChangesTitle') || 'Unsaved Changes' }}</h3>
+        <p>{{ t('build.wizard.unsavedChangesMessage') || 'You have unsaved changes. Do you want to save them before leaving?' }}</p>
+        <div class="buttons mt-4">
+          <CustomButton
+            type="is-primary"
+            :label="t('build.wizard.saveChanges') || 'Save Changes'"
+            :loading="isSaving"
+            :disabled="isSaving"
+            @click="handleSaveChanges"
+          />
+          <CustomButton
+            type="is-danger"
+            :label="t('build.wizard.discardChanges') || 'Discard Changes'"
+            :disabled="isSaving"
+            @click="handleDiscardChanges"
+          />
+          <CustomButton
+            type="is-light"
+            :label="t('build.wizard.cancel') || 'Cancel'"
+            :disabled="isSaving"
+            @click="handleCancelUnsaved"
+          />
+        </div>
+      </div>
+      <button class="modal-close is-large" aria-label="close" @click="handleCancelUnsaved"></button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeRouteLeave, useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import GameCard from '@/components/GameCard.vue';
@@ -246,6 +313,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['save', 'cancel']);
 
+const router = useRouter();
 const userStore = useUserStore();
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
@@ -259,6 +327,9 @@ const ids = {
   shareText: 'builder-game-share-text',
   instructions: 'builder-game-instructions',
   shareLink: 'builder-game-share-link',
+  gradientStart: 'builder-gradient-start',
+  gradientEnd: 'builder-gradient-end',
+  gradientText: 'builder-gradient-text',
 } as const;
 
 const isSaving = ref(false);
@@ -266,6 +337,72 @@ const isDeleting = ref(false);
 const showGameSettings = ref(false);
 const showDeleteModal = ref(false);
 const showShareSuccess = ref(false);
+const showUnsavedChangesModal = ref(false);
+const showImageUploader = ref(false);
+const lastSavedState = ref<Game | null>(null);
+let pendingNavigation: (() => void) | null = null;
+
+
+// Helper to get CSS variable value and convert to hex
+function getCSSVariableValue(variableName: string, fallback: string): string {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  try {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    if (!value) {
+      return fallback;
+    }
+    if (value.startsWith('#')) {
+      return value;
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+// Default gradient colors from CSS variables
+const DEFAULT_GRADIENT_START = '#00e8e0'; // Fallback, will be overridden by CSS variable
+const DEFAULT_GRADIENT_END = '#c4ff00'; // Fallback, will be overridden by CSS variable
+const DEFAULT_GRADIENT_TEXT = '#00e8e0'; // Fallback, will be overridden by CSS variable
+
+// Get default gradient colors from CSS variables
+function getDefaultGradientColors(): { start: string; end: string; text: string } {
+  if (typeof window !== 'undefined') {
+    return {
+      start: getCSSVariableValue('--color-game-gradient-start', DEFAULT_GRADIENT_START),
+      end: getCSSVariableValue('--color-game-gradient-end', DEFAULT_GRADIENT_END),
+      text: getCSSVariableValue('--color-game-gradient-text', DEFAULT_GRADIENT_TEXT),
+    };
+  }
+  return {
+    start: DEFAULT_GRADIENT_START,
+    end: DEFAULT_GRADIENT_END,
+    text: DEFAULT_GRADIENT_TEXT,
+  };
+}
+
+// Get default language from locale store
+function getDefaultLanguage(): 'en' | 'il' {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+  // Try to get from locale store first
+  if (localeStore.language) {
+    return localeStore.language === 'il' ? 'il' : 'en';
+  }
+  // Fallback to localStorage
+  try {
+    const cached = localStorage.getItem('topx.locale.preferredLanguage');
+    if (cached === 'il') {
+      return 'il';
+    }
+  } catch {
+    // Ignore errors
+  }
+  return 'en';
+}
 
 function generateRandomGameName(): string {
   const adjectives = ['Epic', 'Awesome', 'Cool', 'Amazing', 'Fantastic', 'Incredible', 'Super', 'Ultimate'];
@@ -288,9 +425,10 @@ const initialGame = props.existingGame
       name: generateRandomGameName(),
       description: '',
       gameTypeId: props.gameType.id,
-      active: false,
-      language: 'en',
+      active: true, // Games are active by default
+      language: getDefaultLanguage(),
       image: '',
+      imageGradient: undefined, // Will use CSS defaults if not set
       vip: [],
       custom: props.selectedDefaultConfig
         ? JSON.parse(JSON.stringify(props.selectedDefaultConfig))
@@ -305,11 +443,16 @@ const initialGame = props.existingGame
       shareText: '',
       gameInstruction: '',
       shareLink: '',
-      unlisted: true, // New games start as drafts
+      unlisted: true, // New games start as drafts (unlisted=true means not visible on home but still playable)
     } as Game;
 
 const game = ref<Game>(initialGame);
 const persistedGameId = ref(props.existingGame?.id ?? '');
+
+// Initialize lastSavedState if we have an existing game
+if (props.existingGame) {
+  lastSavedState.value = JSON.parse(JSON.stringify(props.existingGame)) as Game;
+}
 
 // Computed properties for game status
 const isPublished = computed(() => {
@@ -323,6 +466,99 @@ const gameStatusText = computed(() => {
 const gameStatusClass = computed(() => {
   return isPublished.value ? 'game-status-badge--live' : 'game-status-badge--draft';
 });
+
+// Gradient color handling
+const defaultColors = getDefaultGradientColors();
+
+const gradientStartColor = computed({
+  get: () => {
+    if (game.value.imageGradient && game.value.imageGradient[0]) {
+      return game.value.imageGradient[0];
+    }
+    return defaultColors.start;
+  },
+  set: (value: string) => {
+    if (!game.value.imageGradient) {
+      const endColor = gradientEndColor.value;
+      game.value.imageGradient = [value, endColor];
+    } else {
+      game.value.imageGradient = [value, game.value.imageGradient[1] || defaultColors.end];
+    }
+  },
+});
+
+const gradientEndColor = computed({
+  get: () => {
+    if (game.value.imageGradient && game.value.imageGradient[1]) {
+      return game.value.imageGradient[1];
+    }
+    return defaultColors.end;
+  },
+  set: (value: string) => {
+    if (!game.value.imageGradient) {
+      const startColor = gradientStartColor.value;
+      game.value.imageGradient = [startColor, value];
+    } else {
+      game.value.imageGradient = [game.value.imageGradient[0] || defaultColors.start, value];
+    }
+  },
+});
+
+const gradientTextColor = computed({
+  get: () => {
+    if (game.value.imageGradientTextColor) {
+      return game.value.imageGradientTextColor;
+    }
+    return defaultColors.text;
+  },
+  set: (value: string) => {
+    game.value.imageGradientTextColor = value;
+  },
+});
+
+const placeholderStyle = computed(() => {
+  const style: Record<string, string> = {};
+  const start = gradientStartColor.value;
+  const end = gradientEndColor.value;
+  const textColor = gradientTextColor.value;
+  
+  style.background = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+  style.color = textColor;
+  
+  return style;
+});
+
+function updateGradientStart(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const newColor = target.value;
+  if (!game.value.imageGradient) {
+    const endColor = gradientEndColor.value;
+    game.value.imageGradient = [newColor, endColor];
+  } else {
+    game.value.imageGradient = [newColor, game.value.imageGradient[1] || gradientEndColor.value];
+  }
+}
+
+function updateGradientEnd(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const newColor = target.value;
+  if (!game.value.imageGradient) {
+    const startColor = gradientStartColor.value;
+    game.value.imageGradient = [startColor, newColor];
+  } else {
+    game.value.imageGradient = [game.value.imageGradient[0] || gradientStartColor.value, newColor];
+  }
+}
+
+function updateGradientText(e: Event) {
+  const target = e.target as HTMLInputElement;
+  game.value.imageGradientTextColor = target.value;
+}
+
+function removeImage() {
+  game.value.image = '';
+  showImageUploader.value = false;
+}
 
 const storageKey = computed(() => {
   if (typeof window === 'undefined') {
@@ -428,6 +664,18 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
 
   try {
     isSaving.value = true;
+    
+    // Initialize gradient colors for existing games that don't have them
+    // This ensures old games get the gradient feature when saved
+    // Initialize even if game has an image, so gradient is ready if image is removed later
+    if (!game.value.imageGradient || !game.value.imageGradient.length) {
+      const defaults = getDefaultGradientColors();
+      game.value.imageGradient = [defaults.start, defaults.end];
+      if (!game.value.imageGradientTextColor) {
+        game.value.imageGradientTextColor = defaults.text;
+      }
+    }
+    
     const payload = JSON.parse(JSON.stringify(game.value));
     const { id: _discardId, ...payloadWithoutId } = payload;
     const targetId = props.existingGame?.id || persistedGameId.value || undefined;
@@ -460,9 +708,13 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
       persistedGameId.value = result.gameId;
     }
 
+    // Update lastSavedState after successful save
+    lastSavedState.value = JSON.parse(JSON.stringify(game.value)) as Game;
+
     if (!stayOnWizard) {
       clearDraftFromCache();
-      emit('save', JSON.parse(JSON.stringify(game.value)) as Game);
+      // Navigate back to build dashboard
+      router.push('/build');
     }
   } catch (error) {
     console.error('Error saving game:', error);
@@ -525,6 +777,9 @@ async function handleTogglePublish() {
       game.value.unlisted = !newUnlistedValue;
       return;
     }
+    
+    // Update lastSavedState after successful save
+    lastSavedState.value = JSON.parse(JSON.stringify(game.value)) as Game;
   } catch (error) {
     console.error('Error toggling publish status:', error);
     alert('Failed to update publish status');
@@ -549,7 +804,7 @@ async function performDelete() {
     
     showDeleteModal.value = false;
     clearDraftFromCache();
-    emit('cancel'); // Navigate away after deletion
+    router.push('/build'); // Navigate away after deletion
   } catch (error) {
     console.error('Error deleting game:', error);
     alert('Failed to delete game');
@@ -654,9 +909,63 @@ function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
   return clone;
 }
 
+// Detect if there are unsaved changes
+function hasUnsavedChanges(): boolean {
+  if (!lastSavedState.value) {
+    // If we've never saved to backend, check if there's anything in localStorage
+    const key = storageKey.value;
+    if (key && typeof window !== 'undefined') {
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.game) {
+            // We have a draft but no backend save, so there are unsaved changes
+            return true;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+    return false;
+  }
+  
+  // Compare current state with last saved state
+  const current = JSON.stringify(game.value);
+  const saved = JSON.stringify(lastSavedState.value);
+  return current !== saved;
+}
+
+// Handle unsaved changes modal actions
+async function handleSaveChanges() {
+  showUnsavedChangesModal.value = false;
+  await saveGame({ stayOnWizard: true });
+  if (pendingNavigation) {
+    pendingNavigation();
+    pendingNavigation = null;
+  }
+}
+
+function handleDiscardChanges() {
+  showUnsavedChangesModal.value = false;
+  clearDraftFromCache();
+  lastSavedState.value = null;
+  if (pendingNavigation) {
+    pendingNavigation();
+    pendingNavigation = null;
+  }
+}
+
+function handleCancelUnsaved() {
+  showUnsavedChangesModal.value = false;
+  pendingNavigation = null;
+}
+
 onMounted(() => {
   console.log('BuildAddNewGame mounted for', props.gameType.custom);
   loadDraftFromCache();
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
 
 watch(
@@ -700,7 +1009,41 @@ watch(
   { deep: true },
 );
 
+// Watch for image upload completion to close uploader
+watch(
+  () => game.value.image,
+  (newImage) => {
+    if (newImage) {
+      showImageUploader.value = false;
+    }
+  },
+);
+
+// Route guard to prevent navigation with unsaved changes
+onBeforeRouteLeave((to, from, next) => {
+  if (hasUnsavedChanges()) {
+    showUnsavedChangesModal.value = true;
+    pendingNavigation = () => next();
+  } else {
+    next();
+  }
+});
+
+// Browser close protection
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges()) {
+    e.preventDefault();
+    e.returnValue = ''; // Required for Chrome
+    return ''; // Required for some browsers
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
   if (draftSaveTimer) {
     clearTimeout(draftSaveTimer);
   }
@@ -835,6 +1178,176 @@ onBeforeUnmount(() => {
   background: rgba(156, 163, 175, 0.15);
   color: #9ca3af;
   border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.image-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.image-preview-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+.image-preview-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 512px;
+  aspect-ratio: 512 / 320;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border-base);
+}
+
+.image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-preview-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bulma-primary);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  padding: 1.5rem;
+  text-align: center;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.image-preview-controls {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.image-upload-button,
+.image-remove-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.image-upload-button:hover,
+.image-remove-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.image-remove-button {
+  background: rgba(220, 38, 38, 0.8);
+  border-color: rgba(220, 38, 38, 1);
+}
+
+.image-remove-button:hover {
+  background: rgba(220, 38, 38, 1);
+}
+
+.gradient-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.gradient-control-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 200px;
+}
+
+.gradient-control-item label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+.gradient-control-item input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+}
+
+.image-uploader-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-uploader-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+}
+
+.image-uploader-modal-content {
+  position: relative;
+  z-index: 1001;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.image-uploader-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(220, 38, 38, 0.9);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+  transition: background 0.2s ease;
+}
+
+.image-uploader-close:hover {
+  background: rgba(220, 38, 38, 1);
 }
 
 .settings-grid {
@@ -996,3 +1509,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+

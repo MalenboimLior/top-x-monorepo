@@ -301,18 +301,18 @@
         class="section-toggle"
         @click="toggleSection('questions')"
       >
-        <span class="section-toggle__title">Questions ({{ config.questions.length }})</span>
+        <span class="section-toggle__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</span>
         <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showQuestions }">
           ▼
         </span>
       </button>
       
       <div v-if="showQuestions" class="questions-section__content">
-        <p class="section-hint">Add questions with weighted answers</p>
+        <p class="section-hint">{{ t('build.trivia.questions.subtitle') }}</p>
         <div class="questions-header__actions">
           <CustomButton 
             type="is-primary" 
-            label="Add Question" 
+            :label="t('build.trivia.questions.addQuestion')" 
             @click="addQuestion" 
           />
         </div>
@@ -333,7 +333,7 @@
                   <div class="question-input-wrapper">
                   <input
                     v-model="question.text"
-                    placeholder="Enter your question..."
+                    :placeholder="t('build.trivia.questions.promptPlaceholder')"
                     class="question-input"
                   />
                   <div class="question-image-upload-inline">
@@ -358,7 +358,7 @@
                     <div class="answer-input-wrapper">
                       <input
                         v-model="answer.text"
-                        placeholder="Answer text..."
+                        :placeholder="t('build.trivia.questions.answerPlaceholder')"
                         class="answer-option__input"
                       />
                       <div class="answer-image-upload-inline">
@@ -418,7 +418,7 @@
                     class="answer-option__remove"
                     :disabled="question.answers.length <= 2"
                     @click="removeAnswer(qIndex, aIndex)"
-                    title="Remove answer"
+                    :title="t('build.trivia.questions.removeAnswer')"
                   >
                     ×
                   </button>
@@ -428,7 +428,7 @@
                   class="answer-add"
                   @click="addAnswer(qIndex)"
                 >
-                  + Add Answer
+                  + {{ t('build.trivia.questions.addAnswer') }}
                 </button>
               </div>
             </div>
@@ -439,7 +439,7 @@
                 class="action-btn"
                 :disabled="qIndex === 0"
                 @click="reorderQuestion(qIndex, -1)"
-                title="Move up"
+                :title="t('build.trivia.questions.moveUp')"
               >
                 ↑
               </button>
@@ -448,7 +448,7 @@
                 class="action-btn"
                 :disabled="qIndex === config.questions.length - 1"
                 @click="reorderQuestion(qIndex, 1)"
-                title="Move down"
+                :title="t('build.trivia.questions.moveDown')"
               >
                 ↓
               </button>
@@ -456,7 +456,7 @@
                 type="button"
                 class="action-btn"
                 @click="duplicateQuestion(qIndex)"
-                title="Duplicate question"
+                :title="t('build.trivia.questions.duplicate')"
               >
                 📋
               </button>
@@ -464,7 +464,7 @@
                 type="button"
                 class="action-btn action-btn--danger"
                 @click="removeQuestion(qIndex)"
-                title="Remove question"
+                :title="t('build.trivia.questions.remove')"
               >
                 ×
               </button>
@@ -474,10 +474,10 @@
       </div>
 
         <div v-else class="empty-state">
-          <p>No questions yet. Add your first question to get started!</p>
+          <p>{{ t('build.trivia.questions.empty') }}</p>
           <CustomButton
             type="is-primary"
-            label="Add First Question"
+            :label="t('build.trivia.questions.addFirstQuestion')"
             @click="addQuestion"
           />
         </div>
@@ -485,7 +485,7 @@
         <div class="questions-footer">
           <CustomButton 
             type="is-primary" 
-            label="Add Question" 
+            :label="t('build.trivia.questions.addQuestion')" 
             @click="addQuestion" 
           />
         </div>
@@ -499,7 +499,7 @@
         class="settings-toggle"
         @click="toggleSection('advanced')"
       >
-        <span>Advanced Settings</span>
+        <span>{{ t('build.trivia.settings.title') || 'Advanced Settings' }}</span>
         <span class="settings-toggle__icon" :class="{ 'settings-toggle__icon--open': showAdvancedSettings }">
           ▼
         </span>
@@ -509,54 +509,41 @@
         <div class="settings-grid">
           <label class="toggle">
             <input type="checkbox" v-model="config.showProgress" />
-            <span>Show progress bar</span>
+            <span>{{ t('build.trivia.settings.showProgress') || 'Show progress bar' }}</span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.shuffleQuestions" />
-            <span>Shuffle questions</span>
+            <span>{{ t('build.trivia.settings.shuffleQuestions') || 'Shuffle questions' }}</span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.shuffleAnswers" />
-            <span>Shuffle answers</span>
+            <span>{{ t('build.trivia.settings.shuffleAnswers') || 'Shuffle answers' }}</span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.mustLogin" />
-            <span>Require login</span>
+            <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.allowRepeats" />
-            <span>Allow retakes</span>
+            <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
           </label>
         </div>
 
         <!-- Theme Settings -->
         <div class="theme-settings">
-          <h3>Theme</h3>
+          <h3>{{ t('build.trivia.theme.title') }}</h3>
           <div class="theme-grid">
             <div class="field">
-              <label>Primary Color</label>
+              <label>{{ t('build.trivia.theme.primaryLabel') }}</label>
               <input type="color" v-model="config.theme.primaryColor" />
             </div>
             <div class="field">
-              <label>Secondary Color</label>
+              <label>{{ t('build.trivia.theme.secondaryLabel') }}</label>
               <input type="color" v-model="config.theme.secondaryColor" />
             </div>
             <div class="field">
-              <label>Background Color</label>
+              <label>{{ t('build.trivia.theme.backgroundColorLabel') }}</label>
               <input type="color" v-model="config.theme.backgroundColor" />
-            </div>
-            <div class="field field--full">
-              <label>Background Image URL</label>
-              <input v-model="config.theme.backgroundImageUrl" placeholder="https://..." class="field-input" />
-            </div>
-            <div class="field field--full">
-              <label>Background Video URL (optional)</label>
-              <input v-model="config.theme.backgroundVideoUrl" placeholder="https://... (MP4 video for animated background)" class="field-input" />
-            </div>
-            <div class="field">
-              <label>Overlay Color</label>
-              <input type="color" v-model="config.theme.backgroundOverlayColor" />
-              <p class="field-hint">Semi-transparent overlay on background</p>
             </div>
           </div>
         </div>
@@ -569,6 +556,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
+import { useLocaleStore } from '@/stores/locale';
 import type {
   QuizConfig,
   QuizQuestion,
@@ -592,6 +580,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', value: QuizConfig): void;
 }>();
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const activeSection = ref<string | null>(null);
 const isSyncing = ref(false);
@@ -693,14 +684,10 @@ function hydrateConfig(value: QuizConfig): EditableQuizConfig {
   return {
     mode: validMode,
     questions: (base.questions ?? []).map(hydrateQuestion),
-    language: base.language ?? 'en',
     theme: {
       primaryColor: base.theme?.primaryColor ?? '#6366f1',
       secondaryColor: base.theme?.secondaryColor ?? '#ec4899',
       backgroundColor: base.theme?.backgroundColor ?? '#0f0f23',
-      backgroundImageUrl: base.theme?.backgroundImageUrl ?? '',
-      backgroundVideoUrl: base.theme?.backgroundVideoUrl ?? '',
-      backgroundOverlayColor: base.theme?.backgroundOverlayColor ?? 'rgba(0,0,0,0.7)',
     },
     personalityBuckets,
     archetypeAxes: base.archetypeAxes ?? [],
@@ -757,7 +744,6 @@ function sanitizeConfig(value: EditableQuizConfig): QuizConfig {
   const result: QuizConfig = {
     mode: value.mode,
     questions: value.questions, // Keep all questions, even incomplete ones
-    language: value.language || undefined,
     theme: value.theme,
     showProgress: value.showProgress,
     shuffleQuestions: value.shuffleQuestions,
@@ -1171,10 +1157,16 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
 
 .question-image-upload-inline {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .question-image-upload-inline :deep(.image-uploader) {
   margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .question-image-upload-inline :deep(.uploader-button) {
@@ -1197,15 +1189,23 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
 }
 
 .question-image-upload-inline :deep(.uploader-button-primary)::after {
-  content: '📷';
+  content: '🖼️';
   font-size: 1.2rem;
   line-height: 1;
   position: absolute;
   color: var(--color-text-secondary);
 }
 
+
 .question-image-upload-inline :deep(.uploader-current-image) {
-  display: none;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .question-card__answers {
@@ -1270,10 +1270,16 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
 
 .answer-image-upload-inline {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .answer-image-upload-inline :deep(.image-uploader) {
   margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .answer-image-upload-inline :deep(.uploader-button) {
@@ -1296,15 +1302,23 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
 }
 
 .answer-image-upload-inline :deep(.uploader-button-primary)::after {
-  content: '📷';
+  content: '🖼️';
   font-size: 1rem;
   line-height: 1;
   position: absolute;
   color: var(--color-text-secondary);
 }
 
+
 .answer-image-upload-inline :deep(.uploader-current-image) {
-  display: none;
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .answer-weights {

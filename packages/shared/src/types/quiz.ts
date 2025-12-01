@@ -143,12 +143,6 @@ export interface QuizThemeConfig {
   secondaryColor?: string;
   /** Background color */
   backgroundColor?: string;
-  /** Background image URL */
-  backgroundImageUrl?: string;
-  /** Background video URL (for animated backgrounds) */
-  backgroundVideoUrl?: string;
-  /** Overlay color with opacity (e.g., "#00000088") */
-  backgroundOverlayColor?: string;
 }
 
 // =============================================================================
@@ -165,9 +159,6 @@ export interface QuizConfig {
   
   /** Array of questions for the quiz */
   questions: QuizQuestion[];
-  
-  /** Preferred language for the quiz (BCP 47 tag) */
-  language?: string;
   
   /** Visual theme configuration */
   theme?: QuizThemeConfig;

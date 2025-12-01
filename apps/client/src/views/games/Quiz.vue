@@ -6,17 +6,6 @@
     :dir="direction"
     :style="themeStyles"
   >
-    <video
-      v-if="theme.backgroundVideoUrl"
-      class="quiz-background-video"
-      autoplay
-      muted
-      loop
-      playsinline
-    >
-      <source :src="theme.backgroundVideoUrl" type="video/mp4" />
-    </video>
-    <div class="quiz-overlay" :style="overlayStyles"></div>
 
     <div class="quiz-content">
       <div v-if="error" class="notification is-danger">
@@ -36,7 +25,7 @@
         :direction="direction"
         :inviter="inviter"
         :theme="theme"
-        :language="language"
+        language="en"
         @start-game="startGame"
         @select-answer="selectAnswer"
         @go-back="goBack"
@@ -52,7 +41,7 @@
         :inviter="inviter"
         :share-url="shareUrl"
         :share-text="shareText"
-        :language="language"
+        language="en"
         :user-image="userImage"
         @play-again="resetGame"
         @login="login"
@@ -63,7 +52,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import QuizScene from '@/components/games/quiz/QuizScene.vue';
 import QuizEndScreen from '@/components/games/quiz/QuizEndScreen.vue';
@@ -73,6 +62,7 @@ import { useUserStore } from '@/stores/user';
 const quizStore = useQuizStore();
 const userStore = useUserStore();
 const route = useRoute();
+const router = useRouter();
 
 useHead({
   title: 'Quiz - TOP-X',
@@ -113,9 +103,8 @@ const isLoading = computed(() => quizStore.isLoading);
 const error = computed(() => quizStore.error);
 const inviter = computed(() => quizStore.inviter);
 const theme = computed(() => quizStore.theme);
-const language = computed(() => quizStore.language);
-const direction = computed(() => quizStore.direction);
-const isRtl = computed(() => quizStore.isRtl);
+const direction = computed(() => 'ltr');
+const isRtl = computed(() => false);
 const personalityResult = computed(() => quizStore.personalityResult);
 const archetypeResult = computed(() => quizStore.archetypeResult);
 const shareUrl = computed(() => quizStore.shareUrl);
@@ -133,15 +122,8 @@ const themeStyles = computed(() => {
     '--quiz-background': theme.value.backgroundColor ?? '#0f0f23',
   };
   styles.backgroundColor = theme.value.backgroundColor ?? '#0f0f23';
-  styles['--quiz-background-image'] = theme.value.backgroundImageUrl
-    ? `url(${theme.value.backgroundImageUrl})`
-    : 'none';
   return styles;
 });
-
-const overlayStyles = computed(() => ({
-  background: theme.value.backgroundOverlayColor ?? 'rgba(0,0,0,0.7)',
-}));
 
 // Actions
 const startGame = () => {
@@ -163,6 +145,16 @@ const resetGame = () => {
 const login = async () => {
   await userStore.loginWithX();
 };
+
+// Watch for error and redirect if game is not active
+watch(
+  () => quizStore.error,
+  (error) => {
+    if (error === 'Game is not active') {
+      router.push('/');
+    }
+  }
+);
 
 // Load inviter if specified
 onMounted(() => {

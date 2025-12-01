@@ -277,6 +277,13 @@ onMounted(async () => {
       }
 
       const gameData = gameResult.game
+      
+      // Check if game is active - if not, redirect home (game is not playable)
+      if (!gameData.active) {
+        console.error('ZoneReveal: Game is not active, redirecting home')
+        router.push('/')
+        return
+      }
       gameTitle.value = gameData.name || ''
       gameDescription.value = gameData.description || ''
 

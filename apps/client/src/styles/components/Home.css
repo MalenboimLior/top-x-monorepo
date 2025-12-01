@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 85vh;
+  /*min-height: 85vh;*/
   /* Full viewport height minus header */
   padding: clamp(var(--space-8), 10vh, var(--space-12)) var(--layout-inline-padding);
   background: transparent;

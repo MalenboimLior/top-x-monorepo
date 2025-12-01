@@ -140,6 +140,16 @@ const routes = [
     component: () => import(/* webpackChunkName: "build" */ '@/views/Build.vue'),
   },
   {
+    path: '/build/new/:gameType',
+    name: 'BuildCreate',
+    component: () => import(/* webpackChunkName: "build-create" */ '@/views/BuildCreate.vue'),
+  },
+  {
+    path: '/build/edit/:gameId',
+    name: 'BuildEdit',
+    component: () => import(/* webpackChunkName: "build-edit" */ '@/views/BuildEdit.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import(/* webpackChunkName: "not-found" */ '@/views/NotFound.vue'),

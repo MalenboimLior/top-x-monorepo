@@ -180,12 +180,21 @@ onMounted(async () => {
     }
 
     const data = gameResult.game;
+    
+    // Check if game is active - if not, redirect home (game is not playable)
+    if (!data.active) {
+      console.error('GameInfo: Game is not active, redirecting home');
+      router.push('/');
+      return;
+    }
+    
     game.value = {
       ...data,
       // Don't set fallback image - let GameMediaSection show placeholder if no image
       image: data.image || undefined,
     };
     console.log('GameInfo: Game data fetched:', game.value);
+    console.log('GameInfo: imageGradient:', game.value.imageGradient);
 
     if (analytics) {
       logEvent(analytics, 'page_view', { page_name: 'game_info', game_id: gameId.value });

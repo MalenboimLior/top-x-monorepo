@@ -4,8 +4,8 @@ declare function sanitizeQuestion(question: TriviaQuestion): Omit<TriviaQuestion
 declare function buildConfigPayload(config: TriviaConfig): {
     questionIds: string[];
     questionCount: number;
-    mode: "fixed" | "endless";
-    language?: string;
+    mode: "classic" | "speed";
+    isEndless?: boolean;
     powerUpsActive?: boolean;
     powerUps?: import("@top-x/shared/types/trivia").TriviaPowerUpRule[];
     theme?: import("@top-x/shared/types/trivia").TriviaThemeConfig;
@@ -14,6 +14,9 @@ declare function buildConfigPayload(config: TriviaConfig): {
     solveThreshold?: number;
     mustLogin?: boolean;
     allowRepeats?: boolean;
+    showProgress?: boolean;
+    shuffleQuestions?: boolean;
+    shuffleAnswers?: boolean;
     unlimitedLives?: boolean;
     lives?: number;
     globalTimer?: import("@top-x/shared/types/trivia").TriviaGlobalTimerConfig;

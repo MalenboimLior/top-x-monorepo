@@ -130,8 +130,9 @@ const onGoBack = () => emit('go-back');
 }
 
 .scene-section > * {
-  width: 100%;
+  width: 600px;
   max-width: 600px;
+  box-sizing: border-box;
 }
 
 /* Start Card */
@@ -290,6 +291,12 @@ const onGoBack = () => emit('go-back');
 }
 
 @media (max-width: 768px) {
+  .scene-section > * {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
   .start-card {
     padding: 2rem 1.5rem;
     gap: 1.5rem;

@@ -190,6 +190,13 @@ export const useQuizStore = defineStore('quiz', () => {
 
       const gameData = snapshot.data() as Game;
       
+      // Check if game is active - if not, set error (game is not playable)
+      if (!gameData.active) {
+        error.value = 'Game is not active';
+        isLoading.value = false;
+        return;
+      }
+      
       console.log('[QuizStore] Game data loaded:', {
         gameId: activeGameId.value,
         gameTypeId: gameData.gameTypeId,

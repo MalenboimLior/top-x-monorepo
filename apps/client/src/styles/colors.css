@@ -55,6 +55,11 @@
   --color-accent-bg: rgba(196, 255, 0, 0.1);
   --color-accent-bg-hover: rgba(196, 255, 0, 0.2);
 
+  /* Game Image Placeholder Gradient Defaults */
+  --color-game-gradient-start: #e800d1; /* Default gradient start color */
+  --color-game-gradient-end: #00ff80; /* Default gradient end color */
+  --color-game-gradient-text: #00e8e0; /* Default text color for game name in gradient */
+
   /* Bulma Color Overrides */
   --bulma-scheme-main: var(--color-bg-primary);
   --bulma-text: var(--color-text-primary);
@@ -112,6 +117,11 @@
   /* Accent Color Variants - For backgrounds */
   --color-accent-bg: rgba(196, 255, 0, 0.1);
   --color-accent-bg-hover: rgba(196, 255, 0, 0.2);
+
+  /* Game Image Placeholder Gradient Defaults */
+  --color-game-gradient-start: #00e8e0; /* Default gradient start color */
+  --color-game-gradient-end: #c4ff00; /* Default gradient end color */
+  --color-game-gradient-text: #00e8e0; /* Default text color for game name in gradient */
 
   /* Bulma Color Overrides */
   --bulma-scheme-main: var(--color-bg-primary);

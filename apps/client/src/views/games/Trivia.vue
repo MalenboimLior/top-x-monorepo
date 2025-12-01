@@ -6,17 +6,6 @@
     :dir="direction"
     :style="themeStyles"
   >
-    <video
-      v-if="theme.backgroundVideoUrl"
-      class="trivia-background-video"
-      autoplay
-      muted
-      loop
-      playsinline
-    >
-      <source :src="theme.backgroundVideoUrl" type="video/mp4" />
-    </video>
-    <div class="trivia-overlay" :style="overlayStyles"></div>
 
     <div class="trivia-content">
       <div v-if="error" class="notification is-danger">
@@ -53,7 +42,7 @@
         :direction="direction"
         :inviter="inviter"
         :theme="theme"
-        :language="language"
+        language="en"
         @start-game="startGame"
         @answer-question="answerQuestion"
       />
@@ -76,7 +65,7 @@
         :user-image="userImage"
         :share-url="shareUrl"
         :share-text="shareText"
-        :language="language"
+        language="en"
         :show-answer-summary="shouldShowAnswerSummary"
         :answer-summary="answerSummary"
         @play-again="resetGame"
@@ -89,7 +78,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { doc, getDoc } from 'firebase/firestore';
 import TriviaScene from '@/components/games/trivia/TriviaScene.vue';
@@ -100,10 +89,12 @@ import { getUserPercentile } from '@/services/leaderboard';
 import { db } from '@top-x/shared';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
+import type { Game } from '@top-x/shared/types/game';
 
 const triviaStore = useTriviaStore();
 const userStore = useUserStore();
 const route = useRoute();
+const router = useRouter();
 
 useHead({
   title: 'Trivia Game - TOP-X',
@@ -171,12 +162,13 @@ async function loadDailyChallengeConfig(challengeId: string | null): Promise<voi
 
 watch(
   () => route.query.game,
-  (nextGame) => {
+  async (nextGame) => {
     const normalized =
       typeof nextGame === 'string' && nextGame.trim().length > 0 ? (nextGame as string) : DEFAULT_GAME_ID;
     if (normalized !== resolvedGameId.value) {
       resolvedGameId.value = normalized;
       triviaStore.setGameId(normalized);
+      await checkGameActive();
       void loadDailyChallengeConfig(dailyChallengeId.value);
     }
   }
@@ -233,13 +225,8 @@ const configLives = computed(() => triviaStore.configLives);
 const unlimitedLives = computed(() => triviaStore.unlimitedLives);
 const theme = computed(() => triviaStore.theme);
 
-const rtlLangs = ['ar', 'he', 'fa', 'ur'];
-const direction = computed(() => {
-  const lang = language.value?.toLowerCase() ?? 'en';
-  const base = lang.split('-')[0];
-  return rtlLangs.includes(base) ? 'rtl' : 'ltr';
-});
-const isRtl = computed(() => direction.value === 'rtl');
+const direction = computed(() => 'ltr');
+const isRtl = computed(() => false);
 
 const themeStyles = computed(() => {
   const styles: Record<string, string> = {
@@ -248,15 +235,8 @@ const themeStyles = computed(() => {
     '--trivia-background': theme.value.backgroundColor,
   };
   styles.backgroundColor = theme.value.backgroundColor;
-  styles['--trivia-background-image'] = theme.value.backgroundImageUrl
-    ? `url(${theme.value.backgroundImageUrl})`
-    : 'none';
   return styles;
 });
-
-const overlayStyles = computed(() => ({
-  background: theme.value.backgroundOverlayColor,
-}));
 
 const percentileRank = ref(0);
 const usersTopped = ref(0);
@@ -279,7 +259,33 @@ const shareText = computed(
   () => `I scored ${score.value} in the TOP-X Trivia challenge! Can you beat my streak of ${sessionBestStreak.value}?`
 );
 
-onMounted(() => {
+async function checkGameActive() {
+  try {
+    const gameRef = doc(db, 'games', activeGameId.value);
+    const gameSnap = await getDoc(gameRef);
+    
+    if (!gameSnap.exists()) {
+      console.error('Trivia: Game not found, redirecting home');
+      router.push('/');
+      return;
+    }
+
+    const gameData = gameSnap.data() as Game;
+    
+    // Check if game is active - if not, redirect home (game is not playable)
+    if (!gameData.active) {
+      console.error('Trivia: Game is not active, redirecting home');
+      router.push('/');
+      return;
+    }
+  } catch (error) {
+    console.error('Trivia: Error checking game status:', error);
+    router.push('/');
+  }
+}
+
+onMounted(async () => {
+  await checkGameActive();
   void loadDailyChallengeConfig(dailyChallengeId.value);
   const inviterUid = route.query.inviterUid as string;
   const routeGameId = route.query.gameId as string;

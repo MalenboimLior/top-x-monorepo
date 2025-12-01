@@ -10,6 +10,7 @@
       <div
         v-else
         class="game-media-section__image-placeholder"
+        :style="placeholderStyle"
       >
         <span>{{ game.name}}</span>
       </div>
@@ -106,6 +107,45 @@ const localeStore = useLocaleStore();
 const userStore = useUserStore();
 const user = computed(() => userStore.user);
 const t = (key: string) => localeStore.translate(key);
+
+// Gradient placeholder style
+const placeholderStyle = computed(() => {
+  const style: Record<string, string> = {};
+  
+  // Check if game has custom gradient colors
+  if (props.game.imageGradient && Array.isArray(props.game.imageGradient) && props.game.imageGradient.length === 2) {
+    const [startColor, endColor] = props.game.imageGradient;
+    if (startColor && endColor) {
+      style.background = `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`;
+      style.backgroundImage = `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`; // Ensure it overrides
+      if (import.meta.env.DEV) {
+        console.log('GameMediaSection: Using custom gradient', { startColor, endColor, gameId: props.game.id });
+      }
+    } else {
+      // Use new CSS variables for gradient defaults
+      style.background = 'linear-gradient(135deg, var(--color-game-gradient-start) 0%, var(--color-game-gradient-end) 100%)';
+    }
+  } else {
+    // Use new CSS variables for gradient defaults
+    style.background = 'linear-gradient(135deg, var(--color-game-gradient-start) 0%, var(--color-game-gradient-end) 100%)';
+    if (import.meta.env.DEV) {
+      console.log('GameMediaSection: Using default gradient', { 
+        hasImageGradient: !!props.game.imageGradient,
+        imageGradient: props.game.imageGradient,
+        gameId: props.game.id 
+      });
+    }
+  }
+  
+  // Set text color
+  if (props.game.imageGradientTextColor) {
+    style.color = props.game.imageGradientTextColor;
+  } else {
+    style.color = 'var(--color-game-gradient-text)';
+  }
+  
+  return style;
+});
 
 type MediaLabelVariant = 'featured' | 'daily' | `badge-${GameBadgeKey}`;
 
@@ -243,9 +283,10 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary-bg) 0%, var(--color-accent-bg) 100%);
-  color: var(--bulma-primary);
-  font-size: clamp(1.25rem, 4vw, 2rem);
+  /* background gradient is set inline via :style, fallback uses new gradient CSS variables */
+  background: linear-gradient(135deg, var(--color-game-gradient-start) 0%, var(--color-game-gradient-end) 100%);
+  color: var(--color-game-gradient-text);
+  font-size: clamp(1.75rem, 5vw, 3rem);
   font-weight: 700;
   padding: 2rem;
   text-align: center;

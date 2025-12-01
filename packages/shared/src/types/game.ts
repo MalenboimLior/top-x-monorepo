@@ -45,6 +45,9 @@ export interface Game {
   name: string;
   description: string;
   gameTypeId: string;
+  /** Controls game playability. Defaults to true.
+   * - active=true: Game is playable
+   * - active=false: Game is not visible on home page and cannot be played */
   active: boolean;
   gameHeader?: string;
   shareText?: string;
@@ -55,10 +58,16 @@ export interface Game {
   /** Optional link shown on shared images */
   shareLink?: string;
   image?: string; // Optional - if missing, will show first letter of name as placeholder
+  /** Optional gradient colors for image placeholder: [startColor, endColor] in hex format */
+  imageGradient?: [string, string];
+  /** Optional text color for game name in gradient placeholder, in hex format */
+  imageGradientTextColor?: string;
   vip: string[];
   /** Optional visual badges applied by admins */
   badges?: GameBadgeKey[];
-  /** Limit exposure of a game to direct links only */
+  /** Controls visibility on home page. Defaults to false.
+   * - unlisted=false: Game is visible on home page and playable (requires active=true)
+   * - unlisted=true: Game is hidden from home page but still playable via direct link (requires active=true) */
   unlisted?: boolean;
   /** Union of possible config payloads. TriviaConfig now includes fixed/endless metadata. */
   custom: GameCustomConfig;

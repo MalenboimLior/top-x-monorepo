@@ -235,14 +235,23 @@ onBeforeUnmount(() => {
 async function loadRemoteConfig(id: string) {
   try {
     const gameResult = await getGame(id)
-    if (gameResult.game) {
-      const data = gameResult.game
-      gameTitle.value = data.name || gameTitle.value
-      gameDescription.value = data.description || gameDescription.value
-      pacmanConfig.value = data.custom as PacmanConfig
-    } else {
+    if (!gameResult.game) {
       console.warn('Pacman: Game document not found for ID:', id, gameResult.error)
+      return
     }
+
+    const data = gameResult.game
+    
+    // Check if game is active - if not, redirect home (game is not playable)
+    if (!data.active) {
+      console.error('Pacman: Game is not active, redirecting home')
+      router.push('/')
+      return
+    }
+
+    gameTitle.value = data.name || gameTitle.value
+    gameDescription.value = data.description || gameDescription.value
+    pacmanConfig.value = data.custom as PacmanConfig
   } catch (err) {
     console.error('Pacman: Failed to load config', err)
   }

@@ -94,13 +94,13 @@ export function calculatePersonalityResult(
   let winningBucket: PersonalityBucket | null = null;
   let highestScore = -Infinity;
 
-  buckets.forEach((bucket) => {
+  for (const bucket of buckets) {
     const score = bucketScores[bucket.id] ?? 0;
     if (score > highestScore) {
       highestScore = score;
       winningBucket = bucket;
     }
-  });
+  }
 
   // Find the matching result variant for the winning bucket's score
   let result: PersonalityResultVariant | null = null;

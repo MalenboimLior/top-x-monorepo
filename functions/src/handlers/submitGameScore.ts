@@ -15,9 +15,11 @@ import type {
 import type { GameStats } from '@top-x/shared/types/stats';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
 import '../utils/firebaseAdmin';
+import { sendSessionMilestoneEmail } from './adminNotifications';
 import {
   increaseSessionCounter,
   incrementTotalPlayersCounter,
+  GAME_COUNTER_KEYS,
 } from '../utils/statsManager';
 import {
   createLeaderboardDatePayload,
@@ -167,6 +169,10 @@ export const submitGameScore = functions.https.onCall(async (
       // Fetch game documents
       const statsDoc = await tx.get(statsRef);
       const gameDoc = await tx.get(gameRef);
+      
+      // Get current sessionsPlayed value before incrementing (for milestone detection)
+      const currentStats = statsDoc.exists ? (statsDoc.data() as Partial<GameStats>) : {};
+      const currentSessionsPlayed = typeof currentStats.sessionsPlayed === 'number' ? currentStats.sessionsPlayed : 0;
       let challengeDoc: FirebaseFirestore.DocumentSnapshot | null = null;
       let challengeStatsDoc: FirebaseFirestore.DocumentSnapshot | null = null;
       let existingRewardDoc: FirebaseFirestore.DocumentSnapshot | null = null;
@@ -471,6 +477,16 @@ export const submitGameScore = functions.https.onCall(async (
 
       // Update game counters (sessions played, total players for first-time players)
       increaseSessionCounter({ tx, statsRef });
+      
+      // Calculate new sessions count after increment
+      const newSessionsPlayed = currentSessionsPlayed + 1;
+      
+      // Check for milestone thresholds (100 and 1000 sessions)
+      // Only check if this is not a daily challenge submission (to avoid duplicate notifications)
+      const milestoneToNotify = !isDailyChallengeSubmission &&
+        ((currentSessionsPlayed < 100 && newSessionsPlayed >= 100) ? 100 :
+        (currentSessionsPlayed < 1000 && newSessionsPlayed >= 1000) ? 1000 :
+        null);
 
       if (!previousGameData) {
         incrementTotalPlayersCounter({ tx, statsRef });
@@ -676,10 +692,29 @@ export const submitGameScore = functions.https.onCall(async (
         dailyChallengeId: isDailyChallengeSubmission ? rawDailyChallengeId ?? undefined : undefined,
         dailyChallengeDate: isDailyChallengeSubmission ? resolvedDailyChallengeDate ?? undefined : undefined,
         ...(pendingRewardRecord ? { pendingReward: pendingRewardRecord } : {}),
-      } satisfies SubmitGameScoreResponse;
+        // Store milestone info for email notification after transaction
+        _milestoneInfo: milestoneToNotify ? {
+          gameId,
+          gameName: gameSnapshot?.name || 'Unknown Game',
+          milestone: milestoneToNotify,
+          currentSessions: newSessionsPlayed,
+        } : undefined,
+      } satisfies SubmitGameScoreResponse & { _milestoneInfo?: { gameId: string; gameName: string; milestone: number; currentSessions: number } };
     });
 
-    return result;
+    // Send milestone email notification if needed (after transaction completes)
+    const resultWithMilestone = result as SubmitGameScoreResponse & { _milestoneInfo?: { gameId: string; gameName: string; milestone: number; currentSessions: number } };
+    if (resultWithMilestone._milestoneInfo) {
+      const { gameId: milestoneGameId, gameName, milestone, currentSessions } = resultWithMilestone._milestoneInfo;
+      // Fire and forget - don't wait for email to avoid blocking the response
+      sendSessionMilestoneEmail(milestoneGameId, gameName, milestone, currentSessions).catch((error) => {
+        console.error('Failed to send milestone email:', error);
+      });
+    }
+
+    // Return result without internal milestone field
+    const { _milestoneInfo, ...cleanResult } = resultWithMilestone;
+    return cleanResult;
   } catch (error: any) {
     console.error('submitGameScore error:', error);
     if (error instanceof functions.https.HttpsError) {

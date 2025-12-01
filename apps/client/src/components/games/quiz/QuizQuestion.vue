@@ -83,7 +83,10 @@ const goBack = () => {
 
 <style scoped>
 .quiz-question {
-  width: 100%;
+  width: 600px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .question-card {
@@ -92,6 +95,8 @@ const goBack = () => {
   padding: 2rem;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .question-header {
@@ -222,6 +227,12 @@ const goBack = () => {
 }
 
 @media (max-width: 768px) {
+  .quiz-question {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
   .question-card {
     padding: 1.5rem;
   }

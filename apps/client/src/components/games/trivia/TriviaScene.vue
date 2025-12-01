@@ -522,16 +522,18 @@ const onAnswer = (index: number) => emit('answer-question', index);
 }
 
 .scene-section > * {
-  width: 100%;
+  width: 720px;
   max-width: 720px;
+  box-sizing: border-box;
 }
 
 .start-card,
 .scene-hud,
 .power-ups {
-  width: 100%;
+  width: 720px;
   max-width: 720px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .start-card {
@@ -910,6 +912,20 @@ const onAnswer = (index: number) => emit('answer-question', index);
 }
 
 @media (max-width: 768px) {
+  .scene-section > * {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .start-card,
+  .scene-hud,
+  .power-ups {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
   .scene-hud {
     padding: 1rem 1.1rem;
     gap: 1rem;

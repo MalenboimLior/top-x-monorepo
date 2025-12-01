@@ -1,12 +1,59 @@
 <template>
   <div class="trivia-builder">
-    <!-- Questions Section - Primary Focus -->
-    <section class="questions-section">
-      <header class="questions-header">
-        <div class="questions-header__content">
-          <h2 class="questions-header__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</h2>
-          <p class="questions-header__subtitle">{{ t('build.trivia.questions.subtitle') }}</p>
-        </div>
+    <!-- Mode Selector -->
+    <section class="mode-section">
+      <h2 class="section-title">Trivia Mode</h2>
+      <div class="mode-options">
+        <label
+          class="mode-option"
+          :class="{ 'mode-option--selected': config.mode === 'classic' }"
+        >
+          <input
+            type="radio"
+            v-model="config.mode"
+            value="classic"
+            class="mode-radio"
+          />
+          <div class="mode-content">
+            <span class="mode-icon">🎯</span>
+            <span class="mode-label">Classic</span>
+            <span class="mode-description">Unlimited lives, show correct answers after each question</span>
+          </div>
+        </label>
+        <label
+          class="mode-option"
+          :class="{ 'mode-option--selected': config.mode === 'speed' }"
+        >
+          <input
+            type="radio"
+            v-model="config.mode"
+            value="speed"
+            class="mode-radio"
+          />
+          <div class="mode-content">
+            <span class="mode-icon">⚡</span>
+            <span class="mode-label">Speed</span>
+            <span class="mode-description">Limited lives, configurable lives count</span>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- Questions Section -->
+    <section ref="questionsSection" class="questions-section">
+      <button
+        type="button"
+        class="section-toggle"
+        @click="toggleSection('questions')"
+      >
+        <span class="section-toggle__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</span>
+        <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showQuestions }">
+          ▼
+        </span>
+      </button>
+      
+      <div v-if="showQuestions" class="questions-section__content">
+        <p class="section-hint">{{ t('build.trivia.questions.subtitle') }}</p>
         <div class="questions-header__actions">
           <CustomButton 
             type="is-primary" 
@@ -14,7 +61,6 @@
             @click="handleAddQuestion" 
           />
         </div>
-      </header>
 
       <div v-if="config.questions.length" class="questions-list">
         <article
@@ -28,11 +74,21 @@
             
             <div class="question-card__body">
               <div class="question-card__question">
-                <input
-                  v-model="question.text"
-                  :placeholder="t('build.trivia.questions.promptPlaceholder')"
-                  class="question-input"
-                />
+                <div class="question-input-wrapper">
+                  <input
+                    v-model="question.text"
+                    :placeholder="t('build.trivia.questions.promptPlaceholder')"
+                    class="question-input"
+                  />
+                  <div class="question-image-upload-inline">
+                    <ImageUploader
+                      v-model="question.media.imageUrl"
+                      :uploadFolder="`trivia/${validatedGameId}/questions/${question.id}`"
+                      :cropWidth="512"
+                      :cropHeight="512"
+                    />
+                  </div>
+                </div>
               </div>
               
               <div class="question-card__answers">
@@ -51,11 +107,23 @@
                     />
                     <span class="answer-option__number">{{ optionIndex + 1 }}</span>
                   </label>
-                  <input
-                    v-model="question.options[optionIndex]"
-                    :placeholder="t('build.trivia.questions.answerPlaceholder')"
-                    class="answer-option__input"
-                  />
+                  <div class="answer-option__content">
+                    <div class="answer-input-wrapper">
+                      <input
+                        v-model="question.options[optionIndex]"
+                        :placeholder="t('build.trivia.questions.answerPlaceholder')"
+                        class="answer-option__input"
+                      />
+                      <div class="answer-image-upload-inline">
+                        <ImageUploader
+                          v-model="question.media.optionImageUrls[optionIndex]"
+                          :uploadFolder="`trivia/${validatedGameId}/options/${question.id}/${optionIndex}`"
+                          :cropWidth="256"
+                          :cropHeight="256"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     class="answer-option__remove"
@@ -114,67 +182,34 @@
               </button>
             </div>
           </div>
-
-          <!-- Optional Images Section - Collapsible -->
-          <div class="question-card__images">
-            <button
-              type="button"
-              class="images-toggle"
-              @click="toggleQuestionImages(index)"
-            >
-              <span>{{ t('build.trivia.questions.imagesToggle') }}</span>
-              <span class="images-toggle__icon" :class="{ 'images-toggle__icon--open': expandedImages.has(index) }">
-                ▼
-              </span>
-            </button>
-            
-            <div v-if="expandedImages.has(index)" class="images-content">
-              <div class="field">
-                <label>{{ t('build.trivia.questions.imageLabel') }}</label>
-                <ImageUploader
-                  v-model="question.media.imageUrl"
-                  :uploadFolder="`trivia/${validatedGameId}/questions/${question.id}`"
-                  :cropWidth="512"
-                  :cropHeight="512"
-                />
-              </div>
-              
-              <div class="answer-images">
-                <div
-                  v-for="(option, optionIndex) in question.options"
-                  :key="`img-${question.id}-${optionIndex}`"
-                  class="answer-image-item"
-                >
-                  <label>{{ t('build.trivia.questions.answerImage') }} {{ optionIndex + 1 }}</label>
-                  <ImageUploader
-                    v-model="question.media.optionImageUrls[optionIndex]"
-                    :uploadFolder="`trivia/${validatedGameId}/options/${question.id}/${optionIndex}`"
-                    :cropWidth="256"
-                    :cropHeight="256"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
         </article>
       </div>
 
-      <div v-else class="empty-state">
-        <p>{{ t('build.trivia.questions.empty') }}</p>
-        <CustomButton
-          type="is-primary"
-          :label="t('build.trivia.questions.addFirstQuestion') || 'Add Your First Question'"
-          @click="handleAddQuestion"
-        />
+        <div v-else class="empty-state">
+          <p>{{ t('build.trivia.questions.empty') }}</p>
+          <CustomButton
+            type="is-primary"
+            :label="t('build.trivia.questions.addFirstQuestion') || 'Add Your First Question'"
+            @click="handleAddQuestion"
+          />
+        </div>
+        
+        <div v-if="config.questions.length" class="questions-footer">
+          <CustomButton 
+            type="is-primary" 
+            :label="t('build.trivia.questions.addQuestion')" 
+            @click="handleAddQuestion" 
+          />
+        </div>
       </div>
     </section>
 
-    <!-- Advanced Settings - Collapsible -->
-    <section class="settings-section">
+    <!-- Advanced Settings -->
+    <section ref="advancedSection" class="settings-section">
       <button
         type="button"
         class="settings-toggle"
-        @click="showAdvancedSettings = !showAdvancedSettings"
+        @click="toggleSection('advanced')"
       >
         <span>{{ t('build.trivia.settings.title') || 'Advanced Settings' }}</span>
         <span class="settings-toggle__icon" :class="{ 'settings-toggle__icon--open': showAdvancedSettings }">
@@ -183,147 +218,62 @@
       </button>
 
       <div v-if="showAdvancedSettings" class="settings-content">
-        <!-- Session Settings -->
-        <div class="settings-group">
-          <h3>{{ t('build.trivia.session.title') || 'Game Settings' }}</h3>
-          
-          <div class="settings-grid">
-            <div class="settings-card">
-              <h4>{{ t('build.trivia.session.lives.title') }}</h4>
-              <p class="muted">{{ t('build.trivia.session.lives.hint') }}</p>
-              <label class="toggle">
-                <input type="checkbox" v-model="config.unlimitedLives" />
-                <span>{{ t('build.trivia.session.lives.unlimited') }}</span>
-              </label>
-              <div v-if="!config.unlimitedLives" class="field">
-                <label :for="ids.lives">{{ t('build.trivia.session.lives.count') }}</label>
-                <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
-              </div>
-            </div>
-
-            <div class="settings-card">
-              <h4>{{ t('build.trivia.session.correctAnswers.title') }}</h4>
-              <p class="muted">{{ t('build.trivia.session.correctAnswers.hint') }}</p>
-              <label class="toggle">
-                <input type="checkbox" v-model="config.showCorrectAnswers" :disabled="!config.unlimitedLives" />
-                <span>{{ t('build.trivia.session.correctAnswers.perQuestion') }}</span>
-              </label>
-              <label class="toggle">
-                <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" :disabled="!config.unlimitedLives" />
-                <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
-              </label>
-              <p v-if="!config.unlimitedLives" class="muted">
-                {{ t('build.trivia.session.correctAnswers.disabled') }}
-              </p>
-            </div>
-
-            <div class="settings-card">
-              <h4>{{ t('build.trivia.session.timer.title') }}</h4>
-              <p class="muted">{{ t('build.trivia.session.timer.hint') }}</p>
-              <label class="toggle">
-                <input type="checkbox" v-model="config.globalTimer.enabled" />
-                <span>{{ t('build.trivia.session.timer.enable') }}</span>
-              </label>
-              <div v-if="config.globalTimer.enabled" class="field field--inline">
-                <label :for="ids.timerDuration">{{ t('build.trivia.session.timer.duration') }}</label>
-                <input :id="ids.timerDuration" type="number" min="0" v-model.number="config.globalTimer.durationSeconds" />
-                <span class="field--suffix">{{ t('build.trivia.session.timer.seconds') }}</span>
-              </div>
-            </div>
-
-            <div class="settings-card">
-              <h4>{{ t('build.trivia.session.access.title') }}</h4>
-              <p class="muted">{{ t('build.trivia.session.access.hint') }}</p>
-              <label class="toggle">
-                <input type="checkbox" v-model="config.mustLogin" />
-                <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
-              </label>
-              <label class="toggle">
-                <input type="checkbox" v-model="config.allowRepeats" />
-                <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
-              </label>
-            </div>
-          </div>
+        <div class="settings-grid">
+          <label class="toggle">
+            <input type="checkbox" v-model="config.showProgress" />
+            <span>{{ t('build.trivia.settings.showProgress') || 'Show progress bar' }}</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" v-model="config.shuffleQuestions" />
+            <span>{{ t('build.trivia.settings.shuffleQuestions') || 'Shuffle questions' }}</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" v-model="config.shuffleAnswers" />
+            <span>{{ t('build.trivia.settings.shuffleAnswers') || 'Shuffle answers' }}</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" v-model="config.mustLogin" />
+            <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" v-model="config.allowRepeats" />
+            <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
+          </label>
+          <label v-if="config.mode === 'classic'" class="toggle">
+            <input type="checkbox" v-model="config.showCorrectAnswers" />
+            <span>{{ t('build.trivia.session.correctAnswers.perQuestion') }}</span>
+          </label>
+          <label v-if="config.mode === 'classic'" class="toggle">
+            <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" />
+            <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
+          </label>
         </div>
 
-        <!-- Power Ups -->
-        <div class="settings-group">
-          <h3>{{ t('build.trivia.session.powerUps.title') }}</h3>
-          <label class="toggle">
-            <input type="checkbox" v-model="config.powerUpsActive" />
-            <span>{{ t('build.trivia.session.powerUps.enable') }}</span>
-          </label>
-
-          <div v-if="config.powerUpsActive" class="powerup-list">
-            <article
-              v-for="(powerUp, index) in config.powerUps"
-              :key="powerUp.id || index"
-              class="powerup-card"
-            >
-              <div class="field">
-                <label :for="`${ids.powerUpId}-${index}`">{{ t('build.trivia.session.powerUps.idLabel') }}</label>
-                <input :id="`${ids.powerUpId}-${index}`" v-model="powerUp.id" placeholder="shield" />
-              </div>
-              <div class="field">
-                <label :for="`${ids.powerUpLabel}-${index}`">{{ t('build.trivia.session.powerUps.labelLabel') }}</label>
-                <input :id="`${ids.powerUpLabel}-${index}`" v-model="powerUp.label" placeholder="Shield" />
-              </div>
-              <div class="powerup-card__row">
-                <div class="field">
-                  <label :for="`${ids.powerUpSpawn}-${index}`">{{ t('build.trivia.session.powerUps.spawnRate') }}</label>
-                  <input
-                    :id="`${ids.powerUpSpawn}-${index}`"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    v-model.number="powerUp.spawnRate"
-                  />
-                </div>
-                <div class="field">
-                  <label :for="`${ids.powerUpMax}-${index}`">{{ t('build.trivia.session.powerUps.maxUses') }}</label>
-                  <input
-                    :id="`${ids.powerUpMax}-${index}`"
-                    type="number"
-                    min="0"
-                    v-model.number="powerUp.maxUses"
-                  />
-                </div>
-                <div class="field">
-                  <label :for="`${ids.powerUpCooldown}-${index}`">{{ t('build.trivia.session.powerUps.cooldown') }}</label>
-                  <input
-                    :id="`${ids.powerUpCooldown}-${index}`"
-                    type="number"
-                    min="0"
-                    v-model.number="powerUp.cooldownSeconds"
-                  />
-                </div>
-              </div>
-              <div class="field">
-                <label :for="`${ids.powerUpDescription}-${index}`">{{ t('build.trivia.session.powerUps.description') }}</label>
-                <textarea :id="`${ids.powerUpDescription}-${index}`" rows="2" v-model="powerUp.description" />
-              </div>
-              <button type="button" class="ghost ghost--danger" @click="removePowerUp(index)">
-                {{ t('build.trivia.session.powerUps.remove') }}
-              </button>
-            </article>
-            <CustomButton type="is-success is-light" :label="t('build.trivia.session.powerUps.add')" @click="addPowerUp" />
+        <!-- Trivia-specific: Lives (Speed mode only) -->
+        <div v-if="config.mode === 'speed'" class="settings-group">
+          <h3>{{ t('build.trivia.session.lives.title') }}</h3>
+          <div class="field">
+            <label :for="ids.lives">{{ t('build.trivia.session.lives.count') }}</label>
+            <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
+            <p class="muted">{{ t('build.trivia.session.lives.hint') }}</p>
           </div>
         </div>
 
         <!-- Theme Settings -->
-        <div class="settings-group">
+        <div class="theme-settings">
           <h3>{{ t('build.trivia.theme.title') }}</h3>
           <div class="theme-grid">
-            <div v-for="field in themeFields" :key="field.key" class="field theme-field">
-              <label :for="`${ids.theme}-${field.key}`">{{ t(field.label) }}</label>
-              <input
-                :id="`${ids.theme}-${field.key}`"
-                :type="field.type"
-                v-model="config.theme[field.key as keyof typeof config.theme]"
-                :placeholder="field.placeholder"
-              />
-              <p class="muted">{{ t(field.hint) }}</p>
+            <div class="field">
+              <label>{{ t('build.trivia.theme.primaryLabel') }}</label>
+              <input type="color" v-model="config.theme.primaryColor" />
+            </div>
+            <div class="field">
+              <label>{{ t('build.trivia.theme.secondaryLabel') }}</label>
+              <input type="color" v-model="config.theme.secondaryColor" />
+            </div>
+            <div class="field">
+              <label>{{ t('build.trivia.theme.backgroundColorLabel') }}</label>
+              <input type="color" v-model="config.theme.backgroundColor" />
             </div>
           </div>
         </div>
@@ -416,27 +366,6 @@ const themeFields = [
     type: 'color',
     placeholder: '#050505',
   },
-  {
-    key: 'backgroundImageUrl',
-    label: 'build.trivia.theme.backgroundImageLabel',
-    hint: 'build.trivia.theme.backgroundImageHint',
-    type: 'text',
-    placeholder: 'https://…',
-  },
-  {
-    key: 'backgroundVideoUrl',
-    label: 'build.trivia.theme.backgroundVideoLabel',
-    hint: 'build.trivia.theme.backgroundVideoHint',
-    type: 'text',
-    placeholder: 'https://…',
-  },
-  {
-    key: 'backgroundOverlayColor',
-    label: 'build.trivia.theme.overlayLabel',
-    hint: 'build.trivia.theme.overlayHint',
-    type: 'text',
-    placeholder: '#00000088',
-  },
 ] as const;
 
 const DEFAULT_THEME_COLORS = {
@@ -462,8 +391,51 @@ function applyThemeDefaults(theme: NonNullable<TriviaConfig['theme']>) {
 
 const config = ref<TriviaConfigWithTheme>(hydrateConfig(props.modelValue));
 const isSyncing = ref(false);
-const expandedImages = ref<Set<number>>(new Set());
-const showAdvancedSettings = ref(false);
+const activeSection = ref<string | null>(null);
+
+// Section refs for scrolling
+const questionsSection = ref<HTMLElement | null>(null);
+const advancedSection = ref<HTMLElement | null>(null);
+
+// Computed properties for each section
+const showAdvancedSettings = computed(() => activeSection.value === 'advanced');
+const showQuestions = computed(() => activeSection.value === 'questions');
+
+// Toggle functions that close other sections and scroll to top
+function toggleSection(section: string) {
+  const wasOpen = activeSection.value === section;
+  activeSection.value = wasOpen ? null : section;
+  
+  // Scroll to section header when opening
+  if (!wasOpen) {
+    nextTick(() => {
+      let sectionElement: HTMLElement | null = null;
+      switch (section) {
+        case 'questions':
+          sectionElement = questionsSection.value;
+          break;
+        case 'advanced':
+          sectionElement = advancedSection.value;
+          break;
+      }
+      
+      if (sectionElement) {
+        // Find the toggle button (header) within the section
+        const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
+        const targetElement = toggleButton || sectionElement;
+        
+        // Scroll with a small offset to account for any fixed headers
+        const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - 20; // 20px offset from top
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    });
+  }
+}
 
 const validatedGameId = computed(() => {
   const id = props.gameId || `temp-${Date.now()}`;
@@ -503,9 +475,10 @@ watch(
 );
 
 watch(
-  () => config.value.unlimitedLives,
-  (unlimited) => {
-    if (!unlimited) {
+  () => config.value.mode,
+  (mode) => {
+    // showCorrectAnswers only works in classic mode
+    if (mode === 'speed') {
       config.value.showCorrectAnswers = false;
       config.value.showCorrectAnswersOnEnd = false;
     }
@@ -523,34 +496,61 @@ watch(
   { immediate: true },
 );
 
-function toggleQuestionImages(index: number) {
-  if (expandedImages.value.has(index)) {
-    expandedImages.value.delete(index);
-  } else {
-    expandedImages.value.add(index);
-  }
-}
+watch(
+  () => config.value.mode,
+  (mode) => {
+    // Auto-set unlimitedLives based on mode
+    if (mode === 'classic') {
+      config.value.unlimitedLives = true;
+      config.value.lives = undefined;
+    } else if (mode === 'speed') {
+      config.value.unlimitedLives = true; // Always true for speed mode
+      if (!config.value.lives) {
+        config.value.lives = 3;
+      }
+    }
+  },
+  { immediate: true },
+);
 
 function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   const base: TriviaConfig = value
     ? JSON.parse(JSON.stringify(value))
     : ({
-        mode: 'fixed',
+        mode: 'classic',
         questions: [],
-        language: '',
         powerUpsActive: false,
         allowRepeats: false,
         unlimitedLives: true,
         showCorrectAnswers: true,
         showCorrectAnswersOnEnd: true,
         mustLogin: false,
+        showProgress: true,
+        shuffleQuestions: false,
+        shuffleAnswers: false,
         globalTimer: { enabled: false },
         theme: {},
         powerUps: [],
       } as TriviaConfig);
 
-  base.mode = 'fixed';
-  base.language = base.language ?? '';
+  // Migrate old modes to new mode system
+  if (base.mode === 'fixed' || base.mode === 'endless' || !base.mode) {
+    // Migrate from old 'fixed'/'endless' to new 'classic'/'speed'
+    if (base.mode === 'endless') {
+      base.mode = 'speed';
+      base.isEndless = true;
+    } else {
+      // Default to classic for 'fixed' or undefined
+      base.mode = 'classic';
+      base.isEndless = false;
+    }
+  }
+  
+  // Ensure mode is valid
+  if (base.mode !== 'classic' && base.mode !== 'speed') {
+    base.mode = 'classic';
+  }
+
   base.solveThreshold = undefined;
   base.questionBatchSize = undefined;
   base.isHybrid = false;
@@ -574,11 +574,13 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
     hydratedQuestions.length > 0 ? hydratedQuestions : [createEmptyQuestion(correctAnswerMap)];
   base.correctAnswers = correctAnswerMap;
 
-  if (base.unlimitedLives === false) {
-    base.lives = sanitizePositiveInteger(base.lives) ?? 3;
-  } else {
+  // Auto-set unlimitedLives based on mode
+  if (base.mode === 'classic') {
     base.unlimitedLives = true;
-    base.lives = base.lives ?? undefined;
+    base.lives = undefined;
+  } else if (base.mode === 'speed') {
+    base.unlimitedLives = true; // Always true for speed mode (per plan)
+    base.lives = sanitizePositiveInteger(base.lives) ?? 3;
   }
 
   return base as TriviaConfigWithTheme;
@@ -661,24 +663,31 @@ async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfi
     }
     return sanitized;
   });
-  clone.mode = 'fixed';
-  clone.language = (clone.language ?? '').trim() || undefined;
+  // Ensure mode is valid
+  if (clone.mode !== 'classic' && clone.mode !== 'speed') {
+    clone.mode = 'classic';
+  }
   clone.solveThreshold = undefined;
   clone.questionBatchSize = undefined;
   clone.isHybrid = false;
 
-  clone.unlimitedLives = Boolean(clone.unlimitedLives);
-  if (!clone.unlimitedLives) {
-    clone.lives = sanitizePositiveInteger(clone.lives) ?? 3;
-  } else {
+  // Auto-set unlimitedLives based on mode
+  if (clone.mode === 'classic') {
+    clone.unlimitedLives = true;
     clone.lives = undefined;
+  } else if (clone.mode === 'speed') {
+    clone.unlimitedLives = true; // Always true for speed mode
+    clone.lives = sanitizePositiveInteger(clone.lives) ?? 3;
   }
 
   clone.powerUpsActive = Boolean(clone.powerUpsActive);
   clone.allowRepeats = Boolean(clone.allowRepeats);
   clone.mustLogin = Boolean(clone.mustLogin);
-  clone.showCorrectAnswers = clone.unlimitedLives ? Boolean(clone.showCorrectAnswers) : false;
-  clone.showCorrectAnswersOnEnd = clone.unlimitedLives ? Boolean(clone.showCorrectAnswersOnEnd) : false;
+  clone.showProgress = Boolean(clone.showProgress);
+  clone.shuffleQuestions = Boolean(clone.shuffleQuestions);
+  clone.shuffleAnswers = Boolean(clone.shuffleAnswers);
+  clone.showCorrectAnswers = clone.mode === 'classic' ? Boolean(clone.showCorrectAnswers) : false;
+  clone.showCorrectAnswersOnEnd = clone.mode === 'classic' ? Boolean(clone.showCorrectAnswersOnEnd) : false;
 
   if (!clone.globalTimer?.enabled) {
     clone.globalTimer = { enabled: false };
@@ -877,29 +886,10 @@ function reorderQuestion(index: number, direction: -1 | 1) {
   if (target < 0 || target >= questions.length) return;
   const [item] = questions.splice(index, 1);
   questions.splice(target, 0, item);
-  
-  // Update expanded images state
-  const wasExpanded = expandedImages.value.has(index);
-  expandedImages.value.delete(index);
-  if (wasExpanded) {
-    expandedImages.value.add(target);
-  }
 }
 
 function removeQuestion(index: number) {
   config.value.questions.splice(index, 1);
-  expandedImages.value.delete(index);
-  
-  // Reindex expanded images
-  const newExpanded = new Set<number>();
-  expandedImages.value.forEach((i) => {
-    if (i < index) {
-      newExpanded.add(i);
-    } else if (i > index) {
-      newExpanded.add(i - 1);
-    }
-  });
-  expandedImages.value = newExpanded;
   
   if (config.value.questions.length === 0) {
     config.value.questions.push(createEmptyQuestion(config.value.correctAnswers ?? {}));
@@ -963,33 +953,127 @@ function removePowerUp(index: number) {
   gap: 1.5rem;
 }
 
-/* Header */
+/* Mode Section */
+.mode-section {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.mode-option {
+  display: block;
+  cursor: pointer;
+  padding: 1.25rem;
+  border: 2px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  transition: all 0.2s ease;
+}
+
+.mode-option:hover {
+  border-color: var(--color-border-medium);
+}
+
+.mode-option--selected {
+  border-color: var(--bulma-primary);
+  background: var(--color-primary-bg);
+}
+
+.mode-radio {
+  display: none;
+}
+
+.mode-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mode-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.mode-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mode-description {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Section Toggle (Collapsible) */
+.section-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.section-toggle:hover {
+  border-bottom-color: var(--color-border-medium);
+}
+
+.section-toggle__title {
+  color: var(--color-text-primary);
+}
+
+.section-toggle__icon {
+  transition: transform 0.2s ease;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.section-toggle__icon--open {
+  transform: rotate(180deg);
+}
+
+.section-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+  margin: 0 0 1rem;
+}
+
+/* Questions Section */
 .questions-section {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.questions-header {
+.questions-section__content {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.questions-header__title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0 0 0.25rem;
-}
-
-.questions-header__subtitle {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  margin: 0;
+.questions-header__actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* Question Cards - Compact Design */
@@ -1049,20 +1133,78 @@ function removePowerUp(index: number) {
   width: 100%;
 }
 
+.question-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .question-input {
-  width: 100%;
+  flex: 1;
   background: var(--color-bg-input);
   border: 1px solid var(--color-border-base);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 0.95rem;
+  font-size: 1rem;
   padding: 0.5rem 0.75rem;
-  transition: border-color 0.2s ease;
 }
 
 .question-input:focus {
   outline: none;
   border-color: var(--color-border-primary);
+}
+
+.question-image-upload-inline {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.question-image-upload-inline :deep(.image-uploader) {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.question-image-upload-inline :deep(.uploader-button) {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.question-image-upload-inline :deep(.uploader-button-primary) {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  color: transparent;
+  font-size: 0;
+}
+
+.question-image-upload-inline :deep(.uploader-button-primary)::after {
+  content: '🖼️';
+  font-size: 1.2rem;
+  line-height: 1;
+  position: absolute;
+  color: var(--color-text-secondary);
+}
+
+
+.question-image-upload-inline :deep(.uploader-current-image) {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .question-card__answers {
@@ -1073,22 +1215,31 @@ function removePowerUp(index: number) {
 
 .answer-option {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem;
   background: var(--color-bg-secondary);
-  border: 1px solid transparent;
+  border: 1px solid var(--color-border-base);
   border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
-}
-
-.answer-option:hover {
-  background: var(--color-bg-elevated);
 }
 
 .answer-option--correct {
   border-color: var(--color-border-primary);
   background: var(--color-primary-bg);
+}
+
+.answer-option__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.answer-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .answer-option__radio {
@@ -1125,19 +1276,74 @@ function removePowerUp(index: number) {
 
 .answer-option__input {
   flex: 1;
-  background: transparent;
-  border: none;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 0.875rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
 }
 
 .answer-option__input:focus {
   outline: none;
+  border-color: var(--color-border-primary);
 }
 
 .answer-option__input::placeholder {
   color: var(--color-text-tertiary);
+}
+
+.answer-image-upload-inline {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.answer-image-upload-inline :deep(.image-uploader) {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.answer-image-upload-inline :deep(.uploader-button) {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.answer-image-upload-inline :deep(.uploader-button-primary) {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  color: transparent;
+  font-size: 0;
+}
+
+.answer-image-upload-inline :deep(.uploader-button-primary)::after {
+  content: '🖼️';
+  font-size: 1rem;
+  line-height: 1;
+  position: absolute;
+  color: var(--color-text-secondary);
+}
+
+
+.answer-image-upload-inline :deep(.uploader-current-image) {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .answer-option__remove {
@@ -1225,68 +1431,12 @@ function removePowerUp(index: number) {
   color: var(--color-text-primary);
 }
 
-/* Images Section - Collapsible */
-.question-card__images {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+.questions-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+  margin-top: 1rem;
   border-top: 1px solid var(--color-border-subtle);
-}
-
-.question-card:last-child .question-card__images {
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.images-toggle {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: transparent;
-  border: none;
-  color: var(--color-text-tertiary);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.images-toggle:hover {
-  color: var(--color-text-secondary);
-}
-
-.images-toggle__icon {
-  transition: transform 0.2s ease;
-  font-size: 0.75rem;
-}
-
-.images-toggle__icon--open {
-  transform: rotate(180deg);
-}
-
-.images-content {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.answer-images {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-.answer-image-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.answer-image-item label {
-  font-size: 0.75rem;
-  color: var(--color-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 /* Empty State */
@@ -1305,9 +1455,8 @@ function removePowerUp(index: number) {
 
 /* Settings Section */
 .settings-section {
-  border-top: 1px solid var(--color-border-subtle);
   padding-top: 1.5rem;
-  margin-top: 0.5rem;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .settings-toggle {
@@ -1348,16 +1497,16 @@ function removePowerUp(index: number) {
 }
 
 .settings-group h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1.125rem;
+  margin: 0 0 1rem;
+  font-size: 1rem;
   color: var(--color-text-primary);
   font-weight: 600;
 }
 
 .settings-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .settings-card {
@@ -1395,7 +1544,7 @@ function removePowerUp(index: number) {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.2rem;
 }
 
 .field label {
@@ -1411,10 +1560,9 @@ function removePowerUp(index: number) {
   background: var(--color-bg-input);
   border: 1px solid var(--color-border-base);
   border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
   color: var(--color-text-primary);
-  font-size: 0.875rem;
-  transition: border-color 0.2s ease;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
 }
 
 .field input:focus,
@@ -1500,10 +1648,29 @@ function removePowerUp(index: number) {
   color: var(--color-text-primary);
 }
 
+.theme-settings {
+  margin-top: 1rem;
+}
+
+.theme-settings h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 1rem;
+}
+
 .theme-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.theme-grid input[type='color'] {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 
 .theme-field {
@@ -1526,10 +1693,6 @@ function removePowerUp(index: number) {
     flex-direction: row;
     width: 100%;
     justify-content: flex-end;
-  }
-
-  .answer-images {
-    grid-template-columns: 1fr;
   }
 }
 </style>

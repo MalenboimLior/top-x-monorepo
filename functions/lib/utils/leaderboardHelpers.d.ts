@@ -1,5 +1,5 @@
 import type { LeaderboardEntry, LeaderboardEntryDate } from '@top-x/shared/types/game';
-export declare const DEFAULT_LEADERBOARD_PHOTO = "https://www.top-x.co/assets/profile.png";
+export declare const DEFAULT_LEADERBOARD_PHOTO = "https://top-x.co/assets/profile.png";
 export declare const formatLeaderboardDailyIndex: (date: Date) => string;
 export declare const formatLeaderboardWeeklyIndex: (date: Date) => string;
 export declare const formatLeaderboardMonthlyIndex: (date: Date) => string;

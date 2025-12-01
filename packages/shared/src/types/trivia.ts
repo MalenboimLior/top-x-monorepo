@@ -63,26 +63,25 @@ export interface TriviaPowerUpRule {
 }
 
 export interface TriviaThemeConfig {
+  /** Primary accent color */
   primaryColor?: string;
+  /** Secondary accent color */
   secondaryColor?: string;
+  /** Background color */
   backgroundColor?: string;
-  backgroundImageUrl?: string;
-  backgroundVideoUrl?: string;
-  backgroundOverlayColor?: string;
 }
 
 export interface TriviaConfig {
-  /** The mode of the trivia, fixed means the questions are fixed and endless means the questions are endless */
-  /** we don't need questions-source because questions from fixed mode are from "questions" array and in endless mode are from "pool" - sub collection*/
-  /** pool is a subcollection of the game document - for now lets not develop it yet */
-  /** we will do only develop fixed game mode with the questions from the  TriviaQuestion[] array and not subcollection*/
-  mode: 'fixed'|'endless';
+  /** The mode of the trivia game */
+  /** - classic: Unlimited lives, show correct answers after each question */
+  /** - speed: Limited lives, configurable lives count */
+  mode: 'classic' | 'speed';
+  /** Whether the trivia is endless (same as speed mode but with endless questions) */
+  isEndless?: boolean;
   /** Question bank to draw from */
   questions: TriviaQuestion[];
   /** Optional map of correct answers retained for admin tooling */
   correctAnswers?: Record<string, string>;
-  /** Preferred language for the trivia experience (BCP 47 tag) */
-  language?: string;
   powerUpsActive?: boolean;
   /** Available power-ups and their constraints */
   powerUps?: TriviaPowerUpRule[];
@@ -99,11 +98,18 @@ export interface TriviaConfig {
 
   /** Whether user must login to play */
   mustLogin?: boolean;
-    /** Whether user can play more then one time */
+  /** Whether user can play more then one time */
   allowRepeats?: boolean;
 
-  /** Whether lives are unlimited - in fixed mode only */
-  unlimitedLives?: boolean; // in fixed mode only
+  /** Whether to show progress indicator (e.g., "Question 3 of 10") */
+  showProgress?: boolean;
+  /** Whether to randomize question order */
+  shuffleQuestions?: boolean;
+  /** Whether to randomize answer order within each question */
+  shuffleAnswers?: boolean;
+
+  /** Whether lives are unlimited (automatically set based on mode) */
+  unlimitedLives?: boolean;
   /** Number of lives/strikes allowed before the run ends */
   lives?: number;
   /** Global session timer configuration */

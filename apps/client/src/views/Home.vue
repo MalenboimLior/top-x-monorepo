@@ -363,7 +363,10 @@ onMounted(() => {
         return;
       }
 
-      const activeGames = mappedGames.filter((g) => g.active);
+      // Filter games: must be active=true AND unlisted=false to appear on home page
+      // active=false: not visible and not playable
+      // unlisted=true: not visible on home but still playable via direct link
+      const activeGames = mappedGames.filter((g) => g.active && !g.unlisted);
       games.value = activeGames;
 
       const activeIds = new Set<string>();
