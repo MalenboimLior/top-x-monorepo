@@ -51,16 +51,32 @@
           ▼
         </span>
       </button>
-      <p v-if="showPersonalityBuckets" class="section-hint">Define the possible personality types and their results</p>
+      <p v-if="showPersonalityBuckets" class="section-hint">
+        <template v-if="personalityQuizType === 'scoreRange'">
+          Single bucket with score ranges: Users get different results based on their score range.
+        </template>
+        <template v-else-if="personalityQuizType === 'multiBucket'">
+          Multiple buckets: Users get the result from the bucket with the highest score.
+        </template>
+        <template v-else>
+          Define the possible personality types and their results. Add multiple buckets for type-based quizzes, or one bucket with score ranges for score-based quizzes.
+        </template>
+      </p>
       
-      <div v-if="showPersonalityBuckets" class="buckets-list">
-        <div
-          v-for="(bucket, bIndex) in config.personalityBuckets"
-          :key="`bucket-${bIndex}`"
-          class="bucket-card bucket-card--expanded"
-        >
-          <div class="bucket-header">
-            <h3 class="bucket-title">{{ bucket.label || `Bucket ${bIndex + 1}` }}</h3>
+      <div v-if="showPersonalityBuckets">
+        <div v-if="(config.personalityBuckets?.length ?? 0) > 0" class="buckets-list">
+          <div
+            v-for="(bucket, bIndex) in config.personalityBuckets"
+            :key="`bucket-${bIndex}`"
+            class="bucket-card"
+          >
+          <div class="bucket-card__header">
+            <div class="bucket-fields">
+              <div class="field">
+                <label>Label</label>
+                <input v-model="bucket.label" placeholder="e.g., The Lion" class="field-input" />
+              </div>
+            </div>
             <button
               type="button"
               class="bucket-remove"
@@ -69,17 +85,6 @@
             >
               ×
             </button>
-          </div>
-          
-          <div class="bucket-fields">
-            <div class="field">
-              <label>Bucket ID</label>
-              <input v-model="bucket.id" placeholder="e.g., lion" class="field-input" />
-            </div>
-            <div class="field">
-              <label>Label</label>
-              <input v-model="bucket.label" placeholder="e.g., The Lion" class="field-input" />
-            </div>
           </div>
 
           <!-- Results within this bucket -->
@@ -91,64 +96,120 @@
               </span>
             </h4>
             
-            <div
-              v-for="(result, rIndex) in bucket.results"
-              :key="rIndex"
-              class="result-variant"
-            >
-              <div class="result-variant__header" v-if="bucket.results.length > 1">
-                <span class="result-variant__label">Result {{ rIndex + 1 }}</span>
-                <button
-                  type="button"
-                  class="result-variant__remove"
-                  @click="removeResultVariant(bIndex, rIndex)"
-                  :disabled="bucket.results.length <= 1"
+            <!-- Score range table view (only show if multiple results) -->
+            <template v-if="bucket.results.length > 1">
+              <table class="score-range-table">
+                <thead>
+                  <tr>
+                    <th>Min Score</th>
+                    <th>Max Score</th>
+                    <th>Result Title</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(result, rIndex) in bucket.results"
+                    :key="`table-${rIndex}`"
+                    :class="{ 'score-range-error-row': getBucketRangeErrors(bIndex, rIndex).length > 0 }"
+                  >
+                    <td>
+                      <input
+                        type="number"
+                        v-model.number="result.minScore"
+                        placeholder="0"
+                        class="field-input field-input--small"
+                        @input="validateBucketRanges(bIndex)"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        v-model.number="result.maxScore"
+                        placeholder="∞"
+                        class="field-input field-input--small"
+                        @input="validateBucketRanges(bIndex)"
+                      />
+                    </td>
+                    <td>
+                      <div class="result-title-wrapper">
+                        <input
+                          v-model="result.title"
+                          placeholder="You are a Lion!"
+                          class="field-input"
+                        />
+                        <div class="result-image-upload-inline">
+                          <ImageUploader
+                            v-model="result.imageUrl"
+                            :uploadFolder="`images/quiz/${gameId}/results`"
+                            :cropWidth="200"
+                            :cropHeight="200"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        v-model="result.description"
+                        placeholder="Description..."
+                        class="field-input field-input--compact"
+                      />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="result-variant__remove"
+                        @click="removeResultVariant(bIndex, rIndex)"
+                        :disabled="bucket.results.length <= 1"
+                        title="Remove result"
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="getBucketRangeErrors(bIndex).length > 0" class="score-range-errors">
+                <div
+                  v-for="(error, errIdx) in getBucketRangeErrors(bIndex)"
+                  :key="errIdx"
+                  class="score-range-error"
                 >
-                  ×
-                </button>
-              </div>
-              
-              <!-- Score range inputs (only show if multiple results) -->
-              <div v-if="bucket.results.length > 1" class="result-variant__scores">
-                <div class="field">
-                  <label>Min Score</label>
-                  <input
-                    type="number"
-                    v-model.number="result.minScore"
-                    placeholder="0"
-                    class="field-input field-input--small"
-                  />
-                </div>
-                <div class="field">
-                  <label>Max Score</label>
-                  <input
-                    type="number"
-                    v-model.number="result.maxScore"
-                    placeholder="∞"
-                    class="field-input field-input--small"
-                  />
+                  {{ error }}
                 </div>
               </div>
-              
-              <div class="result-variant__fields">
-                <div class="field">
-                  <label>Result Title</label>
-                  <input v-model="result.title" placeholder="You are a Lion!" class="field-input" />
-                </div>
-                <div class="field field--full">
-                  <label>Description</label>
-                  <textarea v-model="result.description" rows="2" class="field-textarea"></textarea>
-                </div>
-                <div class="field">
-                  <label>Result Image (optional)</label>
-                  <input v-model="result.imageUrl" placeholder="https://..." class="field-input" />
-                </div>
-                <div class="field">
-                  <label>Share Text (optional)</label>
-                  <input v-model="result.shareText" placeholder="I got Lion! What are you?" class="field-input" />
+            </template>
+
+            <!-- Single result view (default) -->
+            <template v-else>
+              <div
+                v-for="(result, rIndex) in bucket.results"
+                :key="rIndex"
+                class="result-variant"
+              >
+                <div class="result-variant__fields">
+                  <div class="field">
+                    <label>Result Title</label>
+                    <div class="result-title-wrapper">
+                      <input v-model="result.title" placeholder="You are a Lion!" class="field-input" />
+                      <div class="result-image-upload-inline">
+                        <ImageUploader
+                          v-model="result.imageUrl"
+                          :uploadFolder="`images/quiz/${gameId}/results`"
+                          :cropWidth="200"
+                          :cropHeight="200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="field field--full">
+                    <label>Description</label>
+                    <textarea v-model="result.description" rows="2" class="field-textarea"></textarea>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
             
             <button
               type="button"
@@ -160,11 +221,20 @@
           </div>
         </div>
         
-        <CustomButton
-          type="is-light"
-          label="+ Add Bucket"
-          @click="addBucket"
-        />
+          <CustomButton
+            type="is-light"
+            label="+ Add Bucket"
+            @click="addBucket"
+          />
+        </div>
+        <div v-else class="empty-state">
+          <p>No buckets defined yet. Add at least one bucket to define personality types.</p>
+          <CustomButton
+            type="is-primary"
+            label="+ Add First Bucket"
+            @click="addBucket"
+          />
+        </div>
       </div>
     </section>
 
@@ -182,17 +252,14 @@
       </button>
       <p v-if="showArchetypeAxes" class="section-hint">Define the spectrums/dimensions (e.g., Introvert ↔ Extrovert)</p>
       
-      <div v-if="showArchetypeAxes" class="axes-list">
-        <div
-          v-for="(axis, index) in config.archetypeAxes"
-          :key="`axis-${index}`"
-          class="axis-card"
-        >
+      <div v-if="showArchetypeAxes">
+        <div v-if="(config.archetypeAxes?.length ?? 0) > 0" class="axes-list">
+          <div
+            v-for="(axis, index) in config.archetypeAxes"
+            :key="`axis-${index}`"
+            class="axis-card"
+          >
           <div class="axis-fields">
-            <div class="field">
-              <label>Axis ID</label>
-              <input v-model="axis.id" placeholder="e.g., IE" class="field-input" />
-            </div>
             <div class="field">
               <label>Low Label (negative)</label>
               <input v-model="axis.lowLabel" placeholder="e.g., Introvert" class="field-input" />
@@ -210,11 +277,20 @@
             ×
           </button>
         </div>
-        <CustomButton
-          type="is-light"
-          label="+ Add Axis"
-          @click="addAxis"
-        />
+          <CustomButton
+            type="is-light"
+            label="+ Add Axis"
+            @click="addAxis"
+          />
+        </div>
+        <div v-else class="empty-state">
+          <p>No axes defined yet. Add at least one axis to define the spectrums (e.g., Introvert ↔ Extrovert).</p>
+          <CustomButton
+            type="is-primary"
+            label="+ Add First Axis"
+            @click="addAxis"
+          />
+        </div>
       </div>
 
       <button
@@ -230,20 +306,31 @@
       </button>
       <p v-if="showArchetypeAxes && showArchetypeResults" class="section-hint">Define results for specific axis patterns (e.g., ENFP = E+N+F+P)</p>
       
-      <div v-if="showArchetypeAxes && showArchetypeResults" class="results-list">
-        <div
-          v-for="(result, index) in config.archetypeResults"
-          :key="index"
-          class="result-card result-card--archetype"
-        >
+      <div v-if="showArchetypeAxes && showArchetypeResults">
+        <div v-if="(config.archetypeResults?.length ?? 0) > 0" class="results-list">
+          <div
+            v-for="(result, index) in config.archetypeResults"
+            :key="index"
+            class="result-card result-card--archetype"
+          >
+          <div class="result-card__header">
+            <span class="result-card__number">{{ index + 1 }}</span>
+            <span class="result-card__title-preview">{{ result.id || result.title || `Result ${index + 1}` }}</span>
+          </div>
           <div class="result-fields">
             <div class="field">
-              <label>Result ID</label>
-              <input v-model="result.id" placeholder="e.g., ENFP" class="field-input" />
-            </div>
-            <div class="field">
               <label>Result Title</label>
-              <input v-model="result.title" placeholder="The Campaigner" class="field-input" />
+              <div class="result-title-wrapper">
+                <input v-model="result.title" placeholder="The Campaigner" class="field-input" />
+                <div class="result-image-upload-inline">
+                  <ImageUploader
+                    v-model="result.imageUrl"
+                    :uploadFolder="`images/quiz/${gameId}/results`"
+                    :cropWidth="200"
+                    :cropHeight="200"
+                  />
+                </div>
+              </div>
             </div>
             <div class="field field--full">
               <label>Pattern (which axes are high/low)</label>
@@ -253,25 +340,31 @@
                   :key="`pattern-${index}-${aIdx}`"
                   class="pattern-item"
                 >
-                  <span class="pattern-label">{{ axis.id }}</span>
-                  <select
-                    :value="result.pattern?.[axis.id] ?? 'high'"
-                    @change="updatePattern(index, axis.id, ($event.target as HTMLSelectElement).value)"
-                    class="pattern-select"
-                  >
-                    <option value="low">{{ axis.lowLabel }}</option>
-                    <option value="high">{{ axis.highLabel }}</option>
-                  </select>
+                    <span class="pattern-label">{{ getAxisId(axis) }}</span>
+                  <div class="pattern-buttons">
+                    <button
+                      type="button"
+                      class="pattern-button"
+                      :class="{ 'pattern-button--active': (result.pattern?.[getAxisId(axis)] ?? 'high') === 'low' }"
+                      @click="updatePattern(index, getAxisId(axis), 'low')"
+                    >
+                      {{ axis.lowLabel }}
+                    </button>
+                    <button
+                      type="button"
+                      class="pattern-button"
+                      :class="{ 'pattern-button--active': (result.pattern?.[getAxisId(axis)] ?? 'high') === 'high' }"
+                      @click="updatePattern(index, getAxisId(axis), 'high')"
+                    >
+                      {{ axis.highLabel }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
             <div class="field field--full">
               <label>Description</label>
               <textarea v-model="result.description" rows="3" class="field-textarea"></textarea>
-            </div>
-            <div class="field">
-              <label>Image URL (optional)</label>
-              <input v-model="result.imageUrl" placeholder="https://..." class="field-input" />
             </div>
             <div class="field">
               <label>Share Text (optional)</label>
@@ -285,12 +378,21 @@
           >
             ×
           </button>
+          </div>
+          <CustomButton
+            type="is-light"
+            label="+ Add Result"
+            @click="addArchetypeResult"
+          />
         </div>
-        <CustomButton
-          type="is-light"
-          label="+ Add Result"
-          @click="addArchetypeResult"
-        />
+        <div v-else class="empty-state">
+          <p>No archetype results defined yet. Add results for specific axis patterns (e.g., ENFP = E+N+F+P).</p>
+          <CustomButton
+            type="is-primary"
+            label="+ Add First Result"
+            @click="addArchetypeResult"
+          />
+        </div>
       </div>
     </section>
 
@@ -601,6 +703,30 @@ const showArchetypeAxes = computed(() => activeSection.value === 'archetypeAxes'
 const showArchetypeResults = computed(() => activeSection.value === 'archetypeResults');
 const showQuestions = computed(() => activeSection.value === 'questions');
 
+// Computed: Detect personality quiz type
+const personalityQuizType = computed(() => {
+  const buckets = config.value.personalityBuckets || [];
+  if (buckets.length === 0) return null;
+  
+  // Check if single bucket with multiple results (score range quiz)
+  if (buckets.length === 1) {
+    const bucket = buckets[0];
+    if (bucket.results && bucket.results.length > 1) {
+      return 'scoreRange';
+    }
+  }
+  
+  // Multiple buckets (personality type quiz)
+  if (buckets.length > 1) {
+    return 'multiBucket';
+  }
+  
+  return null;
+});
+
+// Store range validation errors per bucket
+const bucketRangeErrors = ref<Record<number, string[]>>({});
+
 // Toggle functions that close other sections and scroll to top
 function toggleSection(section: string) {
   const wasOpen = activeSection.value === section;
@@ -723,8 +849,8 @@ function hydrateConfig(value: QuizConfig): EditableQuizConfig {
       backgroundColor: base.theme?.backgroundColor ?? '#0f0f23',
     },
     personalityBuckets,
-    archetypeAxes: base.archetypeAxes ?? [],
-    archetypeResults: base.archetypeResults ?? [],
+    archetypeAxes: (base.archetypeAxes ?? []).map(hydrateArchetypeAxis),
+    archetypeResults: (base.archetypeResults ?? []).map(hydrateArchetypeResult),
     showProgress: base.showProgress ?? true,
     shuffleQuestions: base.shuffleQuestions ?? false,
     shuffleAnswers: base.shuffleAnswers ?? false,
@@ -734,8 +860,13 @@ function hydrateConfig(value: QuizConfig): EditableQuizConfig {
 }
 
 function hydrateBucket(b: Partial<PersonalityBucket>): PersonalityBucket {
+  // Ensure bucket always has a valid ID - never empty
+  const id = b.id && b.id.trim() !== '' 
+    ? b.id 
+    : (b.label ? generateSlug(b.label) : '') || `bucket_${Math.random().toString(36).slice(2, 8)}`;
+  
   return {
-    id: b.id ?? '',
+    id,
     label: b.label ?? '',
     results: (b.results ?? [{ title: '', description: '' }]).map(hydrateResultVariant),
   };
@@ -745,6 +876,43 @@ function hydrateResultVariant(r: Partial<PersonalityResultVariant>): Personality
   return {
     minScore: r.minScore,
     maxScore: r.maxScore,
+    title: r.title ?? '',
+    description: r.description ?? '',
+    imageUrl: r.imageUrl ?? '',
+    shareText: r.shareText ?? '',
+  };
+}
+
+function createAxisId(): string {
+  return `axis_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function hydrateArchetypeAxis(a: Partial<ArchetypeAxis>): ArchetypeAxis {
+  // Ensure axis always has a valid ID - never empty
+  const id = a.id && a.id.trim() !== '' 
+    ? a.id 
+    : createAxisId();
+  
+  return {
+    id,
+    lowLabel: a.lowLabel ?? '',
+    highLabel: a.highLabel ?? '',
+  };
+}
+
+function createResultId(): string {
+  return `result_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function hydrateArchetypeResult(r: Partial<ArchetypeResult>): ArchetypeResult {
+  // Ensure result always has a valid ID - never empty
+  const id = r.id && r.id.trim() !== '' 
+    ? r.id 
+    : createResultId();
+  
+  return {
+    id,
+    pattern: r.pattern ?? {},
     title: r.title ?? '',
     description: r.description ?? '',
     imageUrl: r.imageUrl ?? '',
@@ -771,6 +939,44 @@ function hydrateAnswer(a: Partial<QuizAnswer>): QuizAnswer {
   };
 }
 
+/**
+ * Normalizes imageUrl fields to ensure they're always strings (not undefined)
+ */
+function normalizeImageUrls(config: QuizConfig): QuizConfig {
+  const normalized = JSON.parse(JSON.stringify(config)) as QuizConfig;
+  
+  // Normalize question imageUrls
+  normalized.questions = normalized.questions.map(q => ({
+    ...q,
+    imageUrl: q.imageUrl ?? '',
+    answers: q.answers.map(a => ({
+      ...a,
+      imageUrl: a.imageUrl ?? '',
+    })),
+  }));
+  
+  // Normalize personality bucket result imageUrls
+  if (normalized.personalityBuckets) {
+    normalized.personalityBuckets = normalized.personalityBuckets.map(b => ({
+      ...b,
+      results: b.results.map(r => ({
+        ...r,
+        imageUrl: r.imageUrl ?? '',
+      })),
+    }));
+  }
+  
+  // Normalize archetype result imageUrls
+  if (normalized.archetypeResults) {
+    normalized.archetypeResults = normalized.archetypeResults.map(r => ({
+      ...r,
+      imageUrl: r.imageUrl ?? '',
+    }));
+  }
+  
+  return normalized;
+}
+
 function sanitizeConfig(value: EditableQuizConfig): QuizConfig {
   // Note: Don't filter incomplete items during editing - that causes input issues.
   // Filtering of incomplete items should happen only at save time in the parent component.
@@ -792,12 +998,14 @@ function sanitizeConfig(value: EditableQuizConfig): QuizConfig {
       ...b,
       results: b.results ?? [],
     }));
-  } else {
-    result.archetypeAxes = value.archetypeAxes;
-    result.archetypeResults = value.archetypeResults;
+  } else if (value.mode === 'archetype') {
+    // Ensure archetype data is included, even if empty
+    result.archetypeAxes = value.archetypeAxes ?? [];
+    result.archetypeResults = value.archetypeResults ?? [];
   }
 
-  return result;
+  // Normalize all imageUrl fields to be strings
+  return normalizeImageUrls(result);
 }
 
 function createQuestionId(): string {
@@ -808,12 +1016,104 @@ function getLetterForIndex(index: number): string {
   return String.fromCharCode(65 + index);
 }
 
+// Utility: Generate slug from text
+function generateSlug(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with dashes
+    .replace(/-+/g, '-') // Replace multiple dashes with single dash
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+}
+
+// Utility: Generate axis ID from labels (first letter/number of each label, uppercase)
+function generateAxisId(lowLabel: string, highLabel: string): string {
+  if (!lowLabel && !highLabel) return '';
+  
+  // Get first character/number from each label
+  const getFirstChar = (label: string): string => {
+    const trimmed = label?.trim() || '';
+    if (!trimmed) return '';
+    // Get first character, handling Unicode/emoji
+    const firstChar = trimmed.charAt(0);
+    // Convert to uppercase if it's a Latin letter
+    if (/[a-zA-Z]/.test(firstChar)) {
+      return firstChar.toUpperCase();
+    }
+    // For non-Latin characters (like Hebrew, Arabic, etc.), use the character as-is
+    return firstChar;
+  };
+  
+  const lowFirst = getFirstChar(lowLabel);
+  const highFirst = getFirstChar(highLabel);
+  
+  // If both are empty, return empty string
+  if (!lowFirst && !highFirst) return '';
+  
+  // If one is empty, use the other twice or add a suffix
+  if (!lowFirst) return highFirst + '_' + highFirst;
+  if (!highFirst) return lowFirst + '_' + lowFirst;
+  
+  // Return combination of both with underscore separator
+  const combined = lowFirst + '_' + highFirst;
+  return combined || '';
+}
+
+// Utility: Validate score ranges for non-overlapping
+function validateScoreRanges(results: PersonalityResultVariant[]): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  
+  // Filter out results without score ranges (default results)
+  const rangesWithScores = results
+    .map((r, idx) => ({
+      min: r.minScore ?? 0,
+      max: r.maxScore ?? Number.MAX_SAFE_INTEGER,
+      index: idx,
+      title: r.title || `Result ${idx + 1}`
+    }))
+    .filter(r => r.min !== undefined || r.max !== Number.MAX_SAFE_INTEGER)
+    .sort((a, b) => a.min - b.min);
+  
+  if (rangesWithScores.length <= 1) {
+    return { valid: true, errors: [] };
+  }
+  
+  // Check for overlaps
+  for (let i = 0; i < rangesWithScores.length; i++) {
+    const current = rangesWithScores[i];
+    
+    // Validate min < max
+    if (current.min >= current.max) {
+      errors.push(`${current.title}: Min score must be less than max score`);
+    }
+    
+    // Check overlap with next range
+    if (i < rangesWithScores.length - 1) {
+      const next = rangesWithScores[i + 1];
+      if (current.max > next.min) {
+        errors.push(`Overlap: ${current.title} (${current.min}-${current.max}) overlaps with ${next.title} (${next.min}-${next.max})`);
+      }
+    }
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
 // Question management
 function addQuestion() {
   const newQuestion = {
     id: createQuestionId(),
     text: '',
-    answers: [{ text: '', bucketPoints: {}, axisPoints: {} }, { text: '', bucketPoints: {}, axisPoints: {} }],
+    imageUrl: '',
+    answers: [
+      { text: '', imageUrl: '', bucketPoints: {}, axisPoints: {} }, 
+      { text: '', imageUrl: '', bucketPoints: {}, axisPoints: {} }
+    ],
   };
   config.value.questions.push(newQuestion);
   
@@ -835,13 +1135,14 @@ function duplicateQuestion(index: number) {
   const duplicatedQuestion = {
     id: createQuestionId(),
     text: questionToDuplicate.text,
+    imageUrl: questionToDuplicate.imageUrl ?? '',
     answers: questionToDuplicate.answers.map((answer) => ({
       text: answer.text,
-      imageUrl: answer.imageUrl,
+      imageUrl: answer.imageUrl ?? '',
       bucketPoints: { ...answer.bucketPoints },
       axisPoints: { ...answer.axisPoints },
     })),
-    category: questionToDuplicate.category,
+    category: questionToDuplicate.category ?? '',
   };
   
   config.value.questions.splice(index + 1, 0, duplicatedQuestion);
@@ -864,7 +1165,7 @@ function reorderQuestion(index: number, direction: -1 | 1) {
 
 // Answer management
 function addAnswer(qIndex: number) {
-  config.value.questions[qIndex].answers.push({ text: '', bucketPoints: {}, axisPoints: {} });
+  config.value.questions[qIndex].answers.push({ text: '', imageUrl: '', bucketPoints: {}, axisPoints: {} });
 }
 
 function removeAnswer(qIndex: number, aIndex: number) {
@@ -886,14 +1187,107 @@ function updateAxisPoints(qIndex: number, aIndex: number, axisId: string, event:
 }
 
 // Personality bucket management
+function createBucketId(): string {
+  return `bucket_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function addBucket() {
   if (!config.value.personalityBuckets) config.value.personalityBuckets = [];
   config.value.personalityBuckets.push({
-    id: '',
+    id: createBucketId(), // Always start with a valid ID
     label: '',
     results: [{ title: '', description: '', imageUrl: '', shareText: '' }],
   });
 }
+
+// Auto-generate bucket ID from label
+watch(
+  () => config.value.personalityBuckets,
+  (buckets) => {
+    if (!buckets || isSyncing.value) return;
+    
+    buckets.forEach((bucket, index) => {
+      // ALWAYS ensure bucket has a valid ID - this is critical for Firestore
+      if (!bucket.id) {
+        // If label exists, try to generate from it
+        if (bucket.label) {
+          const newId = generateSlug(bucket.label);
+          bucket.id = newId || createBucketId();
+        } else {
+          // No label and no ID - generate a unique one
+          bucket.id = createBucketId();
+        }
+      } else if (bucket.label) {
+        // If label exists and ID matches a previous auto-generated slug, update it
+        const newSlug = generateSlug(bucket.label);
+        if (newSlug && bucket.id.startsWith('bucket_')) {
+          // Replace temporary ID with label-based slug
+          bucket.id = newSlug;
+        }
+      }
+      
+      // Validate ranges when buckets change
+      if (bucket.results && bucket.results.length > 1) {
+        validateBucketRanges(index);
+      }
+    });
+  },
+  { deep: true }
+);
+
+// Auto-generate axis ID from labels
+watch(
+  () => config.value.archetypeAxes,
+  (axes) => {
+    if (!axes || isSyncing.value) return;
+    
+    axes.forEach((axis) => {
+      // ALWAYS ensure axis has a valid ID
+      if (!axis.id) {
+        if (axis.lowLabel || axis.highLabel) {
+          const newId = generateAxisId(axis.lowLabel || '', axis.highLabel || '');
+          axis.id = newId || createAxisId();
+        } else {
+          axis.id = createAxisId();
+        }
+      } else if (axis.lowLabel || axis.highLabel) {
+        // If labels exist and ID is temporary (starts with axis_), update to label-based
+        const newId = generateAxisId(axis.lowLabel || '', axis.highLabel || '');
+        if (newId && axis.id.startsWith('axis_')) {
+          axis.id = newId;
+        }
+      }
+    });
+  },
+  { deep: true, immediate: true }
+);
+
+// Auto-generate result ID from title
+watch(
+  () => config.value.archetypeResults,
+  (results) => {
+    if (!results || isSyncing.value) return;
+    
+    results.forEach((result) => {
+      // ALWAYS ensure result has a valid ID
+      if (!result.id) {
+        if (result.title) {
+          const newId = generateSlug(result.title);
+          result.id = newId || createResultId();
+        } else {
+          result.id = createResultId();
+        }
+      } else if (result.title) {
+        // If title exists and ID is temporary (starts with result_), update to title-based
+        const newId = generateSlug(result.title);
+        if (newId && result.id.startsWith('result_')) {
+          result.id = newId;
+        }
+      }
+    });
+  },
+  { deep: true }
+);
 
 function removeBucket(index: number) {
   config.value.personalityBuckets?.splice(index, 1);
@@ -919,7 +1313,7 @@ function removeResultVariant(bucketIndex: number, resultIndex: number) {
 function addAxis() {
   if (!config.value.archetypeAxes) config.value.archetypeAxes = [];
   config.value.archetypeAxes.push({
-    id: '',
+    id: createAxisId(), // Always start with a valid ID
     lowLabel: '',
     highLabel: '',
   });
@@ -933,10 +1327,10 @@ function addArchetypeResult() {
   if (!config.value.archetypeResults) config.value.archetypeResults = [];
   const pattern: Record<string, 'low' | 'high'> = {};
   config.value.archetypeAxes?.forEach(axis => {
-    pattern[axis.id] = 'high';
+    pattern[getAxisId(axis)] = 'high';
   });
   config.value.archetypeResults.push({
-    id: '',
+    id: createResultId(), // Always start with a valid ID
     pattern,
     title: '',
     description: '',
@@ -955,6 +1349,50 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
     if (!result.pattern) result.pattern = {};
     result.pattern[axisId] = value as 'low' | 'high';
   }
+}
+
+
+// Validate bucket ranges
+function validateBucketRanges(bucketIndex: number) {
+  const bucket = config.value.personalityBuckets?.[bucketIndex];
+  if (!bucket || !bucket.results || bucket.results.length <= 1) {
+    bucketRangeErrors.value[bucketIndex] = [];
+    return;
+  }
+  
+  const validation = validateScoreRanges(bucket.results);
+  bucketRangeErrors.value[bucketIndex] = validation.errors;
+}
+
+// Get bucket range errors
+function getBucketRangeErrors(bucketIndex: number, resultIndex?: number): string[] {
+  const errors = bucketRangeErrors.value[bucketIndex] || [];
+  if (resultIndex !== undefined) {
+    // Filter errors for specific result (simplified - could be improved)
+    return errors.filter(err => err.includes(`Result ${resultIndex + 1}`));
+  }
+  return errors;
+}
+
+// Get axis ID (compute on demand to ensure it's always up to date)
+function getAxisId(axis: ArchetypeAxis): string {
+  // Always compute fresh ID from labels first to ensure it's current
+  const computedId = generateAxisId(axis.lowLabel || '', axis.highLabel || '');
+  
+  // If we have a computed ID, use it (and optionally sync it to axis.id)
+  if (computedId) {
+    // Sync the computed ID to axis.id if it's different
+    if (axis.id !== computedId) {
+      axis.id = computedId;
+    }
+    return computedId;
+  }
+  
+  // If no computed ID but axis.id exists, use it
+  if (axis.id) return axis.id;
+  
+  // Otherwise show placeholder
+  return '?';
 }
 </script>
 
@@ -1493,26 +1931,29 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-base);
   border-radius: var(--radius-md);
+  min-height: 60px;
 }
 
-.bucket-card--expanded {
+.bucket-card {
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.bucket-header {
+.bucket-card__header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border-subtle);
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
-.bucket-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0;
+.result-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-title-wrapper .field-input {
+  flex: 1;
 }
 
 .bucket-results {
@@ -1595,6 +2036,172 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
 
 .field-input--small {
   width: 100px;
+}
+
+.field-input--compact {
+  width: 100%;
+  min-width: 150px;
+  max-width: 250px;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+}
+
+/* Score range table */
+.score-range-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.score-range-table thead {
+  background: var(--color-bg-secondary);
+}
+
+.score-range-table th {
+  padding: 0.5rem;
+  text-align: start;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  border-bottom: 1px solid var(--color-border-base);
+}
+
+.score-range-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+}
+
+.score-range-table td .result-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row;
+}
+
+.score-range-table td .result-title-wrapper .field-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* RTL support for score range table */
+:global([dir='rtl']) .score-range-table {
+  direction: rtl;
+}
+
+:global([dir='rtl']) .score-range-table th {
+  text-align: right;
+}
+
+:global([dir='rtl']) .score-range-table td {
+  text-align: right;
+}
+
+:global([dir='rtl']) .score-range-table td .result-title-wrapper {
+  flex-direction: row-reverse;
+}
+
+:global([dir='rtl']) .score-range-table td input[type="number"] {
+  text-align: right;
+  direction: ltr; /* Keep numbers LTR for readability */
+}
+
+:global([dir='rtl']) .score-range-table td .field-input:not([type="number"]) {
+  text-align: right;
+  direction: rtl;
+}
+
+:global([dir='rtl']) .score-range-table td .result-image-upload-inline {
+  order: -1;
+}
+
+:global([dir='rtl']) .score-range-table td .field-input--compact {
+  text-align: right;
+  direction: rtl;
+}
+
+.score-range-table tbody tr:hover {
+  background: var(--color-bg-secondary);
+}
+
+.score-range-error-row {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.score-range-error-row td {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.score-range-errors {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.score-range-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.score-range-error:last-child {
+  margin-bottom: 0;
+}
+
+/* Result image upload inline */
+.result-image-upload-inline {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.result-image-upload-inline :deep(.image-uploader) {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-image-upload-inline :deep(.uploader-button) {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.result-image-upload-inline :deep(.uploader-button-primary) {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  color: transparent;
+  font-size: 0;
+}
+
+.result-image-upload-inline :deep(.uploader-button-primary)::after {
+  content: '🖼️';
+  font-size: 1rem;
+  line-height: 1;
+  position: absolute;
+  color: var(--color-text-secondary);
+}
+
+.result-image-upload-inline :deep(.uploader-current-image) {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .add-result-variant {
@@ -1687,13 +2294,47 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
 
 .pattern-item {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
 }
 
 .pattern-label {
   font-weight: 600;
   color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.pattern-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pattern-button {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.pattern-button:hover {
+  border-color: var(--color-border-primary);
+  background: var(--color-bg-elevated);
+}
+
+.pattern-button--active {
+  background: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
+  color: var(--bulma-primary);
+  font-weight: 600;
 }
 
 .pattern-select {
@@ -1702,6 +2343,47 @@ function updatePattern(resultIndex: number, axisId: string, value: string) {
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   padding: 0.25rem 0.5rem;
+}
+
+/* Archetype result card improvements */
+.result-card--archetype {
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.result-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.result-card__number {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--bulma-primary);
+  flex-shrink: 0;
+}
+
+.result-card__title-preview {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.result-variant--details {
+  margin-top: 0.75rem;
+  border-top: 1px dashed var(--color-border-subtle);
+  padding-top: 0.75rem;
 }
 
 /* Settings Section */

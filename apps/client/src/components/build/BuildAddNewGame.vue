@@ -309,6 +309,7 @@ const props = defineProps<{
   gameType: GameType;
   existingGame?: Game | null;
   selectedDefaultConfig?: GameCustomConfig | null;
+  selectedDefaultConfigImage?: string | null;
 }>();
 
 const emit = defineEmits(['save', 'cancel']);
@@ -427,7 +428,7 @@ const initialGame = props.existingGame
       gameTypeId: props.gameType.id,
       active: true, // Games are active by default
       language: getDefaultLanguage(),
-      image: '',
+      image: props.selectedDefaultConfigImage || '',
       imageGradient: undefined, // Will use CSS defaults if not set
       vip: [],
       custom: props.selectedDefaultConfig
@@ -854,7 +855,7 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
   }
   if (customType === 'TriviaConfig') {
     return withDefaultTriviaConfig({
-      mode: 'fixed',
+      mode: 'classic',
       questions: [],
       language: '',
       globalTimer: { enabled: false },
@@ -893,7 +894,13 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
 
 function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
   const clone = JSON.parse(JSON.stringify(config)) as TriviaConfig;
-  clone.mode = 'fixed';
+  // Only set mode to default if it's missing or invalid
+  // Preserve existing valid modes ('classic' or 'speed')
+  if (!clone.mode || (clone.mode !== 'classic' && clone.mode !== 'speed')) {
+    // For old 'fixed' mode, migrate to 'classic' (handled by AddTrivia component)
+    // For new games, default to 'classic'
+    clone.mode = 'classic';
+  }
   clone.questions = clone.questions ?? [];
   clone.language = clone.language ?? '';
   clone.globalTimer = clone.globalTimer ?? { enabled: false };

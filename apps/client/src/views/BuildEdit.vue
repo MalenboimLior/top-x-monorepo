@@ -25,6 +25,7 @@
             :gameType="gameType"
             :existingGame="game"
             :selectedDefaultConfig="null"
+            :selectedDefaultConfigImage="null"
           />
         </div>
       </div>

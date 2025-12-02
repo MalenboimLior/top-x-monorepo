@@ -64,6 +64,7 @@
             :gameType="gameType"
             :existingGame="null"
             :selectedDefaultConfig="selectedDefaultConfig"
+            :selectedDefaultConfigImage="selectedDefaultConfigImage"
           />
         </div>
       </div>
@@ -91,6 +92,7 @@ const t = (key: string) => localeStore.translate(key);
 const gameType = ref<GameType | null>(null);
 const showDefaultConfigSelection = ref(false);
 const selectedDefaultConfig = ref<GameCustomConfig | null>(null);
+const selectedDefaultConfigImage = ref<string | null>(null);
 
 const gameTypeId = computed(() => route.params.gameType as string);
 
@@ -163,14 +165,17 @@ function fetchGameType() {
   return unsubscribe;
 }
 
-function selectDefaultConfig(defaultConfig: { name: string; config: GameCustomConfig }) {
+function selectDefaultConfig(defaultConfig: { name: string; config: GameCustomConfig; image?: string }) {
   // Deep clone the config to avoid references
   selectedDefaultConfig.value = JSON.parse(JSON.stringify(defaultConfig.config));
+  // Leave image empty when selecting a default config
+  selectedDefaultConfigImage.value = null;
   showDefaultConfigSelection.value = false;
 }
 
 function startFromScratch() {
   selectedDefaultConfig.value = null;
+  selectedDefaultConfigImage.value = null;
   showDefaultConfigSelection.value = false;
 }
 

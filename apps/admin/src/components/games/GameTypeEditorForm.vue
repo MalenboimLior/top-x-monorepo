@@ -341,6 +341,31 @@ const sortedDefaultConfigs = computed(() => {
   return [...localGameType.value.defaultConfigs].sort((a, b) => a.order - b.order);
 });
 
+// Helper function to remove undefined values from objects/arrays (Firestore doesn't accept undefined)
+function removeUndefined<T>(value: T): T {
+  // Handle primitives and null
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return value;
+  }
+  
+  // Handle arrays - clean each element and filter out undefined items
+  if (Array.isArray(value)) {
+    return value
+      .map(removeUndefined)
+      .filter((item) => item !== undefined) as T;
+  }
+  
+  // Handle objects - remove properties with undefined values
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value)) {
+    const cleanedVal = removeUndefined(val);
+    if (cleanedVal !== undefined) {
+      cleaned[key] = cleanedVal;
+    }
+  }
+  return cleaned as T;
+}
+
 async function saveGameType() {
   if (isSaving.value) return;
   
@@ -353,14 +378,17 @@ async function saveGameType() {
       availableToBuild: localGameType.value.availableToBuild,
       defaultConfigs: localGameType.value.defaultConfigs || [],
     };
+    
+    // Remove undefined values before saving to Firestore
+    const cleanedData = removeUndefined(gameTypeData);
 
     if (selectedGameTypeId.value) {
       // Update existing
       const gameTypeRef = doc(db, 'gameTypes', selectedGameTypeId.value);
-      await updateDoc(gameTypeRef, gameTypeData);
+      await updateDoc(gameTypeRef, cleanedData);
     } else {
       // Create new
-      await addDoc(collection(db, 'gameTypes'), gameTypeData);
+      await addDoc(collection(db, 'gameTypes'), cleanedData);
     }
 
     emit('saved');
@@ -400,7 +428,7 @@ function addDefaultFromGame() {
       config: clonedConfig,
       show: true,
       order: newDefaultConfigOrder.value || (localGameType.value.defaultConfigs?.length || 0) + 1,
-      image: selectedGame.image || undefined, // Include game image if available
+      ...(selectedGame.image && { image: selectedGame.image }), // Include game image if available
     };
 
     if (!localGameType.value.defaultConfigs) {

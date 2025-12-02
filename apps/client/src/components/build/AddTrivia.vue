@@ -257,6 +257,14 @@
             <span>{{ t('build.trivia.session.lives.count') }}</span>
             <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
           </label>
+          <label v-if="config.mode === 'speed'" class="toggle">
+            <input type="checkbox" v-model="config.globalTimer.enabled" />
+            <span>{{ t('build.trivia.session.globalTimer.enabled') || 'Enable time limit' }}</span>
+          </label>
+          <label v-if="config.mode === 'speed' && config.globalTimer.enabled" class="toggle">
+            <span>{{ t('build.trivia.session.globalTimer.duration') || 'Time limit (seconds)' }}</span>
+            <input :id="ids.timerDuration" type="number" min="1" v-model.number="config.globalTimer.durationSeconds" />
+          </label>
         </div>
 
         <!-- Theme Settings -->
@@ -504,7 +512,7 @@ watch(
       config.value.unlimitedLives = true;
       config.value.lives = undefined;
     } else if (mode === 'speed') {
-      config.value.unlimitedLives = true; // Always true for speed mode
+      config.value.unlimitedLives = false; // Speed mode has limited lives
       if (!config.value.lives) {
         config.value.lives = 3;
       }
@@ -589,7 +597,7 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
     base.unlimitedLives = true;
     base.lives = undefined;
   } else if (base.mode === 'speed') {
-    base.unlimitedLives = true; // Always true for speed mode (per plan)
+    base.unlimitedLives = false; // Speed mode has limited lives
     base.lives = sanitizePositiveInteger(base.lives) ?? 3;
   }
 
@@ -691,7 +699,7 @@ async function sanitizeConfig(value: TriviaConfigWithTheme): Promise<TriviaConfi
     clone.unlimitedLives = true;
     clone.lives = undefined;
   } else if (clone.mode === 'speed') {
-    clone.unlimitedLives = true; // Always true for speed mode
+    clone.unlimitedLives = false; // Speed mode has limited lives
     clone.lives = sanitizePositiveInteger(clone.lives) ?? 3;
   }
 

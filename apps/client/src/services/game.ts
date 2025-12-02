@@ -428,13 +428,184 @@ export type DeleteGameResult = {
 };
 
 /**
+ * Recursively removes empty string fields from an object.
+ * Firestore doesn't allow empty string fields in documents.
+ * This function does a deep clean, removing all empty strings at any nesting level.
+ */
+function removeEmptyStrings(obj: any, path: string = 'root'): any {
+  // Handle primitives
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  // Handle strings - return null if empty (will be filtered out)
+  if (typeof obj === 'string') {
+    if (obj === '') {
+      console.log(`[removeEmptyStrings] Found empty string at: ${path}`);
+      return null; // Return null so it gets filtered out
+    }
+    return obj;
+  }
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    const cleaned = obj
+      .map((item, index) => removeEmptyStrings(item, `${path}[${index}]`))
+      .filter(item => {
+        // Remove null/undefined (which includes empty strings we converted to null)
+        if (item === null || item === undefined) {
+          return false;
+        }
+        // Remove empty objects
+        if (typeof item === 'object' && !Array.isArray(item) && Object.keys(item).length === 0) {
+          return false;
+        }
+        // Keep empty arrays (Firestore allows them, but we can remove them if desired)
+        // Actually, let's keep them for now
+        return true;
+      });
+    return cleaned;
+  }
+
+  // Handle objects
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const fieldPath = path === 'root' ? key : `${path}.${key}`;
+      
+      // Skip empty string KEYS - Firestore doesn't allow empty field names
+      if (key === '') {
+        console.log(`[removeEmptyStrings] Skipping empty key at: ${fieldPath} (value: ${JSON.stringify(value)})`);
+        continue;
+      }
+      
+      // Skip empty string VALUES - this is critical for Firestore
+      if (value === '') {
+        console.log(`[removeEmptyStrings] Skipping empty string at: ${fieldPath}`);
+        continue;
+      }
+      
+      // Recursively clean nested structures
+      const cleanedValue = removeEmptyStrings(value, fieldPath);
+      
+      // Skip null/undefined (includes empty strings converted to null)
+      if (cleanedValue === null || cleanedValue === undefined) {
+        continue;
+      }
+      
+      // Skip empty objects
+      if (typeof cleanedValue === 'object' && !Array.isArray(cleanedValue) && Object.keys(cleanedValue).length === 0) {
+        console.log(`[removeEmptyStrings] Skipping empty object at: ${fieldPath}`);
+        continue;
+      }
+      
+      // Special case: if cleanedValue is a string, double-check it's not empty
+      if (typeof cleanedValue === 'string' && cleanedValue === '') {
+        console.log(`[removeEmptyStrings] WARNING: Found empty string after cleaning at: ${fieldPath}`);
+        continue;
+      }
+      
+      // Include the cleaned value
+      cleaned[key] = cleanedValue;
+    }
+    return cleaned;
+  }
+
+  // For any other type (number, boolean, etc.), return as-is
+  return obj;
+}
+
+/**
+ * Deep validation to find any remaining empty strings (both keys and values) in the data
+ */
+function findEmptyStrings(obj: any, path: string = 'root'): string[] {
+  const emptyPaths: string[] = [];
+  if (obj === null || obj === undefined) return emptyPaths;
+  
+  if (typeof obj === 'string' && obj === '') {
+    emptyPaths.push(`${path} (empty value)`);
+    return emptyPaths;
+  }
+  
+  if (Array.isArray(obj)) {
+    obj.forEach((item, index) => {
+      emptyPaths.push(...findEmptyStrings(item, `${path}[${index}]`));
+    });
+  } else if (typeof obj === 'object') {
+    for (const [key, value] of Object.entries(obj)) {
+      // Check for empty string KEYS
+      if (key === '') {
+        emptyPaths.push(`${path}[""] (empty key with value: ${JSON.stringify(value).substring(0, 50)})`);
+        continue;
+      }
+      const fieldPath = path === 'root' ? key : `${path}.${key}`;
+      emptyPaths.push(...findEmptyStrings(value, fieldPath));
+    }
+  }
+  
+  return emptyPaths;
+}
+
+/**
+ * Ultra-aggressive cleaning using JSON serialization to catch all empty strings
+ */
+function ultraCleanData(obj: any): any {
+  // Use JSON serialization with a replacer to remove empty strings
+  const cleaned = JSON.parse(
+    JSON.stringify(obj, (key, value) => {
+      // Remove empty strings completely
+      if (value === '') {
+        return undefined; // undefined values are omitted from JSON
+      }
+      return value;
+    })
+  );
+  
+  // Then do a final pass with removeEmptyStrings to handle any edge cases
+  return removeEmptyStrings(cleaned);
+}
+
+/**
  * Creates a new game in Firestore
  */
 export async function createGame(gameData: Omit<Game, 'id'>): Promise<CreateGameResult> {
   try {
-    const gameRef = await addDoc(collection(db, 'games'), gameData);
+    console.log('[createGame] Original data keys:', Object.keys(gameData));
+    
+    // Remove empty strings before saving to Firestore
+    const cleanedData = removeEmptyStrings(gameData);
+    console.log('[createGame] Cleaned data keys:', Object.keys(cleanedData));
+    
+    // Final validation: find any remaining empty strings
+    const emptyStringPaths = findEmptyStrings(cleanedData);
+    if (emptyStringPaths.length > 0) {
+      console.error('[createGame] ERROR: Found empty strings at paths:', emptyStringPaths);
+      console.error('[createGame] Full cleaned data:', JSON.stringify(cleanedData, null, 2));
+      // Remove the problematic fields
+      for (const path of emptyStringPaths) {
+        console.error(`[createGame] Attempting to remove empty string at: ${path}`);
+      }
+      // Try one more pass
+      const reCleanedData = removeEmptyStrings(cleanedData);
+      const reEmptyStringPaths = findEmptyStrings(reCleanedData);
+      if (reEmptyStringPaths.length > 0) {
+        console.error('[createGame] ERROR: Still found empty strings after second pass:', reEmptyStringPaths);
+        return { gameId: null, error: `Cannot save: found empty strings at ${reEmptyStringPaths.join(', ')}` };
+      }
+      // Use the re-cleaned data
+      const gameRef = await addDoc(collection(db, 'games'), reCleanedData);
+      return { gameId: gameRef.id };
+    }
+    
+    const gameRef = await addDoc(collection(db, 'games'), cleanedData);
     return { gameId: gameRef.id };
   } catch (e: any) {
+    console.error('[createGame] Error:', e);
+    console.error('[createGame] Error details:', {
+      message: e?.message,
+      code: e?.code,
+      stack: e?.stack,
+    });
     return { gameId: null, error: e?.message || 'Failed to create game' };
   }
 }
@@ -444,10 +615,89 @@ export async function createGame(gameData: Omit<Game, 'id'>): Promise<CreateGame
  */
 export async function updateGame(gameId: string, gameData: Partial<Omit<Game, 'id'>>): Promise<UpdateGameResult> {
   try {
+    console.log('[updateGame] Original data keys:', Object.keys(gameData));
+    
+    // Remove empty strings before saving to Firestore - do multiple passes to be sure
+    let cleanedData = removeEmptyStrings(gameData);
+    console.log('[updateGame] After first pass, cleaned data keys:', Object.keys(cleanedData));
+    
+    // Do a second pass to catch any that might have been missed
+    cleanedData = removeEmptyStrings(cleanedData);
+    console.log('[updateGame] After second pass, cleaned data keys:', Object.keys(cleanedData));
+    
+    // Do an ultra-aggressive third pass using JSON serialization
+    cleanedData = ultraCleanData(cleanedData);
+    console.log('[updateGame] After ultra-clean pass, cleaned data keys:', Object.keys(cleanedData));
+    
+    // Final validation: find any remaining empty strings
+    const emptyStringPaths = findEmptyStrings(cleanedData);
+    console.log('[updateGame] Validation check - empty string paths found:', emptyStringPaths.length);
+    if (emptyStringPaths.length > 0) {
+      console.error('[updateGame] ERROR: Found empty strings at paths:', emptyStringPaths);
+      console.error('[updateGame] First 3 empty string paths:', emptyStringPaths.slice(0, 3));
+      // Try one more aggressive pass
+      cleanedData = removeEmptyStrings(cleanedData);
+      const reEmptyStringPaths = findEmptyStrings(cleanedData);
+      if (reEmptyStringPaths.length > 0) {
+        console.error('[updateGame] ERROR: Still found empty strings after third pass:', reEmptyStringPaths);
+        console.error('[updateGame] Sample of problematic data:', JSON.stringify(cleanedData, (key, value) => {
+          if (value === '') {
+            return '[EMPTY_STRING]';
+          }
+          return value;
+        }, 2).substring(0, 2000));
+        return { success: false, error: `Cannot save: found empty strings at ${reEmptyStringPaths.slice(0, 5).join(', ')}...` };
+      }
+    }
+    
+    // One final check - serialize and check for empty strings in the JSON
+    const serialized = JSON.stringify(cleanedData);
+    if (serialized.includes('""')) {
+      console.error('[updateGame] WARNING: Found empty strings in serialized JSON!');
+      // Find them
+      const matches = serialized.match(/"[^"]*":\s*""/g);
+      if (matches) {
+        console.error('[updateGame] Empty string fields in JSON:', matches.slice(0, 10));
+      }
+    }
+    
+    console.log('[updateGame] Attempting to save to Firestore...');
     const gameRef = doc(db, 'games', gameId);
-    await updateDoc(gameRef, gameData);
+    await updateDoc(gameRef, cleanedData);
+    console.log('[updateGame] Successfully saved!');
     return { success: true };
   } catch (e: any) {
+    console.error('[updateGame] Error:', e);
+    console.error('[updateGame] Error details:', {
+      message: e?.message,
+      code: e?.code,
+      stack: e?.stack,
+    });
+    
+    // If it's an empty string error, try to find what we missed
+    if (e?.message?.includes('must not be empty')) {
+      console.error('[updateGame] Firestore empty string error - doing emergency deep clean...');
+      // Try one more time with ultra-aggressive cleaning
+      try {
+        const emergencyCleaned1 = removeEmptyStrings(gameData);
+        const emergencyCleaned2 = removeEmptyStrings(emergencyCleaned1);
+        const emergencyCleaned3 = ultraCleanData(emergencyCleaned2);
+        const finalEmptyPaths = findEmptyStrings(emergencyCleaned3);
+        console.error('[updateGame] After emergency clean, remaining empty paths:', finalEmptyPaths);
+        if (finalEmptyPaths.length === 0) {
+          console.log('[updateGame] Retrying with emergency cleaned data...');
+          const gameRef = doc(db, 'games', gameId);
+          await updateDoc(gameRef, emergencyCleaned3);
+          console.log('[updateGame] Emergency retry succeeded!');
+          return { success: true };
+        } else {
+          console.error('[updateGame] Emergency clean still has empty strings:', finalEmptyPaths.slice(0, 5));
+        }
+      } catch (retryError: any) {
+        console.error('[updateGame] Emergency retry also failed:', retryError);
+      }
+    }
+    
     return { success: false, error: e?.message || 'Failed to update game' };
   }
 }

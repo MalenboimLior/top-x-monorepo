@@ -69,6 +69,12 @@ service cloud.firestore {
       }
     }
     
+    // GameTypes collection - admins can read/write
+    match /gameTypes/{gameTypeId} {
+      allow read: if true; // Anyone can read game types
+      allow write: if isAdmin(); // Only admins can write
+    }
+    
     // Default: allow read for everything else, restrict writes
     match /{document=**} {
       allow read: if true;
