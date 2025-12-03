@@ -1,5 +1,5 @@
 <template>
-  <section class="top-creators layout-container section-stack">
+  <section class="top-creators layout-container section-stack" :class="{ 'is-rtl': isRTL }">
     <header class="section-header">
       <div class="section-header__content">
         <h2 class="section-title">{{ title }}</h2>
@@ -37,6 +37,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useLocaleStore } from '@/stores/locale';
+
 interface CreatorEntry {
   uid: string;
   displayName: string;
@@ -53,6 +56,9 @@ defineProps<{
 defineEmits<{
   (e: 'open-profile', uid: string): void;
 }>();
+
+const localeStore = useLocaleStore();
+const isRTL = computed(() => localeStore.direction === 'rtl');
 </script>
 
 <style scoped>
@@ -60,7 +66,26 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  padding: 0 1rem;
+}
+
+.top-creators.is-rtl {
+  direction: rtl;
+}
+
+.section-header__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.8vw, 0.45rem);
+  padding-block: clamp(0.8rem, 2vw, 1.2rem);
+  padding-inline: 0;
+  background: transparent;
+  text-align: start;
+}
+
+.section-header__content::before,
+.section-header__content::after {
+  display: none; /* Removed for flat design */
 }
 
 .section-title {

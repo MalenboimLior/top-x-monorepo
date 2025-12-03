@@ -104,9 +104,9 @@ function handleSelect(gameTypeId: string) {
   flex-direction: column;
   gap: clamp(0.4rem, 1vw, 0.6rem);
   padding-block: clamp(1.1rem, 2.4vw, 1.6rem);
-  padding-inline: clamp(1.5rem, 3vw, 2.1rem);
-  padding-inline-start: clamp(2.4rem, 5vw, 3.2rem);
+  padding-inline: 0;
   background: transparent;
+  text-align: start;
 }
 
 .section-header__content::before,
@@ -134,12 +134,6 @@ function handleSelect(gameTypeId: string) {
   color: var(--color-text-secondary);
   font-weight: 500;
   max-width: 36rem;
-}
-
-.build-section.is-rtl .section-header__content {
-  padding-inline-start: clamp(1.5rem, 3vw, 2.1rem);
-  padding-inline-end: clamp(2.4rem, 5vw, 3.2rem);
-  text-align: right;
 }
 
 
@@ -244,11 +238,6 @@ function handleSelect(gameTypeId: string) {
   .build-header__actions {
     justify-content: center;
   }
-
-  .section-header__content {
-    padding-inline: clamp(1.2rem, 4vw, 1.6rem);
-    padding-inline-start: clamp(2.1rem, 6vw, 2.6rem);
-  }
 }
 
 @media (max-width: 37.5rem) {
@@ -264,11 +253,6 @@ function handleSelect(gameTypeId: string) {
   .build-card__icon {
     width: clamp(3.2rem, 18vw, 3.7rem);
     height: clamp(3.2rem, 18vw, 3.7rem);
-  }
-
-  .section-header__content {
-    padding-inline: clamp(1.1rem, 4vw, 1.4rem);
-    padding-inline-start: clamp(1.8rem, 6vw, 2.2rem);
   }
 }
 </style>

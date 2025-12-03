@@ -108,8 +108,7 @@ const blocks = computed(() => {
   flex-direction: column;
   gap: clamp(0.3rem, 0.8vw, 0.45rem);
   padding-block: clamp(0.8rem, 2vw, 1.2rem);
-  padding-inline: clamp(1.2rem, 2.4vw, 1.6rem);
-  padding-inline-start: clamp(1.8rem, 4vw, 2.4rem);
+  padding-inline: 0;
   width: 100%;
   background: transparent;
   text-align: start;
@@ -125,12 +124,6 @@ const blocks = computed(() => {
   font-weight: 800;
   margin: 0;
   color: var(--color-text-primary);
-}
-
-.how-it-works.is-rtl .how-it-works__header {
-  padding-inline-start: clamp(1.2rem, 2.4vw, 1.6rem);
-  padding-inline-end: clamp(1.8rem, 4vw, 2.4rem);
-  text-align: right;
 }
 
 

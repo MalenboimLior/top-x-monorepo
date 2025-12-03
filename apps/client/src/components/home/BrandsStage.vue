@@ -41,9 +41,9 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
   flex-direction: column;
   gap: clamp(0.3rem, 0.8vw, 0.45rem);
   padding-block: clamp(0.8rem, 2vw, 1.2rem);
-  padding-inline: clamp(1.2rem, 2.4vw, 1.6rem);
-  padding-inline-start: clamp(1.8rem, 4vw, 2.4rem);
+  padding-inline: 0;
   background: transparent;
+  text-align: start;
 }
 
 .section-header__content::before,
@@ -64,12 +64,6 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
   color: var(--color-text-secondary);
   font-weight: 500;
   max-width: 36rem;
-}
-
-.game-section.is-rtl .section-header__content {
-  padding-inline-start: clamp(1.2rem, 2.4vw, 1.6rem);
-  padding-inline-end: clamp(1.8rem, 4vw, 2.4rem);
-  text-align: right;
 }
 
 </style>

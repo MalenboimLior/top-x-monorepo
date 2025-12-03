@@ -32,7 +32,7 @@
     <HowItWorksSection />
     <GameSection
       :title="t('home.hotGames')"
-      :subtitle="hotSortDescription"
+      :subtitle="t('home.hotGames.subtitle')"
       :games="hotGames"
       :game-stats="gameStats"
       :items-per-row="hotItemsPerRow"
@@ -57,7 +57,7 @@
     <GameSection
       section-id="featuredGames"
       :title="t('home.topxGames.title')"
-      :subtitle="topXSortDescription"
+      :subtitle="t('home.topxGames.subtitle')"
       :games="topXGames"
       :game-stats="gameStats"
       :items-per-row="topXItemsPerRow"
@@ -105,7 +105,7 @@
     </GameSection> -->
     <GameSection
       :title="t('home.communityGames.title')"
-      :subtitle="communitySortDescription"
+      :subtitle="t('home.communityGames.subtitle')"
       :games="communityGames"
       :game-stats="gameStats"
       :items-per-row="communityItemsPerRow"
@@ -143,8 +143,8 @@
     />
     <TopCreatorsSection
       v-if="creatorsList.length"
-      :title="'👾 Top Creators'"
-      :subtitle="'The creators who made the most noise across the web.'"
+      :title="t('home.topCreators.title')"
+      :subtitle="t('home.topCreators.subtitle')"
       :creators="creatorsList"
       @open-profile="navigateToProfile"
     />
@@ -448,8 +448,8 @@ function resolveOrderLabel(order: HomeSectionOrder): string {
   const fieldLabels: Record<HomeOrderField, string> = {
     date: t('home.order.fields.date'),
     players: t('home.order.fields.players'),
-    favorites: "",//t('home.order.fields.favorites')"",
-    sessions: "",//t('home.order.fields.sessions'),
+    favorites: t('home.order.fields.favorites'),
+    sessions: t('home.order.fields.sessions'),
   };
   const fieldLabel = fieldLabels[order.field] ?? '';
   return `${t('home.order.prefix')} ${fieldLabel}`;// (${direction})`;

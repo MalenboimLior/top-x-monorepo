@@ -173,9 +173,9 @@ defineExpose({ el: rootRef });
   flex-direction: column;
   gap: clamp(0.3rem, 0.8vw, 0.45rem);
   padding-block: clamp(0.8rem, 2vw, 1.2rem);
-  padding-inline: clamp(1.2rem, 2.4vw, 1.6rem);
-  padding-inline-start: clamp(1.8rem, 4vw, 2.4rem);
+  padding-inline: 0;
   background: transparent;
+  text-align: start;
 }
 
 .section-header__content::before,
@@ -198,12 +198,6 @@ defineExpose({ el: rootRef });
   max-width: 36rem;
 }
 
-.game-section.is-rtl .section-header__content {
-  padding-inline-start: clamp(1.2rem, 2.4vw, 1.6rem);
-  padding-inline-end: clamp(1.8rem, 4vw, 2.4rem);
-  text-align: right;
-}
-
 
 .game-section__grid {
   display: grid;
@@ -224,21 +218,11 @@ defineExpose({ el: rootRef });
   .game-section__grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
-
-  .section-header__content {
-    padding-inline: clamp(1rem, 3.4vw, 1.4rem);
-    padding-inline-start: clamp(1.6rem, 5vw, 2.1rem);
-  }
 }
 
 @media (max-width: 37.5rem) {
   .game-section__grid {
     grid-template-columns: 1fr;
-  }
-
-  .section-header__content {
-    padding-inline: clamp(0.9rem, 4vw, 1.2rem);
-    padding-inline-start: clamp(1.4rem, 6vw, 1.8rem);
   }
 }
 </style>

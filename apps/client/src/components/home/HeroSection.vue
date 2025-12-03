@@ -46,12 +46,12 @@
         <div class="hero-stats fade-in-up" :style="{ animationDelay: '0.5s' }">
           <div class="stat-item">
             <span class="stat-value">100+</span>
-            <span class="stat-label">Daily Challenges</span>
+            <span class="stat-label">{{ t('home.heroStats.dailyChallenges') }}</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
             <span class="stat-value">10k+</span>
-            <span class="stat-label">Active Players</span>
+            <span class="stat-label">{{ t('home.heroStats.activePlayers') }}</span>
           </div>
         </div>
       </div>
