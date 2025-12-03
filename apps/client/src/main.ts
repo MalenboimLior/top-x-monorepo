@@ -48,6 +48,7 @@ import {
   faGlobe,
   faUpload,
   faTimes,
+  faFilter,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -95,6 +96,7 @@ library.add(
   faGlobe,
   faUpload,
   faTimes,
+  faFilter,
 );
 
 import 'bulma/css/bulma.min.css';

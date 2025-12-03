@@ -31,7 +31,7 @@
     </GameSection>
     <HowItWorksSection />
     <GameSection
-      :title="'Hot Games'"
+      :title="t('home.hotGames')"
       :subtitle="hotSortDescription"
       :games="hotGames"
       :game-stats="gameStats"
@@ -79,9 +79,9 @@
         />
       </template>
     </GameSection>
-    <GameSection
-      :title="'Hot Games'"
-      :subtitle="hotSortDescription"
+    <!-- <GameSection
+    :title="t('home.hotGames')"
+    :subtitle="hotSortDescription"
       :games="hotGames"
       :game-stats="gameStats"
       :items-per-row="hotItemsPerRow"
@@ -102,7 +102,7 @@
           @play="navigateToGame"
         />
       </template>
-    </GameSection>
+    </GameSection> -->
     <GameSection
       :title="t('home.communityGames.title')"
       :subtitle="communitySortDescription"

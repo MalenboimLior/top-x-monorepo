@@ -32,6 +32,7 @@
           Users
         </router-link>        -->
         <router-link class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
+        <router-link class="navbar-item" to="/games" @click="closeMenu">{{ t('nav.games') }}</router-link>
         <router-link class="navbar-item" to="/users" @click="closeMenu">{{ t('nav.users') }}</router-link>
         <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
         <router-link class="navbar-item build-link" to="/build" @click="closeMenu">{{ t('nav.build') }}</router-link>
