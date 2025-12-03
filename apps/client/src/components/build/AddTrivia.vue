@@ -96,27 +96,29 @@
                   v-for="(option, optionIndex) in question.options"
                   :key="`${question.id}-${optionIndex}`"
                   class="answer-option"
-                  :class="{ 'answer-option--correct': question.correctAnswer === option }"
+                  :class="{ 'answer-option--correct': getCorrectAnswerIndex(question) === optionIndex }"
                 >
                   <label class="radio answer-option__radio">
                     <input
                       type="radio"
                       :name="`correct-${question.id}`"
-                      :value="option"
-                      v-model="question.correctAnswer"
+                      :value="optionIndex"
+                      @change="setCorrectAnswer(question, optionIndex)"
+                      :checked="getCorrectAnswerIndex(question) === optionIndex"
                     />
                     <span 
                       class="answer-option__indicator"
-                      :class="{ 'answer-option__indicator--correct': question.correctAnswer === option }"
+                      :class="{ 'answer-option__indicator--correct': getCorrectAnswerIndex(question) === optionIndex }"
                     >
-                      <span v-if="question.correctAnswer === option" class="answer-option__checkmark">✓</span>
+                      <span v-if="getCorrectAnswerIndex(question) === optionIndex" class="answer-option__checkmark">✓</span>
                       <span v-else class="answer-option__number">{{ optionIndex + 1 }}</span>
                     </span>
                   </label>
                   <div class="answer-option__content">
                     <div class="answer-input-wrapper">
                       <input
-                        v-model="question.options[optionIndex]"
+                        :value="question.options[optionIndex]"
+                        @input="updateOptionText(question, optionIndex, ($event.target as HTMLInputElement).value)"
                         :placeholder="t('build.trivia.questions.answerPlaceholder')"
                         class="answer-option__input"
                       />
@@ -417,30 +419,39 @@ function toggleSection(section: string) {
   // Scroll to section header when opening
   if (!wasOpen) {
     nextTick(() => {
-      let sectionElement: HTMLElement | null = null;
-      switch (section) {
-        case 'questions':
-          sectionElement = questionsSection.value;
-          break;
-        case 'advanced':
-          sectionElement = advancedSection.value;
-          break;
-      }
-      
-      if (sectionElement) {
-        // Find the toggle button (header) within the section
-        const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
-        const targetElement = toggleButton || sectionElement;
+      // Add a small delay to ensure DOM is fully updated
+      setTimeout(() => {
+        // Get navbar height to account for sticky header
+        const navbar = document.querySelector('.navbar') as HTMLElement;
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
         
-        // Scroll with a small offset to account for any fixed headers
-        const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - 20; // 20px offset from top
+        let sectionElement: HTMLElement | null = null;
+        switch (section) {
+          case 'questions':
+            sectionElement = questionsSection.value;
+            break;
+          case 'advanced':
+            sectionElement = advancedSection.value;
+            break;
+        }
         
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }
+        if (sectionElement) {
+          // Find the toggle button (header) within the section
+          const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
+          const targetElement = toggleButton || sectionElement;
+          
+          if (targetElement) {
+            // Get the exact position of the header
+            const rect = targetElement.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            // Subtract navbar height so header appears below the navbar
+            const targetY = rect.top + scrollTop - navbarHeight;
+            
+            // Scroll to the top of the header (below navbar)
+            window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+          }
+        }
+      }, 50);
     });
   }
 }
@@ -661,14 +672,38 @@ function hydrateQuestion(
     return typeof value === 'string' ? value : '';
   });
 
-  const mappedCorrect =
+  let mappedCorrect =
     (typeof question.correctAnswer === 'string' && question.correctAnswer.trim()) ||
     correctAnswers[hydrated.id];
+
+  // Check if mappedCorrect is a numeric index (for image-only answers that were hashed by index)
+  // This handles cases where correctAnswer was stored as an index string
+  if (mappedCorrect && /^\d+$/.test(mappedCorrect)) {
+    const index = parseInt(mappedCorrect, 10);
+    if (index >= 0 && index < hydrated.options.length) {
+      // If the option at that index has text, use it; otherwise use index identifier
+      const optionText = hydrated.options[index];
+      if (optionText && optionText.trim().length > 0) {
+        hydrated.correctAnswer = optionText;
+      } else {
+        // Use index identifier for image-only answers
+        hydrated.correctAnswer = `__INDEX_${index}__`;
+      }
+      return hydrated;
+    }
+  }
 
   if (mappedCorrect && hydrated.options.includes(mappedCorrect)) {
     hydrated.correctAnswer = mappedCorrect;
   } else if (!hydrated.correctAnswer || !hydrated.options.includes(hydrated.correctAnswer)) {
-    hydrated.correctAnswer = hydrated.options[0];
+    // Check if all options are empty (image-only answers)
+    const allEmpty = hydrated.options.every(opt => !opt || opt.trim() === '');
+    if (allEmpty) {
+      // For image-only answers, default to index identifier
+      hydrated.correctAnswer = '__INDEX_0__';
+    } else {
+      hydrated.correctAnswer = hydrated.options[0] || '__INDEX_0__';
+    }
   }
 
   return hydrated;
@@ -738,23 +773,75 @@ async function sanitizeQuestion(
   working.id = working.id?.trim() || createQuestionId();
   working.text = working.text?.trim() ?? '';
 
-  working.options = (working.options ?? []).map((option: string) => option?.trim() ?? '').filter(Boolean);
+  // Get option images first, before filtering options
+  let optionImages: (string | undefined)[] = [];
+  if (working.media?.optionImageUrls) {
+    optionImages = (working.media.optionImageUrls ?? []).map((raw) => {
+      if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        return trimmed || undefined;
+      }
+      return undefined;
+    });
+  }
 
-  if (working.options.length < 2) {
-    while (working.options.length < 2) {
-      working.options.push(`Answer ${working.options.length + 1}`);
+  // Ensure optionImages array matches options array length
+  const originalOptions = working.options ?? [];
+  while (optionImages.length < originalOptions.length) {
+    optionImages.push(undefined);
+  }
+
+  // Trim options and create pairs of (text, image) to preserve options with images
+  const optionPairs = originalOptions.map((option: string, index: number) => {
+    return {
+      text: (option?.trim() ?? '') || '',
+      imageUrl: optionImages[index],
+    };
+  });
+
+  // Filter out options that have neither text nor image
+  const validOptionPairs = optionPairs.filter((pair) => {
+    return pair.text.trim().length > 0 || Boolean(pair.imageUrl);
+  });
+
+  // Ensure we have at least 2 options
+  if (validOptionPairs.length < 2) {
+    while (validOptionPairs.length < 2) {
+      validOptionPairs.push({ text: '', imageUrl: undefined });
     }
   }
 
-  if (!working.correctAnswer || !working.options.includes(working.correctAnswer)) {
-    working.correctAnswer = working.options[0];
+  // Rebuild options array and optionImages array
+  working.options = validOptionPairs.map(pair => pair.text);
+  optionImages = validOptionPairs.map(pair => pair.imageUrl);
+
+  // Update correctAnswer to match the new options array
+  const originalCorrectAnswer = working.correctAnswer?.trim() || '';
+  
+  // Check if correctAnswer is an index identifier (for image-only answers)
+  const indexMatch = originalCorrectAnswer.match(/^__INDEX_(\d+)__$/);
+  if (indexMatch) {
+    const index = parseInt(indexMatch[1], 10);
+    if (index >= 0 && index < validOptionPairs.length) {
+      // Use the option text at that index, or use index identifier if no text
+      const pair = validOptionPairs[index];
+      working.correctAnswer = pair.text.trim() || `__INDEX_${index}__`;
+    } else {
+      working.correctAnswer = validOptionPairs[0]?.text || '';
+    }
+  } else if (originalCorrectAnswer && working.options.includes(originalCorrectAnswer)) {
+    working.correctAnswer = originalCorrectAnswer;
   } else {
-    working.correctAnswer = working.correctAnswer.trim();
+    // Find the matching option by comparing text or use first option
+    const matchingIndex = validOptionPairs.findIndex(pair => pair.text === originalCorrectAnswer);
+    if (matchingIndex >= 0) {
+      working.correctAnswer = working.options[matchingIndex] || '';
+    } else {
+      working.correctAnswer = working.options[0] || '';
+    }
   }
 
   let questionImage: string | undefined;
-  let optionImages: (string | undefined)[] = [];
-
   const trimmedImageFromQuestion =
     typeof working.imageUrl === 'string' ? working.imageUrl.trim() : undefined;
   if (trimmedImageFromQuestion) {
@@ -767,30 +854,26 @@ async function sanitizeQuestion(
     if (mediaImage) {
       questionImage = mediaImage;
     }
-    if (media.optionImageUrls) {
-      optionImages = working.options.map((_, index) => {
-        const raw = media.optionImageUrls?.[index];
-        if (typeof raw === 'string') {
-          const trimmed = raw.trim();
-          return trimmed || undefined;
-        }
-        return undefined;
-      });
-    }
   }
 
-  const answers: TriviaAnswer[] = working.options.map((optionText, index) => {
-    const answer: TriviaAnswer = { text: optionText };
-    const imageUrl = optionImages[index];
-    if (imageUrl) {
-      answer.imageUrl = imageUrl;
-    }
+  const answers: TriviaAnswer[] = validOptionPairs.map((pair) => {
+    const hasText = pair.text.trim().length > 0;
+    const hasImage = Boolean(pair.imageUrl);
+    
+    // Build answer object conditionally
+    const answer: TriviaAnswer = {
+      ...(hasText && { text: pair.text }),
+      ...(!hasText && !hasImage && { text: '' }), // Fallback: empty string if no text and no image
+      ...(hasImage && { imageUrl: pair.imageUrl }),
+    };
+    
     return answer;
   });
 
   const sanitized: TriviaQuestion = {
     id: working.id,
-    text: working.text,
+    // If question has no text but has image, text should be undefined (optional)
+    text: working.text.trim() || (questionImage ? undefined : ''),
     answers,
     category: working.category?.trim() || undefined,
     difficulty: working.difficulty || undefined,
@@ -800,11 +883,43 @@ async function sanitizeQuestion(
     sanitized.imageUrl = questionImage;
   }
 
-  const correctAnswer = working.correctAnswer ?? '';
+  // Determine final correctAnswer for hashing
+  // working.correctAnswer has already been updated above to handle index identifiers
+  let correctAnswer = working.correctAnswer ?? '';
+  let correctAnswerIndex = -1;
+  
+  // Check if correctAnswer is still an index identifier (for image-only answers)
+  const finalIndexMatch = correctAnswer.match(/^__INDEX_(\d+)__$/);
+  
+  if (finalIndexMatch) {
+    const index = parseInt(finalIndexMatch[1], 10);
+    if (index >= 0 && index < answers.length) {
+      correctAnswerIndex = index;
+      // Check if the answer at this index has text now
+      const answerAtIndex = answers[index];
+      if (answerAtIndex?.text && answerAtIndex.text.trim().length > 0) {
+        // Answer has text now - use the text instead of index
+        correctAnswer = answerAtIndex.text;
+      } else {
+        // Still image-only - use the index as the answer identifier for hashing
+        correctAnswer = index.toString();
+      }
+    } else {
+      correctAnswer = '0'; // Default to first answer
+      correctAnswerIndex = 0;
+    }
+  } else {
+    // Find the index of the correct answer by text
+    const index = answers.findIndex(a => a.text === correctAnswer);
+    if (index >= 0) {
+      correctAnswerIndex = index;
+    }
+  }
 
   const ensuredSalt = ensureSalt(working.salt);
   sanitized.salt = ensuredSalt;
 
+  // Always compute hash if we have a correctAnswer (text or index)
   if (correctAnswer) {
     try {
       sanitized.hash = await computeAnswerHash(working.id, correctAnswer, ensuredSalt);
@@ -928,6 +1043,66 @@ function duplicateQuestion(index: number) {
   config.value.questions.splice(index + 1, 0, duplicated);
 }
 
+function getCorrectAnswerIndex(question: EditableTriviaQuestion): number {
+  if (!question.correctAnswer) return 0;
+  
+  // Check if correctAnswer is an index identifier (for image-only answers)
+  const indexMatch = question.correctAnswer.match(/^__INDEX_(\d+)__$/);
+  if (indexMatch) {
+    const index = parseInt(indexMatch[1], 10);
+    return index >= 0 && index < question.options.length ? index : 0;
+  }
+  
+  // For text-based answers, find the index
+  const index = question.options.findIndex(opt => opt === question.correctAnswer);
+  if (index >= 0) {
+    return index;
+  }
+  
+  // If not found but we have matching empty strings, check if all are empty
+  const allEmpty = question.options.every(opt => !opt || opt.trim() === '');
+  if (allEmpty && question.correctAnswer === '') {
+    // All empty - return 0 as default
+    return 0;
+  }
+  
+  return 0;
+}
+
+function setCorrectAnswer(question: EditableTriviaQuestion, index: number) {
+  if (index >= 0 && index < question.options.length) {
+    const optionText = question.options[index];
+    const hasText = optionText && optionText.trim().length > 0;
+    const hasImage = question.media?.optionImageUrls?.[index];
+    
+    // If answer has text, use the text as identifier
+    if (hasText) {
+      question.correctAnswer = optionText;
+    } else {
+      // For image-only or empty answers, use index-based identifier
+      question.correctAnswer = `__INDEX_${index}__`;
+    }
+  }
+}
+
+function updateOptionText(question: EditableTriviaQuestion, index: number, newText: string) {
+  question.options[index] = newText;
+  
+  // If this option is currently selected and was using index identifier,
+  // update to use text if text is now available
+  const currentIndex = getCorrectAnswerIndex(question);
+  if (currentIndex === index) {
+    const hasText = newText && newText.trim().length > 0;
+    if (hasText) {
+      // Update to use text instead of index identifier
+      question.correctAnswer = newText;
+    } else if (question.correctAnswer?.match(/^__INDEX_\d+__$/)) {
+      // Still using index identifier, which is correct
+      // No need to change
+    }
+  }
+}
+
 function addOption(question: EditableTriviaQuestion) {
   question.options = question.options ?? [];
   question.options.push('');
@@ -938,12 +1113,13 @@ function addOption(question: EditableTriviaQuestion) {
 }
 
 function removeOption(question: EditableTriviaQuestion, index: number) {
+  const wasCorrect = getCorrectAnswerIndex(question) === index;
   question.options.splice(index, 1);
   if (question.options.length < 2) {
     question.options.push('');
   }
   ensureOptionImages(question);
-  if (!question.options.includes(question.correctAnswer)) {
+  if (wasCorrect || !question.options.includes(question.correctAnswer || '')) {
     question.correctAnswer = question.options[0] ?? '';
   }
 }
@@ -1046,30 +1222,39 @@ function removePowerUp(index: number) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  background: transparent;
+  padding: 1rem 0.75rem;
+  background: var(--color-bg-secondary);
   border: none;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 2px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 0.5rem;
 }
 
 .section-toggle:hover {
-  border-bottom-color: var(--color-border-medium);
+  background: var(--color-primary-bg);
+  border-bottom-color: var(--bulma-primary);
+  color: var(--bulma-primary);
+}
+
+.section-toggle:hover .section-toggle__icon {
+  color: var(--bulma-primary);
 }
 
 .section-toggle__title {
-  color: var(--color-text-primary);
+  color: inherit;
 }
 
 .section-toggle__icon {
-  transition: transform 0.2s ease;
-  font-size: 0.875rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+  font-size: 1rem;
   color: var(--color-text-secondary);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
 }
 
 .section-toggle__icon--open {
@@ -1507,25 +1692,34 @@ function removePowerUp(index: number) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  background: transparent;
+  padding: 1rem 0.75rem;
+  background: var(--color-bg-secondary);
   border: none;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 2px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .settings-toggle:hover {
-  border-bottom-color: var(--color-border-medium);
+  background: var(--color-primary-bg);
+  border-bottom-color: var(--bulma-primary);
+  color: var(--bulma-primary);
+}
+
+.settings-toggle:hover .settings-toggle__icon {
+  color: var(--bulma-primary);
 }
 
 .settings-toggle__icon {
-  transition: transform 0.2s ease;
-  font-size: 0.875rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+  font-size: 1rem;
   color: var(--color-text-secondary);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
 }
 
 .settings-toggle__icon--open {

@@ -8,14 +8,15 @@ export type TriviaDifficulty =
   | (string & {});
 
   export interface TriviaAnswer {
-    text: string;
+    /** Answer text - optional if imageUrl is provided for image-only answers */
+    text?: string;
     imageUrl?: string;
   }
 
 export interface TriviaQuestion {
   id: string;
-  /** The question text/prompt */
-  text: string;
+  /** The question text/prompt - optional if imageUrl is provided for image-only questions */
+  text?: string;
   /** Optional image URL for the question */
   imageUrl?: string;
   /** Array of possible answers */

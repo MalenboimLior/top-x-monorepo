@@ -19,7 +19,6 @@ import { sendSessionMilestoneEmail } from './adminNotifications';
 import {
   increaseSessionCounter,
   incrementTotalPlayersCounter,
-  GAME_COUNTER_KEYS,
 } from '../utils/statsManager';
 import {
   createLeaderboardDatePayload,
@@ -150,10 +149,13 @@ export const submitGameScore = functions.https.onCall(async (
         ? hasPyramidCustomChanges(previousGameData?.custom, gameData.custom)
         : false;
 
-      // Early return for regular games if score doesn't improve (unless PyramidTier with custom changes)
-      if (!isDailyChallengeSubmission && previousScore !== null && gameData.score <= previousScore && !pyramidCustomChanged) {
+      // Quiz games don't use scores - skip early return check for them
+      const isQuizGame = gameTypeId === 'quiz';
+
+      // Early return for regular games if score doesn't improve (unless PyramidTier with custom changes or Quiz game)
+      if (!isDailyChallengeSubmission && !isQuizGame && previousScore !== null && gameData.score <= previousScore && !pyramidCustomChanged) {
         // Score didn't improve - still increment session counter but don't update score
-        console.log(`submitGameScore: score ${gameData.score} is not higher than previous score ${previousScore} for user ${uid}`);
+        console.log(`[submitGameScore] Score ${gameData.score} is not higher than previous score ${previousScore} for user ${uid} (skipping early return for quiz games)`);
         increaseSessionCounter({
           tx,
           statsRef,
@@ -164,6 +166,11 @@ export const submitGameScore = functions.https.onCall(async (
           previousScore,
           newScore: gameData.score,
         } satisfies SubmitGameScoreResponse;
+      }
+
+      // For quiz games, log that we're skipping the early return
+      if (isQuizGame) {
+        console.log('[submitGameScore] Quiz game detected - skipping early return check (quiz games always save custom data)');
       }
 
       // Fetch game documents
@@ -255,14 +262,125 @@ export const submitGameScore = functions.https.onCall(async (
 
       if (quizOutcome) {
         // Quiz games don't have scores or leaderboards
-        // Just log the completion and return success
-        console.log('submitGameScore: quiz game completed', {
+        // But we still need to save the custom data (personalityResult/archetypeResult)
+        console.log('[submitGameScore] Quiz game completed', {
           uid,
           gameId,
           mode: quizOutcome.mode,
           resultId: quizOutcome.resultId,
           resultTitle: quizOutcome.resultTitle,
         });
+
+        // Log previous game data
+        console.log('[submitGameScore] Previous game data:', {
+          hasPreviousData: !!previousGameData,
+          hasPreviousCustom: !!previousGameData?.custom,
+          previousCustomKeys: previousGameData?.custom ? Object.keys(previousGameData.custom) : [],
+          previousPersonalityResult: previousGameData?.custom ? (previousGameData.custom as Record<string, unknown>).personalityResult : undefined,
+          previousArchetypeResult: previousGameData?.custom ? (previousGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+        });
+
+        // Log incoming custom data
+        console.log('[submitGameScore] Incoming custom data:', {
+          hasCustom: !!enrichedGameData.custom,
+          customKeys: enrichedGameData.custom ? Object.keys(enrichedGameData.custom) : [],
+          personalityResult: enrichedGameData.custom ? (enrichedGameData.custom as Record<string, unknown>).personalityResult : undefined,
+          archetypeResult: enrichedGameData.custom ? (enrichedGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+        });
+
+        // For quiz games, we need to completely replace the custom data with the new result
+        // Start fresh with previous custom data (excluding old quiz results)
+        const previousCustom = previousGameData?.custom ?? {} as Record<string, unknown>;
+        const baseCustom: UserGameCustomData = {};
+        
+        // Copy all previous custom fields EXCEPT quiz results
+        Object.keys(previousCustom).forEach((key) => {
+          if (key !== 'personalityResult' && key !== 'archetypeResult' && key !== 'dailyChallenges') {
+            (baseCustom as Record<string, unknown>)[key] = previousCustom[key];
+          }
+        });
+        
+        // Now add the new custom data from submission (which includes the new quiz result)
+        const customFromSubmission = enrichedGameData.custom ?? {} as Record<string, unknown>;
+        Object.keys(customFromSubmission).forEach((key) => {
+          if (key !== 'dailyChallenges') {
+            (baseCustom as Record<string, unknown>)[key] = customFromSubmission[key];
+          }
+        });
+
+        console.log('[submitGameScore] Merged custom data:', {
+          baseCustomKeys: Object.keys(baseCustom),
+          hasPersonalityResult: !!(baseCustom as Record<string, unknown>).personalityResult,
+          hasArchetypeResult: !!(baseCustom as Record<string, unknown>).archetypeResult,
+          personalityResult: (baseCustom as Record<string, unknown>).personalityResult,
+          archetypeResult: (baseCustom as Record<string, unknown>).archetypeResult,
+          fullBaseCustom: JSON.stringify(baseCustom, null, 2),
+        });
+        
+        // Verify the new result is actually in baseCustom
+        const baseCustomRecord = baseCustom as Record<string, unknown>;
+        if (quizOutcome.mode === 'personality' && baseCustomRecord.personalityResult) {
+          console.log('[submitGameScore] VERIFIED: New personality result is in baseCustom:', {
+            bucketId: (baseCustomRecord.personalityResult as any)?.bucketId,
+            title: (baseCustomRecord.personalityResult as any)?.title,
+          });
+        } else if (quizOutcome.mode === 'archetype' && baseCustomRecord.archetypeResult) {
+          console.log('[submitGameScore] VERIFIED: New archetype result is in baseCustom:', {
+            id: (baseCustomRecord.archetypeResult as any)?.id,
+            title: (baseCustomRecord.archetypeResult as any)?.title,
+          });
+        } else {
+          console.error('[submitGameScore] ERROR: New quiz result NOT found in baseCustom!', {
+            mode: quizOutcome.mode,
+            hasPersonalityResult: !!baseCustomRecord.personalityResult,
+            hasArchetypeResult: !!baseCustomRecord.archetypeResult,
+          });
+        }
+
+        // Remove nested dailyChallenges from custom (it's stored separately)
+        delete (baseCustom as Record<string, unknown>).dailyChallenges;
+
+        // Build merged game data for quiz
+        const mergedGameData: UserGameData = {
+          ...(previousGameData ?? {}),
+          ...enrichedGameData,
+          score: 0, // Quiz doesn't use score
+          streak: 0,
+          lastPlayed: serverLastPlayed,
+          custom: baseCustom,
+        };
+
+        console.log('[submitGameScore] Merged game data to save:', {
+          lastPlayed: mergedGameData.lastPlayed,
+          hasCustom: !!mergedGameData.custom,
+          customKeys: mergedGameData.custom ? Object.keys(mergedGameData.custom) : [],
+          personalityResult: mergedGameData.custom ? (mergedGameData.custom as Record<string, unknown>).personalityResult : undefined,
+          archetypeResult: mergedGameData.custom ? (mergedGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+        });
+
+        // Preserve existing daily challenge data
+        if (previousGameData?.dailyChallenges) {
+          mergedGameData.dailyChallenges = previousGameData.dailyChallenges;
+        }
+
+        // Save quiz custom data to user document
+        console.log('[submitGameScore] Saving quiz data to Firestore...');
+        tx.set(userRef, {
+          games: {
+            [gameTypeId]: {
+              [gameId]: mergedGameData,
+            },
+          },
+        }, { merge: true });
+
+        console.log('[submitGameScore] Quiz data saved successfully');
+
+        // Update game counters (sessions played, total players for first-time players)
+        increaseSessionCounter({ tx, statsRef });
+        
+        if (!previousGameData) {
+          incrementTotalPlayersCounter({ tx, statsRef });
+        }
 
         return {
           success: true,

@@ -185,14 +185,14 @@ defineExpose({ el: rootRef });
 
 .section-title {
   margin: 0;
-  font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
+  font-size: clamp(1.5rem, 1.2vw + 1.5rem, 3rem);
   font-weight: 800;
   color: var(--color-text-primary);
 }
 
 .section-subtitle {
   margin: 0;
-  font-size: clamp(0.75rem, 0.7vw + 0.7rem, 1rem);
+  font-size: clamp(1rem, 0.9vw + 1rem, 1.5rem);
   color: var(--color-text-secondary);
   font-weight: 500;
   max-width: 36rem;

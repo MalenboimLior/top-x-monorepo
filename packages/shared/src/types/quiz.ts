@@ -13,8 +13,8 @@
 // =============================================================================
 
 export interface QuizAnswer {
-  /** Answer text displayed to user */
-  text: string;
+  /** Answer text displayed to user - optional if imageUrl is provided for image-only answers */
+  text?: string;
   /** Optional image for the answer */
   imageUrl?: string;
   /** 
@@ -38,8 +38,8 @@ export interface QuizAnswer {
 export interface QuizQuestion {
   /** Unique identifier for the question */
   id: string;
-  /** Question text/prompt displayed to user */
-  text: string;
+  /** Question text/prompt displayed to user - optional if imageUrl is provided for image-only questions */
+  text?: string;
   /** Optional image for the question */
   imageUrl?: string;
   /** Array of possible answers */

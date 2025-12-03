@@ -114,26 +114,72 @@ onMounted(async () => {
 
 async function saveQuizResult() {
   if (!props.gameId || !userStore.user) {
+    console.log('[QuizEndScreen] Cannot save quiz result - missing gameId or user', {
+      gameId: props.gameId,
+      hasUser: !!userStore.user,
+    });
     return;
   }
 
   const custom: Record<string, unknown> = {};
   if (props.mode === 'personality' && props.personalityResult) {
     custom.personalityResult = props.personalityResult;
+    console.log('[QuizEndScreen] Saving personality result:', {
+      gameId: props.gameId,
+      mode: props.mode,
+      result: {
+        bucketId: props.personalityResult.bucketId,
+        title: props.personalityResult.title,
+        points: props.personalityResult.points,
+      },
+    });
   } else if (props.mode === 'archetype' && props.archetypeResult) {
     custom.archetypeResult = props.archetypeResult;
+    console.log('[QuizEndScreen] Saving archetype result:', {
+      gameId: props.gameId,
+      mode: props.mode,
+      result: {
+        id: props.archetypeResult.id,
+        title: props.archetypeResult.title,
+        pattern: props.archetypeResult.pattern,
+      },
+    });
   }
 
   if (Object.keys(custom).length > 0) {
     try {
+      console.log('[QuizEndScreen] Calling updateGameProgress with custom data:', {
+        gameId: props.gameId,
+        customKeys: Object.keys(custom),
+        custom,
+      });
+      
+      // Check what's currently in the profile before saving
+      const currentGameData = userStore.profile?.games?.['quiz']?.[props.gameId];
+      console.log('[QuizEndScreen] Current game data in profile before save:', {
+        hasGameData: !!currentGameData,
+        hasCustom: !!currentGameData?.custom,
+        customKeys: currentGameData?.custom ? Object.keys(currentGameData.custom as Record<string, unknown>) : [],
+        personalityResult: currentGameData?.custom ? (currentGameData.custom as Record<string, unknown>).personalityResult : undefined,
+        archetypeResult: currentGameData?.custom ? (currentGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+      });
+
       await userStore.updateGameProgress('quiz', props.gameId, {
         score: 0, // Quiz doesn't use score
         streak: 0,
         custom,
       });
+      
+      console.log('[QuizEndScreen] updateGameProgress completed successfully');
     } catch (err) {
-      console.error('Failed to save quiz result:', err);
+      console.error('[QuizEndScreen] Failed to save quiz result:', err);
     }
+  } else {
+    console.warn('[QuizEndScreen] No quiz result to save', {
+      mode: props.mode,
+      hasPersonalityResult: !!props.personalityResult,
+      hasArchetypeResult: !!props.archetypeResult,
+    });
   }
 }
 

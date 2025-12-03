@@ -245,7 +245,7 @@
   "build.games.deleteConfirmTitle": "Delete game",
   "build.games.deleteConfirmButton": "Delete",
   "build.games.deleteCancel": "Cancel",
-  "build.games.limitReached": "You've reached the limit of 10 games. Please delete a game before creating a new one.",
+  "build.games.limitReached": "You've reached the limit of 30 games. Please delete a game before creating a new one.",
   "build.games.limitReachedTitle": "Game limit reached",
   "build.defaultConfigs.title": "Choose a template",
   "build.defaultConfigs.subtitle": "Select a template to start with, or create from scratch",

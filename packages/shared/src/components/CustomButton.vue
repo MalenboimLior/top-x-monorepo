@@ -1,9 +1,10 @@
 <template>
   <button :class="['button', type]">
+   
+    <span>{{ label }}</span>
     <span v-if="icon" class="icon">
       <font-awesome-icon :icon="icon" />
     </span>
-    <span>{{ label }}</span>
   </button>
 </template>
 

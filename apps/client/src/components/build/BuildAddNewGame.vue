@@ -301,6 +301,7 @@ import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { QuizConfig } from '@top-x/shared/types/quiz';
+import { MAX_GAMES_PER_USER } from '@top-x/shared/constants/gameLimits';
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2300e8e0"/><stop offset="100%" stop-color="%23ff2d92"/></linearGradient></defs><rect width="600" height="400" fill="url(%23g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="36" fill="%23ffffff">TOP-X</text></svg>';
@@ -693,8 +694,8 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
       const userId = userStore.user?.uid;
       if (userId) {
         const gamesResult = await getGames({ creatorUserId: userId });
-        if (gamesResult.games.length >= 10) {
-          alert(t('build.games.limitReached') || 'You\'ve reached the limit of 10 games. Please delete a game before creating a new one.');
+        if (gamesResult.games.length >= MAX_GAMES_PER_USER) {
+          alert(t('build.games.limitReached') || `You've reached the limit of ${MAX_GAMES_PER_USER} games. Please delete a game before creating a new one.`);
           return;
         }
       }

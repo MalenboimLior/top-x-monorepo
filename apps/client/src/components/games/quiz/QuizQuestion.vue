@@ -2,7 +2,7 @@
   <div class="quiz-question" :class="{ 'is-rtl': direction === 'rtl' }">
     <Card class="question-card">
       <!-- Question Header -->
-      <div class="question-header">
+      <div v-if="hasQuestionText || canGoBack" class="question-header">
         <button
           v-if="canGoBack"
           type="button"
@@ -12,14 +12,14 @@
         >
           <span class="back-icon">←</span>
         </button>
-        <h2 class="question-text">{{ question.text }}</h2>
+        <h2 v-if="hasQuestionText" class="question-text">{{ question.text }}</h2>
       </div>
 
       <!-- Question Image -->
-      <div v-if="question.imageUrl" class="question-image-wrapper">
+      <div v-if="question.imageUrl" class="question-image-wrapper" :class="{ 'image-only': !hasQuestionText }">
         <img
           :src="question.imageUrl"
-          :alt="question.text"
+          :alt="hasQuestionText ? question.text : 'Question'"
           class="question-image"
           loading="lazy"
         />
@@ -35,15 +35,16 @@
           @click="selectAnswer(index)"
         >
           <span class="answer-letter">{{ getLetterForIndex(index) }}</span>
-          <span class="answer-content">
+          <span class="answer-content" :class="{ 'image-only': !hasAnswerText(answer) && answer.imageUrl }">
             <img
               v-if="answer.imageUrl"
               :src="answer.imageUrl"
-              :alt="answer.text"
+              :alt="hasAnswerText(answer) ? answer.text : 'Answer option'"
               class="answer-image"
+              :class="{ 'full-width': !hasAnswerText(answer) }"
               loading="lazy"
             />
-            <span class="answer-text">{{ answer.text }}</span>
+            <span v-if="hasAnswerText(answer)" class="answer-text">{{ answer.text }}</span>
           </span>
         </button>
       </div>
@@ -52,8 +53,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import type { QuizQuestionViewModel } from '@/stores/quiz';
+import type { QuizAnswer } from '@top-x/shared/types/quiz';
 
 interface Props {
   question: QuizQuestionViewModel;
@@ -61,12 +64,18 @@ interface Props {
   canGoBack?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: 'select-answer', index: number): void;
   (e: 'go-back'): void;
 }>();
+
+const hasQuestionText = computed(() => Boolean(props.question.text && props.question.text.trim().length > 0));
+
+const hasAnswerText = (answer: QuizAnswer): boolean => {
+  return Boolean(answer.text && answer.text.trim().length > 0);
+};
 
 const getLetterForIndex = (index: number): string => {
   return String.fromCharCode(65 + index); // A, B, C, D...
@@ -140,6 +149,18 @@ const goBack = () => {
   margin-bottom: 1.5rem;
   border-radius: 12px;
   overflow: hidden;
+  width: 100%;
+}
+
+/* When question has both text and image, show below the header */
+.question-image-wrapper:not(.image-only) {
+  margin-top: 0;
+}
+
+/* When only image is present, give it more space */
+.question-image-wrapper.image-only {
+  margin-bottom: 2rem;
+  margin-top: 0;
 }
 
 .question-image {
@@ -200,11 +221,32 @@ const goBack = () => {
   gap: 0.75rem;
 }
 
+.answer-content.image-only {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
 .answer-image {
   width: 48px;
   height: 48px;
   border-radius: 8px;
   object-fit: cover;
+  flex-shrink: 0;
+}
+
+.answer-image.full-width {
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+  max-height: 200px;
+}
+
+.answer-content.image-only .answer-image {
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+  max-height: 200px;
 }
 
 .answer-text {

@@ -3,7 +3,11 @@
   <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="navbar-inner layout-container">
       <div class="navbar-brand">
-        <router-link class="navbar-item" to="/">
+        <router-link 
+          class="navbar-item logo-link" 
+          :class="{ 'is-home': isHomePage }"
+          to="/"
+        >
           <img :src="logo" alt="TOP-X Logo">
         </router-link>
         <a
@@ -37,35 +41,71 @@
 
         <div class="navbar-end">
           <div class="navbar-item theme-toggle">
-            <button
-              type="button"
-              class="theme-toggle-button"
-              :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-              @click="themeStore.toggleTheme"
-            >
-              <font-awesome-icon
-                :icon="theme === 'dark' ? ['fas', 'sun'] : ['fas', 'moon']"
-                class="theme-icon"
-              />
-            </button>
-          </div>
-          <div class="navbar-item language-toggle">
-            <div class="language-toggle-inner" role="group" aria-label="Language toggle">
+            <div class="theme-toggle-inner" role="group" aria-label="Theme toggle">
               <button
-                v-for="option in languageOptions"
-                :key="option.code"
                 type="button"
-                class="language-button"
-                :class="{ 'is-active': currentLanguage === option.code }"
-                :aria-pressed="(currentLanguage === option.code).toString()"
-                @click="localeStore.setLanguage(option.code)"
+                class="theme-button"
+                :class="{ 'is-active': theme === 'dark' }"
+                :aria-pressed="(theme === 'dark').toString()"
+                @click="themeStore.setTheme('dark')"
+                aria-label="Dark mode"
               >
-                <img
-                  :src="option.flag"
-                  class="language-flag"
-                  :alt="option.label"
+                <font-awesome-icon
+                  :icon="['fas', 'moon']"
+                  class="theme-icon"
                 />
               </button>
+              <button
+                type="button"
+                class="theme-button"
+                :class="{ 'is-active': theme === 'light' }"
+                :aria-pressed="(theme === 'light').toString()"
+                @click="themeStore.setTheme('light')"
+                aria-label="Light mode"
+              >
+                <font-awesome-icon
+                  :icon="['fas', 'lightbulb']"
+                  class="theme-icon"
+                />
+              </button>
+            </div>
+          </div>
+          <div class="navbar-item language-toggle">
+            <div class="language-toggle-wrapper">
+              <button
+                type="button"
+                class="language-current-button"
+                :aria-expanded="isLanguageMenuOpen.toString()"
+                :aria-label="`Current language: ${currentLanguageLabel}`"
+                @click="toggleLanguageMenu"
+              >
+                <img
+                  :src="currentLanguageFlag"
+                  class="language-flag"
+                  :alt="currentLanguageLabel"
+                />
+              </button>
+              <div
+                v-if="isLanguageMenuOpen"
+                class="language-dropdown"
+                @click.stop
+              >
+                <button
+                  v-for="option in languageOptions"
+                  :key="option.code"
+                  type="button"
+                  class="language-dropdown-item"
+                  :class="{ 'is-active': currentLanguage === option.code }"
+                  @click="selectLanguage(option.code)"
+                >
+                  <img
+                    :src="option.flag"
+                    class="language-flag"
+                    :alt="option.label"
+                  />
+                  <span>{{ option.label }}</span>
+                </button>
+              </div>
             </div>
           </div>
           <div class="navbar-item profile-div">
@@ -105,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { analytics, trackEvent } from '@top-x/shared';
@@ -121,6 +161,7 @@ const userStore = useUserStore();
 const router = useRouter();
 
 const isMenuActive = ref(false);
+const isLanguageMenuOpen = ref(false);
 const localeStore = useLocaleStore();
 const themeStore = useThemeStore();
 const theme = computed(() => themeStore.theme);
@@ -131,6 +172,20 @@ const languageOptions = [
   { code: 'en' as const, label: 'English', flag: usFlagUrl },
   { code: 'il' as const, label: 'Hebrew', flag: ilFlagUrl },
 ];
+const currentLanguageOption = computed(() => 
+  languageOptions.find(opt => opt.code === currentLanguage.value) || languageOptions[0]
+);
+const currentLanguageFlag = computed(() => currentLanguageOption.value.flag);
+const currentLanguageLabel = computed(() => currentLanguageOption.value.label);
+
+const toggleLanguageMenu = () => {
+  isLanguageMenuOpen.value = !isLanguageMenuOpen.value;
+};
+
+const selectLanguage = (code: 'en' | 'il') => {
+  localeStore.setLanguage(code);
+  isLanguageMenuOpen.value = false;
+};
 
 const user = computed(() => {
   console.log('NavBar user state:', userStore.user);
@@ -138,6 +193,7 @@ const user = computed(() => {
 });
 const error = computed(() => userStore.error);
 const hasRewardNotification = computed(() => userStore.readyDailyChallengeRewards.length > 0);
+const isHomePage = computed(() => router.currentRoute.value.path === '/');
 
 const handleLogin = async () => {
   console.log('Initiating login with X');
@@ -167,14 +223,32 @@ const toggleMenu = () => {
 
 const closeMenu = () => {
   isMenuActive.value = false;
+  isLanguageMenuOpen.value = false;
 };
 
 watch(
   () => router.currentRoute.value.fullPath,
   () => {
     userStore.clearError();
+    isLanguageMenuOpen.value = false;
   },
 );
+
+// Close language menu when clicking outside
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.language-toggle-wrapper')) {
+    isLanguageMenuOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>
@@ -192,6 +266,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   width: 100%;
   padding-block: var(--space-3);
 }
@@ -204,13 +279,23 @@ watch(
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--bulma-text);
+  border: none;
+  outline: none;
   transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.navbar-item:focus,
+.navbar-item:focus-visible {
+  outline: none;
+  border: none;
 }
 
 .navbar-item:hover,
 .navbar-item.router-link-active {
   color: var(--bulma-primary);
   background-color: var(--color-bg-navbar-hover);
+  border: none;
+  outline: none;
 }
 
 .profile-link {
@@ -236,8 +321,34 @@ watch(
 }
 
 .navbar-brand img {
-  height: 22px;
+  height: 18px;
   width: auto;
+}
+
+.logo-link {
+  padding: 0;
+  border: none !important;
+  outline: none !important;
+}
+
+.logo-link:hover,
+.logo-link.router-link-active,
+.logo-link:focus,
+.logo-link:focus-visible,
+.logo-link:active {
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.logo-link.is-home:hover,
+.logo-link.is-home.router-link-active,
+.logo-link.is-home:focus,
+.logo-link.is-home:focus-visible,
+.logo-link.is-home:active {
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .navbar-menu {
@@ -252,14 +363,14 @@ watch(
 .navbar-end {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .navbar-end {
   margin-inline-start: auto;
 }
 
-.language-toggle-inner {
+.theme-toggle-inner {
   display: inline-flex;
   gap: var(--space-2);
   padding: var(--space-1);
@@ -268,7 +379,7 @@ watch(
   border: 1px solid var(--color-border-base);
 }
 
-.language-button {
+.theme-button {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -281,20 +392,91 @@ watch(
   background: transparent;
   cursor: pointer;
   transition: background-color var(--transition-fast);
+  color: var(--bulma-text);
 }
 
-.language-button:hover {
+.theme-button:hover {
   background-color: var(--color-primary-bg);
 }
 
-.language-button.is-active {
+.theme-button.is-active {
   background-color: var(--color-primary-bg-hover);
   border: 1px solid var(--color-border-primary);
+  color: var(--bulma-primary);
 }
 
-.language-button:focus-visible {
+.theme-button:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
+}
+
+.theme-icon {
+  font-size: 1.1rem;
+}
+
+.language-toggle-wrapper {
+  position: relative;
+}
+
+.language-current-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-base);
+  padding: 0;
+  background-color: var(--color-bg-surface);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.language-current-button:hover {
+  background-color: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
+}
+
+.language-current-button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.language-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  min-width: 150px;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.language-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--bulma-text);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  text-align: start;
+}
+
+.language-dropdown-item:hover {
+  background-color: var(--color-primary-bg);
+}
+
+.language-dropdown-item.is-active {
+  background-color: var(--color-primary-bg-hover);
+  color: var(--bulma-primary);
 }
 
 .language-flag {
@@ -303,10 +485,16 @@ watch(
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--color-border-base);
+  flex-shrink: 0;
 }
 
-:global([dir='rtl']) .language-toggle-inner {
+:global([dir='rtl']) .theme-toggle-inner {
   flex-direction: row-reverse;
+}
+
+:global([dir='rtl']) .language-dropdown {
+  inset-inline-start: 0;
+  inset-inline-end: auto;
 }
 
 .navbar-burger {
@@ -335,6 +523,19 @@ watch(
   align-items: center;
 }
 
+.profile-div .button {
+  display: inline-flex;
+  align-items: center;
+}
+
+.profile-div .button .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  height: auto;
+}
+
 .profile-link {
   padding: 0;
 }
@@ -359,10 +560,18 @@ watch(
 
 .build-link {
   border: 1px solid var(--color-border-primary);
+ 
   border-radius: var(--radius-md);
   padding: calc(var(--space-3) - 2px) calc(var(--space-4) - 2px);
   background-color: var(--color-primary-bg);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.build-link:focus,
+.build-link:focus-visible {
+  outline: none;
+  border-color: var(--color-border-primary);
 }
 
 .build-link:hover,
@@ -370,6 +579,8 @@ watch(
   color: var(--bulma-primary);
   background-color: var(--color-primary-bg-hover);
   border-color: var(--color-border-primary);
+
+  
 }
 
 @media screen and (max-width: 64rem) {
@@ -401,12 +612,19 @@ watch(
     align-items: stretch;
   }
 
-  .language-toggle {
+  .language-toggle,
+  .theme-toggle {
     width: 100%;
   }
 
-  .language-toggle-inner {
+  .theme-toggle-inner {
     justify-content: center;
+  }
+
+  .language-dropdown {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    width: 100%;
   }
 
   .navbar-item {
@@ -429,36 +647,4 @@ watch(
   }
 }
 
-.theme-toggle {
-  padding: 0;
-}
-
-.theme-toggle-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-base);
-  background-color: transparent;
-  color: var(--bulma-text);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.theme-toggle-button:hover {
-  background-color: var(--color-primary-bg);
-  border-color: var(--color-border-primary);
-  color: var(--bulma-primary);
-}
-
-.theme-toggle-button:focus {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
-}
-
-.theme-icon {
-  font-size: 1.1rem;
-}
 </style>

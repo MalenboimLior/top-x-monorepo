@@ -63,6 +63,21 @@ defineEmits<{
   padding: 0 1rem;
 }
 
+.section-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.2vw + 1.5rem, 3rem);
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: clamp(1rem, 0.9vw + 1rem, 1.5rem);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  max-width: 36rem;
+}
+
 .top-creators__list {
   margin: 0;
   padding: 0;

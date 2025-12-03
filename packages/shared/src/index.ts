@@ -6,5 +6,6 @@ export * from './utils/zoneRevealAnswer';
 export * from './utils/triviaHash';
 export * from './constants/gameBadges';
 export * from './constants/gameTypes';
+export * from './constants/gameLimits';
 export * from './trivia/scoring';
 export * from './quiz/scoring';

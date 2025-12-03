@@ -17,22 +17,6 @@
             </div>
           </div>
 
-          <!-- Saved Result Display -->
-          <div v-if="savedResult" class="saved-result-section">
-            <h3 class="saved-result-title">Your Previous Result</h3>
-            <PersonalityResult
-              v-if="savedResult.type === 'personality'"
-              :result="savedResult.result as any"
-              :theme="theme"
-              :show-breakdown="false"
-            />
-            <ArchetypeResult
-              v-else-if="savedResult.type === 'archetype'"
-              :result="savedResult.result as any"
-              :theme="theme"
-            />
-          </div>
-
           <div v-if="mustLogin && !isLoggedIn" class="login-section">
             <CustomButton
               class="start-button"
@@ -64,6 +48,22 @@
             :loading="isLoading"
             @click="startRun"
           />
+
+          <!-- Saved Result Display - Below Play Button -->
+          <div v-if="savedResult" class="saved-result-section">
+            <h3 class="saved-result-title">Your Previous Result</h3>
+            <PersonalityResult
+              v-if="savedResult.type === 'personality'"
+              :result="savedResult.result as any"
+              :theme="theme"
+              :show-breakdown="false"
+            />
+            <ArchetypeResult
+              v-else-if="savedResult.type === 'archetype'"
+              :result="savedResult.result as any"
+              :theme="theme"
+            />
+          </div>
         </Card>
       </section>
 
@@ -378,6 +378,7 @@ const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
   padding: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
+  margin-top: 1rem;
 }
 
 .saved-result-title {
@@ -419,6 +420,7 @@ const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
 
   .saved-result-section {
     padding: 1.25rem;
+    margin-top: 0.5rem;
   }
 }
 </style>

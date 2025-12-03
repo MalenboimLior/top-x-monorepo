@@ -87,15 +87,46 @@ export const useUserStore = defineStore('user', () => {
         userDoc,
         (snapshot) => {
           if (snapshot.exists()) {
-            profile.value = snapshot.data() as User;
-            console.log('Profile loaded:', profile.value);
+            const newProfile = snapshot.data() as User;
+            const oldProfile = profile.value;
+            
+            // Log quiz-related changes
+            if (oldProfile) {
+              const oldQuizGames = oldProfile.games?.quiz || {};
+              const newQuizGames = newProfile.games?.quiz || {};
+              
+              Object.keys(newQuizGames).forEach((gameId) => {
+                const oldGameData = oldQuizGames[gameId];
+                const newGameData = newQuizGames[gameId];
+                
+                if (oldGameData?.custom !== newGameData?.custom) {
+                  console.log('[UserStore] Profile updated - quiz game data changed:', {
+                    gameId,
+                    oldCustomKeys: oldGameData?.custom ? Object.keys(oldGameData.custom) : [],
+                    newCustomKeys: newGameData?.custom ? Object.keys(newGameData.custom) : [],
+                    oldPersonalityResult: oldGameData?.custom ? (oldGameData.custom as Record<string, unknown>).personalityResult : undefined,
+                    newPersonalityResult: newGameData?.custom ? (newGameData.custom as Record<string, unknown>).personalityResult : undefined,
+                    oldArchetypeResult: oldGameData?.custom ? (oldGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+                    newArchetypeResult: newGameData?.custom ? (newGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+                    lastPlayed: newGameData?.lastPlayed,
+                  });
+                }
+              });
+            }
+            
+            profile.value = newProfile;
+            console.log('[UserStore] Profile loaded/updated:', {
+              uid: newProfile.uid,
+              hasGames: !!newProfile.games,
+              quizGames: newProfile.games?.quiz ? Object.keys(newProfile.games.quiz) : [],
+            });
           } else {
-            console.log('No profile found, creating new one');
+            console.log('[UserStore] No profile found, creating new one');
             createUserProfile(currentUser);
           }
         },
         (err) => {
-          console.error('Firestore error:', err);
+          console.error('[UserStore] Firestore error:', err);
           error.value = err.message;
         },
       );
@@ -347,11 +378,20 @@ export const useUserStore = defineStore('user', () => {
     }
   ) {
     if (!user.value) {
-      console.log('Cannot update game progress: no user logged in');
+      console.log('[UserStore] Cannot update game progress: no user logged in');
       error.value = 'No user logged in';
       return;
     }
     try {
+      console.log('[UserStore] updateGameProgress called:', {
+        gameTypeId,
+        gameId,
+        hasCustom: !!gameData.custom,
+        customKeys: gameData.custom ? Object.keys(gameData.custom) : [],
+        personalityResult: gameData.custom ? (gameData.custom as Record<string, unknown>).personalityResult : undefined,
+        archetypeResult: gameData.custom ? (gameData.custom as Record<string, unknown>).archetypeResult : undefined,
+      });
+
       const submitGameScore: HttpsCallable<SubmitGameScoreRequest, SubmitGameScoreResponse> = httpsCallable(functions, 'submitGameScore');
       const payload: SubmitGameScoreRequest = {
         gameTypeId,
@@ -369,20 +409,41 @@ export const useUserStore = defineStore('user', () => {
         payload.challengeMetadata = options.challengeMetadata;
       }
       if (!options?.dailyChallengeId && (options?.dailyChallengeDate || options?.challengeMetadata)) {
-        console.warn('dailyChallengeId is required when providing challenge metadata or date');
+        console.warn('[UserStore] dailyChallengeId is required when providing challenge metadata or date');
       }
+
+      console.log('[UserStore] Sending payload to submitGameScore:', {
+        gameTypeId: payload.gameTypeId,
+        gameId: payload.gameId,
+        hasGameData: !!payload.gameData,
+        hasCustom: !!payload.gameData?.custom,
+        customKeys: payload.gameData?.custom ? Object.keys(payload.gameData.custom) : [],
+      });
 
       const { data } = await submitGameScore(payload);
 
+      console.log('[UserStore] submitGameScore response:', {
+        success: data?.success,
+        message: data?.message,
+        data,
+      });
+
       if (!data?.success) {
         const message = data?.message || 'Score was not updated';
-        console.log('submitGameScore completed without updating score:', { gameTypeId, gameId, message });
+        console.log('[UserStore] submitGameScore completed without updating score:', { gameTypeId, gameId, message });
         return;
       }
 
-      console.log(`Submitted game progress for ${gameTypeId}/${gameId}`, data);
+      console.log(`[UserStore] Submitted game progress for ${gameTypeId}/${gameId}`, data);
+      
+      // Log profile state after update (profile should update via onSnapshot)
+      console.log('[UserStore] Profile state after update:', {
+        hasProfile: !!profile.value,
+        gameData: profile.value?.games?.[gameTypeId]?.[gameId],
+        customKeys: profile.value?.games?.[gameTypeId]?.[gameId]?.custom ? Object.keys(profile.value.games[gameTypeId][gameId].custom as Record<string, unknown>) : [],
+      });
     } catch (err: any) {
-      console.error('Error updating game progress:', err);
+      console.error('[UserStore] Error updating game progress:', err);
       error.value = err.message;
     }
   }

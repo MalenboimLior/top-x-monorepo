@@ -61,7 +61,7 @@ export const getTriviaQuestions = functions.https.onCall(async (request: functio
 
   const gameData = gameSnapshot.data() as Game | undefined;
   const config = gameData?.custom as TriviaConfig | undefined;
-  if (!config || config.mode !== 'fixed') {
+  if (!config) {
     throw new functions.https.HttpsError('failed-precondition', 'Trivia config not found for the requested game');
   }
 

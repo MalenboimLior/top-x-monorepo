@@ -135,18 +135,43 @@ const hasSubmitted = computed(() => {
 // Load saved quiz result from user profile
 const savedResult = computed(() => {
   if (!isLoggedIn.value || !quizStore.activeGameId) {
+    console.log('[Quiz.vue] Cannot load saved result - not logged in or no gameId', {
+      isLoggedIn: isLoggedIn.value,
+      gameId: quizStore.activeGameId,
+    });
     return null;
   }
   const gameData = userStore.profile?.games?.['quiz']?.[quizStore.activeGameId];
+  console.log('[Quiz.vue] Loading saved result from profile:', {
+    gameId: quizStore.activeGameId,
+    hasGameData: !!gameData,
+    hasCustom: !!gameData?.custom,
+    customKeys: gameData?.custom ? Object.keys(gameData.custom as Record<string, unknown>) : [],
+    lastPlayed: gameData?.lastPlayed,
+  });
+  
   if (gameData?.custom) {
     const custom = gameData.custom as Record<string, unknown>;
     if (custom.personalityResult) {
-      return { type: 'personality' as const, result: custom.personalityResult };
+      const result = custom.personalityResult;
+      console.log('[Quiz.vue] Found personality result:', {
+        bucketId: (result as any)?.bucketId,
+        title: (result as any)?.title,
+        fullResult: result,
+      });
+      return { type: 'personality' as const, result };
     }
     if (custom.archetypeResult) {
-      return { type: 'archetype' as const, result: custom.archetypeResult };
+      const result = custom.archetypeResult;
+      console.log('[Quiz.vue] Found archetype result:', {
+        id: (result as any)?.id,
+        title: (result as any)?.title,
+        fullResult: result,
+      });
+      return { type: 'archetype' as const, result };
     }
   }
+  console.log('[Quiz.vue] No saved result found');
   return null;
 });
 const mode = computed(() => quizStore.mode);

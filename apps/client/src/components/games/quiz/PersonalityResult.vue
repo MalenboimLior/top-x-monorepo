@@ -130,7 +130,7 @@ const getBarWidth = (score: number): number => {
 
 /* Result Description */
 .result-description {
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   line-height: 1.6;
   color: var(--color-text-secondary);
   margin: 0;

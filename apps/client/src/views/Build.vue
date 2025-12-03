@@ -147,7 +147,7 @@
       <div class="modal-background" @click="showLimitModal = false"></div>
       <div class="modal-content box">
         <h3 class="title is-4">{{ t('build.games.limitReachedTitle') || 'Game limit reached' }}</h3>
-        <p>{{ t('build.games.limitReached') || 'You\'ve reached the limit of 10 games. Please delete a game before creating a new one.' }}</p>
+        <p>{{ t('build.games.limitReached') || `You've reached the limit of ${MAX_GAMES_PER_USER} games. Please delete a game before creating a new one.` }}</p>
         <div class="buttons mt-4">
           <CustomButton
             type="is-primary"
@@ -173,6 +173,7 @@ import type { GameType, Game } from '@top-x/shared/types/game';
 import { useLocaleStore } from '@/stores/locale';
 import { deleteGame } from '@/services/game';
 import { DEFAULT_GAME_TYPE_ICON, GAME_TYPE_ICON_MAP } from '@top-x/shared/constants/gameTypes';
+import { MAX_GAMES_PER_USER } from '@top-x/shared/constants/gameLimits';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -294,7 +295,7 @@ function fetchMyGames() {
 
 function selectGameType(gameType: GameType) {
   // Check game limit
-  if (myGames.value.length >= 10) {
+  if (myGames.value.length >= MAX_GAMES_PER_USER) {
     showLimitModal.value = true;
     return;
   }

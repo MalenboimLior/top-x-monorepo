@@ -223,7 +223,7 @@ function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): Tri
 
   if (!hasMatchingCorrect) {
     if (typeof legacy.correct === 'number' && legacy.correct >= 0 && legacy.correct < normalized.answers.length) {
-      normalized.correctAnswer = normalized.answers[legacy.correct]?.text;
+      normalized.correctAnswer = normalized.answers[legacy.correct]?.text ?? undefined;
     } else if (normalized.correctAnswer) {
       // Provided correct answer does not match any option; clear it
       delete normalized.correctAnswer;
@@ -266,7 +266,21 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
 
   for (let i = 0; i < question.options.length; i++) {
     const option = question.options[i];
-    const answerText = typeof option === 'string' ? option : option.text;
+    let answerText: string;
+    
+    if (typeof option === 'string') {
+      answerText = option;
+    } else {
+      // For image-only answers (no text), use the index as the answer identifier
+      // This matches how the builder hashes image-only answers
+      if (!option.text || option.text.trim() === '') {
+        // Image-only answer: use index as string (matches builder logic)
+        answerText = i.toString();
+      } else {
+        answerText = option.text;
+      }
+    }
+    
     const hash = await hashAnswer(question.id, answerText, question.salt);
     attemptedHashes.push({ option: answerText, hash });
     if (hash === question.correctHash) {
@@ -630,7 +644,20 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
   ): Promise<{ hash: string; attempt: TriviaAttemptPayload }> {
     // Get the answer text from the option
     const option = question.options[answerIndex];
-    const answerText = typeof option === 'string' ? option : option.text;
+    let answerText: string;
+    
+    if (typeof option === 'string') {
+      answerText = option;
+    } else {
+      // For image-only answers (no text), use the index as the answer identifier
+      // This matches how the builder hashes image-only answers
+      if (!option.text || option.text.trim() === '') {
+        // Image-only answer: use index as string (matches builder logic)
+        answerText = answerIndex.toString();
+      } else {
+        answerText = option.text;
+      }
+    }
     
     const hash = await hashAnswer(question.id, answerText, question.salt);
     const attemptEntry: TriviaAttemptPayload = {
@@ -775,7 +802,19 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     
     // Validate answer by comparing hash
     const option = questionSnapshot.options[index];
-    const answerText = typeof option === 'string' ? option : option.text;
+    let answerText: string;
+    if (typeof option === 'string') {
+      answerText = option;
+    } else {
+      // For image-only answers (no text), use the index as the answer identifier
+      // This matches how the builder hashes image-only answers
+      if (!option.text || option.text.trim() === '') {
+        // Image-only answer: use index as string (matches builder logic)
+        answerText = index.toString();
+      } else {
+        answerText = option.text;
+      }
+    }
     const expectedHash = questionSnapshot.correctHash;
     const correct = expectedHash ? expectedHash === answerHash : false;
     const speedBonus = correct

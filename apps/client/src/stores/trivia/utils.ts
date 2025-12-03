@@ -8,16 +8,16 @@ import type { TriviaQuestionViewModel } from './types';
 export function toViewModel(question: TriviaQuestion): TriviaQuestionViewModel {
   // Convert answers array to options array
   const options = question.answers.map((answer) => {
-    // If answer has imageUrl, return object format, otherwise just text
-    if (answer.imageUrl) {
-      return { text: answer.text, imageUrl: answer.imageUrl };
+    // If answer has imageUrl or no text, return object format
+    if (answer.imageUrl || !answer.text) {
+      return { text: answer.text ?? '', imageUrl: answer.imageUrl };
     }
     return answer.text;
   });
 
   return {
     id: question.id,
-    question: question.text,
+    question: question.text ?? '',
     options,
     correctHash: question.hash,
     difficulty: question.difficulty,

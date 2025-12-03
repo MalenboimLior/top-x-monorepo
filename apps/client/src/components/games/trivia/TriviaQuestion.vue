@@ -1,12 +1,12 @@
 <template>
-  <Card v-if="question" class="trivia-question-card" :class="{ 'has-media': hasQuestionImage, 'is-rtl': direction === 'rtl' }" :dir="direction">
+  <Card v-if="question" class="trivia-question-card" :class="{ 'has-media': hasQuestionImage, 'has-question-text': hasQuestionText, 'is-rtl': direction === 'rtl' }" :dir="direction">
     <div class="question-header">
-      <div class="question-text">
-        <h2 class="question-title">{{ question.question }}</h2>
+      <div v-if="hasQuestionText || question.difficulty" class="question-text">
+        <h2 v-if="hasQuestionText" class="question-title">{{ question.question }}</h2>
         <span v-if="question.difficulty" class="question-difficulty">{{ question.difficulty }}</span>
       </div>
-      <div v-if="hasQuestionImage" class="question-media">
-        <img :src="question.media?.imageUrl" alt="Question illustration" />
+      <div v-if="hasQuestionImage" class="question-media" :class="{ 'image-only': !hasQuestionText }">
+        <img :src="question.media?.imageUrl" :alt="hasQuestionText ? 'Question illustration' : 'Question'" />
       </div>
     </div>
 
@@ -20,12 +20,17 @@
         type="button"
         @click="answer(index)"
       >
-        <div class="option-content">
-          <div v-if="option.imageUrl" class="option-image">
-            <img :src="option.imageUrl" :alt="`Option ${index + 1}`" />
+        <div class="option-content" :class="{ 'image-only': !hasOptionText(option) && option.imageUrl }">
+          <div v-if="option.imageUrl" class="option-image" :class="{ 'full-width': !hasOptionText(option) }">
+            <img :src="option.imageUrl" :alt="hasOptionText(option) ? `Option ${index + 1}` : option.label || `Option ${index + 1}`" />
+            <!-- Show feedback overlay on image when there's no text -->
+            <span v-if="getOptionFeedbackIcon(index) && !hasOptionText(option)" class="option-feedback option-feedback--overlay">
+              <span class="feedback-icon">{{ getOptionFeedbackIcon(index) }}</span>
+            </span>
           </div>
-          <span class="option-label">{{ option.label }}</span>
-          <span v-if="getOptionFeedbackIcon(index)" class="option-feedback">
+          <span v-if="hasOptionText(option)" class="option-label">{{ option.label }}</span>
+          <!-- Show feedback next to text when text is present -->
+          <span v-if="getOptionFeedbackIcon(index) && hasOptionText(option)" class="option-feedback">
             <span class="feedback-icon">{{ getOptionFeedbackIcon(index) }}</span>
           </span>
         </div>
@@ -76,6 +81,7 @@ const emit = defineEmits<{
 }>();
 
 const hasQuestionImage = computed(() => Boolean(props.question?.media?.imageUrl));
+const hasQuestionText = computed(() => Boolean(props.question?.question && props.question.question.trim().length > 0));
 
 const optionItems = computed<OptionItem[]>(() => {
   if (!props.question?.options) {
@@ -90,13 +96,13 @@ const optionItems = computed<OptionItem[]>(() => {
     }
     if (typeof option === 'object' && option !== null) {
       const record = option as Record<string, unknown>;
-      const label = (record.label as string) ?? (record.text as string) ?? `Option ${index + 1}`;
+      const label = (record.label as string) ?? (record.text as string) ?? '';
       const image =
         (record.imageUrl as string | undefined) ??
         (record.image_url as string | undefined) ??
         (record.image as string | undefined);
       return {
-        label,
+        label: label || (image ? '' : `Option ${index + 1}`),
         imageUrl: image,
         key: `${props.question?.id ?? 'q'}-${index}`,
       };
@@ -177,6 +183,19 @@ const getOptionFeedbackIcon = (index: number): string => {
   return '';
 };
 
+const hasOptionText = (option: OptionItem): boolean => {
+  // Check if label exists, is not empty, and is not just a default "Option N" label
+  if (!option.label || option.label.trim().length === 0) {
+    return false;
+  }
+  // If it's a default "Option N" label and there's an image, consider it as no text
+  const index = optionItems.value.findIndex(opt => opt.key === option.key);
+  if (index >= 0 && option.label === `Option ${index + 1}` && option.imageUrl) {
+    return false;
+  }
+  return true;
+};
+
 const optionIndexLabel = (index: number) => String.fromCharCode(65 + index);
 
 const answer = (index: number) => {
@@ -207,9 +226,22 @@ const answer = (index: number) => {
 .question-header {
   display: flex;
   gap: 1.25rem;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 0.85rem;
+}
+
+/* When both text and image are present - stack vertically on desktop */
+.trivia-question-card.has-question-text.has-media .question-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.5rem;
+}
+
+/* When only image is present */
+.trivia-question-card:not(.has-question-text).has-media .question-header {
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .question-text {
@@ -219,6 +251,7 @@ const answer = (index: number) => {
   background: linear-gradient(135deg, rgba(140, 82, 255, 0.16), rgba(56, 189, 248, 0.18));
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(10px);
+  min-width: 0; /* Allows text to shrink if needed */
 }
 
 .question-prompt {
@@ -250,11 +283,29 @@ const answer = (index: number) => {
 }
 
 .question-media {
-  max-width: 160px;
+  max-width: 200px;
+  min-width: 160px;
   border-radius: 12px;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+/* When both text and image are present, show image below text (full width) */
+.trivia-question-card.has-question-text.has-media .question-media {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+  margin-top: 0;
+}
+
+/* When only image is present (image-only), make it full width */
+.question-media.image-only {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+  margin-bottom: 0.5rem;
 }
 
 .question-media img {
@@ -277,8 +328,13 @@ const answer = (index: number) => {
   text-align: right;
 }
 
-.trivia-question-card.is-rtl .question-header {
+.trivia-question-card.is-rtl:not(.has-question-text.has-media) .question-header {
   flex-direction: row-reverse;
+}
+
+/* RTL: When both text and image are present, still stack vertically */
+.trivia-question-card.is-rtl.has-question-text.has-media .question-header {
+  flex-direction: column;
 }
 
 .trivia-question-card.is-rtl .question-text {
@@ -380,12 +436,27 @@ const answer = (index: number) => {
   border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
+  position: relative;
 }
 
-.option-image img {
+.option-image.full-width {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  min-height: 120px;
+  max-height: 200px;
+}
+
+.option-content.image-only {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.option-content.image-only .option-image {
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+  max-height: 200px;
 }
 
 .option-label {
@@ -416,6 +487,20 @@ const answer = (index: number) => {
   pointer-events: none;
 }
 
+.option-feedback--overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3rem;
+  height: 3rem;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
 .option-button.is-correct .option-feedback {
   background: rgba(74, 222, 128, 0.2);
   color: #4ade80;
@@ -429,6 +514,25 @@ const answer = (index: number) => {
 .option-button.is-correct:not(.is-selected) .option-feedback {
   background: rgba(74, 222, 128, 0.15);
   color: #4ade80;
+}
+
+/* Overlay feedback styling */
+.option-button.is-correct .option-feedback--overlay {
+  background: rgba(74, 222, 128, 0.9);
+  color: #fff;
+  border-color: rgba(74, 222, 128, 0.5);
+}
+
+.option-button.is-incorrect .option-feedback--overlay {
+  background: rgba(248, 113, 113, 0.9);
+  color: #fff;
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.option-button.is-correct:not(.is-selected) .option-feedback--overlay {
+  background: rgba(74, 222, 128, 0.85);
+  color: #fff;
+  border-color: rgba(74, 222, 128, 0.4);
 }
 
 .feedback-icon {
@@ -463,7 +567,7 @@ const answer = (index: number) => {
 
   .question-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     margin-bottom: 0.75rem;
   }
 
@@ -476,8 +580,22 @@ const answer = (index: number) => {
     font-size: clamp(1.4rem, 5vw, 1.75rem);
   }
 
-  .question-media {
+  /* On mobile, when both text and image are present, stack them vertically */
+  .trivia-question-card.has-question-text.has-media .question-header {
+    flex-direction: column;
+  }
+
+  .trivia-question-card.has-question-text.has-media .question-media {
     max-width: 100%;
+    min-width: 100%;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  /* When only image is present, full width */
+  .question-media.image-only {
+    max-width: 100%;
+    min-width: 100%;
     width: 100%;
   }
 
@@ -503,6 +621,11 @@ const answer = (index: number) => {
     padding: 0.3rem;
     width: 1.75rem;
     height: 1.75rem;
+  }
+
+  .option-feedback--overlay {
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .feedback-icon {

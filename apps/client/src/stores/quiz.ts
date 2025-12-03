@@ -19,6 +19,7 @@ import {
   calculatePersonalityResult,
   calculateArchetypeResult,
   shuffleQuizQuestions,
+  shuffleArray,
   type PersonalityScoreResult,
   type ArchetypeScoreResult,
 } from '@top-x/shared/quiz/scoring';
@@ -69,6 +70,8 @@ export const useQuizStore = defineStore('quiz', () => {
   const questions = ref<QuizQuestionViewModel[]>([]);
   const currentQuestionIndex = ref(0);
   const selectedAnswers = ref<Record<string, number>>({});
+  // Maps questionId -> shuffledIndex -> originalIndex for answer order mapping
+  const answerIndexMappings = ref<Record<string, number[]>>({});
 
   // ---------------------------------------------------------------------------
   // Result State
@@ -161,6 +164,7 @@ export const useQuizStore = defineStore('quiz', () => {
     questions.value = [];
     currentQuestionIndex.value = 0;
     selectedAnswers.value = {};
+    answerIndexMappings.value = {};
     personalityResult.value = null;
     archetypeResult.value = null;
     error.value = null;
@@ -300,8 +304,12 @@ export const useQuizStore = defineStore('quiz', () => {
   function prepareQuestions(): void {
     if (!config.value?.questions) {
       questions.value = [];
+      answerIndexMappings.value = {};
       return;
     }
+
+    // Store original questions for mapping reference
+    const originalQuestions = config.value.questions;
 
     let preparedQuestions = config.value.questions.map((q) => ({
       id: q.id,
@@ -311,17 +319,64 @@ export const useQuizStore = defineStore('quiz', () => {
       category: q.category,
     }));
 
+    // Reset answer index mappings
+    answerIndexMappings.value = {};
+
     // Shuffle if configured
     if (config.value.shuffleQuestions) {
       preparedQuestions = shuffleQuizQuestions(
         preparedQuestions as QuizQuestion[],
         config.value.shuffleAnswers ?? false
       );
+      
+      // Build answer index mappings for shuffled questions
+      if (config.value.shuffleAnswers) {
+        preparedQuestions.forEach((q) => {
+          const originalQuestion = originalQuestions.find((oq) => oq.id === q.id);
+          if (originalQuestion) {
+            // Create mapping: shuffledIndex -> originalIndex
+            // We do this by matching answers based on their content
+            const mapping: number[] = [];
+            q.answers.forEach((shuffledAnswer, shuffledIndex) => {
+              // Find the original answer by matching content
+              const originalIndex = originalQuestion.answers.findIndex((origAnswer) => {
+                // Compare by text, imageUrl, and points
+                return (
+                  origAnswer.text === shuffledAnswer.text &&
+                  origAnswer.imageUrl === shuffledAnswer.imageUrl &&
+                  JSON.stringify(origAnswer.bucketPoints) === JSON.stringify(shuffledAnswer.bucketPoints) &&
+                  JSON.stringify(origAnswer.axisPoints) === JSON.stringify(shuffledAnswer.axisPoints)
+                );
+              });
+              if (originalIndex >= 0) {
+                mapping[shuffledIndex] = originalIndex;
+              }
+            });
+            answerIndexMappings.value[q.id] = mapping;
+          }
+        });
+      }
     } else if (config.value.shuffleAnswers) {
-      preparedQuestions = preparedQuestions.map((q) => ({
-        ...q,
-        answers: [...q.answers].sort(() => Math.random() - 0.5),
-      }));
+      preparedQuestions = preparedQuestions.map((q) => {
+        // Create array of indices [0, 1, 2, ...] and shuffle them using Fisher-Yates
+        const indices = q.answers.map((_, idx) => idx);
+        const shuffledIndices = shuffleArray(indices);
+        
+        // Create mapping: shuffledIndex -> originalIndex
+        const mapping: number[] = [];
+        shuffledIndices.forEach((originalIndex, shuffledIndex) => {
+          mapping[shuffledIndex] = originalIndex;
+        });
+        answerIndexMappings.value[q.id] = mapping;
+        
+        // Shuffle answers using the shuffled indices
+        const shuffledAnswers = shuffledIndices.map((idx) => q.answers[idx]);
+        
+        return {
+          ...q,
+          answers: shuffledAnswers,
+        };
+      });
     }
 
     questions.value = preparedQuestions;
@@ -344,6 +399,7 @@ export const useQuizStore = defineStore('quiz', () => {
       // Reset game state
       currentQuestionIndex.value = 0;
       selectedAnswers.value = {};
+      answerIndexMappings.value = {};
       personalityResult.value = null;
       archetypeResult.value = null;
 
@@ -361,8 +417,15 @@ export const useQuizStore = defineStore('quiz', () => {
     const question = currentQuestion.value;
     if (!question) return;
 
-    // Record the answer
-    selectedAnswers.value[question.id] = answerIndex;
+    // Convert shuffled answer index to original index if answers were shuffled
+    let originalIndex = answerIndex;
+    const mapping = answerIndexMappings.value[question.id];
+    if (mapping && mapping[answerIndex] !== undefined) {
+      originalIndex = mapping[answerIndex];
+    }
+
+    // Record the answer using the original index (for scoring)
+    selectedAnswers.value[question.id] = originalIndex;
 
     // Move to next question or calculate results
     if (currentQuestionIndex.value < questions.value.length - 1) {
@@ -398,6 +461,7 @@ export const useQuizStore = defineStore('quiz', () => {
     currentScreen.value = 'start';
     currentQuestionIndex.value = 0;
     selectedAnswers.value = {};
+    answerIndexMappings.value = {};
     personalityResult.value = null;
     archetypeResult.value = null;
     

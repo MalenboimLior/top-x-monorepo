@@ -739,54 +739,61 @@ function toggleSection(section: string) {
   // Scroll to section header when opening
   if (!wasOpen) {
     nextTick(() => {
-      let sectionElement: HTMLElement | null = null;
-      switch (section) {
-        case 'personalityBuckets':
-          sectionElement = personalityBucketsSection.value;
-          break;
-        case 'archetypeAxes':
-          sectionElement = archetypeAxesSection.value;
-          break;
-        case 'archetypeResults':
-          // For results, scroll to the axes section since that's where the results button is
-          sectionElement = archetypeAxesSection.value;
-          break;
-        case 'questions':
-          sectionElement = questionsSection.value;
-          break;
-        case 'advanced':
-          sectionElement = advancedSection.value;
-          break;
-      }
-      
-      if (sectionElement) {
-        // For archetypeResults, find the results toggle button
-        if (section === 'archetypeResults') {
-          const resultsToggle = sectionElement.querySelector('.section-toggle--sub') as HTMLElement;
-          if (resultsToggle) {
-            const elementPosition = resultsToggle.getBoundingClientRect().top + window.pageYOffset;
-            const offsetPosition = elementPosition - 20;
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
-            return;
-          }
+      // Add a small delay to ensure DOM is fully updated
+      setTimeout(() => {
+        // Get navbar height to account for sticky header
+        const navbar = document.querySelector('.navbar') as HTMLElement;
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        
+        let sectionElement: HTMLElement | null = null;
+        switch (section) {
+          case 'personalityBuckets':
+            sectionElement = personalityBucketsSection.value;
+            break;
+          case 'archetypeAxes':
+            sectionElement = archetypeAxesSection.value;
+            break;
+          case 'archetypeResults':
+            // For results, scroll to the axes section since that's where the results button is
+            sectionElement = archetypeAxesSection.value;
+            break;
+          case 'questions':
+            sectionElement = questionsSection.value;
+            break;
+          case 'advanced':
+            sectionElement = advancedSection.value;
+            break;
         }
         
-        // Find the toggle button (header) within the section
-        const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
-        const targetElement = toggleButton || sectionElement;
-        
-        // Scroll with a small offset to account for any fixed headers
-        const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - 20; // 20px offset from top
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }
+        if (sectionElement) {
+          // For archetypeResults, find the results toggle button
+          if (section === 'archetypeResults') {
+            const resultsToggle = sectionElement.querySelector('.section-toggle--sub') as HTMLElement;
+            if (resultsToggle) {
+              const rect = resultsToggle.getBoundingClientRect();
+              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+              const targetY = rect.top + scrollTop - navbarHeight;
+              window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+              return;
+            }
+          }
+          
+          // Find the toggle button (header) within the section
+          const toggleButton = sectionElement.querySelector('.section-toggle, .settings-toggle') as HTMLElement;
+          const targetElement = toggleButton || sectionElement;
+          
+          if (targetElement) {
+            // Get the exact position of the header
+            const rect = targetElement.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            // Subtract navbar height so header appears below the navbar
+            const targetY = rect.top + scrollTop - navbarHeight;
+            
+            // Scroll to the top of the header (below navbar)
+            window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+          }
+        }
+      }, 50);
     });
   }
 }
@@ -941,18 +948,34 @@ function hydrateAnswer(a: Partial<QuizAnswer>): QuizAnswer {
 
 /**
  * Normalizes imageUrl fields to ensure they're always strings (not undefined)
+ * Also handles text fields - if text is empty but imageUrl exists, set text to undefined
  */
 function normalizeImageUrls(config: QuizConfig): QuizConfig {
   const normalized = JSON.parse(JSON.stringify(config)) as QuizConfig;
   
-  // Normalize question imageUrls
+  // Normalize question imageUrls and text
   normalized.questions = normalized.questions.map(q => ({
     ...q,
     imageUrl: q.imageUrl ?? '',
-    answers: q.answers.map(a => ({
-      ...a,
-      imageUrl: a.imageUrl ?? '',
-    })),
+    // If question has no text but has image, text should be undefined
+    text: (q.text?.trim() || (q.imageUrl ? undefined : '')) ?? undefined,
+    answers: q.answers.map(a => {
+      const answer: QuizAnswer = {
+        ...a,
+        imageUrl: a.imageUrl ?? '',
+      };
+      // If answer has no text but has image, text should be undefined (optional)
+      const hasText = a.text && a.text.trim().length > 0;
+      if (!hasText && answer.imageUrl) {
+        answer.text = undefined;
+      } else if (!hasText) {
+        // No text and no image - keep empty string as fallback
+        answer.text = '';
+      } else {
+        answer.text = a.text;
+      }
+      return answer;
+    }),
   }));
   
   // Normalize personality bucket result imageUrls
@@ -1429,36 +1452,45 @@ function getAxisId(axis: ArchetypeAxis): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  background: transparent;
+  padding: 1rem 0.75rem;
+  background: var(--color-bg-secondary);
   border: none;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 2px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 0.5rem;
 }
 
 .section-toggle:hover {
-  border-bottom-color: var(--color-border-medium);
+  background: var(--color-primary-bg);
+  border-bottom-color: var(--bulma-primary);
+  color: var(--bulma-primary);
+}
+
+.section-toggle:hover .section-toggle__icon {
+  color: var(--bulma-primary);
 }
 
 .section-toggle--sub {
   margin-top: 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .section-toggle__title {
-  color: var(--color-text-primary);
+  color: inherit;
 }
 
 .section-toggle__icon {
-  transition: transform 0.2s ease;
-  font-size: 0.875rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+  font-size: 1rem;
   color: var(--color-text-secondary);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
 }
 
 .section-toggle__icon--open {
@@ -2397,17 +2429,34 @@ function getAxisId(axis: ArchetypeAxis): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  background: transparent;
+  padding: 1rem 0.75rem;
+  background: var(--color-bg-secondary);
   border: none;
+  border-bottom: 2px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-toggle:hover {
+  background: var(--color-primary-bg);
+  border-bottom-color: var(--bulma-primary);
+  color: var(--bulma-primary);
+}
+
+.settings-toggle:hover .settings-toggle__icon {
+  color: var(--bulma-primary);
 }
 
 .settings-toggle__icon {
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, color 0.2s ease;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
 }
 
 .settings-toggle__icon--open {

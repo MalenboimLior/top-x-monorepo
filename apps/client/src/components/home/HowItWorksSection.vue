@@ -121,7 +121,7 @@ const blocks = computed(() => {
 }
 
 .how-it-works__title {
-  font-size: clamp(1rem, 0.7vw + 1rem, 2rem);
+  font-size: clamp(1.5rem, 1.2vw + 1.5rem, 3rem);
   font-weight: 800;
   margin: 0;
   color: var(--color-text-primary);
