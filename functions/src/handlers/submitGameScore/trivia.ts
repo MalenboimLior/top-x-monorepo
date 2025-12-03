@@ -65,6 +65,7 @@ export interface TriviaProcessingMetrics {
   currentStreak?: number;
   mode?: string;
   questionIds: string[];
+  answerHashes: string[]; // Answer hashes for analytics
 }
 
 export interface TriviaProcessingOutcome {
@@ -635,6 +636,9 @@ export async function processTriviaSubmission({
     typeof triviaSubmission.currentStreak === 'number' ? triviaSubmission.currentStreak : 0,
   );
 
+  // Extract answer hashes from attempts
+  const answerHashes = triviaSubmission.attempts.map((attempt) => attempt.answerHash);
+
   const metrics: TriviaProcessingMetrics = {
     score: totalScore,
     attemptCount,
@@ -648,6 +652,7 @@ export async function processTriviaSubmission({
     currentStreak: resolvedCurrentStreak,
     mode: triviaSubmission.mode ?? triviaConfig?.mode ?? 'fixed',
     questionIds: triviaSubmission.questionIds,
+    answerHashes, // Add answer hashes to metrics
   };
 
   const questionUpdates: TriviaQuestionUpdate[] = [];

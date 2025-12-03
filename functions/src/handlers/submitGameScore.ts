@@ -39,6 +39,15 @@ import {
 import { processZoneRevealSubmission } from './submitGameScore/zoneReveal';
 import { processDailyChallengeSubmission } from './submitGameScore/dailyChallenge';
 import { processQuizSubmission, QuizProcessingOutcome } from './submitGameScore/quiz';
+import {
+  separateTriviaData,
+  separateQuizData,
+  separatePyramidData,
+  separateZoneRevealData,
+  separatePacmanData,
+  separateFisherGameData,
+} from './submitGameScore/dataSeparation';
+import { computeLeaderboardRank } from '../utils/leaderboardRanking';
 
 const db = admin.firestore();
 
@@ -489,80 +498,81 @@ export const submitGameScore = functions.https.onCall(async (
         challengeAttemptMetadata = attemptMetadata;
       }
 
-      // Merge custom data from submission with previous custom data
+      // Separate custom data into leaderboard and user-specific data based on game type
+      let leaderboardCustomData: Record<string, unknown> = {};
+      let userCustomData: UserGameCustomData = {};
+
       const customFromSubmission = { ...(enrichedGameData.custom ?? {}) } as UserGameCustomData;
-      const baseCustom: UserGameCustomData = {
-        ...(previousGameData?.custom ?? {}),
-        ...customFromSubmission,
-      };
 
       // Remove nested dailyChallenges from custom (it's stored separately)
-      delete (baseCustom as Record<string, unknown>).dailyChallenges;
+      delete (customFromSubmission as Record<string, unknown>).dailyChallenges;
 
       const triviaMetrics = triviaOutcome?.metrics ?? null;
 
-      if (triviaMetrics) {
-        const triviaCustom = { ...(baseCustom.trivia as Record<string, unknown> | undefined) } as Record<string, unknown>;
-        const previousTriviaTotals = previousGameData?.custom?.trivia as Record<string, unknown> | undefined;
-        const previousTotalAttemptsValue = previousTriviaTotals?.totalAttempts;
-        const previousBestStreakValue = previousTriviaTotals?.bestStreak;
-        const previousAggregateSpeedBonusValue = previousTriviaTotals?.aggregateSpeedBonusTotal;
-        const existingTotalAttempts = typeof triviaCustom.totalAttempts === 'number'
-          ? (triviaCustom.totalAttempts as number)
-          : typeof previousTotalAttemptsValue === 'number'
-            ? previousTotalAttemptsValue
-            : 0;
-        const existingBestStreak = typeof triviaCustom.bestStreak === 'number'
-          ? (triviaCustom.bestStreak as number)
-          : typeof previousBestStreakValue === 'number'
-            ? previousBestStreakValue
-            : 0;
-        const existingAggregateSpeedBonus = typeof triviaCustom.aggregateSpeedBonusTotal === 'number'
-          ? (triviaCustom.aggregateSpeedBonusTotal as number)
-          : typeof previousAggregateSpeedBonusValue === 'number'
-            ? previousAggregateSpeedBonusValue
-            : 0;
-
-        triviaCustom.totalAttempts = existingTotalAttempts + triviaMetrics.attemptCount;
-        triviaCustom.bestStreak = Math.max(
-          existingBestStreak,
-          triviaMetrics.bestStreak ?? 0,
-          triviaMetrics.currentStreak ?? 0,
-          streakToPersist,
-        );
-        triviaCustom.lastAttemptCount = triviaMetrics.attemptCount;
-        triviaCustom.lastScore = triviaMetrics.score;
-        triviaCustom.lastAccuracy = triviaMetrics.accuracy;
-        triviaCustom.lastQuestionIds = triviaMetrics.questionIds;
-        if (triviaMetrics.mode) {
-          triviaCustom.lastMode = triviaMetrics.mode;
-        }
-        if (typeof triviaMetrics.speedBonus === 'number') {
-          triviaCustom.speedBonusTotal = triviaMetrics.speedBonus;
-          triviaCustom.lastSpeedBonusTotal = triviaMetrics.speedBonus;
-          triviaCustom.aggregateSpeedBonusTotal = existingAggregateSpeedBonus + triviaMetrics.speedBonus;
-        }
-        if (typeof triviaMetrics.lastSpeedBonus === 'number') {
-          triviaCustom.lastSpeedBonus = triviaMetrics.lastSpeedBonus;
-        }
-        if (typeof triviaMetrics.basePoints === 'number') {
-          triviaCustom.lastBasePoints = triviaMetrics.basePoints;
-        }
-        if (typeof triviaMetrics.streakBonus === 'number') {
-          triviaCustom.lastStreakBonus = triviaMetrics.streakBonus;
-        }
-
-        baseCustom.trivia = triviaCustom;
+      // Use data separation functions based on game type
+      if (triviaMetrics && triviaOutcome) {
+        const separated = separateTriviaData(customFromSubmission, {
+          questionIds: triviaMetrics.questionIds,
+          answerHashes: triviaMetrics.answerHashes,
+          mode: (triviaMetrics.mode ?? 'fixed') as 'fixed' | 'endless',
+          attemptCount: triviaMetrics.attemptCount,
+          correctCount: triviaMetrics.correctCount,
+          accuracy: triviaMetrics.accuracy,
+          score: triviaMetrics.score,
+          streak: triviaOutcome.resolvedStreak,
+        });
+        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        userCustomData = { ...userCustomData, ...separated.user };
+      } else if (quizOutcome && quizOutcome.isQuizGame) {
+        const quizData = customFromSubmission.quiz as Record<string, unknown> | undefined;
+        const selectedAnswers = (quizData?.selectedAnswers as Record<string, number>) ?? {};
+        const questionIds = Object.keys(selectedAnswers); // Extract question IDs from selectedAnswers keys
+        
+        const quizSubmission = {
+          questionIds,
+          selectedAnswers,
+          result: quizData?.personalityResult
+            ? { id: (quizData.personalityResult as { bucketId: string; title: string }).bucketId, title: (quizData.personalityResult as { bucketId: string; title: string }).title }
+            : quizData?.archetypeResult
+              ? { id: (quizData.archetypeResult as { id: string; title: string }).id, title: (quizData.archetypeResult as { id: string; title: string }).title }
+              : { id: '', title: '' },
+          mode: quizOutcome.mode,
+          image: (quizData?.resultImage as string) ?? undefined,
+        };
+        const separated = separateQuizData(customFromSubmission, quizSubmission);
+        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        userCustomData = { ...userCustomData, ...separated.user };
+      } else if (gameTypeId === 'PyramidTier') {
+        const separated = separatePyramidData(customFromSubmission, scoreToPersist);
+        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        userCustomData = { ...userCustomData, ...separated.user };
+      } else if (gameTypeId === 'ZoneReveal') {
+        const attemptCount = (customFromSubmission.attemptCount as number) ?? 1;
+        const separated = separateZoneRevealData(customFromSubmission, scoreToPersist, streakToPersist, attemptCount);
+        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        userCustomData = { ...userCustomData, ...separated.user };
+      } else if (gameTypeId === 'Pacman') {
+        const separated = separatePacmanData(customFromSubmission, scoreToPersist);
+        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        userCustomData = { ...userCustomData, ...separated.user };
+      } else if (gameTypeId === 'FisherGame') {
+        const separated = separateFisherGameData(customFromSubmission, scoreToPersist);
+        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        userCustomData = { ...userCustomData, ...separated.user };
+      } else {
+        // For unknown game types, keep custom data as-is (backward compatibility)
+        leaderboardCustomData = customFromSubmission as Record<string, unknown>;
+        userCustomData = customFromSubmission;
       }
 
-      // Build merged game data
+      // Build merged game data with separated user custom data
       const mergedGameData: UserGameData = {
         ...(previousGameData ?? {}),
         ...enrichedGameData,
         score: scoreToPersist,
         streak: streakToPersist,
         lastPlayed: serverLastPlayed,
-        custom: baseCustom,
+        custom: userCustomData,
       };
 
       // Preserve existing daily challenge data
@@ -654,17 +664,11 @@ export const submitGameScore = functions.https.onCall(async (
           challengeCustom.metadata = payload.challengeMetadata;
         }
 
-        if (triviaMetrics) {
-          const triviaChallengeCustom = (challengeCustom.trivia as Record<string, unknown> | undefined) ?? {};
-          challengeCustom.trivia = {
-            ...triviaChallengeCustom,
-            mode: triviaMetrics.mode,
-            score: triviaMetrics.score,
-            attempts: triviaMetrics.attemptCount,
-            correct: triviaMetrics.correctCount,
-            accuracy: triviaMetrics.accuracy,
-          };
-        }
+        // For challenge leaderboard, merge challenge metadata with separated leaderboard custom data
+        const challengeLeaderboardCustom = {
+          challenge: challengeCustom,
+          ...leaderboardCustomData,
+        };
 
         const challengeLeaderboardUpdate: Record<string, unknown> = {
           uid,
@@ -674,9 +678,7 @@ export const submitGameScore = functions.https.onCall(async (
           score: challengeBestScore ?? gameData.score,
           streak: streakToPersist,
           updatedAt: Date.now(),
-          custom: {
-            challenge: challengeCustom,
-          },
+          custom: challengeLeaderboardCustom,
           ...(challengeDatePayload ? { date: challengeDatePayload } : {}),
         };
 
@@ -755,11 +757,14 @@ export const submitGameScore = functions.https.onCall(async (
         const regularDatePayload = createLeaderboardDatePayload(serverLastPlayed);
 
         leaderboardUpdate = {
-          ...mergedGameData,
+          uid,
           displayName: userData.displayName,
           username: userData.username,
           photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
+          score: scoreToPersist,
+          streak: streakToPersist,
           updatedAt: Date.now(),
+          custom: leaderboardCustomData,
           ...(regularDatePayload ? { date: regularDatePayload } : {}),
         };
 
@@ -832,6 +837,71 @@ export const submitGameScore = functions.https.onCall(async (
 
     // Return result without internal milestone field
     const { _milestoneInfo, ...cleanResult } = resultWithMilestone;
+
+    // Compute and update leaderboard rank/percentile after transaction (non-blocking)
+    // This is done outside the transaction to avoid expensive reads
+    if (cleanResult.success && !isDailyChallengeSubmission && gameTypeId !== 'quiz') {
+      const finalScore = cleanResult.newScore ?? gameData.score;
+      
+      // Get streak from user doc (it was updated in the transaction)
+      db.collection('users').doc(uid).get()
+        .then((userDoc) => {
+          if (!userDoc.exists()) return;
+          
+          const userData = userDoc.data() as User;
+          const currentGameData = userData.games?.[gameTypeId]?.[gameId];
+          const finalStreak = currentGameData?.streak ?? 0;
+          
+          return computeLeaderboardRank(gameId, uid, finalScore, finalStreak);
+        })
+        .then((rankResult) => {
+          if (!rankResult) return;
+          
+          const { rank, percentile } = rankResult;
+          const userGameRef = db.collection('users').doc(uid);
+          const gameDataPath = `games.${gameTypeId}.${gameId}`;
+          
+          return userGameRef.get().then((userDoc) => {
+            if (userDoc.exists()) {
+              const userData = userDoc.data() as User;
+              const currentGameData = userData.games?.[gameTypeId]?.[gameId];
+              
+              if (currentGameData) {
+                const updatedCustom = {
+                  ...(currentGameData.custom ?? {}),
+                } as UserGameCustomData;
+                
+                // Add rank/percentile to the appropriate custom field based on game type
+                if (updatedCustom.trivia) {
+                  (updatedCustom.trivia as Record<string, unknown>).leaderboardRank = rank;
+                  (updatedCustom.trivia as Record<string, unknown>).percentile = percentile;
+                } else if (gameTypeId === 'PyramidTier') {
+                  (updatedCustom as Record<string, unknown>).leaderboardRank = rank;
+                  (updatedCustom as Record<string, unknown>).percentile = percentile;
+                } else if (gameTypeId === 'ZoneReveal' && updatedCustom.zoneReveal) {
+                  (updatedCustom.zoneReveal as Record<string, unknown>).leaderboardRank = rank;
+                  (updatedCustom.zoneReveal as Record<string, unknown>).percentile = percentile;
+                } else if (gameTypeId === 'Pacman' && updatedCustom.pacman) {
+                  (updatedCustom.pacman as Record<string, unknown>).leaderboardRank = rank;
+                  (updatedCustom.pacman as Record<string, unknown>).percentile = percentile;
+                } else if (gameTypeId === 'FisherGame' && updatedCustom.fisherGame) {
+                  (updatedCustom.fisherGame as Record<string, unknown>).leaderboardRank = rank;
+                  (updatedCustom.fisherGame as Record<string, unknown>).percentile = percentile;
+                }
+                
+                return userGameRef.update({
+                  [`${gameDataPath}.custom`]: updatedCustom,
+                });
+              }
+            }
+          });
+        })
+        .catch((error) => {
+          console.error('Error updating leaderboard rank/percentile:', error);
+          // Non-critical error, don't fail the request
+        });
+    }
+
     return cleanResult;
   } catch (error: any) {
     console.error('submitGameScore error:', error);

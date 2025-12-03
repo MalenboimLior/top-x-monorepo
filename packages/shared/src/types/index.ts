@@ -5,6 +5,8 @@ export * from './pyramid';
 export * from './trivia';
 export * from './game';
 export * from './leaderboard';
+export * from './leaderboardCustom';
+export * from './userGameCustom';
 export * from './zoneReveal';
 export * from './dailyChallenge';
 export * from './stats';
