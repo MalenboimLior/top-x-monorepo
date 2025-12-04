@@ -209,12 +209,92 @@ const adClient = import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID;
 const adSlot = import.meta.env.VITE_GOOGLE_ADS_SLOT_ID;
 const shouldDisplayAds = computed(() => Boolean(adClient && adSlot));
 
+const route = useRouter().currentRoute.value;
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
+
 useHead({
-  title: 'TOP-X',
+  title: 'TOP-X: Viral Challenges, Rankings & Games | Play, Compete, Top Them All',
   meta: [
     {
       name: 'description',
-      content: 'Play fun social games and compete with friends on TOP-X.',
+      content: 'Play viral challenges, compete on leaderboards, and create your own games on TOP-X. Rank your favorites, test your knowledge with trivia, and compete with friends in daily challenges.',
+    },
+    {
+      name: 'keywords',
+      content: 'TOP-X, viral games, competitive gaming, leaderboards, trivia games, pyramid challenges, daily challenges, game creation',
+    },
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: 'TOP-X: Viral Challenges, Rankings & Games',
+    },
+    {
+      property: 'og:description',
+      content: 'Play viral challenges, compete on leaderboards, and create your own games on TOP-X. Rank your favorites, test your knowledge with trivia, and compete with friends.',
+    },
+    {
+      property: 'og:type',
+      content: 'website',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: 'TOP-X: Viral Challenges, Rankings & Games',
+    },
+    {
+      name: 'twitter:description',
+      content: 'Play viral challenges, compete on leaderboards, and create your own games on TOP-X.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'TOP-X',
+        url: 'https://top-x.co',
+        description: 'Viral challenges, rankings, and competitive games platform',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: 'https://top-x.co/games?search={search_term_string}',
+          'query-input': 'required name=search_term_string',
+        },
+      }),
+    },
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'TOP-X',
+        url: 'https://top-x.co',
+        logo: 'https://top-x.co/favicon.ico',
+        description: 'Viral challenges, rankings, and competitive games platform',
+        sameAs: [
+          'https://x.com/topxapp',
+          'https://x.com/topxisrael',
+        ],
+      }),
     },
   ],
 });
@@ -652,5 +732,6 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @import '../styles/components/Home.css';
+
 </style>
 

@@ -521,7 +521,7 @@ export const submitGameScore = functions.https.onCall(async (
           score: triviaMetrics.score,
           streak: triviaOutcome.resolvedStreak,
         });
-        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else if (quizOutcome && quizOutcome.isQuizGame) {
         const quizData = customFromSubmission.quiz as Record<string, unknown> | undefined;
@@ -540,24 +540,24 @@ export const submitGameScore = functions.https.onCall(async (
           image: (quizData?.resultImage as string) ?? undefined,
         };
         const separated = separateQuizData(customFromSubmission, quizSubmission);
-        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else if (gameTypeId === 'PyramidTier') {
         const separated = separatePyramidData(customFromSubmission, scoreToPersist);
-        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else if (gameTypeId === 'ZoneReveal') {
         const attemptCount = (customFromSubmission.attemptCount as number) ?? 1;
         const separated = separateZoneRevealData(customFromSubmission, scoreToPersist, streakToPersist, attemptCount);
-        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else if (gameTypeId === 'Pacman') {
         const separated = separatePacmanData(customFromSubmission, scoreToPersist);
-        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else if (gameTypeId === 'FisherGame') {
         const separated = separateFisherGameData(customFromSubmission, scoreToPersist);
-        leaderboardCustomData = separated.leaderboard as Record<string, unknown>;
+        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else {
         // For unknown game types, keep custom data as-is (backward compatibility)
@@ -846,7 +846,7 @@ export const submitGameScore = functions.https.onCall(async (
       // Get streak from user doc (it was updated in the transaction)
       db.collection('users').doc(uid).get()
         .then((userDoc) => {
-          if (!userDoc.exists()) return;
+          if (!userDoc.exists) return;
           
           const userData = userDoc.data() as User;
           const currentGameData = userData.games?.[gameTypeId]?.[gameId];
@@ -862,7 +862,7 @@ export const submitGameScore = functions.https.onCall(async (
           const gameDataPath = `games.${gameTypeId}.${gameId}`;
           
           return userGameRef.get().then((userDoc) => {
-            if (userDoc.exists()) {
+            if (userDoc.exists) {
               const userData = userDoc.data() as User;
               const currentGameData = userData.games?.[gameTypeId]?.[gameId];
               

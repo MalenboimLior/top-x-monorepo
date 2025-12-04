@@ -40,6 +40,7 @@ export interface TriviaProcessingMetrics {
     currentStreak?: number;
     mode?: string;
     questionIds: string[];
+    answerHashes: string[];
 }
 export interface TriviaProcessingOutcome {
     updatedSubmission: UserGameDataSubmission;

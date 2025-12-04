@@ -58,6 +58,42 @@
             :label="startButtonLabel"
             @click="startRun"
           />
+
+          <!-- Optional Leaderboard Section -->
+          <div v-if="showLeaderboard && gameId" class="leaderboard-section">
+            <button class="leaderboard-toggle" @click="toggleLeaderboard">
+              <font-awesome-icon :icon="['fas', 'trophy']" class="toggle-icon" />
+              <span>{{ isLeaderboardExpanded ? 'Hide Leaderboard' : 'View Leaderboard' }}</span>
+              <font-awesome-icon
+                :icon="['fas', isLeaderboardExpanded ? 'chevron-up' : 'chevron-down']"
+                class="toggle-chevron"
+              />
+            </button>
+            
+            <!-- Expanded: Full leaderboard with tabs (lazy loaded) -->
+            <div v-if="isLeaderboardExpanded" class="leaderboard-expanded">
+              <Leaderboard
+                :game-id="gameId"
+                :current-user-id="userId"
+                :frenemies="frenemies"
+                :daily-challenge-id="dailyChallengeId"
+                default-view="top"
+                :show-date-range="true"
+                :limit="10"
+                @add-frenemy="handleAddFrenemy"
+              />
+            </div>
+            
+            <!-- Collapsed: Show minimal preview (top 5 only) -->
+            <div v-else class="leaderboard-preview-wrapper">
+              <LeaderboardPreview
+                :game-id="gameId"
+                :current-user-id="userId"
+                :daily-challenge-id="dailyChallengeId"
+                :limit="5"
+              />
+            </div>
+          </div>
         </Card>
       </section>
 
@@ -192,6 +228,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import TriviaQuestion from './TriviaQuestion.vue';
+import Leaderboard from '@/components/Leaderboard.vue';
+import LeaderboardPreview from '@/components/LeaderboardPreview.vue';
 import { useLocaleStore } from '@/stores/locale';
 import type { TriviaQuestionViewModel, PowerUpState } from '@/stores/trivia/types';
 
@@ -236,15 +274,39 @@ interface Props {
   mustLogin: boolean;
   allowRepeats: boolean;
   hasSubmitted: boolean;
+  // New props for leaderboard
+  gameId?: string;
+  userId?: string;
+  frenemies?: string[];
+  showLeaderboard?: boolean;
+  dailyChallengeId?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  gameId: undefined,
+  userId: undefined,
+  frenemies: () => [],
+  showLeaderboard: true,
+  dailyChallengeId: undefined,
+});
 
 const emit = defineEmits<{
   (e: 'start-game'): void;
   (e: 'answer-question', index: number): void;
   (e: 'login'): void;
+  (e: 'add-frenemy', uid: string): void;
 }>();
+
+// Leaderboard expand state (collapsed by default to avoid fetch)
+const isLeaderboardExpanded = ref(false);
+
+const toggleLeaderboard = () => {
+  isLeaderboardExpanded.value = !isLeaderboardExpanded.value;
+};
+
+const handleAddFrenemy = (uid: string) => {
+  emit('add-frenemy', uid);
+};
 
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
@@ -683,6 +745,54 @@ const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
 
 .disabled-message {
   color: rgba(255, 255, 255, 0.6);
+}
+
+/* Leaderboard Section */
+.leaderboard-section {
+  margin-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1rem;
+}
+
+.leaderboard-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-text-primary);
+}
+
+.toggle-icon {
+  color: var(--color-primary, #8c52ff);
+}
+
+.toggle-chevron {
+  margin-left: auto;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.leaderboard-expanded {
+  margin-top: 1rem;
+}
+
+.leaderboard-preview-wrapper {
+  margin-top: 0.75rem;
 }
 
 .scene-hud {

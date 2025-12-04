@@ -384,8 +384,14 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
+const route = useRoute();
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
 
 useHead(() => ({
   title: 'Privacy Policy - TOP-X',
@@ -398,8 +404,61 @@ useHead(() => ({
       name: 'keywords',
       content: 'TOP-X privacy, privacy policy, data protection, user rights',
     },
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: 'Privacy Policy - TOP-X',
+    },
+    {
+      property: 'og:description',
+      content: 'Privacy Policy for the TOP-X gaming platform. Learn how we collect, use, and protect your information.',
+    },
+    {
+      property: 'og:type',
+      content: 'article',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: 'Privacy Policy - TOP-X',
+    },
+    {
+      name: 'twitter:description',
+      content: 'Privacy Policy for the TOP-X gaming platform. Learn how we collect, use, and protect your information.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
   ],
 }));
+
+// Ensure prerender-ready fires after content is fully rendered
+onMounted(() => {
+  nextTick(() => {
+    // For prerendering: ensure content is fully rendered before signaling ready
+    if (import.meta.env.PROD && (window as any).__PRERENDER_INJECTED) {
+      // Small delay to ensure all content is in DOM
+      setTimeout(() => {
+        document.dispatchEvent(new Event('prerender-ready'));
+      }, 500);
+    }
+  });
+});
 </script>
 
 <style scoped>

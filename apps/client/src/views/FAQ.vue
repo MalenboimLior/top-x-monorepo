@@ -31,12 +31,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useLocaleStore } from '@/stores/locale';
 
 const localeStore = useLocaleStore();
+const route = useRoute();
 const t = (key: string) => localeStore.translate(key);
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
 
 const faqKeys = [
   { question: 'faq.items.login.question', answer: 'faq.items.login.answer' },
@@ -71,6 +75,46 @@ useHead(() => ({
     {
       name: 'description',
       content: t('faq.metaDescription'),
+    },
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: t('faq.metaTitle'),
+    },
+    {
+      property: 'og:description',
+      content: t('faq.metaDescription'),
+    },
+    {
+      property: 'og:type',
+      content: 'website',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: t('faq.metaTitle'),
+    },
+    {
+      name: 'twitter:description',
+      content: t('faq.metaDescription'),
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
     },
   ],
 }));

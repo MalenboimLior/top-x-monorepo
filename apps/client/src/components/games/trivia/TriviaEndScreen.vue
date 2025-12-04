@@ -24,15 +24,17 @@
         </div>
       </div>
 
-      <div v-if="percentileRank > 0 && isLoggedIn" class="percentile-wrapper">
+      <!-- PercentileRank with auto-fetch mode -->
+      <div v-if="isLoggedIn && gameId && userId" class="percentile-wrapper">
         <PercentileRank
           ref="percentileRankRef"
           :user-image="userImage"
-          :username="username"
-          :percentile="percentileRank"
-          :best-score="bestScore"
-          :users-topped="usersTopped"
           :score="score"
+          :best-score="bestScore"
+          :game-id="gameId"
+          :user-id="userId"
+          :auto-fetch="true"
+          :daily-challenge-id="dailyChallengeId"
         />
       </div>
 
@@ -123,12 +125,19 @@
       </div>
     </Card>
 
-    <Card v-if="leaderboard.length" class="leaderboard-card">
+      <!-- New Leaderboard Component with tabs -->
+    <Card v-if="gameId" class="leaderboard-card">
       <Leaderboard
-        title="Top Players"
-        :entries="leaderboard"
-        :frenemies="frenemies"
+        ref="leaderboardRef"
+        :game-id="gameId"
         :current-user-id="userId"
+        :frenemies="frenemies"
+        :daily-challenge-id="dailyChallengeId"
+        :refresh-key="leaderboardRefreshKey"
+        default-view="top"
+        :show-date-range="true"
+        :limit="10"
+        title="Leaderboard"
         @add-frenemy="$emit('add-frenemy', $event)"
       />
     </Card>
@@ -152,6 +161,7 @@ interface InviterDetails {
 }
 
 interface Props {
+  gameId: string;
   isLoggedIn: boolean;
   score: number;
   bestScore: number;
@@ -162,13 +172,11 @@ interface Props {
   correctAttemptCount: number;
   theme: Record<string, unknown>;
   inviter: InviterDetails | null;
-  leaderboard: Array<Record<string, unknown>>;
-  percentileRank: number;
-  usersTopped: number;
   userImage: string;
   shareUrl: string;
   shareText: string;
   language: string;
+  dailyChallengeId?: string;
   showAnswerSummary?: boolean;
   answerSummary?: TriviaAnswerReview[];
 }
@@ -183,12 +191,10 @@ const props = withDefaults(defineProps<Props>(), {
   attemptCount: 0,
   correctAttemptCount: 0,
   inviter: null,
-  leaderboard: () => [],
-  percentileRank: 0,
-  usersTopped: 0,
   userImage: 'https://via.placeholder.com/48',
   shareUrl: '',
   shareText: '',
+  dailyChallengeId: undefined,
   showAnswerSummary: false,
   answerSummary: () => [],
 });
@@ -218,9 +224,8 @@ const headline = computed(() => {
   return "Let's climb higher.";
 });
 
-const username = computed(() => userStore.profile?.username || 'Player');
 const frenemies = computed(() => userStore.profile?.frenemies || []);
-const userId = computed(() => userStore.user?.uid ?? null);
+const userId = computed(() => userStore.user?.uid ?? undefined);
 const displayAnswerSummary = computed(
   () => props.showAnswerSummary && props.answerSummary.length > 0
 );
@@ -242,11 +247,49 @@ const shareContent = computed(() => {
 });
 
 const percentileRankRef = ref<InstanceType<typeof PercentileRank> | null>(null);
+const leaderboardRef = ref<InstanceType<typeof Leaderboard> | null>(null);
 const shareButtonImage = ref<string | null>(null);
 const isGeneratingShareImage = ref(false);
+const leaderboardRefreshKey = ref(0);
+const hasRefreshedAfterSubmission = ref(false);
+
+// Watch for user's score update in profile (indicates score submission completed)
+watch(
+  () => {
+    if (!props.gameId || !userId.value) return null;
+    return userStore.profile?.games?.['trivia']?.[props.gameId]?.score;
+  },
+  (newScore, oldScore) => {
+    // If score was updated and matches current session score, refresh leaderboard
+    if (
+      !hasRefreshedAfterSubmission.value &&
+      newScore !== undefined &&
+      newScore !== oldScore &&
+      newScore >= props.score
+    ) {
+      hasRefreshedAfterSubmission.value = true;
+      leaderboardRefreshKey.value += 1;
+    }
+  },
+  { immediate: false }
+);
+
+// Refresh after component mounts to account for async score submission
+onMounted(() => {
+  if (props.isLoggedIn && props.score > 0) {
+    // Give score submission time to complete, then refresh
+    // The watch above will handle if profile updates before this timeout
+    setTimeout(() => {
+      if (!hasRefreshedAfterSubmission.value) {
+        hasRefreshedAfterSubmission.value = true;
+        leaderboardRefreshKey.value += 1;
+      }
+    }, 3000); // 3 second delay to allow score submission to complete
+  }
+});
 
 async function generateShareImage(): Promise<void> {
-  if (!props.isLoggedIn || props.percentileRank <= 0) {
+  if (!props.isLoggedIn) {
     shareButtonImage.value = null;
     return;
   }
@@ -275,7 +318,7 @@ async function generateShareImage(): Promise<void> {
 }
 
 watch(
-  () => [props.isLoggedIn, props.percentileRank, props.usersTopped, props.bestScore, props.score],
+  () => [props.isLoggedIn, props.bestScore, props.score],
   () => {
     void generateShareImage();
   },

@@ -12,6 +12,7 @@ const Cookies = () => import('@/views/Cookies.vue');
 const ContactUs = () => import('@/views/ContactUs.vue');
 const FAQ = () => import('@/views/FAQ.vue');
 const Guidelines = () => import('@/views/Guidelines.vue');
+const HowItWorks = () => import('@/views/HowItWorks.vue');
 const Trivia = () => import('@/views/games/Trivia.vue');
 const PyramidTier = () => import('@/views/games/PyramidTier.vue');
 const Users = () =>
@@ -83,6 +84,11 @@ const routes = [
     path: '/guidelines',
     name: 'Guidelines',
     component: () => import(/* webpackChunkName: "guidelines" */ '@/views/Guidelines.vue'),
+  },
+  {
+    path: '/how-it-works',
+    name: 'HowItWorks',
+    component: () => import(/* webpackChunkName: "how-it-works" */ '@/views/HowItWorks.vue'),
   },
 
   {

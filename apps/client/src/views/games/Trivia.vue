@@ -47,14 +47,21 @@
         :must-login="mustLogin"
         :allow-repeats="allowRepeats"
         :has-submitted="hasSubmitted"
+        :game-id="activeGameId"
+        :user-id="userStore.user?.uid"
+        :frenemies="frenemies"
+        :daily-challenge-id="dailyChallengeId ?? undefined"
+        :show-leaderboard="true"
         language="en"
         @start-game="startGame"
         @answer-question="answerQuestion"
         @login="handleLogin"
+        @add-frenemy="addToFrenemies"
       />
 
       <TriviaEndScreen
         v-else
+        :game-id="activeGameId"
         :is-logged-in="isLoggedIn"
         :score="score"
         :best-score="bestScore"
@@ -65,12 +72,10 @@
         :correct-attempt-count="correctAttemptCount"
         :theme="theme"
         :inviter="inviter"
-        :leaderboard="leaderboard"
-        :percentile-rank="percentileRank"
-        :users-topped="usersTopped"
         :user-image="userImage"
         :share-url="shareUrl"
         :share-text="shareText"
+        :daily-challenge-id="dailyChallengeId ?? undefined"
         language="en"
         :show-answer-summary="shouldShowAnswerSummary"
         :answer-summary="answerSummary"
@@ -92,7 +97,6 @@ import TriviaEndScreen from '@/components/games/trivia/TriviaEndScreen.vue';
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
-import { getUserPercentile } from '@/services/leaderboard';
 import { db } from '@top-x/shared';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { DailyChallenge } from '@top-x/shared/types/dailyChallenge';
@@ -208,8 +212,8 @@ const globalTimeLeft = computed(() => triviaStore.globalTimeLeft);
 const streak = computed(() => triviaStore.streak);
 const lastSpeedBonus = computed(() => triviaStore.lastSpeedBonus);
 const lastStreakBonus = computed(() => triviaStore.lastStreakBonus);
-const leaderboard = computed(() => triviaStore.leaderboard);
 const isLoading = computed(() => triviaStore.isLoading);
+const frenemies = computed(() => userStore.profile?.frenemies || []);
 const isLoggedIn = computed(() => !!userStore.user);
 const userImage = computed(() => userStore.profile?.photoURL || 'https://via.placeholder.com/32');
 const error = computed(() => userStore.error);
@@ -255,9 +259,6 @@ const themeStyles = computed(() => {
   styles.backgroundColor = theme.value.backgroundColor;
   return styles;
 });
-
-const percentileRank = ref(0);
-const usersTopped = ref(0);
 
 const shareUrl = computed(() => {
   const params = new URLSearchParams();
@@ -313,28 +314,6 @@ onMounted(async () => {
   }
 });
 
-watch(
-  () => currentScreen.value,
-  async (newScreen) => {
-    if (newScreen === 'gameover' && isLoggedIn.value && userStore.user?.uid) {
-      try {
-        const rankData = await getUserPercentile(activeGameId.value, {
-          uid: userStore.user.uid,
-          dailyChallengeId: triviaStore.dailyChallengeId ?? undefined,
-        });
-        percentileRank.value = rankData.percentile ?? 0;
-        // Calculate users topped: if percentile is available, estimate based on total
-        // For now, set to 0 as we don't have this data in the response
-        usersTopped.value = 0;
-      } catch (err) {
-        console.error('Error fetching percentile rank:', err);
-        percentileRank.value = 0;
-        usersTopped.value = 0;
-      }
-    }
-  }
-);
-
 const startGame = async () => {
   // Check if login is required
   if (mustLogin.value && !isLoggedIn.value) {
@@ -361,8 +340,6 @@ const answerQuestion = (index: number) => triviaStore.answerQuestion(index);
 
 const resetGame = () => {
   triviaStore.resetGame();
-  percentileRank.value = 0;
-  usersTopped.value = 0;
 };
 
 const login = async () => {

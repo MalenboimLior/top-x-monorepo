@@ -34,16 +34,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, nextTick } from 'vue';
 import { useHead } from '@vueuse/head';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useLocaleStore } from '@/stores/locale';
 
 const localeStore = useLocaleStore();
 const router = useRouter();
+const route = useRoute();
 
 const t = (key: string) => localeStore.translate(key);
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
 
 const defaultContent = computed(() => ({
   hero: {
@@ -92,8 +95,59 @@ useHead(() => ({
           content: seo.value.keywords,
         }
       : undefined,
-  ].filter(Boolean) as { name: string; content: string }[],
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: seo.value.title,
+    },
+    {
+      property: 'og:description',
+      content: seo.value.description,
+    },
+    {
+      property: 'og:type',
+      content: 'website',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: seo.value.title,
+    },
+    {
+      name: 'twitter:description',
+      content: seo.value.description,
+    },
+  ].filter(Boolean) as Array<{ name?: string; property?: string; content: string }>,
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
+  ],
 }));
+
+// Ensure prerender-ready fires after content is fully rendered
+onMounted(() => {
+  nextTick(() => {
+    if (import.meta.env.PROD && (window as any).__PRERENDER_INJECTED) {
+      setTimeout(() => {
+        document.dispatchEvent(new Event('prerender-ready'));
+      }, 500);
+    }
+  });
+});
 
 function handleCtaClick() {
   const href = content.value.cta.href;

@@ -303,8 +303,14 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
+const route = useRoute();
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
 
 useHead(() => ({
   title: 'Terms of Use - TOP-X',
@@ -317,8 +323,59 @@ useHead(() => ({
       name: 'keywords',
       content: 'TOP-X terms, terms of use, legal, policies',
     },
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: 'Terms of Use - TOP-X',
+    },
+    {
+      property: 'og:description',
+      content: 'Terms of Use for the TOP-X gaming platform, covering user responsibilities, content licensing, and legal policies.',
+    },
+    {
+      property: 'og:type',
+      content: 'article',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: 'Terms of Use - TOP-X',
+    },
+    {
+      name: 'twitter:description',
+      content: 'Terms of Use for the TOP-X gaming platform, covering user responsibilities, content licensing, and legal policies.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
   ],
 }));
+
+// Ensure prerender-ready fires after content is fully rendered
+onMounted(() => {
+  nextTick(() => {
+    if (import.meta.env.PROD && (window as any).__PRERENDER_INJECTED) {
+      setTimeout(() => {
+        document.dispatchEvent(new Event('prerender-ready'));
+      }, 500);
+    }
+  });
+});
 </script>
 
 <style scoped>

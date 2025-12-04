@@ -1,7 +1,20 @@
 <!-- Shows how a user's score ranks globally -->
+<!-- Supports auto-fetch mode or prop-based data -->
 <template>
   <div ref="containerRef" class="percentile-rank-container">
-    <div class="rank-content">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <span class="loader"></span>
+      <p>Calculating your rank...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="fetchError" class="error-state">
+      <p>{{ fetchError }}</p>
+    </div>
+
+    <!-- Content -->
+    <div v-else-if="displayPercentile !== null" class="rank-content">
       <div class="media animate-item" style="--animation-delay: 0s;">
         <div class="media-left">
           <figure class="image is-64x64">
@@ -10,7 +23,7 @@
         </div>
         <div class="media-content">
           <p class="username has-text-white">{{ usernameWithAt }}</p>
-          <p class="score has-text-white">Scored {{ rankScore }} pts!</p>
+          <p class="score has-text-white">Scored {{ displayScore }} pts!</p>
         </div>
       </div>
       <p class="percentile has-text-white animate-item" style="--animation-delay: 0.2s;">
@@ -18,13 +31,13 @@
         <span v-for="(item, index) in progressBarItems" :key="index" class="progress-char" :class="{ 'filled': item.isFilled }" :style="{ '--char-delay': `${index * 0.1}s` }">
           {{ item.char }}
         </span>
-        | {{ percentile }}% 🏆
+        | {{ displayPercentile }}% 🏆
       </p>
       <p class="rank-text has-text-success animate-item" style="--animation-delay: 0.4s;">
-        You're in the top {{ percentile }}% on X! #SmartestOnX
+        You're in the top {{ displayPercentile }}% on X! #SmartestOnX
       </p>
       <p class="rank-text has-text-success animate-item" style="--animation-delay: 0.5s;">
-        Outscored {{ usersTopped }} players on X!
+        Outscored {{ displayUsersTopped }} players on X!
       </p>
       <p class="challenge has-text-white animate-item" style="--animation-delay: 0.6s;">
         Can you top me? 🔝
@@ -37,37 +50,80 @@
 import { computed, ref, watch, onMounted, nextTick } from 'vue';
 import html2canvas from 'html2canvas';
 import { useUserStore } from '@/stores/user';
+import { getUserPercentile, type DateRange } from '@/services/leaderboard';
 
 interface Props {
   userImage: string;
-  percentile: number;
-  usersTopped: number;
-  bestScore: number;
   score: number;
+  bestScore?: number;
+  // Optional: if provided, use these instead of fetching
+  percentile?: number;
+  usersTopped?: number;
+  // Auto-fetch mode props
+  gameId?: string;
+  userId?: string;
+  autoFetch?: boolean;
+  dateRange?: DateRange;
+  dailyChallengeId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   userImage: '/assets/profile.png',
-  percentile: 0,
-  usersTopped: 0,
-  bestScore: 0,
   score: 0,
+  bestScore: 0,
+  percentile: undefined,
+  usersTopped: undefined,
+  gameId: undefined,
+  userId: undefined,
+  autoFetch: false,
+  dateRange: 'allTime',
+  dailyChallengeId: undefined,
 });
 
 const userStore = useUserStore();
 const containerRef = ref<HTMLDivElement | null>(null);
+
+// Auto-fetch state
+const isLoading = ref(false);
+const fetchError = ref<string | null>(null);
+const fetchedPercentile = ref<number | null>(null);
+const fetchedTotal = ref<number>(0);
+
+// Computed display values (prefer props, fall back to fetched)
+const displayPercentile = computed(() => {
+  if (props.percentile !== undefined) {
+    return props.percentile;
+  }
+  return fetchedPercentile.value;
+});
+
+const displayUsersTopped = computed(() => {
+  if (props.usersTopped !== undefined) {
+    return props.usersTopped;
+  }
+  // Calculate from fetched data
+  if (fetchedPercentile.value !== null && fetchedTotal.value > 0) {
+    // If percentile is 10, user beat 90% of players
+    const beatPercent = 100 - fetchedPercentile.value;
+    return Math.round((beatPercent / 100) * fetchedTotal.value);
+  }
+  return 0;
+});
+
+const displayScore = computed(() => {
+  return props.score || props.bestScore || 0;
+});
 
 const usernameWithAt = computed(() => {
   const username = userStore.profile?.username?.replace(/^@+/, '') || 'Player';
   return `@${username}`;
 });
 
-const rankScore = computed(() => {
-  return props.score || props.bestScore || 0;
-});
-
 const progressBarItems = computed(() => {
-  const filled = Math.round(props.percentile / 10);
+  const percentile = displayPercentile.value ?? 0;
+  // Invert: lower percentile = more filled (better rank)
+  // If percentile is 10, user is in top 10%, so fill 9 bars (90% filled)
+  const filled = Math.round((100 - percentile) / 10);
   const empty = 10 - filled;
   const items = [];
   for (let i = 0; i < filled; i++) {
@@ -81,7 +137,8 @@ const progressBarItems = computed(() => {
 
 // For share text, maintain the string format
 const progressBarString = computed(() => {
-  const filled = Math.round(props.percentile / 10);
+  const percentile = displayPercentile.value ?? 0;
+  const filled = Math.round((100 - percentile) / 10);
   const empty = 10 - filled;
   return '■'.repeat(filled) + '□'.repeat(empty);
 });
@@ -90,18 +147,68 @@ const progressBarString = computed(() => {
 const isAnimated = ref(false);
 const shareReady = ref(true);
 
+// Fetch percentile data
+const fetchPercentile = async () => {
+  if (!props.autoFetch || !props.gameId || !props.userId) {
+    return;
+  }
+
+  // Don't fetch if props already provide the data
+  if (props.percentile !== undefined) {
+    return;
+  }
+
+  isLoading.value = true;
+  fetchError.value = null;
+
+  try {
+    const result = await getUserPercentile(props.gameId, {
+      uid: props.userId,
+      dateRange: props.dateRange,
+      dailyChallengeId: props.dailyChallengeId,
+    });
+
+    if (result.error) {
+      fetchError.value = result.error;
+      return;
+    }
+
+    fetchedPercentile.value = result.percentile;
+    fetchedTotal.value = result.total;
+  } catch (e: any) {
+    fetchError.value = e?.message || 'Failed to calculate rank';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 onMounted(() => {
   shareReady.value = true;
   isAnimated.value = true;
+  
+  // Auto-fetch if enabled
+  if (props.autoFetch) {
+    fetchPercentile();
+  }
 });
 
+// Watch for prop changes that should trigger a refetch
 watch(
-  () => props.percentile,
+  () => [props.gameId, props.userId, props.dateRange, props.dailyChallengeId],
+  () => {
+    if (props.autoFetch) {
+      fetchPercentile();
+    }
+  }
+);
+
+watch(
+  () => displayPercentile.value,
   () => {
     isAnimated.value = false;
     setTimeout(() => {
       isAnimated.value = true;
-    }, 50); // Brief delay to reset animation
+    }, 50);
   }
 );
 
@@ -145,6 +252,40 @@ defineExpose({ getImageDataUrl, progressBarString });
   animation: none !important;
   opacity: 1 !important;
   transform: none !important;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--color-text-secondary);
+}
+
+.loader {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-danger, #ff6b6b);
 }
 
 .rank-content {

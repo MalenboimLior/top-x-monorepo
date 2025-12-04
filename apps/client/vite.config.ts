@@ -45,6 +45,7 @@ export default defineConfig({
             '/privacy',
             '/cookies',
             '/guidelines',
+            '/how-it-works',
             // Game routes
             '/games/info',
             '/games/trivia',

@@ -59,12 +59,17 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useLocaleStore } from '@/stores/locale';
 
 const localeStore = useLocaleStore();
+const route = useRoute();
 const t = (key: string) => localeStore.translate(key);
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
 
 useHead(() => ({
   title: t('about.metaTitle'),
@@ -73,8 +78,59 @@ useHead(() => ({
       name: 'description',
       content: t('about.metaDescription'),
     },
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: t('about.metaTitle'),
+    },
+    {
+      property: 'og:description',
+      content: t('about.metaDescription'),
+    },
+    {
+      property: 'og:type',
+      content: 'website',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: t('about.metaTitle'),
+    },
+    {
+      name: 'twitter:description',
+      content: t('about.metaDescription'),
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
   ],
 }));
+
+// Ensure prerender-ready fires after content is fully rendered
+onMounted(() => {
+  nextTick(() => {
+    if (import.meta.env.PROD && (window as any).__PRERENDER_INJECTED) {
+      setTimeout(() => {
+        document.dispatchEvent(new Event('prerender-ready'));
+      }, 500);
+    }
+  });
+});
 </script>
 
 <style scoped>

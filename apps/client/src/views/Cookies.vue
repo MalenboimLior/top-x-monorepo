@@ -233,8 +233,14 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
+const route = useRoute();
+const baseUrl = 'https://top-x.co';
+const canonicalUrl = `${baseUrl}${route.path}`;
 
 useHead(() => ({
   title: 'Cookies Policy - TOP-X',
@@ -247,8 +253,59 @@ useHead(() => ({
       name: 'keywords',
       content: 'TOP-X cookies, cookie policy, tracking, privacy',
     },
+    // Open Graph tags
+    {
+      property: 'og:title',
+      content: 'Cookies Policy - TOP-X',
+    },
+    {
+      property: 'og:description',
+      content: 'Cookies Policy for the TOP-X gaming platform. Learn how we use cookies and tracking technologies.',
+    },
+    {
+      property: 'og:type',
+      content: 'article',
+    },
+    {
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      property: 'og:site_name',
+      content: 'TOP-X',
+    },
+    // Twitter Card tags
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+    {
+      name: 'twitter:title',
+      content: 'Cookies Policy - TOP-X',
+    },
+    {
+      name: 'twitter:description',
+      content: 'Cookies Policy for the TOP-X gaming platform. Learn how we use cookies and tracking technologies.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
   ],
 }));
+
+// Ensure prerender-ready fires after content is fully rendered
+onMounted(() => {
+  nextTick(() => {
+    if (import.meta.env.PROD && (window as any).__PRERENDER_INJECTED) {
+      setTimeout(() => {
+        document.dispatchEvent(new Event('prerender-ready'));
+      }, 500);
+    }
+  });
+});
 </script>
 
 <style scoped>
