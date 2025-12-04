@@ -111,7 +111,8 @@ const displayUsersTopped = computed(() => {
 });
 
 const displayScore = computed(() => {
-  return props.score || props.bestScore || 0;
+  // Always prefer bestScore over current session score for display
+  return props.bestScore || props.score || 0;
 });
 
 const usernameWithAt = computed(() => {
@@ -146,6 +147,20 @@ const progressBarString = computed(() => {
 // Animation control
 const isAnimated = ref(false);
 const shareReady = ref(true);
+
+// Track if percentile data is ready (for share image generation)
+const isDataReady = computed(() => {
+  // If using props, data is ready immediately
+  if (props.percentile !== undefined) {
+    return true;
+  }
+  // If auto-fetching, data is ready when not loading and percentile is available
+  if (props.autoFetch) {
+    return !isLoading.value && fetchedPercentile.value !== null && !fetchError.value;
+  }
+  // Default: ready if percentile prop is provided
+  return props.percentile !== undefined;
+});
 
 // Fetch percentile data
 const fetchPercentile = async () => {
@@ -238,7 +253,7 @@ async function getImageDataUrl(): Promise<string | null> {
   }
 }
 
-defineExpose({ getImageDataUrl, progressBarString });
+defineExpose({ getImageDataUrl, progressBarString, isDataReady });
 </script>
 
 <style scoped>

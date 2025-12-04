@@ -42,7 +42,8 @@
         <font-awesome-icon :icon="['fas', 'user-plus']" />
       </button>
       <span v-else-if="isFrenemy" class="following-badge">
-        <font-awesome-icon :icon="['fas', 'check']" />
+        <font-awesome-icon :icon="['fas', 'check']" class="badge-icon" />
+        <span class="badge-text">Following</span>
       </span>
     </div>
   </div>
@@ -102,6 +103,8 @@ const handleAddFrenemy = () => {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   transition: background 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .entry-row:hover {
@@ -232,6 +235,11 @@ const handleAddFrenemy = () => {
 /* Actions */
 .entry-actions {
   flex-shrink: 0;
+  width: 6rem;
+  min-width: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   margin-left: 0.5rem;
 }
 
@@ -258,11 +266,22 @@ const handleAddFrenemy = () => {
 .following-badge {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  justify-content: flex-end;
+  gap: 0.35rem;
   color: #4ade80;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-icon {
+  font-size: 0.7rem;
+}
+
+.badge-text {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Responsive */
@@ -311,6 +330,19 @@ const handleAddFrenemy = () => {
   }
 
   .stat-label {
+    font-size: 0.6rem;
+  }
+
+  .entry-actions {
+    width: 5rem;
+    min-width: 5rem;
+  }
+
+  .following-badge {
+    font-size: 0.65rem;
+  }
+
+  .badge-text {
     font-size: 0.6rem;
   }
 }

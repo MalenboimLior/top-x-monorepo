@@ -6,6 +6,7 @@ const db = admin.firestore();
 export interface LeaderboardRankResult {
   rank: number;
   percentile: number;
+  totalUsers: number;
 }
 
 /**
@@ -42,7 +43,7 @@ export async function computeLeaderboardRank(
     const totalEntries = totalCountSnapshot.data().count;
     
     if (totalEntries === 0) {
-      return { rank: 1, percentile: 0 };
+      return { rank: 1, percentile: 0, totalUsers: 0 };
     }
 
     // 2. Count entries with better scores (score > userScore) (1 read)
@@ -68,11 +69,11 @@ export async function computeLeaderboardRank(
     // Example: rank 1 = 0th percentile (best), rank 100 out of 100 = 99th percentile
     const percentile = Math.max(0, Math.min(100, Math.round(((rank - 1) / totalEntries) * 100)));
 
-    return { rank, percentile };
+    return { rank, percentile, totalUsers: totalEntries };
   } catch (error) {
     console.error('Error computing leaderboard rank:', error);
     // Return default values on error
-    return { rank: 0, percentile: 100 };
+    return { rank: 0, percentile: 100, totalUsers: 0 };
   }
 }
 

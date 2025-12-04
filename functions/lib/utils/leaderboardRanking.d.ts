@@ -1,6 +1,7 @@
 export interface LeaderboardRankResult {
     rank: number;
     percentile: number;
+    totalUsers: number;
 }
 /**
  * Computes the user's leaderboard rank and percentile for a game

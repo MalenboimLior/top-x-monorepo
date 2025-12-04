@@ -1,7 +1,8 @@
-<!-- Leaderboard with tabs: Top | Around | VIP | Friends -->
+<!-- Leaderboard with tabs: Top | Around | VIP | Following -->
 <!-- Performance optimized: lazy loading, caching, pagination -->
+<!-- Always LTR and English regardless of locale -->
 <template>
-  <div class="leaderboard-container">
+  <div class="leaderboard-container" dir="ltr">
     <h2 v-if="title" class="leaderboard-title">{{ title }}</h2>
     
     <!-- Tab Navigation -->
@@ -149,6 +150,7 @@ import {
   getAroundLeaderboard,
   getVipLeaderboard,
   getFriendsLeaderboard,
+  getUsersLeaderboard,
   type DateRange,
   type AroundResult,
 } from '@/services/leaderboard';
@@ -205,7 +207,7 @@ const allTabs: TabDefinition[] = [
   { id: 'top', label: 'Top', icon: ['fas', 'trophy'], requiresUserId: false },
   { id: 'around', label: 'Around Me', icon: ['fas', 'crosshairs'], requiresUserId: true },
   { id: 'vip', label: 'VIP', icon: ['fas', 'star'], requiresUserId: false },
-  { id: 'friends', label: 'Friends', icon: ['fas', 'user-friends'], requiresUserId: true },
+  { id: 'friends', label: 'Following', icon: ['fas', 'user-friends'], requiresUserId: true },
 ];
 
 const dateRangeOptions: { value: DateRange; label: string }[] = [
@@ -275,7 +277,7 @@ const emptyMessage = computed(() => {
     case 'vip':
       return 'No VIP players have played yet.';
     case 'friends':
-      return 'None of your friends have played yet.';
+      return 'None of the users you follow have played yet.';
     default:
       return 'No entries found.';
   }
@@ -413,12 +415,38 @@ const fetchVip = async () => {
     dailyChallengeId: props.dailyChallengeId,
   });
 
-  vipEntries.value = items;
+  // Add current user if not already in the list
+  let finalItems = [...items];
+  if (props.currentUserId) {
+    const userInList = items.some(entry => entry.uid === props.currentUserId);
+    if (!userInList) {
+      // Fetch current user's leaderboard entry
+      const userResult = await getUsersLeaderboard(props.gameId, {
+        uids: [props.currentUserId],
+        dailyChallengeId: props.dailyChallengeId,
+      });
+      if (userResult.items.length > 0) {
+        finalItems = [...items, ...userResult.items];
+        // Re-sort by score desc, streak desc
+        finalItems.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          const sa = a.streak ?? 0;
+          const sb = b.streak ?? 0;
+          if (sb !== sa) return sb - sa;
+          const ta = a.updatedAt ?? Number.MAX_SAFE_INTEGER;
+          const tb = b.updatedAt ?? Number.MAX_SAFE_INTEGER;
+          return ta - tb;
+        });
+      }
+    }
+  }
+
+  vipEntries.value = finalItems;
 
   // Cache result (VIP doesn't use date range)
   const cacheKey = getCacheKey('vip', 'allTime');
   cache.set(cacheKey, {
-    entries: items,
+    entries: finalItems,
     cursor: null,
     timestamp: Date.now(),
   });
@@ -426,7 +454,7 @@ const fetchVip = async () => {
 
 const fetchFriends = async () => {
   if (!props.currentUserId) {
-    error.value = 'You must be logged in to see friends';
+    error.value = 'You must be logged in to see following';
     return;
   }
 
@@ -434,12 +462,36 @@ const fetchFriends = async () => {
     dailyChallengeId: props.dailyChallengeId,
   });
 
-  friendsEntries.value = items;
+  // Add current user if not already in the list
+  let finalItems = [...items];
+  const userInList = items.some(entry => entry.uid === props.currentUserId);
+  if (!userInList) {
+    // Fetch current user's leaderboard entry
+    const userResult = await getUsersLeaderboard(props.gameId, {
+      uids: [props.currentUserId],
+      dailyChallengeId: props.dailyChallengeId,
+    });
+    if (userResult.items.length > 0) {
+      finalItems = [...items, ...userResult.items];
+      // Re-sort by score desc, streak desc
+      finalItems.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const sa = a.streak ?? 0;
+        const sb = b.streak ?? 0;
+        if (sb !== sa) return sb - sa;
+        const ta = a.updatedAt ?? Number.MAX_SAFE_INTEGER;
+        const tb = b.updatedAt ?? Number.MAX_SAFE_INTEGER;
+        return ta - tb;
+      });
+    }
+  }
 
-  // Cache result (Friends doesn't use date range)
+  friendsEntries.value = finalItems;
+
+  // Cache result (Following doesn't use date range)
   const cacheKey = getCacheKey('friends', 'allTime');
   cache.set(cacheKey, {
-    entries: items,
+    entries: finalItems,
     cursor: null,
     timestamp: Date.now(),
   });
@@ -530,6 +582,14 @@ onMounted(() => {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
+  direction: ltr;
+  text-align: left;
+}
+
+/* Force LTR and English for all leaderboard content */
+.leaderboard-container * {
+  direction: ltr;
+  text-align: left;
 }
 
 .leaderboard-title {
@@ -732,10 +792,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .leaderboard-entry {
   transition: transform 0.2s ease, background 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .leaderboard-entry.is-current-user {

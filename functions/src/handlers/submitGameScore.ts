@@ -10,6 +10,12 @@ import {
   DailyChallengeRewardRecord,
 } from '@top-x/shared/types/user';
 import type {
+  PyramidUserCustom,
+  ZoneRevealUserCustom,
+  PacmanUserCustom,
+  FisherGameUserCustom,
+} from '@top-x/shared/types/userGameCustom';
+import type {
   Game,
 } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
@@ -857,7 +863,7 @@ export const submitGameScore = functions.https.onCall(async (
         .then((rankResult) => {
           if (!rankResult) return;
           
-          const { rank, percentile } = rankResult;
+          const { rank, percentile, totalUsers } = rankResult;
           const userGameRef = db.collection('users').doc(uid);
           const gameDataPath = `games.${gameTypeId}.${gameId}`;
           
@@ -867,26 +873,65 @@ export const submitGameScore = functions.https.onCall(async (
               const currentGameData = userData.games?.[gameTypeId]?.[gameId];
               
               if (currentGameData) {
-                const updatedCustom = {
-                  ...(currentGameData.custom ?? {}),
-                } as UserGameCustomData;
+                // Reconstruct minimal custom data structure instead of spreading existing data
+                let updatedCustom: UserGameCustomData = {};
                 
-                // Add rank/percentile to the appropriate custom field based on game type
-                if (updatedCustom.trivia) {
-                  (updatedCustom.trivia as Record<string, unknown>).leaderboardRank = rank;
-                  (updatedCustom.trivia as Record<string, unknown>).percentile = percentile;
+                if (gameTypeId === 'Trivia') {
+                  updatedCustom = {
+                    trivia: {
+                      score: currentGameData.score ?? 0,
+                      streak: currentGameData.streak ?? 0,
+                      leaderboardRank: rank,
+                      leaderboardTotalUsers: totalUsers,
+                      percentile: percentile,
+                      lastPlayed: currentGameData.lastPlayed ?? Date.now(),
+                    },
+                  };
                 } else if (gameTypeId === 'PyramidTier') {
-                  (updatedCustom as Record<string, unknown>).leaderboardRank = rank;
-                  (updatedCustom as Record<string, unknown>).percentile = percentile;
-                } else if (gameTypeId === 'ZoneReveal' && updatedCustom.zoneReveal) {
-                  (updatedCustom.zoneReveal as Record<string, unknown>).leaderboardRank = rank;
-                  (updatedCustom.zoneReveal as Record<string, unknown>).percentile = percentile;
-                } else if (gameTypeId === 'Pacman' && updatedCustom.pacman) {
-                  (updatedCustom.pacman as Record<string, unknown>).leaderboardRank = rank;
-                  (updatedCustom.pacman as Record<string, unknown>).percentile = percentile;
-                } else if (gameTypeId === 'FisherGame' && updatedCustom.fisherGame) {
-                  (updatedCustom.fisherGame as Record<string, unknown>).leaderboardRank = rank;
-                  (updatedCustom.fisherGame as Record<string, unknown>).percentile = percentile;
+                  // Pyramid needs pyramid structure for restoration
+                  const pyramidCustom = currentGameData.custom as unknown as PyramidUserCustom | undefined;
+                  updatedCustom = {
+                    pyramid: pyramidCustom?.pyramid ?? [],
+                    worstItem: pyramidCustom?.worstItem ?? { id: '' },
+                    score: currentGameData.score ?? 0,
+                    leaderboardRank: rank,
+                    leaderboardTotalUsers: totalUsers,
+                    percentile: percentile,
+                  };
+                } else if (gameTypeId === 'ZoneReveal') {
+                  const zoneCustom = currentGameData.custom as unknown as ZoneRevealUserCustom | undefined;
+                  updatedCustom = {
+                    zoneReveal: {
+                      answer: zoneCustom?.zoneReveal?.answer ?? '',
+                      score: currentGameData.score ?? 0,
+                      streak: currentGameData.streak ?? 0,
+                      leaderboardRank: rank,
+                      leaderboardTotalUsers: totalUsers,
+                      percentile: percentile,
+                    },
+                  };
+                } else if (gameTypeId === 'Pacman') {
+                  const pacmanCustom = currentGameData.custom as unknown as PacmanUserCustom | undefined;
+                  updatedCustom = {
+                    pacman: {
+                      score: currentGameData.score ?? 0,
+                      level: pacmanCustom?.pacman?.level ?? 1,
+                      leaderboardRank: rank,
+                      leaderboardTotalUsers: totalUsers,
+                      percentile: percentile,
+                    },
+                  };
+                } else if (gameTypeId === 'FisherGame') {
+                  const fisherCustom = currentGameData.custom as unknown as FisherGameUserCustom | undefined;
+                  updatedCustom = {
+                    fisherGame: {
+                      score: currentGameData.score ?? 0,
+                      fishCaught: fisherCustom?.fisherGame?.fishCaught ?? 0,
+                      leaderboardRank: rank,
+                      leaderboardTotalUsers: totalUsers,
+                      percentile: percentile,
+                    },
+                  };
                 }
                 
                 return userGameRef.update({

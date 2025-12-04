@@ -29,7 +29,7 @@
         <PercentileRank
           ref="percentileRankRef"
           :user-image="userImage"
-          :score="score"
+          :score="bestScore"
           :best-score="bestScore"
           :game-id="gameId"
           :user-id="userId"
@@ -300,6 +300,13 @@ async function generateShareImage(): Promise<void> {
     return;
   }
 
+  // Wait for percentile data to be ready before generating image
+  const isReady = percentileRankRef.value?.isDataReady;
+  if (isReady === false) {
+    // Data not ready yet, will be triggered by watch when ready
+    return;
+  }
+
   if (isGeneratingShareImage.value) {
     return;
   }
@@ -317,25 +324,41 @@ async function generateShareImage(): Promise<void> {
   }
 }
 
+// Watch for when percentile data becomes ready
 watch(
-  () => [props.isLoggedIn, props.bestScore, props.score],
-  () => {
-    void generateShareImage();
-  },
-  { immediate: true }
+  () => percentileRankRef.value?.isDataReady,
+  (isReady) => {
+    if (isReady === true && props.isLoggedIn) {
+      // Small delay to ensure UI has fully rendered with the new data
+      setTimeout(() => {
+        void generateShareImage();
+      }, 300);
+    }
+  }
 );
 
-onMounted(() => {
-  void generateShareImage();
-});
-
+// Watch for component mount and ref availability
 watch(
   () => percentileRankRef.value,
   (value) => {
-    if (value) {
-      void generateShareImage();
+    if (value && props.isLoggedIn) {
+      // Check if data is already ready
+      if (value.isDataReady === true) {
+        void generateShareImage();
+      }
     }
   }
+);
+
+// Watch for score changes (but only generate if data is ready)
+watch(
+  () => [props.isLoggedIn, props.bestScore, props.score],
+  () => {
+    if (props.isLoggedIn && percentileRankRef.value?.isDataReady === true) {
+      void generateShareImage();
+    }
+  },
+  { immediate: true }
 );
 </script>
 

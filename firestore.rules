@@ -7,15 +7,34 @@ service cloud.firestore {
     }
     
     // Helper function to check if user is an admin
+    // Uses hardcoded UID list to avoid expensive get() operations
     function isAdmin() {
       return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+             request.auth.uid in ['ssZniBNnBpchbaZyis16gNNvt9f1'];
     }
     
     // Helper function to check if user is the game creator
     function isGameCreator() {
       return isAuthenticated() && 
              resource.data.creator.userid == request.auth.uid;
+    }
+    
+    // Helper function to check if user is updating only allowed fields on their own document
+    function canUpdateOwnDocument() {
+      return isAuthenticated() && 
+             // Prevent changes to uid field
+             request.resource.data.uid == resource.data.uid &&
+             // Prevent changes to isAdmin field (both must be equal or both null/undefined)
+             (request.resource.data.isAdmin == resource.data.isAdmin);
+    }
+    
+    // Helper function to check if user is updating only the addedBy field on another user's document
+    function canUpdateAddedByField() {
+      return isAuthenticated() &&
+             // Only allow addedBy field to be changed
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['addedBy']) &&
+             // Ensure addedBy is an array
+             request.resource.data.addedBy is list;
     }
     
     // Games collection
@@ -58,9 +77,16 @@ service cloud.firestore {
       // Anyone can read user documents (for public profile info)
       allow read: if true;
       
-      // Users can create/update their own user document
+      // Users can create their own user document
       allow create: if isAuthenticated() && userId == request.auth.uid;
-      allow update: if isAuthenticated() && userId == request.auth.uid;
+      
+      // Users can update their own document, but with field-level restrictions
+      // OR authenticated users can update only the addedBy field on other users' documents (for frenemies feature)
+      allow update: if (isAuthenticated() && userId == request.auth.uid && canUpdateOwnDocument()) ||
+                      (isAuthenticated() && userId != request.auth.uid && canUpdateAddedByField());
+      
+      // Prevent users from deleting their own documents (only admins via Cloud Functions can delete)
+      allow delete: if false;
       
       // Subcollections (e.g., dailyChallengeRewards)
       match /{subcollection=**} {

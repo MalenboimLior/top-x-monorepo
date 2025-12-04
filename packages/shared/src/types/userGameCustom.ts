@@ -5,6 +5,7 @@ export interface TriviaUserCustom {
     score: number; // Best score
     streak: number; // Best streak
     leaderboardRank?: number; // Current position (computed on submission)
+    leaderboardTotalUsers?: number; // Total users in leaderboard
     percentile?: number; // Percentile rank (e.g., 45 = top 45%)
     lastPlayed: number; // Timestamp
   };
@@ -31,6 +32,7 @@ export interface PyramidUserCustom {
   };
   score: number; // Calculated score
   leaderboardRank?: number; // Current position
+  leaderboardTotalUsers?: number; // Total users in leaderboard
   percentile?: number; // Percentile rank
 }
 
@@ -40,6 +42,7 @@ export interface ZoneRevealUserCustom {
     score: number; // Best score
     streak: number; // Best streak
     leaderboardRank?: number; // Current position
+    leaderboardTotalUsers?: number; // Total users in leaderboard
     percentile?: number; // Percentile rank
   };
 }
@@ -49,6 +52,7 @@ export interface PacmanUserCustom {
     score: number; // Best score
     level: number; // Best level reached
     leaderboardRank?: number; // Current position
+    leaderboardTotalUsers?: number; // Total users in leaderboard
     percentile?: number; // Percentile rank
   };
 }
@@ -58,6 +62,7 @@ export interface FisherGameUserCustom {
     score: number; // Best score
     fishCaught: number; // Best fish caught count
     leaderboardRank?: number; // Current position
+    leaderboardTotalUsers?: number; // Total users in leaderboard
     percentile?: number; // Percentile rank
   };
 }

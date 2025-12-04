@@ -31,15 +31,26 @@
               label="Logout"
               @click="logout"
             />
-            <CustomButton
-              v-else-if="isLoggedIn && !isFrenemy"
-              type="is-primary"
-              label="Follow"
-              :icon="['fas', 'user-plus']"
-              @click="addFrenemy(profile?.uid || '')"
-            />
-            <p v-else-if="!isLoggedIn" class="profile-card__hint">Log in to follow users</p>
-            <p v-else class="profile-card__hint">Already following</p>
+            <div v-else-if="isLoggedIn" class="follow-controls">
+              <CustomButton
+                v-if="!isFrenemy"
+                type="is-primary"
+                label="Follow"
+                :icon="['fas', 'user-plus']"
+                @click="addFrenemy(profile?.uid || '')"
+              />
+              <div v-else class="following-badge">
+                <font-awesome-icon :icon="['fas', 'check']" class="badge-icon" />
+                <span class="badge-text">Following</span>
+                <CustomButton
+                  type="is-light is-small"
+                  label="Unfollow"
+                  @click="removeFrenemy(profile?.uid || '')"
+                  class="unfollow-button"
+                />
+              </div>
+            </div>
+            <p v-else class="profile-card__hint">Log in to follow users</p>
           </div>
         </div>
       </div>
@@ -93,14 +104,15 @@
           >
             Games
           </button>
-          <button
+          <!-- Badges tab hidden for now -->
+          <!-- <button
             type="button"
             class="profile-tab"
             :class="{ active: activeTab === 'badges' }"
             @click="setActiveTab('badges')"
           >
             Badges
-          </button>
+          </button> -->
           <button
             v-if="isOwnProfile"
             type="button"
@@ -117,11 +129,36 @@
             :class="{ active: activeTab === 'whoadded' }"
             @click="setActiveTab('whoadded')"
           >
-            Who Added Me ({{ userStore.profile?.addedBy?.length || 0 }})
+            Followers ({{ userStore.profile?.addedBy?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="profile-tab"
+            :class="{ active: activeTab === 'mygames' }"
+            @click="setActiveTab('mygames')"
+          >
+            My Games
           </button>
         </nav>
 
         <div v-if="activeTab === 'games'" class="profile-panel">
+          <!-- Stats Summary -->
+          <div v-if="profile?.games && Object.keys(profile.games).length > 0" class="stats-summary">
+            <div class="stats-summary__item">
+              <span class="stats-summary__label">Games Played</span>
+              <span class="stats-summary__value">{{ totalGamesPlayed }}</span>
+            </div>
+            <div class="stats-summary__item">
+              <span class="stats-summary__label">Best Score</span>
+              <span class="stats-summary__value">{{ bestScore || '—' }}</span>
+            </div>
+            <div class="stats-summary__item">
+              <span class="stats-summary__label">Best Streak</span>
+              <span class="stats-summary__value">{{ bestStreak || '—' }}</span>
+            </div>
+          </div>
+
+          <!-- Pyramid display (if exists) -->
           <div v-if="pyramid" class="profile-pyramid">
             <PyramidView
               :pyramid="pyramid"
@@ -132,56 +169,26 @@
               :worst-show="worstShow"
             />
           </div>
-          <div v-if="isOwnProfile" class="profile-daily-challenges-section">
-            <h3 class="section-title">Daily Challenge History</h3>
-            <div class="game-selector">
-              <label for="selectedGameId">Select Game:</label>
-              <select id="selectedGameId" v-model="selectedGameId" class="game-select">
-                <option value="">-- Select a Game --</option>
-                <option v-for="game in availableGames" :key="game.id" :value="game.id">
-                  {{ game.name }}
-                </option>
-              </select>
-            </div>
-            <div v-if="selectedGameId" class="calendar-container">
-              <DailyChallengeCalendar :game-id="selectedGameId" />
-            </div>
-            <p v-else class="calendar-hint">Select a game to view your daily challenge history</p>
+
+          <!-- Grouped games by type -->
+          <div v-if="loadingGroupedGames" class="profile-empty">Loading games...</div>
+          <div v-else-if="groupedGamesSync.length === 0 && !pyramid" class="profile-empty">
+            No games played yet.
           </div>
-          <div v-if="!pyramid" class="profile-table-wrapper">
-            <table class="profile-table">
-              <thead>
-                <tr>
-                  <th>Game</th>
-                  <th>Mode</th>
-                  <th>Score</th>
-                  <th>Streak</th>
-                  <th>Last Played</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="!profile?.games || Object.keys(profile.games).length === 0">
-                  <td colspan="5" class="profile-empty">No games played yet.</td>
-                </tr>
-                <template v-else>
-                  <template v-for="(modes, gameName) in filteredGames" :key="gameName">
-                    <tr v-for="(data, modeName) in modes" :key="gameName + '-' + modeName">
-                      <td>{{ gameName }}</td>
-                      <td>{{ modeName }}</td>
-                      <td>{{ data.score }}</td>
-                      <td>{{ data.streak }}</td>
-                      <td>{{ formatLastPlayed(data.lastPlayed) }}</td>
-                    </tr>
-                  </template>
-                </template>
-              </tbody>
-            </table>
-          </div>
+          <GameTypeSection
+            v-for="section in groupedGamesSync"
+            :key="section.gameTypeId"
+            :game-type-id="section.gameTypeId"
+            :game-type-name="section.gameTypeName"
+            :icon="section.icon"
+            :games="section.games"
+          />
         </div>
 
-        <div v-if="activeTab === 'badges'" class="profile-panel">
+        <!-- Badges tab hidden for now -->
+        <!-- <div v-if="activeTab === 'badges'" class="profile-panel">
           <p class="profile-empty">Coming soon.</p>
-        </div>
+        </div> -->
 
         <div v-if="activeTab === 'frenemies' && isOwnProfile" class="profile-panel">
           <div v-if="loadingFrenemies" class="profile-empty">Loading following...</div>
@@ -212,7 +219,7 @@
 
         <div v-if="activeTab === 'whoadded' && isOwnProfile" class="profile-panel">
           <div v-if="loadingAddedBy" class="profile-empty">Loading...</div>
-          <div v-else-if="!addedByEntries.length" class="profile-empty">No one is following you yet.</div>
+          <div v-else-if="!addedByEntries.length" class="profile-empty">No followers yet.</div>
           <div v-else class="profile-list">
             <article v-for="entry in addedByEntries" :key="entry.uid" class="profile-list-item">
               <div class="profile-list-item__avatar">
@@ -235,6 +242,54 @@
             </article>
           </div>
         </div>
+
+        <!-- My Games Tab -->
+        <div v-if="activeTab === 'mygames'" class="profile-panel">
+          <div v-if="loadingMyGames" class="profile-empty">Loading games...</div>
+          <div v-else-if="!myCreatedGames.length" class="profile-empty">
+            {{ isOwnProfile ? "You haven't created any games yet." : "This user hasn't created any games yet." }}
+          </div>
+          <div v-else class="my-games-list">
+            <article v-for="game in myCreatedGames" :key="game.id" class="my-game-card">
+              <header class="my-game-card__header">
+                <h3 class="my-game-card__title">{{ game.name }}</h3>
+                <span class="my-game-card__status" :class="{ 'is-live': !game.unlisted }">
+                  {{ !game.unlisted ? 'Live' : 'Draft' }}
+                </span>
+              </header>
+              <p v-if="game.description" class="my-game-card__description">{{ game.description }}</p>
+              <footer class="my-game-card__actions">
+                <CustomButton
+                  v-if="isOwnProfile"
+                  type="is-primary is-small"
+                  label="Edit"
+                  :icon="['fas', 'edit']"
+                  @click="editGame(game)"
+                />
+                <CustomButton
+                  type="is-link is-small"
+                  label="View"
+                  :icon="['fas', 'eye']"
+                  @click="openGame(game)"
+                />
+                <CustomButton
+                  v-if="isOwnProfile"
+                  :type="!game.unlisted ? 'is-warning is-small' : 'is-success is-small'"
+                  :label="!game.unlisted ? 'Unpublish' : 'Publish'"
+                  :icon="!game.unlisted ? ['fas', 'eye-slash'] : ['fas', 'globe']"
+                  @click="togglePublish(game)"
+                />
+                <CustomButton
+                  v-if="isOwnProfile"
+                  type="is-danger is-small"
+                  label="Delete"
+                  :icon="['fas', 'trash']"
+                  @click="confirmDeleteGame(game)"
+                />
+              </footer>
+            </article>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -253,26 +308,51 @@
         />
       </div>
     </div>
+
+    <!-- Delete Game Confirmation Modal -->
+    <div class="modal" :class="{ 'is-active': showDeleteModal }">
+      <div class="modal-background" @click="showDeleteModal = false"></div>
+      <div class="modal-content box">
+        <h3 class="title is-4">Delete Game</h3>
+        <p>Are you sure you want to delete "{{ gameToDelete?.name }}"? This action cannot be undone.</p>
+        <div class="buttons mt-4">
+          <CustomButton
+            type="is-danger"
+            label="Delete"
+            @click="performDeleteGame"
+          />
+          <CustomButton
+            type="is-light"
+            label="Cancel"
+            @click="showDeleteModal = false"
+          />
+        </div>
+      </div>
+      <button class="modal-close is-large" aria-label="close" @click="showDeleteModal = false"></button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter, useRoute } from 'vue-router';
 import { RouterLink } from 'vue-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import { getGame, getGames } from '@/services/game';
+import { getGame, getGames, getGamesBatch } from '@/services/game';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidView from '@/components/games/pyramid/PyramidView.vue';
 import DailyChallengeCalendar from '@/components/DailyChallengeCalendar.vue';
+import GameTypeSection from '@/components/GameTypeSection.vue';
 import type { User, DailyChallengeRewardRecord } from '@top-x/shared/types/user';
 import type { PyramidSlot, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 import type { Game } from '@top-x/shared/types/game';
 import { analytics, trackEvent } from '@top-x/shared';
+import { GAME_TYPE_ICON_MAP, DEFAULT_GAME_TYPE_ICON } from '@top-x/shared/constants/gameTypes';
+import type { UserGameCustomDataUnion } from '@top-x/shared/types/userGameCustom';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -316,6 +396,12 @@ const loadedFrenemies = ref(false);
 const loadedAddedBy = ref(false);
 const selectedGameId = ref('');
 const availableGames = ref<Game[]>([]);
+const gameCache = ref<Map<string, Game>>(new Map());
+const myCreatedGames = ref<Game[]>([]);
+const loadingMyGames = ref(false);
+const loadingGroupedGames = ref(false);
+const groupedGamesLoaded = ref(false);
+let myGamesUnsubscribe: (() => void) | null = null;
 
 type ChallengeReward = DailyChallengeRewardRecord & { id: string };
 
@@ -341,12 +427,249 @@ const upcomingRewards = computed<ChallengeReward[]>(() => {
 
 const hasRewardQueue = computed(() => isOwnProfile.value && (readyRewards.value.length > 0 || upcomingRewards.value.length > 0));
 
+// Stats summary
+const totalGamesPlayed = computed(() => {
+  if (!profile.value?.games) return 0;
+  let count = 0;
+  for (const gamesByGameId of Object.values(profile.value.games)) {
+    count += Object.keys(gamesByGameId as Record<string, any>).length;
+  }
+  return count;
+});
+
+const bestScore = computed(() => {
+  if (!profile.value?.games) return null;
+  let maxScore = 0;
+  for (const gamesByGameId of Object.values(profile.value.games)) {
+    for (const gameData of Object.values(gamesByGameId as Record<string, any>)) {
+      const score = gameData.score;
+      if (typeof score === 'number' && score > maxScore) {
+        maxScore = score;
+      }
+    }
+  }
+  return maxScore > 0 ? maxScore : null;
+});
+
+const bestStreak = computed(() => {
+  if (!profile.value?.games) return null;
+  let maxStreak = 0;
+  for (const gamesByGameId of Object.values(profile.value.games)) {
+    for (const gameData of Object.values(gamesByGameId as Record<string, any>)) {
+      const streak = gameData.streak;
+      if (typeof streak === 'number' && streak > maxStreak) {
+        maxStreak = streak;
+      }
+    }
+  }
+  return maxStreak > 0 ? maxStreak : null;
+});
+
 const filteredGames = computed(() => {
   if (!profile.value?.games) return {};
   const games = { ...profile.value.games } as Record<string, any>;
   delete games.PyramidTier;
   return games;
 });
+
+// Game type name mapping
+const gameTypeNames: Record<string, string> = {
+  Trivia: 'Trivia',
+  Quiz: 'Quiz',
+  PyramidTier: 'Pyramid',
+  ZoneReveal: 'Zone Reveal',
+  Pacman: 'Pacman',
+  FisherGame: 'Fisher Game',
+};
+
+// Helper to get game type icon
+function getGameTypeIcon(gameTypeId: string) {
+  const normalized = gameTypeId.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return GAME_TYPE_ICON_MAP[normalized] ?? DEFAULT_GAME_TYPE_ICON;
+}
+
+// Helper to extract stats from custom data based on game type
+function extractGameStats(gameTypeId: string, gameData: any): {
+  score?: number;
+  streak?: number;
+  rank?: number;
+  percentile?: number;
+  level?: number;
+  fishCaught?: number;
+  quizResult?: { title: string; image?: string };
+} {
+  const custom = gameData.custom as UserGameCustomDataUnion | undefined;
+  if (!custom) {
+    return {
+      score: gameData.score,
+      streak: gameData.streak,
+    };
+  }
+
+  const stats: any = {
+    score: gameData.score,
+    streak: gameData.streak,
+  };
+
+  switch (gameTypeId) {
+    case 'Trivia': {
+      const triviaCustom = (custom as any).trivia;
+      if (triviaCustom) {
+        stats.rank = triviaCustom.leaderboardRank;
+        stats.percentile = triviaCustom.percentile;
+      }
+      break;
+    }
+    case 'Quiz': {
+      const quizCustom = (custom as any).quiz;
+      if (quizCustom?.result) {
+        stats.quizResult = {
+          title: quizCustom.result.title,
+          image: quizCustom.result.image,
+        };
+      }
+      break;
+    }
+    case 'PyramidTier': {
+      // PyramidUserCustom has rank/percentile at top level of custom
+      const pyramidCustom = custom as any;
+      if (pyramidCustom) {
+        stats.rank = pyramidCustom.leaderboardRank;
+        stats.percentile = pyramidCustom.percentile;
+      }
+      break;
+    }
+    case 'ZoneReveal': {
+      const zoneCustom = (custom as any).zoneReveal;
+      if (zoneCustom) {
+        stats.rank = zoneCustom.leaderboardRank;
+        stats.percentile = zoneCustom.percentile;
+      }
+      break;
+    }
+    case 'Pacman': {
+      const pacmanCustom = (custom as any).pacman;
+      if (pacmanCustom) {
+        stats.level = pacmanCustom.level;
+        stats.rank = pacmanCustom.leaderboardRank;
+        stats.percentile = pacmanCustom.percentile;
+      }
+      break;
+    }
+    case 'FisherGame': {
+      const fisherCustom = (custom as any).fisherGame;
+      if (fisherCustom) {
+        stats.fishCaught = fisherCustom.fishCaught;
+        stats.rank = fisherCustom.leaderboardRank;
+        stats.percentile = fisherCustom.percentile;
+      }
+      break;
+    }
+  }
+
+  return stats;
+}
+
+// Grouped games by type
+interface GroupedGame {
+  gameId: string;
+  gameName: string;
+  gameDescription?: string;
+  score?: number;
+  streak?: number;
+  rank?: number;
+  percentile?: number;
+  level?: number;
+  fishCaught?: number;
+  lastPlayed?: number;
+  quizResult?: { title: string; image?: string };
+}
+
+const groupedGamesSync = ref<Array<{
+  gameTypeId: string;
+  gameTypeName: string;
+  icon: any;
+  games: GroupedGame[];
+}>>([]);
+
+// Load grouped games (optimized with batch fetching)
+async function loadGroupedGames() {
+  if (!profile.value?.games || loadingGroupedGames.value) {
+    return;
+  }
+
+  loadingGroupedGames.value = true;
+
+  try {
+    const grouped: Record<string, GroupedGame[]> = {};
+    
+    // Collect all game IDs that need to be fetched
+    const gameIdsToFetch: string[] = [];
+    const gameDataMap = new Map<string, { gameTypeId: string; gameData: any }>();
+
+    // Process each game type
+    for (const [gameTypeId, gamesByGameId] of Object.entries(profile.value.games)) {
+      if (gameTypeId === 'PyramidTier') continue; // Handled separately
+
+      if (!grouped[gameTypeId]) {
+        grouped[gameTypeId] = [];
+      }
+
+      // Collect game IDs that aren't cached
+      for (const [gameId, gameData] of Object.entries(gamesByGameId as Record<string, any>)) {
+        gameDataMap.set(gameId, { gameTypeId, gameData });
+        
+        if (!gameCache.value.has(gameId)) {
+          gameIdsToFetch.push(gameId);
+        }
+      }
+    }
+
+    // Batch fetch all uncached games at once
+    if (gameIdsToFetch.length > 0) {
+      const fetchedGames = await getGamesBatch(gameIdsToFetch);
+      fetchedGames.forEach((game, gameId) => {
+        gameCache.value.set(gameId, game);
+      });
+    }
+
+    // Now process all games using cached data
+    for (const [gameId, { gameTypeId, gameData }] of gameDataMap.entries()) {
+      const cachedGame = gameCache.value.get(gameId);
+      const gameName = cachedGame?.name || gameId;
+      const gameDescription = cachedGame?.description;
+
+      const stats = extractGameStats(gameTypeId, gameData);
+
+      grouped[gameTypeId].push({
+        gameId,
+        gameName,
+        gameDescription,
+        ...stats,
+        lastPlayed: gameData.lastPlayed,
+      });
+    }
+
+    // Sort games by last played
+    for (const gameTypeId in grouped) {
+      grouped[gameTypeId].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+    }
+
+    // Convert to array format
+    groupedGamesSync.value = Object.entries(grouped).map(([gameTypeId, games]) => ({
+      gameTypeId,
+      gameTypeName: gameTypeNames[gameTypeId] || gameTypeId,
+      icon: getGameTypeIcon(gameTypeId),
+      games,
+    }));
+
+    groupedGamesLoaded.value = true;
+  } catch (err) {
+    console.error('Error loading grouped games:', err);
+  } finally {
+    loadingGroupedGames.value = false;
+  }
+}
 
 function formatLastPlayed(value: unknown): string {
   if (!value) return '—';
@@ -482,6 +805,10 @@ async function fetchAddedBy() {
 async function addFrenemy(uid: string) {
   try {
     await userStore.addFrenemy(uid);
+    // Refresh profile if viewing other user's profile
+    if (!isOwnProfile.value && profile.value?.uid === uid) {
+      await loadProfile();
+    }
     if (activeTab.value === 'frenemies') await fetchFrenemies();
     if (activeTab.value === 'whoadded') await fetchAddedBy();
   } catch (err) {
@@ -492,6 +819,10 @@ async function addFrenemy(uid: string) {
 async function removeFrenemy(uid: string) {
   try {
     await userStore.removeFrenemy(uid);
+    // Refresh profile if viewing other user's profile
+    if (!isOwnProfile.value && profile.value?.uid === uid) {
+      await loadProfile();
+    }
     if (activeTab.value === 'frenemies') await fetchFrenemies();
     if (activeTab.value === 'whoadded') await fetchAddedBy();
   } catch (err) {
@@ -519,6 +850,85 @@ function setActiveTab(tab: string) {
 
 function searchMoreFrenemies() {
   router.push('/users');
+}
+
+// My Games functions
+function fetchMyCreatedGames() {
+  if (!profile.value?.uid) {
+    myCreatedGames.value = [];
+    return;
+  }
+
+  // Unsubscribe from previous listener if exists
+  if (myGamesUnsubscribe) {
+    myGamesUnsubscribe();
+    myGamesUnsubscribe = null;
+  }
+
+  loadingMyGames.value = true;
+  const q = query(collection(db, 'games'), where('creator.userid', '==', profile.value.uid));
+  
+  myGamesUnsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      myCreatedGames.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as Game));
+      loadingMyGames.value = false;
+    },
+    (err) => {
+      console.error('Error fetching created games:', err);
+      loadingMyGames.value = false;
+    }
+  );
+}
+
+function stopMyGamesListener() {
+  if (myGamesUnsubscribe) {
+    myGamesUnsubscribe();
+    myGamesUnsubscribe = null;
+  }
+}
+
+function editGame(game: Game) {
+  if (!game.id || !isOwnProfile.value) return;
+  router.push(`/build/edit/${game.id}`);
+}
+
+function openGame(game: Game) {
+  if (!game.id || typeof window === 'undefined') return;
+  window.open(`/games/info?game=${game.id}`, '_blank', 'noopener');
+}
+
+async function togglePublish(game: Game) {
+  if (!isOwnProfile.value || !game.id) return;
+  try {
+    const gameRef = doc(db, 'games', game.id);
+    await updateDoc(gameRef, { unlisted: game.unlisted ?? false ? false : true });
+  } catch (err) {
+    console.error('Error toggling publish:', err);
+  }
+}
+
+const gameToDelete = ref<Game | null>(null);
+const showDeleteModal = ref(false);
+
+function confirmDeleteGame(game: Game) {
+  if (!isOwnProfile.value) return;
+  gameToDelete.value = game;
+  showDeleteModal.value = true;
+}
+
+async function performDeleteGame() {
+  if (!gameToDelete.value?.id || !isOwnProfile.value) return;
+  
+  try {
+    const gameRef = doc(db, 'games', gameToDelete.value.id);
+    await deleteDoc(gameRef);
+    showDeleteModal.value = false;
+    gameToDelete.value = null;
+  } catch (err) {
+    console.error('Error deleting game:', err);
+    alert('Failed to delete game');
+  }
 }
 
 async function loadAvailableGames() {
@@ -554,6 +964,7 @@ watch(
   async () => {
     await loadProfile();
     await loadPyramid();
+    // Don't load grouped games immediately - wait for tab activation
     if (isOwnProfile.value && !isLoggedIn.value) {
       showLoginTab.value = true;
     } else {
@@ -565,31 +976,67 @@ watch(
     if (isOwnProfile.value && isLoggedIn.value) {
       await loadAvailableGames();
     }
+    // Don't load my games immediately - wait for tab activation
   },
   { immediate: true },
 );
 
 watch(
   () => userStore.profile,
-  (newProfile) => {
+  async (newProfile) => {
     if (isOwnProfile.value) {
       profile.value = newProfile;
+      // Only reload grouped games if tab is already loaded
+      if (groupedGamesLoaded.value && activeTab.value === 'games') {
+        groupedGamesLoaded.value = false;
+        await loadGroupedGames();
+      }
     }
   },
 );
 
+watch(
+  () => profile.value?.games,
+  async () => {
+    // Only reload grouped games if tab is already loaded
+    if (groupedGamesLoaded.value && activeTab.value === 'games') {
+      groupedGamesLoaded.value = false;
+      await loadGroupedGames();
+    }
+  },
+  { deep: true },
+);
+
 watch(activeTab, (newTab) => {
-  if (newTab === 'frenemies' && isOwnProfile.value && !loadedFrenemies.value) {
+  // Lazy load data only when tab becomes active
+  if (newTab === 'games' && !groupedGamesLoaded.value) {
+    loadGroupedGames();
+  } else if (newTab === 'frenemies' && isOwnProfile.value && !loadedFrenemies.value) {
     loadedFrenemies.value = true;
     fetchFrenemies();
   } else if (newTab === 'whoadded' && isOwnProfile.value && !loadedAddedBy.value) {
     loadedAddedBy.value = true;
     fetchAddedBy();
+  } else if (newTab === 'mygames') {
+    // Start listener when tab becomes active
+    if (profile.value?.uid && !myGamesUnsubscribe) {
+      fetchMyCreatedGames();
+    }
+  } else {
+    // Stop listener when switching away from my games tab
+    if (newTab !== 'mygames') {
+      stopMyGamesListener();
+    }
   }
 });
 
 onMounted(() => {
   trackEvent(analytics, 'page_view', { page_name: 'profile' });
+});
+
+onBeforeUnmount(() => {
+  // Cleanup: stop my games listener when component unmounts
+  stopMyGamesListener();
 });
 </script>
 
@@ -674,6 +1121,35 @@ onMounted(() => {
 .profile-card__hint {
   margin: 0;
   color: var(--color-text-tertiary);
+}
+
+.follow-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.following-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4ade80;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.badge-icon {
+  font-size: 0.75rem;
+}
+
+.badge-text {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.unfollow-button {
+  margin-left: 0.5rem;
 }
 
 .profile-body {
@@ -869,6 +1345,153 @@ onMounted(() => {
 .profile-list-item__actions {
   display: flex;
   justify-content: flex-end;
+}
+
+/* My Games Styles */
+.my-games-list {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.my-game-card {
+  background-color: var(--color-bg-card);
+  border-radius: 22px;
+  border: 1px solid var(--color-border-base);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.my-game-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.my-game-card__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.my-game-card__status {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-base);
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+}
+
+.my-game-card__status.is-live {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.my-game-card__description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.my-game-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Modal Styles */
+.modal {
+  display: none;
+}
+
+.modal.is-active {
+  display: flex;
+}
+
+.modal-background {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 40;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  background-color: var(--color-bg-card);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 51;
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: 2rem;
+  cursor: pointer;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.box {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+/* Stats Summary */
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  border-radius: 18px;
+  margin-bottom: 2rem;
+}
+
+.stats-summary__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.stats-summary__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+}
+
+.stats-summary__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary, #8c52ff);
 }
 
 .profile-panel__cta {

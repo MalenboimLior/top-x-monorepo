@@ -24,6 +24,7 @@ import {
   updateDoc,
   deleteDoc,
   setDoc,
+  documentId,
   type Firestore,
   type Unsubscribe,
   type QueryDocumentSnapshot,
@@ -208,6 +209,48 @@ export async function getGame(gameId: string): Promise<GameResult> {
   } catch (e: any) {
     return { game: null, error: e?.message || 'Failed to load game' };
   }
+}
+
+/**
+ * Batch fetches multiple games by IDs (optimized for reading multiple games)
+ * Firestore 'in' query supports up to 10 items per query
+ */
+export async function getGamesBatch(gameIds: string[]): Promise<Map<string, Game>> {
+  const result = new Map<string, Game>();
+  
+  if (gameIds.length === 0) {
+    return result;
+  }
+
+  // Firestore 'in' queries support up to 10 items
+  const BATCH_SIZE = 10;
+  const batches: string[][] = [];
+  
+  for (let i = 0; i < gameIds.length; i += BATCH_SIZE) {
+    batches.push(gameIds.slice(i, i + BATCH_SIZE));
+  }
+
+  try {
+    const batchPromises = batches.map(async (batchIds) => {
+      // Use 'in' query to fetch multiple games at once
+      const gamesQuery = query(
+        collection(db, 'games'),
+        where(documentId(), 'in', batchIds)
+      );
+      const snapshot = await getDocs(gamesQuery);
+      
+      snapshot.forEach((docSnap) => {
+        const game = mapGameDocument(docSnap);
+        result.set(docSnap.id, game);
+      });
+    });
+
+    await Promise.all(batchPromises);
+  } catch (e: any) {
+    console.error('Error batch fetching games:', e?.message || e);
+  }
+
+  return result;
 }
 
 /**
