@@ -7,7 +7,7 @@ import type { TriviaUserCustom, QuizUserCustom, PyramidUserCustom, ZoneRevealUse
 export declare function separateTriviaData(custom: UserGameCustomData, metrics: {
     questionIds: string[];
     answerHashes: string[];
-    mode: 'fixed' | 'endless';
+    mode: 'classic' | 'speed';
     attemptCount: number;
     correctCount: number;
     accuracy: number;

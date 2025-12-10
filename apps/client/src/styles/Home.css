@@ -247,6 +247,11 @@
   padding-top: 60%;
   overflow: hidden;
   background-color: var(--color-bg-secondary);
+  max-height: 280px;
+}
+
+.game-card--featured .game-card__media {
+  max-height: 320px;
 }
 
 .game-card__media img {

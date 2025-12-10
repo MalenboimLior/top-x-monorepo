@@ -4,7 +4,7 @@ export interface TriviaLeaderboardCustom {
   trivia: {
     questionIds: string[]; // All question IDs user answered (for analytics)
     answerHashes: string[]; // Hashed answers (not full text) - for analytics
-    mode: 'fixed' | 'endless';
+    mode: 'classic' | 'speed'; // Matches TriviaConfig.mode
     attemptCount: number;
     correctCount: number;
     accuracy: number; // Percentage

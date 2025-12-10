@@ -14,6 +14,7 @@
         v-else
         class="game-card__image-placeholder"
         :style="placeholderStyle"
+        :class="{ 'game-card__image-placeholder--long-text': isLongText }"
       >
         <span>{{ game.name }}</span>
       </div>
@@ -162,6 +163,12 @@ const t = (key: string) => localeStore.translate(key);
 const mediaDirection = computed(() => localeStore.direction);
 
 // Gradient placeholder style
+const isLongText = computed(() => {
+  const name = props.game.name || '';
+  // Consider text long if it's more than 30 characters
+  return name.length > 30;
+});
+
 const placeholderStyle = computed(() => {
   const style: Record<string, string> = {
     aspectRatio: props.size === 'featured' ? '25/14' : '5/3',
@@ -411,6 +418,11 @@ function handlePlay() {
   position: relative;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.6);
+  max-height: 280px;
+}
+
+.game-card--featured .game-card__media {
+  max-height: 320px;
 }
 
 .game-card__image-placeholder {
@@ -429,6 +441,23 @@ function handlePlay() {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.game-card__image-placeholder--long-text {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  padding: 1rem;
+  line-height: 1.3;
+}
+
+.game-card__image-placeholder span {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .game-card__media-badge {

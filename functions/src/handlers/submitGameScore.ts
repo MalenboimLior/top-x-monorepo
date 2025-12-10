@@ -47,7 +47,6 @@ import { processDailyChallengeSubmission } from './submitGameScore/dailyChalleng
 import { processQuizSubmission, QuizProcessingOutcome } from './submitGameScore/quiz';
 import {
   separateTriviaData,
-  separateQuizData,
   separatePyramidData,
   separateZoneRevealData,
   separatePacmanData,
@@ -516,11 +515,11 @@ export const submitGameScore = functions.https.onCall(async (
       const triviaMetrics = triviaOutcome?.metrics ?? null;
 
       // Use data separation functions based on game type
-      if (triviaMetrics && triviaOutcome) {
+      if (triviaMetrics && triviaOutcome && gameTypeId === 'Trivia') {
         const separated = separateTriviaData(customFromSubmission, {
           questionIds: triviaMetrics.questionIds,
           answerHashes: triviaMetrics.answerHashes,
-          mode: (triviaMetrics.mode ?? 'fixed') as 'fixed' | 'endless',
+          mode: (triviaMetrics.mode ?? 'classic') as 'classic' | 'speed',
           attemptCount: triviaMetrics.attemptCount,
           correctCount: triviaMetrics.correctCount,
           accuracy: triviaMetrics.accuracy,
@@ -528,27 +527,10 @@ export const submitGameScore = functions.https.onCall(async (
           streak: triviaOutcome.resolvedStreak,
         });
         leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
-        userCustomData = { ...userCustomData, ...separated.user };
-      } else if (quizOutcome && quizOutcome.isQuizGame) {
-        const quizData = customFromSubmission.quiz as Record<string, unknown> | undefined;
-        const selectedAnswers = (quizData?.selectedAnswers as Record<string, number>) ?? {};
-        const questionIds = Object.keys(selectedAnswers); // Extract question IDs from selectedAnswers keys
-        
-        const quizSubmission = {
-          questionIds,
-          selectedAnswers,
-          result: quizData?.personalityResult
-            ? { id: (quizData.personalityResult as { bucketId: string; title: string }).bucketId, title: (quizData.personalityResult as { bucketId: string; title: string }).title }
-            : quizData?.archetypeResult
-              ? { id: (quizData.archetypeResult as { id: string; title: string }).id, title: (quizData.archetypeResult as { id: string; title: string }).title }
-              : { id: '', title: '' },
-          mode: quizOutcome.mode,
-          image: (quizData?.resultImage as string) ?? undefined,
-        };
-        const separated = separateQuizData(customFromSubmission, quizSubmission);
-        leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
-        userCustomData = { ...userCustomData, ...separated.user };
+        userCustomData = separated.user as unknown as UserGameCustomData; // Use separated user data directly (don't spread empty object)
       } else if (gameTypeId === 'PyramidTier') {
+        // Note: Quiz games are handled earlier with an early return (see quiz handling block above)
+        // so we don't need quiz data separation here
         const separated = separatePyramidData(customFromSubmission, scoreToPersist);
         leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
@@ -572,13 +554,15 @@ export const submitGameScore = functions.https.onCall(async (
       }
 
       // Build merged game data with separated user custom data
+      // Extract custom from enrichedGameData to avoid including full analytics data
+      const { custom: _, ...enrichedGameDataWithoutCustom } = enrichedGameData;
       const mergedGameData: UserGameData = {
         ...(previousGameData ?? {}),
-        ...enrichedGameData,
+        ...enrichedGameDataWithoutCustom,
         score: scoreToPersist,
         streak: streakToPersist,
         lastPlayed: serverLastPlayed,
-        custom: userCustomData,
+        custom: userCustomData, // Use separated minimal custom data
       };
 
       // Preserve existing daily challenge data

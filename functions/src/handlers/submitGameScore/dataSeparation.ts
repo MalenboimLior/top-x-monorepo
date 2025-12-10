@@ -24,7 +24,7 @@ export function separateTriviaData(
   metrics: {
     questionIds: string[];
     answerHashes: string[];
-    mode: 'fixed' | 'endless';
+    mode: 'classic' | 'speed'; // Matches TriviaConfig.mode
     attemptCount: number;
     correctCount: number;
     accuracy: number;

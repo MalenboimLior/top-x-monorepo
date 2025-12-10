@@ -133,7 +133,8 @@ export function isTriviaConfig(config: unknown): config is TriviaConfig {
   }
 
   const mode = (config as { mode?: unknown }).mode;
-  return mode === 'fixed' || mode === 'endless';
+  // TriviaConfig.mode is 'classic' | 'speed' per the type definition
+  return mode === 'classic' || mode === 'speed';
 }
 
 function collectTriviaHashesFromValue(value: unknown, target: Set<string>): void {
@@ -426,7 +427,15 @@ export async function processTriviaSubmission({
     ? (gameSnapshot.custom as TriviaConfig)
     : undefined;
 
-  if (!triviaSubmission || (triviaSubmission.mode ?? triviaConfig?.mode) !== 'fixed') {
+  // Skip if no trivia submission
+  if (!triviaSubmission) {
+    return null;
+  }
+
+  // Process trivia submissions for 'classic' mode (fixed question set)
+  // 'speed' mode is handled differently (endless questions)
+  const effectiveMode = triviaSubmission.mode ?? triviaConfig?.mode;
+  if (effectiveMode !== 'classic' && effectiveMode !== 'fixed') {
     return null;
   }
 
@@ -650,7 +659,7 @@ export async function processTriviaSubmission({
     lastSpeedBonus,
     bestStreak: resolvedBestStreak,
     currentStreak: resolvedCurrentStreak,
-    mode: triviaSubmission.mode ?? triviaConfig?.mode ?? 'fixed',
+    mode: triviaSubmission.mode ?? triviaConfig?.mode ?? 'classic',
     questionIds: triviaSubmission.questionIds,
     answerHashes, // Add answer hashes to metrics
   };
