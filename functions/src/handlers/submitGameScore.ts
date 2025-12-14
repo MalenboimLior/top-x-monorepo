@@ -505,7 +505,7 @@ export const submitGameScore = functions.https.onCall(async (
       const triviaMetrics = triviaOutcome?.metrics ?? null;
 
       // Use data separation functions based on game type
-      if (triviaMetrics && triviaOutcome && gameTypeId === 'Trivia') {
+      if (triviaMetrics && triviaOutcome && gameTypeId === 'trivia') {
         const separated = separateTriviaData(customFromSubmission, {
           questionIds: triviaMetrics.questionIds,
           answerHashes: triviaMetrics.answerHashes,
@@ -518,6 +518,7 @@ export const submitGameScore = functions.https.onCall(async (
         });
         leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = separated.user as unknown as UserGameCustomData; // Use separated user data directly (don't spread empty object)
+
       } else if (gameTypeId === 'PyramidTier') {
         // Note: Quiz games are handled earlier with an early return (see quiz handling block above)
         // so we don't need quiz data separation here
@@ -538,22 +539,34 @@ export const submitGameScore = functions.https.onCall(async (
         leaderboardCustomData = separated.leaderboard as unknown as Record<string, unknown>;
         userCustomData = { ...userCustomData, ...separated.user };
       } else {
-        // For unknown game types, keep custom data as-is (backward compatibility)
-        leaderboardCustomData = customFromSubmission as Record<string, unknown>;
-        userCustomData = customFromSubmission;
+        // For unknown game types, don't save any custom data
+        leaderboardCustomData = {};
+        userCustomData = {};
+        console.warn('[submitGameScore] Unknown game type, no custom data saved:', gameTypeId);
       }
 
       // Build merged game data with separated user custom data
       // Extract custom from enrichedGameData to avoid including full analytics data
       const { custom: _, ...enrichedGameDataWithoutCustom } = enrichedGameData;
+
+      // For trivia games, don't spread previousGameData to avoid bringing back old bloated custom data
+      const baseData = gameTypeId === 'trivia'
+        ? {}
+        : (previousGameData ?? {});
+
       const mergedGameData: UserGameData = {
-        ...(previousGameData ?? {}),
+        ...baseData,
         ...enrichedGameDataWithoutCustom,
         score: scoreToPersist,
         streak: streakToPersist,
         lastPlayed: serverLastPlayed,
         custom: userCustomData, // Use separated minimal custom data
       };
+
+      // Preserve existing daily challenge data
+      if (previousGameData?.dailyChallenges) {
+        mergedGameData.dailyChallenges = previousGameData.dailyChallenges;
+      }
 
       // Preserve existing daily challenge data
       if (previousGameData?.dailyChallenges) {
@@ -569,6 +582,7 @@ export const submitGameScore = functions.https.onCall(async (
       }
 
       // Update user document with merged game data
+
       tx.set(userRef, {
         games: {
           [gameTypeId]: {
@@ -756,6 +770,7 @@ export const submitGameScore = functions.https.onCall(async (
       if (!activeLeaderboardRef || !leaderboardUpdate) {
         throw new functions.https.HttpsError('internal', 'Failed to resolve leaderboard destination');
       }
+
 
       if (leaderboardSetOptions) {
         tx.set(activeLeaderboardRef, leaderboardUpdate, leaderboardSetOptions);

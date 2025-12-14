@@ -4,7 +4,6 @@
     <div class="game-stats-card__header">
       <div class="game-stats-card__info">
         <h4 class="game-stats-card__name">{{ gameName }}</h4>
-        <p v-if="gameDescription" class="game-stats-card__description">{{ gameDescription }}</p>
       </div>
       <CustomButton
         v-if="gameId"
@@ -34,11 +33,6 @@
         <span class="stat-value rank-value">#{{ rank }}</span>
       </div>
 
-      <!-- Percentile -->
-      <div v-if="percentile !== undefined && percentile !== null" class="stat-item">
-        <span class="stat-label">Percentile</span>
-        <span class="stat-value percentile-value">Top {{ percentile }}%</span>
-      </div>
 
       <!-- Quiz Result -->
       <div v-if="quizResult" class="stat-item stat-item--full">
@@ -61,6 +55,45 @@
         <span class="stat-value">{{ fishCaught }}</span>
       </div>
 
+      <!-- Enhanced Game Details -->
+
+      <!-- Quiz Result -->
+      <div v-if="gameTypeId === 'Quiz' && quizResult" class="stat-item stat-item--full">
+        <span class="stat-label">Your Result</span>
+        <div class="quiz-result-enhanced">
+          <img v-if="quizResult.image" :src="quizResult.image" :alt="quizResult.title" class="quiz-result-image-enhanced" />
+          <div class="quiz-result-content">
+            <span class="stat-value">{{ quizResult.title }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pyramid Display -->
+      <div v-if="gameTypeId === 'PyramidTier' && pyramidData" class="stat-item stat-item--full">
+        <span class="stat-label">Your Pyramid</span>
+        <div class="pyramid-container">
+          <PyramidView
+            :pyramid="pyramidData"
+            :worst-item="null"
+            :rows="[]"
+            :game-header="'Your Pyramid'"
+            :hide-row-label="true"
+            :worst-show="false"
+          />
+        </div>
+      </div>
+
+      <!-- ZoneReveal Answer -->
+      <div v-if="gameTypeId === 'ZoneReveal' && zoneRevealData" class="stat-item stat-item--full">
+        <span class="stat-label">Your Answer</span>
+        <div class="zone-reveal-result">
+          <span class="stat-value">{{ zoneRevealData.answer }}</span>
+          <span class="zone-reveal-status" :class="{ 'correct': zoneRevealData.isMatch, 'incorrect': !zoneRevealData.isMatch }">
+            {{ zoneRevealData.isMatch ? '✓ Correct' : '✗ Incorrect' }}
+          </span>
+        </div>
+      </div>
+
       <!-- Last Played -->
       <div v-if="lastPlayed" class="stat-item stat-item--full">
         <span class="stat-label">Last Played</span>
@@ -73,15 +106,15 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import PercentileRank from './PercentileRank.vue';
+import PyramidView from './games/pyramid/PyramidView.vue';
 
 interface Props {
   gameId?: string;
   gameName: string;
-  gameDescription?: string;
   score?: number;
   streak?: number;
   rank?: number;
-  percentile?: number;
   level?: number;
   fishCaught?: number;
   lastPlayed?: number;
@@ -89,6 +122,9 @@ interface Props {
     title: string;
     image?: string;
   };
+  gameTypeId?: string;
+  pyramidData?: any;
+  zoneRevealData?: any;
 }
 
 const props = defineProps<Props>();
@@ -202,9 +238,6 @@ const formatDate = (timestamp: number): string => {
   color: var(--color-text-primary);
 }
 
-.percentile-value {
-  color: #4ade80;
-}
 
 .quiz-result {
   display: flex;
@@ -218,6 +251,57 @@ const formatDate = (timestamp: number): string => {
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid var(--color-border-base);
+}
+
+/* Enhanced Game Details */
+.quiz-result-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quiz-result-image-enhanced {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid var(--color-border-primary);
+}
+
+.quiz-result-content {
+  flex: 1;
+}
+
+.pyramid-container {
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-base);
+}
+
+.zone-reveal-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.zone-reveal-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.zone-reveal-status.correct {
+  color: #4ade80;
+  background-color: rgba(74, 222, 128, 0.1);
+}
+
+.zone-reveal-status.incorrect {
+  color: #f87171;
+  background-color: rgba(248, 113, 113, 0.1);
 }
 
 @media (max-width: 480px) {

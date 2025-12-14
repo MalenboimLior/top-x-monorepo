@@ -19,7 +19,6 @@
         :key="game.gameId"
         :game-id="game.gameId"
         :game-name="game.gameName"
-        :game-description="game.gameDescription"
         :score="game.score"
         :streak="game.streak"
         :rank="game.rank"
@@ -28,6 +27,9 @@
         :fish-caught="game.fishCaught"
         :last-played="game.lastPlayed"
         :quiz-result="game.quizResult"
+        :game-type-id="gameTypeId"
+        :pyramid-data="game.pyramidData"
+        :zone-reveal-data="game.zoneRevealData"
       />
     </div>
   </div>
@@ -40,7 +42,6 @@ import type { GameTypeIcon } from '@top-x/shared/types';
 interface GameStats {
   gameId: string;
   gameName: string;
-  gameDescription?: string;
   score?: number;
   streak?: number;
   rank?: number;
@@ -52,6 +53,9 @@ interface GameStats {
     title: string;
     image?: string;
   };
+  gameTypeId?: string;
+  pyramidData?: any;
+  zoneRevealData?: any;
 }
 
 interface Props {

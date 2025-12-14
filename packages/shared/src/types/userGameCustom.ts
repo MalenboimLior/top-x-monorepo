@@ -27,7 +27,7 @@ export interface PyramidUserCustom {
     tier: number;
     slots: string[]; // Item IDs (needed to restore pyramid)
   }>;
-  worstItem: {
+  worstItem?: {
     id: string; // Item ID (needed to restore)
   };
   score: number; // Calculated score

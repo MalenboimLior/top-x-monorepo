@@ -957,7 +957,6 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       custom: {
         ...(existingGameData?.custom ?? {}),
         trivia: {
-          ...existingTriviaCustom,
           // Keep only minimal data that server actually stores
           score: nextScore,
           streak: nextStreak,
@@ -965,6 +964,13 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         },
       },
     };
+
+    console.log('[TriviaStore] Optimistic update:', {
+      score: nextScore,
+      streak: nextStreak,
+      customKeys: existingTypeGames[gameId]?.custom ? Object.keys(existingTypeGames[gameId].custom) : [],
+      triviaKeys: (existingTypeGames[gameId]?.custom as any)?.trivia ? Object.keys((existingTypeGames[gameId]?.custom as any).trivia) : [],
+    });
 
     existingGames[GAME_TYPE_ID] = existingTypeGames;
 
@@ -1003,6 +1009,15 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         },
       },
     };
+
+    console.log('[TriviaStore] Payload to server:', {
+      score: payload.score,
+      streak: payload.streak,
+      customKeys: payload.custom ? Object.keys(payload.custom) : [],
+      triviaKeys: payload.custom?.trivia ? Object.keys(payload.custom.trivia) : [],
+      attemptsLength: (payload.custom?.trivia as any)?.attempts?.length,
+      questionIdsLength: (payload.custom?.trivia as any)?.questionIds?.length,
+    });
 
     const currentGameId = activeGameId.value;
     try {

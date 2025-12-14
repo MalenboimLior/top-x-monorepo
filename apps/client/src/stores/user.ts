@@ -89,6 +89,20 @@ export const useUserStore = defineStore('user', () => {
           if (snapshot.exists()) {
             const newProfile = snapshot.data() as User;
             const oldProfile = profile.value;
+
+            // Log trivia data changes
+            const oldTriviaData = oldProfile?.games?.Trivia;
+            const newTriviaData = newProfile.games?.Trivia;
+            if (oldTriviaData || newTriviaData) {
+              console.log('[UserStore] Trivia profile update:', {
+                oldKeys: oldTriviaData ? Object.keys(oldTriviaData) : [],
+                newKeys: newTriviaData ? Object.keys(newTriviaData) : [],
+                sampleGame: newTriviaData ? Object.keys(newTriviaData)[0] : null,
+                sampleTriviaKeys: newTriviaData && Object.keys(newTriviaData)[0]
+                  ? Object.keys(newTriviaData[Object.keys(newTriviaData)[0]]?.custom?.trivia || {})
+                  : [],
+              });
+            }
             
             // Log quiz-related changes
             if (oldProfile) {
@@ -115,6 +129,15 @@ export const useUserStore = defineStore('user', () => {
             }
             
             profile.value = newProfile;
+
+            // Log when profile is updated from Firestore
+            console.log('[UserStore] Profile updated from Firestore:', {
+              hasTriviaGames: !!newProfile.games?.Trivia,
+              triviaGameCount: newProfile.games?.Trivia ? Object.keys(newProfile.games.Trivia).length : 0,
+              sampleTriviaKeys: newProfile.games?.Trivia && Object.keys(newProfile.games.Trivia).length > 0
+                ? Object.keys(newProfile.games.Trivia[Object.keys(newProfile.games.Trivia)[0]]?.custom?.trivia || {})
+                : [],
+            });
             console.log('[UserStore] Profile loaded/updated:', {
               uid: newProfile.uid,
               hasGames: !!newProfile.games,
@@ -533,4 +556,10 @@ export const useUserStore = defineStore('user', () => {
     claimDailyChallengeReward,
     clearError,
   };
-}, { persist: true });
+}, {
+  persist: {
+    // Only persist user auth data and other non-Firestore data
+    // Profile comes from Firestore, so don't persist it
+    paths: ['user', 'dailyChallengeRewards', 'readyDailyChallengeRewards']
+  }
+});

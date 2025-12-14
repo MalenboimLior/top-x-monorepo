@@ -57,6 +57,7 @@ export function separateTriviaData(
     },
   };
 
+
   return { leaderboard, user };
 }
 
@@ -128,8 +129,8 @@ export function separatePyramidData(
   const pyramidData = custom.pyramid as Array<{ tier: number; slots: string[] }> | undefined;
   const worstItem = custom.worstItem as { id: string } | undefined;
 
-  if (!pyramidData || !worstItem) {
-    throw new Error('Pyramid data missing pyramid or worstItem');
+  if (!pyramidData) {
+    throw new Error('Pyramid data missing pyramid');
   }
 
   // Leaderboard: Structure for analytics (item IDs only)
@@ -138,9 +139,7 @@ export function separatePyramidData(
       tier: tier.tier,
       slots: tier.slots, // Item IDs
     })),
-    worstItem: {
-      id: worstItem.id,
-    },
+    ...(worstItem ? { worstItem: { id: worstItem.id } } : {}),
   };
 
   // User: Same structure (needed to restore) + rank/percentile
@@ -149,9 +148,7 @@ export function separatePyramidData(
       tier: tier.tier,
       slots: tier.slots, // Item IDs
     })),
-    worstItem: {
-      id: worstItem.id,
-    },
+    ...(worstItem ? { worstItem: { id: worstItem.id } } : {}),
     score: score ?? 0,
   };
 

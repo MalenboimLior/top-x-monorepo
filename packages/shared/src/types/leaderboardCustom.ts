@@ -26,7 +26,7 @@ export interface PyramidLeaderboardCustom {
     tier: number;
     slots: string[]; // Item IDs only
   }>;
-  worstItem: {
+  worstItem?: {
     id: string; // Item ID only
   };
 }

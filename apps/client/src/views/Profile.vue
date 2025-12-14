@@ -142,37 +142,10 @@
         </nav>
 
         <div v-if="activeTab === 'games'" class="profile-panel">
-          <!-- Stats Summary -->
-          <div v-if="profile?.games && Object.keys(profile.games).length > 0" class="stats-summary">
-            <div class="stats-summary__item">
-              <span class="stats-summary__label">Games Played</span>
-              <span class="stats-summary__value">{{ totalGamesPlayed }}</span>
-            </div>
-            <div class="stats-summary__item">
-              <span class="stats-summary__label">Best Score</span>
-              <span class="stats-summary__value">{{ bestScore || '—' }}</span>
-            </div>
-            <div class="stats-summary__item">
-              <span class="stats-summary__label">Best Streak</span>
-              <span class="stats-summary__value">{{ bestStreak || '—' }}</span>
-            </div>
-          </div>
-
-          <!-- Pyramid display (if exists) -->
-          <div v-if="pyramid" class="profile-pyramid">
-            <PyramidView
-              :pyramid="pyramid"
-              :worst-item="worstItem"
-              :rows="rows"
-              :game-header="pyramidHeader"
-              :hide-row-label="hideRowLabel"
-              :worst-show="worstShow"
-            />
-          </div>
 
           <!-- Grouped games by type -->
           <div v-if="loadingGroupedGames" class="profile-empty">Loading games...</div>
-          <div v-else-if="groupedGamesSync.length === 0 && !pyramid" class="profile-empty">
+          <div v-else-if="groupedGamesSync.length === 0" class="profile-empty">
             No games played yet.
           </div>
           <GameTypeSection
@@ -245,6 +218,9 @@
 
         <!-- My Games Tab -->
         <div v-if="activeTab === 'mygames'" class="profile-panel">
+          <div v-if="isOwnProfile" class="profile-panel__cta">
+            <CustomButton type="is-primary" label="Create New Game" :icon="['fas', 'plus']" @click="createNewGame" />
+          </div>
           <div v-if="loadingMyGames" class="profile-empty">Loading games...</div>
           <div v-else-if="!myCreatedGames.length" class="profile-empty">
             {{ isOwnProfile ? "You haven't created any games yet." : "This user hasn't created any games yet." }}
@@ -344,11 +320,8 @@ import { db } from '@top-x/shared';
 import { getGame, getGames, getGamesBatch } from '@/services/game';
 
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import PyramidView from '@/components/games/pyramid/PyramidView.vue';
-import DailyChallengeCalendar from '@/components/DailyChallengeCalendar.vue';
 import GameTypeSection from '@/components/GameTypeSection.vue';
 import type { User, DailyChallengeRewardRecord } from '@top-x/shared/types/user';
-import type { PyramidSlot, PyramidItem, PyramidRow } from '@top-x/shared/types/pyramid';
 import type { Game } from '@top-x/shared/types/game';
 import { analytics, trackEvent } from '@top-x/shared';
 import { GAME_TYPE_ICON_MAP, DEFAULT_GAME_TYPE_ICON } from '@top-x/shared/constants/gameTypes';
@@ -366,12 +339,6 @@ useHead({
 });
 
 const profile = ref<User | null>(null);
-const pyramid = ref<PyramidSlot[][] | null>(null);
-const worstItem = ref<PyramidItem | null>(null);
-const rows = ref<PyramidRow[]>([]);
-const pyramidHeader = ref('Your Pyramid');
-const hideRowLabel = ref(false);
-const worstShow = ref(true);
 
 const displayName = computed(() => profile.value?.displayName || 'Anonymous');
 const username = computed(() => (profile.value?.username ? `${profile.value.username}` : '@Anonymous'));
@@ -391,7 +358,7 @@ const addedByEntries = ref<User[]>([]);
 const loadingFrenemies = ref(false);
 const loadingAddedBy = ref(false);
 const showLoginTab = ref(false);
-const activeTab = ref('games');
+const activeTab = ref('mygames');
 const loadedFrenemies = ref(false);
 const loadedAddedBy = ref(false);
 const selectedGameId = ref('');
@@ -516,16 +483,28 @@ function extractGameStats(gameTypeId: string, gameData: any): {
       const triviaCustom = (custom as any).trivia;
       if (triviaCustom) {
         stats.rank = triviaCustom.leaderboardRank;
-        stats.percentile = triviaCustom.percentile;
+        // Note: percentile is calculated dynamically, not stored in user data
       }
       break;
     }
     case 'Quiz': {
       const quizCustom = (custom as any).quiz;
+
+      // Check for separated result first, then fall back to original structure
       if (quizCustom?.result) {
         stats.quizResult = {
           title: quizCustom.result.title,
           image: quizCustom.result.image,
+        };
+      } else if (quizCustom?.personalityResult) {
+        stats.quizResult = {
+          title: quizCustom.personalityResult.title,
+          image: quizCustom.resultImage,
+        };
+      } else if (quizCustom?.archetypeResult) {
+        stats.quizResult = {
+          title: quizCustom.archetypeResult.title,
+          image: quizCustom.resultImage,
         };
       }
       break;
@@ -609,7 +588,6 @@ async function loadGroupedGames() {
 
     // Process each game type
     for (const [gameTypeId, gamesByGameId] of Object.entries(profile.value.games)) {
-      if (gameTypeId === 'PyramidTier') continue; // Handled separately
 
       if (!grouped[gameTypeId]) {
         grouped[gameTypeId] = [];
@@ -641,12 +619,36 @@ async function loadGroupedGames() {
 
       const stats = extractGameStats(gameTypeId, gameData);
 
+      // Extract additional data for specific game types
+      let pyramidData = undefined;
+      let zoneRevealData = undefined;
+
+      if (gameTypeId === 'PyramidTier') {
+        // For pyramid games, we need to resolve item IDs to actual images
+        const pyramidStructure = (gameData as any).custom?.pyramid;
+        if (pyramidStructure && cachedGame) {
+          const allItems = [...(cachedGame.custom?.items || []), ...(cachedGame.custom?.communityItems || [])];
+          pyramidData = pyramidStructure.map((tier: any) =>
+            tier.slots.map((id: string | null) => ({
+              image: id ? allItems.find((item: any) => item.id === id) || null : null
+            }))
+          );
+        }
+      } else if (gameTypeId === 'ZoneReveal') {
+        zoneRevealData = {
+          answer: (gameData as any).custom?.normalized,
+          isMatch: (gameData as any).custom?.isMatch,
+        };
+      }
+
       grouped[gameTypeId].push({
         gameId,
         gameName,
-        gameDescription,
         ...stats,
         lastPlayed: gameData.lastPlayed,
+        gameTypeId,
+        pyramidData,
+        zoneRevealData,
       });
     }
 
@@ -738,34 +740,6 @@ async function loadProfile() {
   }
 }
 
-async function loadPyramid() {
-  pyramid.value = null;
-  worstItem.value = null;
-  rows.value = [];
-  const pyramidGames = profile.value?.games?.PyramidTier;
-  if (!pyramidGames) return;
-  const entries = Object.entries(pyramidGames);
-  for (const [gameId, gameData] of entries) {
-    if ((gameData as any).custom) {
-      const gameResult = await getGame(gameId);
-      if (!gameResult.game) continue;
-      const gameInfo = gameResult.game;
-      const allItems = [...(gameInfo.custom?.items || []), ...(gameInfo.custom?.communityItems || [])];
-      pyramid.value = (gameData as any).custom.pyramid.map((tier: any) =>
-        tier.slots.map((id: string | null) => ({ image: id ? allItems.find((i: any) => i.id === id) || null : null })),
-      );
-      worstItem.value = (gameData as any).custom.worstItem
-        ? allItems.find((i: any) => i.id === (gameData as any).custom.worstItem.id) || null
-        : null;
-      rows.value = gameInfo.custom?.rows || [];
-      pyramidHeader.value = gameInfo.gameHeader || 'Your Pyramid';
-      hideRowLabel.value = gameInfo.custom?.HideRowLabel ?? false;
-      worstShow.value = gameInfo.custom?.worstShow !== false;
-      break;
-    }
-  }
-}
-
 async function fetchFrenemies() {
   loadingFrenemies.value = true;
   frenemyEntries.value = [];
@@ -850,6 +824,10 @@ function setActiveTab(tab: string) {
 
 function searchMoreFrenemies() {
   router.push('/users');
+}
+
+function createNewGame() {
+  router.push('/build');
 }
 
 // My Games functions
@@ -963,7 +941,6 @@ watch(
   [() => route.query.user, () => userStore.user?.uid],
   async () => {
     await loadProfile();
-    await loadPyramid();
     // Don't load grouped games immediately - wait for tab activation
     if (isOwnProfile.value && !isLoggedIn.value) {
       showLoginTab.value = true;

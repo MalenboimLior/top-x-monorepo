@@ -421,10 +421,11 @@ export async function processTriviaSubmission({
     return null;
   }
 
-  // Process trivia submissions for 'classic' mode (fixed question set)
-  // 'speed' mode is handled differently (endless questions)
+  // Process trivia submissions for 'classic' and 'speed' modes
+  // Both modes use the same question set - speed mode just has limited lives/time
+  // 'endless' mode (isEndless: true) will be supported later
   const effectiveMode = triviaSubmission.mode ?? triviaConfig?.mode;
-  if (effectiveMode !== 'classic' && effectiveMode !== 'fixed') {
+  if (effectiveMode !== 'classic' && effectiveMode !== 'fixed' && effectiveMode !== 'speed') {
     return null;
   }
 
@@ -655,27 +656,8 @@ export async function processTriviaSubmission({
     ...submittedGameData,
     score: metrics.score,
     streak: resolvedStreak,
-    // Create minimal custom data - data separation will handle the rest
-    custom: {
-      trivia: {
-        lastScore: metrics.score,
-        lastAttemptCount: metrics.attemptCount,
-        lastCorrectCount: metrics.correctCount,
-        lastAccuracy: metrics.accuracy,
-        lastQuestionIds: metrics.questionIds,
-        lastMode: metrics.mode,
-        reportedAttemptCount: triviaSubmission.reportedAttemptCount,
-        sessionBestStreak: metrics.bestStreak,
-        sessionCurrentStreak: metrics.currentStreak,
-        ...(typeof metrics.speedBonus === 'number' ? {
-          lastSpeedBonusTotal: metrics.speedBonus,
-          speedBonusTotal: metrics.speedBonus,
-        } : {}),
-        ...(typeof metrics.lastSpeedBonus === 'number' ? {
-          lastSpeedBonus: metrics.lastSpeedBonus,
-        } : {}),
-      },
-    },
+    // Don't create custom data here - data separation will handle it
+    custom: {},
   };
 
   return {
