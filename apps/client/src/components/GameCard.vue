@@ -271,12 +271,17 @@ const favoriteBaseline = ref(typeof props.stats?.favoriteCounter === 'number' ? 
 const initialFavorite = ref(userStore.isGameFavorite(props.game.id));
 const hasBootstrappedFavorite = ref(false);
 
+// Optimistic favorite state for immediate UI updates
+const optimisticFavorite = ref<boolean | null>(null);
+
 watch(
   () => props.game.id,
   () => {
     favoriteBaseline.value = typeof props.stats?.favoriteCounter === 'number' ? props.stats.favoriteCounter : 0;
     initialFavorite.value = userStore.isGameFavorite(props.game.id);
     hasBootstrappedFavorite.value = false;
+    // Reset optimistic state when game changes
+    optimisticFavorite.value = null;
   },
   { immediate: true },
 );
@@ -288,6 +293,8 @@ watch(
       initialFavorite.value = userStore.isGameFavorite(props.game.id);
       hasBootstrappedFavorite.value = true;
     }
+    // Clear optimistic state when store updates to sync with server state
+    optimisticFavorite.value = null;
   },
   { immediate: true },
 );
@@ -301,10 +308,15 @@ watch(
     } else {
       favoriteBaseline.value = 0;
     }
+    // Clear optimistic state when stats update
+    optimisticFavorite.value = null;
   },
 );
 
-const isFavorite = computed(() => userStore.isGameFavorite(props.game.id));
+const isFavorite = computed(() => {
+  // Use optimistic state if available, otherwise use store state
+  return optimisticFavorite.value !== null ? optimisticFavorite.value : userStore.isGameFavorite(props.game.id);
+});
 
 const favoriteCount = computed(() => {
   const diff = (isFavorite.value ? 1 : 0) - (initialFavorite.value ? 1 : 0);
@@ -354,8 +366,19 @@ async function handleToggleFavorite() {
     return;
   }
   isFavoriteBusy.value = true;
+
+  // Optimistically update the UI immediately
+  const currentFavoriteState = userStore.isGameFavorite(props.game.id);
+  optimisticFavorite.value = !currentFavoriteState;
+
   try {
     await userStore.toggleFavorite(props.game.id);
+    // Clear optimistic state on success - UI will use store state
+    optimisticFavorite.value = null;
+  } catch (error) {
+    // Revert optimistic update on error
+    optimisticFavorite.value = null;
+    console.error('Failed to toggle favorite:', error);
   } finally {
     isFavoriteBusy.value = false;
   }

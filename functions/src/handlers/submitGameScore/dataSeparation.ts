@@ -34,19 +34,17 @@ export function separateTriviaData(
 ): { leaderboard: TriviaLeaderboardCustom; user: TriviaUserCustom } {
   const lastPlayed = Date.now();
 
-  // Leaderboard: Full analytics data
+  // Leaderboard: Essential analytics data with compact mapping
   const leaderboard: TriviaLeaderboardCustom = {
     trivia: {
-      questionIds: metrics.questionIds,
-      answerHashes: metrics.answerHashes,
+      answers: metrics.questionIds.reduce((acc, qId, index) => {
+        acc[qId] = metrics.answerHashes[index];
+        return acc;
+      }, {} as Record<string, string>),
       mode: metrics.mode,
-      attemptCount: metrics.attemptCount,
-      correctCount: metrics.correctCount,
       accuracy: metrics.accuracy,
       score: metrics.score,
       streak: metrics.streak,
-      lastQuestionIds: metrics.questionIds,
-      lastAccuracy: metrics.accuracy,
     },
   };
 
@@ -92,13 +90,10 @@ export function separateQuizData(
     throw new Error('Quiz data missing result or mode');
   }
 
-  // Extract question IDs from selectedAnswers keys if not provided
-  const questionIds = quizSubmission?.questionIds ?? Object.keys(quizSubmission?.selectedAnswers ?? (quizData?.selectedAnswers as Record<string, number>) ?? {});
 
-  // Leaderboard: Full analytics data
+  // Leaderboard: Essential analytics data (questionIds redundant since selectedAnswers has keys)
   const leaderboard: QuizLeaderboardCustom = {
     quiz: {
-      questionIds,
       selectedAnswers: quizSubmission?.selectedAnswers ?? (quizData?.selectedAnswers as Record<string, number>) ?? {},
       result: {
         id: result.id,

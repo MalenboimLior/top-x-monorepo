@@ -18,15 +18,6 @@ export interface TriviaSubmissionPayload {
     bestStreak?: number;
     currentStreak?: number;
 }
-export interface TriviaQuestionStatsDelta {
-    counts: Record<string, number>;
-    total: number;
-    correct: number;
-}
-export interface TriviaQuestionUpdate {
-    ref: FirebaseFirestore.DocumentReference;
-    data: FirebaseFirestore.DocumentData;
-}
 export interface TriviaProcessingMetrics {
     score: number;
     attemptCount: number;
@@ -45,7 +36,6 @@ export interface TriviaProcessingMetrics {
 export interface TriviaProcessingOutcome {
     updatedSubmission: UserGameDataSubmission;
     metrics: TriviaProcessingMetrics;
-    questionUpdates: TriviaQuestionUpdate[];
     resolvedStreak: number;
 }
 export interface TriviaProcessingParams {

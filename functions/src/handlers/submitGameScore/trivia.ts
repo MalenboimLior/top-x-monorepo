@@ -32,16 +32,6 @@ export interface TriviaSubmissionPayload {
   currentStreak?: number;
 }
 
-export interface TriviaQuestionStatsDelta {
-  counts: Record<string, number>;
-  total: number;
-  correct: number;
-}
-
-export interface TriviaQuestionUpdate {
-  ref: FirebaseFirestore.DocumentReference;
-  data: FirebaseFirestore.DocumentData;
-}
 
 type TriviaQuestionSource = 'subcollection' | 'global' | 'config';
 
@@ -71,7 +61,6 @@ export interface TriviaProcessingMetrics {
 export interface TriviaProcessingOutcome {
   updatedSubmission: UserGameDataSubmission;
   metrics: TriviaProcessingMetrics;
-  questionUpdates: TriviaQuestionUpdate[];
   resolvedStreak: number;
 }
 
@@ -548,7 +537,6 @@ export async function processTriviaSubmission({
     });
   }
 
-  const questionDeltas = new Map<string, TriviaQuestionStatsDelta>();
   let correctCount = 0;
   let totalScore = 0;
   let totalSpeedBonus = 0;
@@ -565,17 +553,8 @@ export async function processTriviaSubmission({
     }
 
     const normalizedHash = attempt.answerHash;
-    let delta = questionDeltas.get(attempt.questionId);
-    if (!delta) {
-      delta = { counts: {}, total: 0, correct: 0 };
-      questionDeltas.set(attempt.questionId, delta);
-    }
-
-    delta.counts[normalizedHash] = (delta.counts[normalizedHash] || 0) + 1;
-    delta.total += 1;
 
     if (questionInfo.correctHashes.has(normalizedHash)) {
-      delta.correct += 1;
       correctCount += 1;
 
       currentComputedStreak += 1;
@@ -664,90 +643,44 @@ export async function processTriviaSubmission({
     answerHashes, // Add answer hashes to metrics
   };
 
-  const questionUpdates: TriviaQuestionUpdate[] = [];
-
-  questionDeltas.forEach((delta, questionId) => {
-    const info = questionInfoMap.get(questionId);
-    if (!info || info.source !== 'subcollection' || !info.docData || !info.ref) {
-      return;
-    }
-
-    const docData = info.docData ?? {};
-    const existingCounts = { ...(docData.answerCounts ?? {}) } as Record<string, number>;
-
-    Object.entries(delta.counts).forEach(([hash, count]) => {
-      existingCounts[hash] = (existingCounts[hash] || 0) + count;
-    });
-
-    const statsRecord = { ...(docData.stats ?? {}) } as Record<string, unknown>;
-    const previousTotalAttempts = typeof statsRecord.totalAttempts === 'number' ? statsRecord.totalAttempts : 0;
-    const previousCorrectAttempts = typeof statsRecord.correctAttempts === 'number' ? statsRecord.correctAttempts : 0;
-    statsRecord.totalAttempts = previousTotalAttempts + delta.total;
-    statsRecord.correctAttempts = previousCorrectAttempts + delta.correct;
-
-    questionUpdates.push({
-      ref: info.ref,
-      data: {
-        answerCounts: existingCounts,
-        stats: statsRecord,
-        lastAnsweredAt: new Date(serverTimestamp).toISOString(),
-        updatedAt: serverTimestamp,
-      },
-    });
-  });
-
-  const updatedSubmission: UserGameDataSubmission = {
-    ...submittedGameData,
-    score: metrics.score,
-  };
-
-  const customRecord = { ...(updatedSubmission.custom ?? {}) } as UserGameCustomData & Record<string, unknown>;
-  const previousTrivia = (customRecord.trivia as Record<string, unknown> | undefined) ?? {};
-  const nextTrivia: Record<string, unknown> = {
-    ...previousTrivia,
-    lastScore: metrics.score,
-    lastAttemptCount: metrics.attemptCount,
-    lastCorrectCount: metrics.correctCount,
-    lastAccuracy: metrics.accuracy,
-    lastQuestionIds: metrics.questionIds,
-    lastMode: metrics.mode,
-    reportedAttemptCount: triviaSubmission.reportedAttemptCount,
-    sessionBestStreak: metrics.bestStreak,
-    sessionCurrentStreak: metrics.currentStreak,
-  };
-
-  if (typeof metrics.speedBonus === 'number') {
-    nextTrivia.lastSpeedBonusTotal = metrics.speedBonus;
-    nextTrivia.speedBonusTotal = metrics.speedBonus;
-  }
-  if (typeof metrics.lastSpeedBonus === 'number') {
-    nextTrivia.lastSpeedBonus = metrics.lastSpeedBonus;
-  }
-
-  Object.keys(nextTrivia).forEach((key) => {
-    if (nextTrivia[key] === undefined) {
-      delete nextTrivia[key];
-    }
-  });
-
-  customRecord.trivia = nextTrivia;
-
   const resolvedStreak = Math.max(
-    typeof updatedSubmission.streak === 'number' ? updatedSubmission.streak : 0,
+    typeof submittedGameData.streak === 'number' ? submittedGameData.streak : 0,
     triviaSubmission.bestStreak ?? 0,
     triviaSubmission.currentStreak ?? 0,
-    typeof submittedGameData.streak === 'number' ? submittedGameData.streak : 0,
     metrics.bestStreak ?? 0,
     metrics.currentStreak ?? 0,
   );
 
-  updatedSubmission.streak = resolvedStreak;
-  updatedSubmission.custom = customRecord;
+  const updatedSubmission: UserGameDataSubmission = {
+    ...submittedGameData,
+    score: metrics.score,
+    streak: resolvedStreak,
+    // Create minimal custom data - data separation will handle the rest
+    custom: {
+      trivia: {
+        lastScore: metrics.score,
+        lastAttemptCount: metrics.attemptCount,
+        lastCorrectCount: metrics.correctCount,
+        lastAccuracy: metrics.accuracy,
+        lastQuestionIds: metrics.questionIds,
+        lastMode: metrics.mode,
+        reportedAttemptCount: triviaSubmission.reportedAttemptCount,
+        sessionBestStreak: metrics.bestStreak,
+        sessionCurrentStreak: metrics.currentStreak,
+        ...(typeof metrics.speedBonus === 'number' ? {
+          lastSpeedBonusTotal: metrics.speedBonus,
+          speedBonusTotal: metrics.speedBonus,
+        } : {}),
+        ...(typeof metrics.lastSpeedBonus === 'number' ? {
+          lastSpeedBonus: metrics.lastSpeedBonus,
+        } : {}),
+      },
+    },
+  };
 
   return {
     updatedSubmission,
     metrics,
-    questionUpdates,
     resolvedStreak,
   };
 }

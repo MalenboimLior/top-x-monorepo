@@ -2,22 +2,16 @@
 
 export interface TriviaLeaderboardCustom {
   trivia: {
-    questionIds: string[]; // All question IDs user answered (for analytics)
-    answerHashes: string[]; // Hashed answers (not full text) - for analytics
+    answers: Record<string, string>; // Maps questionId -> answerHash for analytics
     mode: 'classic' | 'speed'; // Matches TriviaConfig.mode
-    attemptCount: number;
-    correctCount: number;
     accuracy: number; // Percentage
     score: number; // Final score
     streak: number; // Best streak
-    lastQuestionIds?: string[]; // Last session question IDs
-    lastAccuracy?: number; // Last session accuracy
   };
 }
 
 export interface QuizLeaderboardCustom {
   quiz: {
-    questionIds: string[]; // All question IDs answered
     selectedAnswers: Record<string, number>; // questionId -> answerIndex
     result: {
       id: string; // bucketId (personality) or id (archetype)

@@ -28,6 +28,24 @@
         },
         {
           "fieldPath": "score",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "streak",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "leaderboard",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "date.indexes.daily",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "score",
           "order": "DESCENDING"
         },
         {
@@ -59,6 +77,24 @@
         {
           "fieldPath": "__name__",
           "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "leaderboard",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "date.indexes.monthly",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "score",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "streak",
+          "order": "ASCENDING"
         }
       ]
     },
