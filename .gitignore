@@ -27,3 +27,4 @@ packages/shared/tsconfig.tsbuildinfo
 serviceAccountKey.json
 *.key.json
 *serviceAccount*.json
+functions/top-x-shared-1.0.0.tgz
