@@ -958,15 +958,10 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         ...(existingGameData?.custom ?? {}),
         trivia: {
           ...existingTriviaCustom,
-          mode: mode.value,
-          lastScore: gameData.score,
-          lastAttempts: attempts.value.length,
-          lastCorrect: correctAttempts.value,
-          lastQuestionIds: questionOrder.value,
-          bestStreak: sessionBestStreak.value,
-          speedBonusTotal: speedBonusTotal.value,
-          lastSpeedBonus: lastSpeedBonus.value,
-          lastStreakBonus: lastStreakBonus.value,
+          // Keep only minimal data that server actually stores
+          score: nextScore,
+          streak: nextStreak,
+          lastPlayed: gameData.lastPlayed ?? Date.now(),
         },
       },
     };
