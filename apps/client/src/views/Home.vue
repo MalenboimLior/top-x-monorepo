@@ -139,7 +139,7 @@
       :empty-message="t('home.buildSection.empty')"
       @open-all="goToBuild()"
       @open-free="goToBuild()"
-      @select-type="goToBuild"
+      @select-type="goToBuildWithType"
     />
     <TopCreatorsSection
       v-if="creatorsList.length"
@@ -150,7 +150,7 @@
     />
     <DevelopersStage @submit="goToBuild()" />
     <BrandsStage @contact="goToContact()" />
-    <AdsenseBlock v-if="shouldDisplayAds" ref="adSlotRef" :client="adClient" :slot="adSlot" />
+    <!-- <AdsenseBlock v-if="shouldDisplayAds" ref="adSlotRef" :client="adClient" :slot="adSlot" /> -->
   </div>
 </template>
 
@@ -661,6 +661,10 @@ function scrollToGames() {
 function goToBuild(gameTypeId?: string) {
   const query = gameTypeId ? { template: gameTypeId } : undefined;
   router.push({ name: 'Build', query });
+}
+
+function goToBuildWithType(gameTypeId: string) {
+  goToBuild(gameTypeId);
 }
 
 function goToContact() {

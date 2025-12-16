@@ -553,7 +553,6 @@ function extractGameStats(gameTypeId: string, gameData: any): {
 interface GroupedGame {
   gameId: string;
   gameName: string;
-  gameDescription?: string;
   score?: number;
   streak?: number;
   rank?: number;
@@ -562,6 +561,9 @@ interface GroupedGame {
   fishCaught?: number;
   lastPlayed?: number;
   quizResult?: { title: string; image?: string };
+  gameTypeId?: string;
+  pyramidData?: any;
+  zoneRevealData?: any;
 }
 
 const groupedGamesSync = ref<Array<{
@@ -622,6 +624,7 @@ async function loadGroupedGames() {
       // Extract additional data for specific game types
       let pyramidData = undefined;
       let zoneRevealData = undefined;
+      let quizResult = undefined;
 
       if (gameTypeId === 'PyramidTier') {
         // For pyramid games, we need to resolve item IDs to actual images
@@ -633,6 +636,43 @@ async function loadGroupedGames() {
               image: id ? allItems.find((item: any) => item.id === id) || null : null
             }))
           );
+        }
+      } else if (gameTypeId === 'Quiz') {
+        // For quiz games, we need to resolve bucket scores to result
+        const quizCustom = (gameData as any).custom?.quiz;
+        if (quizCustom && cachedGame) {
+          const bucketScores = quizCustom.bucketScores;
+          if (bucketScores && cachedGame.custom?.personalityBuckets) {
+            // Find the winning bucket (highest score)
+            let winningBucketId = null;
+            let highestScore = -Infinity;
+
+            Object.entries(bucketScores).forEach(([bucketId, score]) => {
+              if (score > highestScore) {
+                highestScore = score;
+                winningBucketId = bucketId;
+              }
+            });
+
+            // Find the bucket in game config
+            const winningBucket = cachedGame.custom.personalityBuckets.find(
+              (bucket: any) => bucket.id === winningBucketId
+            );
+
+            if (winningBucket && winningBucket.results && winningBucket.results.length > 0) {
+              // Find the appropriate result variant based on score
+              const resultVariant = winningBucket.results.find((result: any) => {
+                const minOk = result.minScore === undefined || highestScore >= result.minScore;
+                const maxOk = result.maxScore === undefined || highestScore <= result.maxScore;
+                return minOk && maxOk;
+              }) || winningBucket.results[0]; // fallback to first result
+
+              quizResult = {
+                title: resultVariant.title,
+                image: resultVariant.imageUrl,
+              };
+            }
+          }
         }
       } else if (gameTypeId === 'ZoneReveal') {
         zoneRevealData = {
@@ -649,6 +689,7 @@ async function loadGroupedGames() {
         gameTypeId,
         pyramidData,
         zoneRevealData,
+        quizResult,
       });
     }
 

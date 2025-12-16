@@ -125,10 +125,16 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
   height: 96px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid rgba(0, 232, 224, 0.35);
+  border: 3px solid var(--color-border-primary);
   padding: 0;
-  background: transparent;
+  background: var(--color-bg-surface);
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.top-creators__avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 4px var(--color-primary-bg-hover);
 }
 
 .top-creators__avatar img {
@@ -146,11 +152,11 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
   align-items: center;
   gap: 0.25rem;
   padding: 0.2rem 0.5rem;
-  background: #111827;
-  color: #f9fafb;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 999px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--bulma-shadow);
 }
 
 .top-creators__medal {
@@ -176,11 +182,11 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
 
 .top-creators__username {
   font-size: 0.85rem;
-  color: rgba(60, 60, 67, 0.75);
+  color: var(--color-text-secondary);
 }
 
 .top-creators__item--placeholder .top-creators__name {
-  color: rgba(60, 60, 67, 0.8);
+  color: var(--color-text-muted);
 }
 
 .top-creators__avatar--placeholder {
@@ -194,8 +200,7 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
 .top-creators__placeholder-text {
   font-size: 2rem;
   font-weight: 800;
-  color: #111827;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: var(--color-text-disabled);
 }
 
 @media (max-width: 640px) {

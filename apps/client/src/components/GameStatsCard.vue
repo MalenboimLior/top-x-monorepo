@@ -34,14 +34,6 @@
       </div>
 
 
-      <!-- Quiz Result -->
-      <div v-if="quizResult" class="stat-item stat-item--full">
-        <span class="stat-label">Result</span>
-        <div class="quiz-result">
-          <img v-if="quizResult.image" :src="quizResult.image" :alt="quizResult.title" class="quiz-result-image" />
-          <span class="stat-value">{{ quizResult.title }}</span>
-        </div>
-      </div>
 
       <!-- Level (Pacman) -->
       <div v-if="level !== undefined && level !== null" class="stat-item">
@@ -238,20 +230,6 @@ const formatDate = (timestamp: number): string => {
   color: var(--color-text-primary);
 }
 
-
-.quiz-result {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.quiz-result-image {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid var(--color-border-base);
-}
 
 /* Enhanced Game Details */
 .quiz-result-enhanced {

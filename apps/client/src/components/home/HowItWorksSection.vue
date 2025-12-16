@@ -1,23 +1,28 @@
 <template>
   <section class="how-it-works layout-container section-stack" :class="{ 'is-rtl': isRTL }">
-    <header class="how-it-works__header">
-      <h2 class="how-it-works__title">{{ t('home.howItWorksTitle') }}</h2>
+    <header class="section-header fade-in-up">
+      <div class="section-header__content">
+        <h2 class="section-title">{{ t('home.howItWorksTitle') }}</h2>
+      </div>
     </header>
 
     <div class="how-it-works__grid">
       <RouterLink
-        v-for="block in blocks"
+        v-for="(block, index) in blocks"
         :key="block.id"
-        class="how-it-works__card"
+        class="how-it-works__card fade-in-up"
+        :style="{ animationDelay: `${index * 0.15}s` }"
         :to="block.to"
         :aria-label="block.ariaLabel"
       >
-        <div class="card-visual">
-          <img class="card-gif" :src="block.image" :alt="block.imageAlt" />
+        <div class="how-it-works__visual">
+          <div :class="['visual-container', block.visualClass]" :style="{ animationDelay: `${index * 0.5}s` }">
+            <span class="icon-visual">{{ block.icon }}</span>
+          </div>
         </div>
-        <div class="card-content">
-          <h3 class="card-title">{{ block.title }}</h3>
-          <p v-if="block.subtitle" class="card-subtitle">{{ block.subtitle }}</p>
+        <div class="how-it-works__content">
+          <h3 class="how-it-works__card-title">{{ block.title }}</h3>
+          <p v-if="block.subtitle" class="how-it-works__card-text">{{ block.subtitle }}</p>
         </div>
       </RouterLink>
     </div>
@@ -28,20 +33,6 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useLocaleStore } from '@/stores/locale';
-import fallbackGif from '@/assets/images/fallback.png';
-
-const props = withDefaults(
-  defineProps<{
-    createImage?: string;
-    competeImage?: string;
-    playImage?: string;
-  }>(),
-  {
-    createImage: fallbackGif,
-    competeImage: fallbackGif,
-    playImage: fallbackGif,
-  },
-);
 
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
@@ -59,24 +50,24 @@ const blocks = computed(() => {
       id: 'create',
       title: t('home.howItWorks.createTitle'),
       subtitle: t('home.howItWorks.createText'),
-      image: props.createImage,
-      imageAlt: t('home.howItWorks.createTitle'),
+      icon: '🧱',
+      visualClass: 'visual-create',
       to: '/build',
     },
     compete: {
       id: 'compete',
       title: t('home.howItWorks.competeTitle'),
       subtitle: t('home.howItWorks.competeText'),
-      image: props.competeImage,
-      imageAlt: t('home.howItWorks.competeTitle'),
+      icon: '🏆',
+      visualClass: 'visual-compete',
       to: '/users',
     },
     play: {
       id: 'play',
       title: t('home.howItWorks.playTitle'),
-      subtitle: null,
-      image: props.playImage,
-      imageAlt: t('home.howItWorks.playTitle'),
+      subtitle: t('home.howItWorks.playText') || t('home.playNow'),
+      icon: '🎮',
+      visualClass: 'visual-play',
       to: { hash: '#featuredGames' },
     },
   };
@@ -93,152 +84,175 @@ const blocks = computed(() => {
 <style scoped>
 .how-it-works {
   position: relative;
-  /*padding-block: clamp(var(--space-9), 12vh, var(--space-11));*/
-  color: var(--color-text-primary);
-  --section-stack-gap: clamp(var(--space-2), 2vh, var(--space-3));
+  width: 100%;
+  margin-top: var(--space-8);
 }
 
 .how-it-works.is-rtl {
   direction: rtl;
 }
 
-.how-it-works__header {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.3rem, 0.8vw, 0.45rem);
-  padding-block: clamp(0.8rem, 2vw, 1.2rem);
-  padding-inline: 0;
-  width: 100%;
-  background: transparent;
+.section-header {
+  margin-bottom: var(--space-6);
   text-align: start;
 }
 
-.how-it-works__header::before,
-.how-it-works__header::after {
-  display: none; /* Removed for flat design */
-}
-
-.how-it-works__title {
-  font-size: clamp(1.5rem, 1.2vw + 1.5rem, 3rem);
+.section-title {
+  font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 800;
-  margin: 0;
   color: var(--color-text-primary);
-}
-
-
-.how-it-works.is-rtl .how-it-works__title {
-  letter-spacing: 0.02em;
+  margin: 0;
 }
 
 .how-it-works__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1.5rem, 3vw, 2.25rem);
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  width: 100%;
 }
 
 .how-it-works__card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
-  padding: clamp(1.8rem, 2.5vw, 2.3rem);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border-base);
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 2rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   text-decoration: none;
-  color: inherit;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
-  position: relative;
   overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  backdrop-filter: blur(12px);
 }
 
-.how-it-works__card::after {
-  display: none; /* Removed for flat design */
+.how-it-works__card:hover {
+  transform: translateY(-10px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-.how-it-works__card:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
-}
+/* Card-specific hover glows */
+.how-it-works__card:nth-child(1):hover { box-shadow: 0 20px 50px rgba(255, 107, 107, 0.15); border-color: rgba(255, 107, 107, 0.4); }
+.how-it-works__card:nth-child(2):hover { box-shadow: 0 20px 50px rgba(79, 172, 254, 0.15); border-color: rgba(79, 172, 254, 0.4); }
+.how-it-works__card:nth-child(3):hover { box-shadow: 0 20px 50px rgba(67, 233, 123, 0.15); border-color: rgba(67, 233, 123, 0.4); }
 
-.how-it-works__card:hover,
-.how-it-works__card:focus-visible {
-  background-color: var(--color-bg-card-hover);
-  border-color: var(--color-border-primary);
-}
-
-.card-visual {
-  position: relative;
+.how-it-works__visual {
+  width: 100%;
   display: flex;
   justify-content: center;
+  margin-bottom: 2rem;
 }
 
-.card-gif {
-  width: min(190px, 48vw);
-  height: auto;
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-base);
-  transition: border-color var(--transition-fast);
+.visual-container {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--color-bg-secondary);
+  animation: float-icon 6s ease-in-out infinite;
 }
 
-.how-it-works__card:hover .card-gif,
-.how-it-works__card:focus-visible .card-gif {
-  border-color: var(--color-border-primary);
+/* Specific glows for visual containers */
+.visual-create { background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3); }
+.visual-compete { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3); }
+.visual-play { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); box-shadow: 0 10px 30px rgba(67, 233, 123, 0.3); }
+
+.how-it-works__card:hover .visual-container {
+  transform: scale(1.15) rotate(5deg);
 }
 
-.card-content {
+.how-it-works__card:hover .visual-create { box-shadow: 0 0 50px rgba(255, 107, 107, 0.6); }
+.how-it-works__card:hover .visual-compete { box-shadow: 0 0 50px rgba(79, 172, 254, 0.6); }
+.how-it-works__card:hover .visual-play { box-shadow: 0 0 50px rgba(67, 233, 123, 0.6); }
+
+
+.icon-visual {
+  font-size: 3.5rem;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+  transition: transform 0.4s ease;
+  display: block;
+}
+
+.how-it-works__card:hover .icon-visual {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.how-it-works__content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  text-align: center;
+  gap: 0.8rem;
+  width: 100%;
+  z-index: 2;
 }
 
-.card-title {
-  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
-  font-weight: 700;
-  margin: 0;
+.how-it-works__card-title {
+  font-size: 1.6rem;
+  font-weight: 800;
   color: var(--color-text-primary);
-}
-
-.card-subtitle {
   margin: 0;
-  color: var(--color-text-secondary);
-  font-size: clamp(1rem, 2vw, 1.1rem);
-  font-weight: 500;
+  transition: color 0.3s ease;
 }
 
-.how-it-works.is-rtl .card-subtitle {
-  font-size: clamp(1rem, 2.2vw, 1.15rem);
+.how-it-works__card:hover .how-it-works__card-title {
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.3);
+}
+
+.how-it-works__card-text {
+  font-size: 1.05rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Animations */
+@keyframes float-icon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* Reusing fade-in-up from global or defining if missing locally, assuming Home.css has it.
+   Defining simple version here just in case to ensure "live" feel immediately. */
+.fade-in-up {
+  opacity: 0;
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* RTL Support */
+.how-it-works.is-rtl .section-header {
+  text-align: right;
 }
 
 @media (max-width: 960px) {
   .how-it-works__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 640px) {
-  .how-it-works {
-    padding-block: clamp(var(--space-9), 12vh, var(--space-11));
-  }
-
-  .how-it-works__header {
-    padding-inline: clamp(1rem, 3.4vw, 1.4rem);
-    padding-inline-start: clamp(1.6rem, 5vw, 2.1rem);
-  }
-
+@media (max-width: 600px) {
   .how-it-works__grid {
     grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
-
+  
   .how-it-works__card {
-    padding: clamp(1.6rem, 5vw, 1.9rem);
-  }
-
-  .card-gif {
-    width: min(220px, 70vw);
+    padding: 2rem 1.5rem;
   }
 }
 </style>
+
+
 

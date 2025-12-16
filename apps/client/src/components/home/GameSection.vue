@@ -19,12 +19,16 @@
       :class="gridClasses"
       :style="gridStyle"
     >
-      <slot
-        v-for="game in visibleGames"
+      <div
+        v-for="(game, index) in visibleGames"
         :key="game.id"
-        :game="game"
-        :stats="gameStats?.[game.id]"
-      />
+        :class="{ 'game-card--new': newGameIndices.has(index) }"
+      >
+        <slot
+          :game="game"
+          :stats="gameStats?.[game.id]"
+        />
+      </div>
     </div>
 
     <p v-else-if="emptyMessage" class="empty-state">{{ emptyMessage }}</p>
@@ -32,7 +36,7 @@
     <div v-if="showMoreAvailable" class="game-section__footer">
       <CustomButton
         class="game-section__more"
-        type="is-secondary"
+        type="is-primary"
         :label="showMoreText"
         @click="handleShowMore"
       />
@@ -103,6 +107,7 @@ const rowsCap = computed(() => {
 });
 
 const currentRows = ref(0);
+const newGameIndices = ref<Set<number>>(new Set());
 
 watch(
   [rowsCap, sanitizedInitialRows],
@@ -137,7 +142,21 @@ function handleShowMore() {
   if (!showMoreAvailable.value) {
     return;
   }
+
+  const previousVisibleCount = visibleCount.value;
   currentRows.value = Math.min(rowsCap.value, currentRows.value + sanitizedRowsIncrement.value);
+  const newVisibleCount = visibleCount.value;
+
+  // Mark newly visible games for animation
+  newGameIndices.value.clear();
+  for (let i = previousVisibleCount; i < newVisibleCount && i < props.games.length; i++) {
+    newGameIndices.value.add(i);
+  }
+
+  // Clear animation markers after animation completes
+  setTimeout(() => {
+    newGameIndices.value.clear();
+  }, 500);
 }
 
 const gridClasses = computed(() => {
@@ -212,6 +231,24 @@ defineExpose({ el: rootRef });
 
 .game-section__more {
   min-width: 12rem;
+  background-color: transparent !important;
+  border: none !important;
+  color: var(--bulma-primary) !important;
+  font-weight: 600;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.game-section__more:hover {
+  background-color: rgba(0, 232, 224, 0.1) !important;
+  color: #00d4cc !important;
+  transform: translateY(-1px);
+}
+
+.game-section__more:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 @media (max-width: 64rem) {
@@ -224,6 +261,22 @@ defineExpose({ el: rootRef });
   .game-section__grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Show more animation */
+@keyframes game-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-card--new {
+  animation: game-fade-in-up 0.5s ease-out;
 }
 </style>
 

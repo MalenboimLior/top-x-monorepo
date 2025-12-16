@@ -68,12 +68,12 @@
         </div>
         <div v-if="resolvedCreator" class="game-card__creator" dir="ltr">
           <div class="game-card__creator-avatar">
-            <img 
-              :src="creatorImage" 
-              :alt="creatorAltText" 
+            <img
+              :src="creatorImage"
+              :alt="creatorAltText"
               loading="lazy"
-              width="44"
-              height="44"
+              width="36"
+              height="36"
             />
           </div>
           <div class="game-card__creator-meta">
@@ -440,7 +440,7 @@ function handlePlay() {
 .game-card__media {
   position: relative;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.6);
+  
   max-height: 280px;
 }
 
@@ -662,8 +662,8 @@ function handlePlay() {
 }
 
 .game-card__creator-avatar {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid rgba(0, 232, 224, 0.4);
@@ -679,8 +679,9 @@ function handlePlay() {
 
 .game-card__creator-meta {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--space-2);
 }
 
 .game-card__creator-label {
@@ -688,7 +689,7 @@ function handlePlay() {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--color-text-secondary);
 }
 
 .game-card__creator a {
@@ -767,6 +768,7 @@ function handlePlay() {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-height: calc(1.55em * 2);
 }
 
 .game-card__stats {

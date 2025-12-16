@@ -1,16 +1,9 @@
 <template>
   <div class="page-container build-page">
-    <!-- Hero Section (hidden when editing) -->
-    <section v-if="!isEditing" class="build-hero">
-      <div class="build-hero__content">
-        <p class="build-hero__pill">{{ content.hero.pill }}</p>
-        <h1 class="build-hero__title">{{ content.hero.title }}</h1>
-        <p class="build-hero__subtitle">{{ content.hero.subtitle }}</p>
-        <div v-if="!user" class="build-hero__cta">
-          <p class="build-hero__reminder">{{ content.heroCta.reminder }}</p>
-          <CustomButton type="is-primary is-medium" :label="content.heroCta.button" @click="login" />
-        </div>
-      </div>
+    <!-- Header Section (hidden when editing) -->
+    <section v-if="!isEditing" class="build-header layout-container">
+      <h1 class="build-title">{{ content.hero.title }}</h1>
+      <p class="build-subtitle">{{ content.hero.subtitle }}</p>
     </section>
 
     <!-- Locked State (when not logged in) -->
@@ -51,7 +44,7 @@
               </span>
               <span class="build-template-card__cta">
                 {{ content.templates.cta }}
-                <font-awesome-icon :icon="['fas', 'arrow-right']" />
+                <font-awesome-icon :icon="isRTL ? ['fas', 'arrow-left'] : ['fas', 'arrow-right']" />
               </span>
             </button>
             <p v-if="!availableGameTypes.length" class="build-empty">{{ content.templates.empty }}</p>
@@ -186,7 +179,9 @@ const gameToDelete = ref<Game | null>(null);
 const showShareSuccess = ref<string | null>(null);
 
 const localeStore = useLocaleStore();
-const t = (key: string) => localeStore.translate(key);
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
+const isRTL = computed(() => localeStore.direction === 'rtl');
+const isEditing = ref(false);
 
 const defaultContent = computed(() => ({
   hero: {
@@ -401,58 +396,22 @@ watch(
   gap: 3rem;
 }
 
-.build-hero {
-  position: relative;
-  padding: clamp(3rem, 8vw, 6rem) 1.5rem 3rem;
-  display: flex;
-  justify-content: center;
-}
-
-.build-hero__content {
-  position: relative;
-  width: min(960px, 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.build-header {
   text-align: center;
-  align-items: center;
+  padding-block: var(--space-6);
 }
 
-.build-hero__pill {
-  display: inline-flex;
-  padding: 0.35rem 1.25rem;
-  border-radius: 999px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background-color: var(--color-primary-bg);
-  border: 1px solid var(--color-border-primary);
-  color: var(--bulma-primary);
-  font-weight: 600;
-}
-
-.build-hero__title {
-  font-size: clamp(2.5rem, 2vw + 2rem, 3.75rem);
+.build-title {
   margin: 0;
+  font-size: clamp(2rem, 3vw + 1.5rem, 3.5rem);
+  font-weight: 800;
+  color: var(--color-text-primary);
 }
 
-.build-hero__subtitle {
-  max-width: 620px;
-  margin: 0;
-  font-size: 1.2rem;
+.build-subtitle {
+  margin: var(--space-3) 0 0;
   color: var(--color-text-secondary);
-  line-height: 1.6;
-}
-
-.build-hero__cta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.build-hero__reminder {
-  color: var(--color-text-secondary);
-  margin: 0;
+  font-size: 1.1rem;
 }
 
 .build-body {
@@ -529,13 +488,14 @@ watch(
   gap: clamp(1rem, 2.5vw, 1.5rem);
   padding: clamp(1.5rem, 3vw, 2rem);
   border-radius: 28px;
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg-card); /* Changed to card bg to match BuildSection */
   border: 1px solid var(--color-border-base);
   color: var(--color-text-primary);
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.25s ease, background-color 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Updated transition */
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); /* Added shadow */
 }
 
 .build-template-card:hover,
@@ -543,6 +503,8 @@ watch(
   outline: none;
   border-color: var(--color-border-primary);
   background-color: var(--color-bg-card-hover);
+  transform: translateY(-4px); /* Added transform */
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); /* Added stronger shadow */
 }
 
 .build-template-card__icon {
