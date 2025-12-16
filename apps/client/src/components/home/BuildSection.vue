@@ -331,6 +331,7 @@ watch(() => props.gameTypes, () => {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
   flex: 1;
   min-width: 180px;
   max-width: 200px;
@@ -433,7 +434,14 @@ watch(() => props.gameTypes, () => {
 @media (max-width: 37.5rem) {
   .build-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
+  }
+
+  .section-header__content {
+    align-items: center; /* Ensure content items are centered */
+    text-align: center;
+    width: 100%;
   }
 
   .build-carousel-arrow {

@@ -1,19 +1,17 @@
 <template>
   <div class="page-container users-page" :class="{ 'is-rtl': isRTL }">
-    <section class="users-hero">
-      <div class="users-hero__glow" aria-hidden="true"></div>
-      <div class="users-hero__content">
-        <p class="users-hero__pill">{{ t('users.hero.pill') }}</p>
-        <h1 class="users-hero__title">{{ t('users.hero.title') }}</h1>
-        <p class="users-hero__subtitle">
+    <!-- Decorative background elements -->
+    <div class="users-glow" aria-hidden="true"></div>
+
+    <div class="users-surface">
+      <div class="users-header">
+        <div class="users-header__badge">{{ t('users.hero.pill') }}</div>
+        <h1 class="users-header__title">{{ t('users.hero.title') }}</h1>
+        <p class="users-header__subtitle">
           {{ t('users.hero.subtitle') }}
         </p>
-        <div class="users-hero__features">
-          <span class="users-hero__feature">{{ t('users.hero.feature.compare') }}</span>
-          <span class="users-hero__feature">{{ t('users.hero.feature.follow') }}</span>
-          <span class="users-hero__feature">{{ t('users.hero.feature.share') }}</span>
-        </div>
-        <div v-if="!userStore.user" class="users-hero__cta">
+        
+        <div v-if="!userStore.user" class="users-header__cta">
           <CustomButton
             type="is-primary is-medium"
             :label="t('users.hero.cta')"
@@ -22,11 +20,10 @@
           />
         </div>
       </div>
-    </section>
 
-    <section class="users-body">
-      <div class="users-surface">
-        <form class="users-search" @submit.prevent="searchUsers">
+      <form class="users-search" @submit.prevent="searchUsers">
+        <div class="users-search__bar" :class="{ 'is-focused': isSearchFocused }">
+          <span class="users-search__prefix">@</span>
           <label class="sr-only" for="users-search-input">{{ t('users.search.label') }}</label>
           <input
             id="users-search-input"
@@ -35,25 +32,38 @@
             type="text"
             :placeholder="t('users.search.placeholder')"
             @keyup.enter="searchUsers"
+            @focus="isSearchFocused = true"
+            @blur="isSearchFocused = false"
           />
-          <CustomButton
-            class="users-search__button"
-            :type="`is-primary ${isLoading ? 'is-loading' : ''}`"
-            :label="isLoading ? t('users.search.loading') : t('users.search.button')"
-            @click="searchUsers"
-          />
-        </form>
+          <div class="users-search__actions">
+            <CustomButton
+              class="users-search__button"
+              :type="`is-primary is-small ${isLoading ? 'is-loading' : ''}`"
+              :label="isLoading ? '' : t('users.search.button')"
+              :icon="isLoading ? undefined : ['fas', 'search']"
+              @click="searchUsers"
+            />
+          </div>
+        </div>
+      </form>
 
-        <p v-if="errorMessage" class="users-error" role="alert">
-          {{ errorMessage }}
-        </p>
+      <p v-if="errorMessage" class="users-error" role="alert">
+        {{ errorMessage }}
+      </p>
 
-        <div v-if="searchResults.length" class="users-results" role="list">
-          <article v-for="entry in searchResults" :key="entry.uid" class="users-result" role="listitem">
-            <div class="users-result__avatar">
-              <img :src="entry.photoURL" :alt="t('users.card.avatarAlt')" />
-            </div>
-            <div class="users-result__content">
+      <TransitionGroup 
+        name="list" 
+        tag="div" 
+        class="users-results" 
+        v-if="searchResults.length" 
+        role="list"
+      >
+        <article v-for="entry in searchResults" :key="entry.uid" class="users-result" role="listitem">
+          <div class="users-result__avatar">
+            <img :src="entry.photoURL" :alt="t('users.card.avatarAlt')" loading="lazy" />
+          </div>
+          <div class="users-result__content">
+            <div class="users-result__header">
               <RouterLink
                 :to="{ path: '/profile', query: { user: entry.uid } }"
                 class="users-result__name"
@@ -61,40 +71,65 @@
               >
                 {{ entry.displayName }}
               </RouterLink>
-              <p class="users-result__username">{{ entry.username }}</p>
-              <p class="users-result__meta">
-                <span>{{ formatFollowers(entry.followersCount) }}</span>
-                <span aria-hidden="true">·</span>
-                <span>{{ formatFollowing(entry.followingCount) }}</span>
-              </p>
+              <span v-if="entry.isFollowingMe" class="users-result__badge">
+                {{ t('users.card.followsYou') || 'Follows you' }}
+              </span>
             </div>
-            <div class="users-result__actions">
-              <CustomButton
-                v-if="!isFollowing(entry.uid)"
-                type="is-primary is-small"
-                :label="t('users.card.follow')"
-                @click="followUser(entry.uid)"
-              />
-              <p v-else class="users-result__state">{{ t('users.card.following') }}</p>
+            
+            <p class="users-result__username">{{ entry.username }}</p>
+            
+            <div class="users-result__stats">
+              <div class="users-result__stat">
+                <strong>{{ formatNumber(entry.followersCount) }}</strong>
+                <span>{{ t('users.card.followers').replace('{count}', '').trim() }}</span>
+              </div>
+              <div class="users-result__divider" aria-hidden="true"></div>
+              <div class="users-result__stat">
+                <strong>{{ formatNumber(entry.followingCount) }}</strong>
+                <span>{{ t('users.card.followingCount').replace('{count}', '').trim() }}</span>
+              </div>
             </div>
-          </article>
+          </div>
+          <div class="users-result__actions">
+            <CustomButton
+              v-if="!isFollowing(entry.uid)"
+              type="is-primary is-soft is-small"
+              :label="t('users.card.follow')"
+              :icon="['fas', 'user-plus']"
+              @click="followUser(entry.uid)"
+            />
+            <CustomButton
+              v-else
+              type="is-secondary is-small"
+              :label="t('users.card.following')"
+              :icon="['fas', 'check']"
+              @click="unfollowUser(entry.uid)" 
+            />
+          </div>
+        </article>
+      </TransitionGroup>
+
+      <div v-else-if="hasSearched && hasTypedQuery && !isLoading" class="users-empty">
+        <div class="users-empty__icon">
+            <i class="fa-solid fa-ghost"></i>
         </div>
-
-        <p v-else-if="hasSearched && hasTypedQuery && !isLoading" class="users-empty">
-          {{ emptyStateMessage }}
-        </p>
-
-        <div v-if="!userStore.user" class="users-notice">
-          <h2>{{ t('users.notice.title') }}</h2>
-          <p>{{ t('users.notice.body') }}</p>
+        <p class="users-empty__text">{{ emptyStateMessage }}</p>
+        
+        <div class="users-empty__card">
+             <p class="users-empty__invite">
+                {{ t('users.notfound.invite').replace('{user}', lastSearchedQuery) }}
+            </p>
+            <a :href="`https://x.com/${lastSearchedQuery}`" target="_blank" rel="noopener noreferrer" class="users-empty__link">
+                {{ t('users.notfound.link') }} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
         </div>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { RouterLink } from 'vue-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -112,6 +147,7 @@ interface UsersResult {
   photoURL: string;
   followersCount: number;
   followingCount: number;
+  isFollowingMe?: boolean;
 }
 
 const userStore = useUserStore();
@@ -119,6 +155,7 @@ const localeStore = useLocaleStore();
 
 const t = (key: string) => localeStore.translate(key);
 const isRTL = computed(() => localeStore.direction === 'rtl');
+const isSearchFocused = ref(false);
 
 useHead(() => ({
   title: t('users.meta.title'),
@@ -139,7 +176,7 @@ const lastSearchedQuery = ref('');
 
 const hasTypedQuery = computed(() => searchQuery.value.trim().length > 0);
 const numberFormatter = computed(
-  () => new Intl.NumberFormat(localeStore.language === 'il' ? 'he-IL' : 'en-US'),
+  () => new Intl.NumberFormat(localeStore.language === 'il' ? 'he-IL' : 'en-US', { notation: 'compact', compactDisplay: 'short' }),
 );
 
 const errorMessage = computed(() => (errorKey.value ? t(errorKey.value) : null));
@@ -159,7 +196,13 @@ const debouncedSearch = debounce(() => {
   void searchUsers();
 }, 500);
 
+// Watch input to strip @ and debounce search
 watch(searchQuery, (newValue) => {
+  if (newValue.includes('@')) {
+    searchQuery.value = newValue.replace(/@/g, '');
+    return; // value change will trigger watch again
+  }
+  
   const trimmed = newValue.trim();
   if (trimmed) {
     hasSearched.value = false;
@@ -175,80 +218,108 @@ watch(searchQuery, (newValue) => {
   }
 });
 
-onBeforeUnmount(() => {
-  debouncedSearch.cancel();
+// Restore persistence
+onMounted(() => {
+    const savedQuery = sessionStorage.getItem('frenemySearchQuery');
+    const savedResults = sessionStorage.getItem('frenemySearchResults');
+    if (savedQuery) {
+        searchQuery.value = savedQuery;
+        lastSearchedQuery.value = savedQuery; 
+    }
+    if (savedResults) {
+        try {
+            searchResults.value = JSON.parse(savedResults);
+            hasSearched.value = true;
+        } catch (e) {
+            console.error('Failed to parse saved search results', e);
+        }
+    }
 });
 
-function formatCount(templateKey: string, count: number) {
-  const template = t(templateKey);
-  const formatted = numberFormatter.value.format(Number.isFinite(count) ? count : 0);
-  return template.includes('{count}') ? template.replace('{count}', formatted) : `${formatted} ${template}`;
-}
+onBeforeUnmount(() => {
+  debouncedSearch.cancel();
+  // Save persistence
+  sessionStorage.setItem('frenemySearchQuery', searchQuery.value);
+  if (searchResults.value.length > 0) {
+      sessionStorage.setItem('frenemySearchResults', JSON.stringify(searchResults.value));
+  } else {
+      sessionStorage.removeItem('frenemySearchResults');
+  }
+});
 
-function formatFollowers(count: number) {
-  return formatCount('users.card.followers', count);
-}
-
-function formatFollowing(count: number) {
-  return formatCount('users.card.followingCount', count);
+function formatNumber(count: number) {
+  return numberFormatter.value.format(Number.isFinite(count) ? count : 0);
 }
 
 async function searchUsers() {
   errorKey.value = null;
 
   if (!userStore.user) {
-    errorKey.value = 'users.error.loginRequired';
-    hasSearched.value = true;
-    searchResults.value = [];
-    return;
+    // Optional: Prompt login if needed, though header CTA handles it.
   }
 
   let rawQuery = searchQuery.value.trim();
   if (!rawQuery) {
-    errorKey.value = 'users.error.noInput';
+     if (userStore.user) {
+        errorKey.value = 'users.error.noInput';
+     }
     hasSearched.value = true;
     searchResults.value = [];
     return;
   }
+  
+  rawQuery = rawQuery.replace(/@/g, '');
 
-  if (rawQuery.startsWith('@')) {
-    rawQuery = rawQuery.slice(1);
-  }
-
-  const sanitizedQuery = rawQuery;
-
-  if (!sanitizedQuery) {
-    errorKey.value = 'users.error.noInput';
-    hasSearched.value = true;
-    searchResults.value = [];
-    return;
-  }
+  // Determine search variations to improve recall (simple case-insensitivity simulation)
+  const searchTerms = new Set<string>();
+  searchTerms.add(rawQuery);
+  searchTerms.add(rawQuery.toLowerCase());
+  searchTerms.add(rawQuery.charAt(0).toUpperCase() + rawQuery.slice(1).toLowerCase());
+  
+  // If the query is all caps, maybe add it specifically if different?
+  // But usually users search "LIOR" for "Lior". The capitalized version covers "Lior".
+  // The lower version covers "lior".
+  
+  const uniqueTerms = Array.from(searchTerms);
 
   isLoading.value = true;
   try {
     const usersRef = collection(db, 'users');
-    const displayQ = query(
-      usersRef,
-      where('displayName', '>=', sanitizedQuery),
-      where('displayName', '<=', `${sanitizedQuery}\uf8ff`),
-    );
-    const usernameQ = query(
-      usersRef,
-      where('username', '>=', sanitizedQuery),
-      where('username', '<=', `${sanitizedQuery}\uf8ff`),
-    );
+    const queries = [];
+    
+    // Create queries for each term on both fields
+    for (const term of uniqueTerms) {
+        if (!term) continue;
+        queries.push(query(
+          usersRef,
+          where('displayName', '>=', term),
+          where('displayName', '<=', `${term}\uf8ff`),
+        ));
+        queries.push(query(
+          usersRef,
+          where('username', '>=', term),
+          where('username', '<=', `${term}\uf8ff`),
+        ));
+    }
 
-    const [displaySnap, usernameSnap] = await Promise.all([getDocs(displayQ), getDocs(usernameQ)]);
-    const resultsMap = new Map<string, User>();
+    const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+    
+    const resultsMap = new Map<string, User & { isFollowingMe?: boolean }>();
+    const myUid = userStore.user?.uid;
 
-    displaySnap.docs.forEach((docItem) => {
-      resultsMap.set(docItem.id, docItem.data() as User);
-    });
-    usernameSnap.docs.forEach((docItem) => {
-      if (!resultsMap.has(docItem.id)) {
-        resultsMap.set(docItem.id, docItem.data() as User);
-      }
-    });
+    const processDoc = (docItem: any) => {
+       const data = docItem.data() as User;
+       const isFollowingMe = !!(myUid && data.frenemies?.includes(myUid));
+       return { ...data, isFollowingMe };
+    };
+
+    for (const snap of snapshots) {
+        snap.docs.forEach((docItem) => {
+            if (!resultsMap.has(docItem.id)) {
+                resultsMap.set(docItem.id, processDoc(docItem));
+            }
+        });
+    }
 
     searchResults.value = Array.from(resultsMap.entries()).map(([uid, user]) => ({
       uid,
@@ -261,9 +332,10 @@ async function searchUsers() {
       photoURL: user.photoURL || defaultAvatar,
       followersCount: typeof user.followersCount === 'number' ? user.followersCount : 0,
       followingCount: typeof user.followingCount === 'number' ? user.followingCount : 0,
+      isFollowingMe: !!user.isFollowingMe
     }));
 
-    lastSearchedQuery.value = searchQuery.value.trim();
+    lastSearchedQuery.value = rawQuery;
     hasSearched.value = true;
   } catch (err: any) {
     console.error('searchUsers error:', err);
@@ -291,11 +363,19 @@ async function followUser(uid: string) {
 
   try {
     await userStore.addFrenemy(uid);
-    searchResults.value = searchResults.value.filter((result) => result.uid !== uid);
   } catch (err) {
     console.error('followUser error:', err);
     errorKey.value = 'users.error.generic';
   }
+}
+
+async function unfollowUser(uid: string) {
+    if (!userStore.user) return;
+    try {
+        await userStore.removeFrenemy(uid);
+    } catch(err) {
+        console.error('unfollowUser error', err);
+    }
 }
 </script>
 
@@ -303,155 +383,203 @@ async function followUser(uid: string) {
 .users-page {
   display: flex;
   flex-direction: column;
-  gap: clamp(2.5rem, 6vw, 4rem);
+  align-items: center;
   padding-bottom: clamp(3rem, 8vw, 5rem);
-}
-
-.users-page.is-rtl {
-  direction: rtl;
-}
-
-.users-hero {
+  padding-top: clamp(2rem, 5vw, 3rem);
   position: relative;
-  padding: clamp(3rem, 8vw, 6rem) 0 clamp(2.5rem, 6vw, 4rem);
-  margin: 0 calc(-1 * var(--space-6));
-  display: flex;
-  justify-content: center;
+  overflow-x: hidden;
 }
 
-.users-hero__glow {
-  display: none; /* Removed for flat design */
-}
-
-.users-hero__content {
-  position: relative;
-  width: min(880px, 100%);
-  padding: clamp(2.75rem, 6vw, 4rem) clamp(2rem, 5vw, 3rem);
-  margin: 0 var(--space-6);
-  border-radius: 36px;
-  border: 1px solid var(--color-border-base);
-  background-color: var(--color-bg-card);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(var(--space-4), 2vw, var(--space-6));
-  text-align: center;
-}
-
-.users-hero__pill {
-  display: inline-flex;
-  padding: 0.4rem 1.35rem;
-  border-radius: var(--radius-full);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background: var(--color-primary-18);
-  color: var(--bulma-primary);
-  font-weight: 600;
-}
-
-.users-hero__title {
-  margin: 0;
-  font-size: clamp(2.6rem, 2vw + 2rem, 3.6rem);
-}
-
-.users-hero__subtitle {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
-  line-height: 1.7;
-  max-width: 640px;
-}
-
-.users-hero__features {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.users-hero__feature {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.45rem var(--space-4);
-  border-radius: var(--radius-full);
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-base);
-  font-size: var(--font-size-300);
-  letter-spacing: 0.01em;
-}
-
-.users-hero__cta {
-  display: flex;
-  justify-content: center;
-}
-
-.users-body {
-  display: flex;
-  justify-content: center;
-  padding: 0;
-  margin: 0 calc(-1 * var(--space-6));
+.users-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 500px;
+  background: radial-gradient(circle at 50% 0%, var(--color-primary-16) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .users-surface {
-  width: min(960px, 100%);
+  position: relative;
+  z-index: 1;
+  width: min(800px, 100%);
   margin: 0 var(--space-6);
-  background-color: var(--color-bg-card);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32px;
-  border: 1px solid var(--color-border-base);
-  padding: clamp(var(--space-8), 5vw, 3.25rem);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: clamp(2rem, 5vw, 3.5rem);
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
-.users-search {
+.is-rtl .users-surface {
+  text-align: right;
+}
+
+.users-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.users-header__badge {
+  display: inline-flex;
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--color-primary-8);
+  border: 1px solid var(--color-primary-16);
+  color: var(--bulma-primary);
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: var(--space-2);
+}
+
+.users-header__title {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.users-header__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 1.15rem;
+  line-height: 1.6;
+  max-width: 600px;
+  white-space: pre-line;
+}
+
+.users-header__cta {
+  margin-top: var(--space-4);
+}
+
+/* Search Bar */
+.users-search {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.users-search__bar {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: 9999px; /* Pill shape */
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  /* Force LTR layout for the input group regardless of page dir */
+  direction: ltr; 
+}
+
+.users-search__bar.is-focused {
+  border-color: var(--color-primary-48);
+  box-shadow: 0 0 0 4px var(--color-primary-16), 0 8px 20px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-surface);
+  transform: translateY(-1px);
+}
+
+.users-search__prefix {
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-right: 0.25rem;
+  user-select: none;
 }
 
 .users-input {
   flex: 1;
-  min-width: 220px;
-  padding: 0.85rem 1.1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-base);
-  background-color: var(--color-bg-input);
+  background: transparent;
+  border: none;
+  padding: 0.75rem 0;
   color: inherit;
-  font-size: var(--font-size-400);
-  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  font-size: 1.1rem;
+  outline: none;
+  min-width: 0;
 }
 
-.users-input:focus {
-  outline: none;
-  border-color: var(--color-border-primary);
-  background-color: var(--color-bg-card);
+.users-search__actions {
+  margin-left: 0.5rem;
 }
 
 .users-search__button {
-  white-space: nowrap;
+  border-radius: 9999px !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 .users-error {
   margin: 0;
-  color: rgba(255, 110, 110, 0.92);
-  font-weight: 500;
+  color: #ff4757;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(255, 71, 87, 0.1);
+  padding: 0.75rem;
+  border-radius: 12px;
 }
 
+/* Results List */
 .users-results {
   display: grid;
-  gap: var(--space-5);
+  gap: 1rem;
+}
+
+/* List Transitions */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: scale(0.96) translateY(10px);
+}
+
+.list-leave-active {
+  position: absolute;
+  width: 100%;
 }
 
 .users-result {
-  background-color: var(--color-bg-card);
-  border-radius: 24px;
-  border: 1px solid var(--color-border-base);
-  padding: 1.35rem var(--space-6);
+  background: var(--color-bg-card);
+  border-radius: 20px;
+  border: 1px solid transparent;
+  padding: 1rem 1.25rem;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 1.35rem;
+  gap: 1.25rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.users-result:hover {
+  background: var(--color-bg-surface-2, var(--color-bg-surface)); /* Fallback */
+  border-color: var(--color-border-hover, var(--color-border-base));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); 
+  z-index: 2;
 }
 
 .users-result__avatar img {
@@ -459,126 +587,163 @@ async function followUser(uid: string) {
   height: 52px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--color-bg-surface);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .users-result__content {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
+  min-width: 0; /* Text truncation fix */
+}
+
+.users-result__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .users-result__name {
-  font-size: 1.15rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: inherit;
   text-decoration: none;
-  transition: color var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.users-result__name:hover,
-.users-result__name:focus {
+.users-result__name:hover {
   color: var(--bulma-primary);
+  text-decoration: underline;
+}
+
+.users-result__badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--bulma-primary);
+  background: var(--color-primary-8);
+  border: 1px solid var(--color-primary-16);
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  line-height: 1;
 }
 
 .users-result__username {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
 }
 
-.users-result__meta {
-  margin: 0;
+.users-result__stats {
   display: flex;
-  gap: var(--space-2);
-  font-size: var(--font-size-300);
-  color: var(--color-text-muted);
-}
-
-.users-result__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-}
-
-.users-result__state {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.users-empty {
-  margin: 0;
-  text-align: center;
-  color: var(--color-text-tertiary);
-}
-
-.users-notice {
-  padding: 1.85rem;
-  text-align: center;
-  background: var(--color-bg-surface);
-  border-radius: 24px; /* Component-specific */
-  border: 1px solid var(--color-primary-16);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.users-notice h2 {
-  margin: 0;
-  font-size: 1.4rem;
-}
-
-.users-notice p {
-  margin: 0;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.users-result__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
 }
 
-@media (max-width: 768px) {
-  .users-result {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
-    row-gap: 1rem;
-  }
+.users-result__stat strong {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
 
-  .users-result__actions {
-    grid-column: 1 / -1;
+.users-result__divider {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--color-border-base);
+}
+
+/* Empty State */
+.users-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.users-empty__icon {
+  font-size: 3rem;
+  color: var(--color-text-tertiary);
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.users-empty__text {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.users-empty__card {
+  background: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-base);
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.users-empty__invite {
+    margin: 0;
+    font-weight: 500;
+}
+
+.users-empty__link {
+    color: var(--bulma-primary);
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
     align-items: center;
-  }
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-primary-8);
+    border-radius: 99px;
+    transition: all 0.2s;
+}
+
+.users-empty__link:hover {
+    background: var(--color-primary-16);
+    transform: translateY(-1px);
 }
 
 @media (max-width: 640px) {
-  .users-hero__content {
-    padding: 2.25rem 1.75rem;
-  }
-
   .users-result {
-    grid-template-columns: 1fr;
-    text-align: center;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .users-result__actions {
+    grid-column: 2;
+    grid-row: 2;
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 0.5rem;
   }
 
-  .users-result__content {
-    align-items: center;
-  }
-
-  .users-result__meta {
+  .users-result__actions .button {
+    width: 100%;
     justify-content: center;
   }
-
-  .users-result__actions {
-    align-items: center;
+  
+  .users-search__bar {
+      padding-left: 1rem;
   }
 }
 </style>

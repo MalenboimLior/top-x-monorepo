@@ -261,6 +261,22 @@ defineExpose({ el: rootRef });
   .game-section__grid {
     grid-template-columns: 1fr;
   }
+
+  .section-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .section-header__content {
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .section-subtitle {
+     margin-inline: auto;
+  }
 }
 
 /* Show more animation */

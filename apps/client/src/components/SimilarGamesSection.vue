@@ -1,31 +1,33 @@
 <template>
-  <section v-if="similarGames.length" class="similar-games-section">
-    <div class="section-heading">
-      <h2 class="section-title">
-        <font-awesome-icon :icon="['fas', 'gamepad']" />
-        Similar Games
-      </h2>
-      <p class="section-subtitle">More games like this one</p>
-    </div>
-    <div class="similar-games-section__grid game-grid game-grid--quad">
+  <GameSection
+    v-if="similarGames.length"
+    :title="t('gameInfo.similarGames')"
+    :subtitle="t('gameInfo.similarGamesSubtitle')"
+    :games="similarGames"
+    :game-stats="gameStats"
+    :items-per-row="3"
+    :initial-rows="2"
+    :show-more-label="t('home.showMore')"
+    @play="handlePlay"
+    class="similar-games-section"
+  >
+    <template #default="{ game, stats }">
       <GameCard
-        v-for="game in similarGames"
-        :key="game.id"
         :game="game"
-        :stats="gameStats[game.id]"
+        :stats="stats"
         :play-label="t('home.playNow')"
         button-type="is-primary"
         @play="handlePlay"
       />
-    </div>
-  </section>
+    </template>
+  </GameSection>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
-import type { PropType } from 'vue';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
 import type { Game, GameStats } from '@top-x/shared/types';
 import GameCard from '@/components/GameCard.vue';
+import GameSection from '@/components/home/GameSection.vue';
 import { getGames, subscribeToGameStats, type GamesResult } from '@/services/game';
 import { useLocaleStore } from '@/stores/locale';
 import { useRouter } from 'vue-router';
@@ -42,7 +44,7 @@ const props = defineProps({
   },
   limit: {
     type: Number,
-    default: 6,
+    default: 20, 
   },
 });
 
@@ -62,31 +64,19 @@ const fetchSimilarGames = async () => {
 
   try {
     const result: GamesResult = await getGames({ activeOnly: true });
+    // Fetch MORE than just the initial limit so "Show More" has something to show.
+    // We'll fetch all and let GameSection handle the display limit.
     const filtered = result.games
-      .filter((game) => game.id !== props.currentGameId && game.gameTypeId === props.gameTypeId)
-      .slice(0, props.limit);
+      .filter((game) => game.id !== props.currentGameId && game.gameTypeId === props.gameTypeId);
 
-    // Sort by sessions played (descending)
-    const sorted = filtered.sort((a, b) => {
-      const aSessions = gameStats.value[a.id]?.sessionsPlayed ?? 0;
-      const bSessions = gameStats.value[b.id]?.sessionsPlayed ?? 0;
-      return bSessions - aSessions;
-    });
+    // Sort by sessions played (descending) can be enhanced if needed
+    similarGames.value = filtered;
 
-    similarGames.value = sorted;
-
-    // Subscribe to stats for each game
-    for (const game of sorted) {
+    // Subscribe to stats for each game 
+    for (const game of filtered) {
       if (!statsUnsubscribers.value.has(game.id)) {
         const unsubscribe = subscribeToGameStats(game.id, (stats) => {
           gameStats.value[game.id] = stats || {};
-          // Re-sort when stats update
-          const reSorted = [...similarGames.value].sort((a, b) => {
-            const aSessions = gameStats.value[a.id]?.sessionsPlayed ?? 0;
-            const bSessions = gameStats.value[b.id]?.sessionsPlayed ?? 0;
-            return bSessions - aSessions;
-          });
-          similarGames.value = reSorted;
         });
         statsUnsubscribers.value.set(game.id, unsubscribe);
       }
@@ -114,47 +104,5 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import '../styles/components/Home.css';
-
-.similar-games-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-.section-heading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  text-align: center;
-}
-
-.section-title {
-  margin: 0;
-  font-size: clamp(1.8rem, 1vw + 1.2rem, 2.4rem);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  color: var(--color-text-primary);
-}
-
-.section-title svg {
-  color: var(--bulma-primary);
-  font-size: 1.4rem;
-}
-
-.section-subtitle {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* Grid styles are inherited from .game-grid and .game-grid--quad in Home.css */
-
-@media (max-width: 37.5rem) {
-  .similar-games-section__grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* No specific styles needed, GameSection handles layout */
 </style>
-

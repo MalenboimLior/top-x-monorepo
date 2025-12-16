@@ -309,7 +309,10 @@ function editGame(game: Game) {
 async function togglePublish(game: Game) {
   try {
     const gameRef = doc(db, 'games', game.id);
-    await updateDoc(gameRef, { unlisted: game.unlisted ?? false ? false : true });
+    await updateDoc(gameRef, {
+      unlisted: game.unlisted ?? false ? false : true,
+      updatedAt: Date.now()
+    });
   } catch (err) {
     console.error('Error toggling publish:', err);
   }

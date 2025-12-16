@@ -10,9 +10,9 @@
           :featured-label="t('home.labels.featured')"
           :daily-challenge-active="Boolean(game.dailyChallengeActive)"
           :daily-challenge-label="t('home.labels.dailyChallenge')"
-          :share-text="shareText"
           class="hero-media-component"
         />
+        
       </div>
 
       <!-- Details/Content Side -->
@@ -28,9 +28,28 @@
           <h1 class="hero-title">{{ game.name }}</h1>
           <p class="hero-description">{{ game.description }}</p>
         </div>
+        
+        <!-- Badges Row -->
+        <div v-if="badgeLabels.length" class="hero-badges">
+          <span
+            v-for="badge in badgeLabels"
+            :key="badge.text + badge.variant"
+            class="hero-badge"
+            :class="`hero-badge--${badge.variant}`"
+          >
+            <font-awesome-icon v-if="badge.icon" :icon="badge.icon" />
+            <span>{{ badge.text }}</span>
+          </span>
+        </div>
 
         <!-- Meta/Stats Row -->
         <div class="hero-stats-row" dir="ltr">
+          <!-- Created Date -->
+           <div class="hero-stat" :title="t('common.created')">
+            <span class="hero-stat-icon"><font-awesome-icon :icon="['fas', 'calendar-days']" /></span>
+             <span class="hero-stat-value">{{ formattedDate }}</span>
+          </div>
+          
           <div class="hero-stat" v-if="stats.sessionsPlayed" :title="t('home.stats.sessions')">
             <span class="hero-stat-icon"><font-awesome-icon :icon="['fas', 'eye']" /></span>
             <span class="hero-stat-value">{{ formatNumber(stats.sessionsPlayed) }}</span>
@@ -40,44 +59,49 @@
             <span class="hero-stat-icon"><font-awesome-icon :icon="['fas', 'heart']" /></span>
             <span class="hero-stat-value">{{ formatNumber(totalFavorites) }}</span>
           </div>
-          
-           <!-- Creator Info Inline -->
-          <div v-if="resolvedCreator" class="hero-creator">
-             <div class="hero-creator-avatar">
-                <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
-             </div>
-             <div class="hero-creator-details">
-                <span class="hero-creator-by">{{ t('gameCard.creator.label') }}</span>
-                <a :href="creatorProfileUrl" class="hero-creator-name" @click.stop>@{{ resolvedCreator.username }}</a>
-             </div>
-          </div>
         </div>
+        
+         <!-- Creator & Instructions Group -->
+         <div class="hero-info-group">
+            <!-- Creator Info -->
+            <div v-if="resolvedCreator" class="hero-creator" dir="ltr">
+                 <div class="hero-creator-avatar">
+                    <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
+                 </div>
+                 <div class="hero-creator-details">
+                    <span class="hero-creator-by">{{ t('gameCard.creator.label') }}</span>
+                    <a :href="creatorProfileUrl" class="hero-creator-name" @click.stop>@{{ resolvedCreator.username }}</a>
+                 </div>
+            </div>
+            
+             <!-- Instructions -->
+             <div v-if="game.gameInstruction" class="hero-instructions">
+               <div class="hero-instructions-content">
+                 <span class="hero-instructions-label">
+                    <font-awesome-icon :icon="['fas', 'circle-info']" />
+                    {{ t('gameInfo.howToPlay') }}:
+                 </span>
+                 <span class="hero-instructions-text">{{ game.gameInstruction }}</span>
+               </div>
+             </div>
+         </div>
 
-        <!-- Actions -->
-        <div class="hero-actions">
+        <!-- Actions - Centered at bottom -->
+        <div class="hero-play-action">
            <CustomButton
             type="is-primary is-large"
             class="play-button"
             :label="t('home.playNow')"
             @click="playGame"
           />
-          <ShareButton
+           <ShareButton
             v-if="shareText"
             :share-text="shareText"
-            :image-url="game.image"
+            :image-url="game.image || null"
             :file-name="game.name"
             class="action-icon-button"
           />
         </div>
-        
-         <!-- Instructions / Info -->
-         <div v-if="game.gameInstruction" class="hero-instructions">
-            <div class="hero-instructions-title">
-               <font-awesome-icon :icon="['fas', 'circle-info']" />
-               <span>{{ t('gameInfo.howToPlay') }}</span>
-            </div>
-            <p>{{ game.gameInstruction }}</p>
-         </div>
 
       </div>
     </section>
@@ -89,26 +113,30 @@
     </section>
 
     <section class="layout-container section-stack leaderboard-section">
-      <div class="section-heading">
-        <h2 class="section-title">
-          <font-awesome-icon :icon="['fas', 'trophy']" />
-          {{ t('gameInfo.topCharts') }}
-        </h2>
-        <p class="section-subtitle">{{ t('gameInfo.topChartsSubtitle') }}</p>
-      </div>
+      <header class="section-header">
+        <div class="section-header__content">
+           <h2 class="section-title">
+             <font-awesome-icon :icon="['fas', 'trophy']" class="header-icon" />
+             {{ t('gameInfo.topCharts') }}
+           </h2>
+           <p class="section-subtitle">{{ t('gameInfo.topChartsSubtitle') }}</p>
+        </div>
+      </header>
       <div class="surface">
         <Leaderboard :game-id="gameId" />
       </div>
     </section>
 
     <section v-if="game.dailyChallengeActive" class="layout-container section-stack daily-challenges-section">
-      <div class="section-heading">
-        <h2 class="section-title">
-          <font-awesome-icon :icon="['fas', 'bolt']" />
-          {{ t('gameInfo.dailyChallenges') }}
-        </h2>
-        <p class="section-subtitle">{{ t('gameInfo.dailyChallengesSubtitle') }}</p>
-      </div>
+      <header class="section-header">
+        <div class="section-header__content">
+          <h2 class="section-title">
+            <font-awesome-icon :icon="['fas', 'bolt']" class="header-icon" />
+            {{ t('gameInfo.dailyChallenges') }}
+          </h2>
+          <p class="section-subtitle">{{ t('gameInfo.dailyChallengesSubtitle') }}</p>
+        </div>
+      </header>
       <div class="surface">
         <DailyChallenges :gameId="gameId" />
       </div>
@@ -118,23 +146,7 @@
       <SimilarGamesSection :game-type-id="game.gameTypeId" :current-game-id="gameId" :limit="6" />
     </section>
 
-    <section class="layout-container build-section">
-      <div class="surface build-card">
-        <div class="build-copy">
-          <h3>
-            <font-awesome-icon :icon="['fas', 'edit']" />
-            {{ t('gameInfo.buildYourOwn') }}
-          </h3>
-          <p>{{ t('gameInfo.buildDescription') }}</p>
-        </div>
-        <CustomButton
-          type="is-info"
-          :label="t('gameInfo.createNow')"
-          @click="buildGame"
-        />
-      </div>
-      <p class="build-hint">{{ t('gameInfo.buildHint') }}</p>
-    </section>
+    <GameBuildSection @build="buildGame" />
   </div>
 </template>
 
@@ -142,6 +154,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
+import { DateTime } from 'luxon';
 import { getGame, getGameStats } from '@/services/game';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ShareButton from '@/components/ShareButton.vue';
@@ -150,14 +163,15 @@ import DailyChallenges from '@/components/DailyChallenges.vue';
 import GameTypeInfo from '@/components/GameTypeInfo.vue';
 import GameMediaSection from '@/components/GameMediaSection.vue';
 import SimilarGamesSection from '@/components/SimilarGamesSection.vue';
+import GameBuildSection from '@/components/GameBuildSection.vue';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
-import { Game, GameCreator } from '@top-x/shared/types/game';
+import { Game, GameCreator, GameBadgeKey } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import { formatNumber } from '@top-x/shared/utils/format';
-import { DEFAULT_TOPX_CREATOR } from '@top-x/shared/constants/gameBadges';
+import { GAME_BADGE_DEFINITIONS, DEFAULT_TOPX_CREATOR } from '@top-x/shared/constants/gameBadges';
 
 const route = useRoute();
 const router = useRouter();
@@ -176,6 +190,7 @@ const game = ref<Game>({
   vip: [],
   custom: {} as any,
   language: 'en',
+  createdAt: undefined,
 });
 const stats = ref<Partial<GameStats>>({});
 
@@ -204,10 +219,36 @@ const totalFavorites = computed(() => {
 
 
 const shareText = computed(() => {
-  if (game.value.shareText) {
-    return game.value.shareText;
-  }
-  return `Check out ${game.value.name} on TOP-X! 🎮`;
+  const baseText = game.value.shareText || `Check out ${game.value.name} on TOP-X! 🎮`;
+  const url = window.location.href; // Add current URL
+  return `${baseText}\n${url}`;
+});
+
+const formattedDate = computed(() => {
+  const dateValue = game.value.createdAt || Date.now();
+  // Using cast to avoid TS issues with local setup, confirmed works at runtime
+  return (DateTime as any).fromMillis(dateValue).toFormat('MMM yyyy');
+});
+
+// Badges Logic
+function isGameBadgeKey(value: string): value is GameBadgeKey {
+  return Object.prototype.hasOwnProperty.call(GAME_BADGE_DEFINITIONS, value);
+}
+
+const badgeLanguage = computed<'en' | 'il'>(() => (localeStore.language === 'il' ? 'il' : 'en'));
+
+const badgeLabels = computed(() => {
+  const language = badgeLanguage.value;
+  return (game.value.badges ?? [])
+    .filter((badge): badge is GameBadgeKey => isGameBadgeKey(badge))
+    .map((badge) => {
+      const definition = GAME_BADGE_DEFINITIONS[badge];
+      return {
+        text: definition.labels[language],
+        variant: `badge-${badge}`,
+        icon: definition.icon,
+      };
+    });
 });
 
 // Creator Logic
@@ -319,6 +360,9 @@ function goBack() {
 </script>
 
 <style scoped>
+/* Import Home.css to consistently reuse header styles */
+@import '@/styles/components/Home.css';
+
 .game-info-page {
   --section-stack-gap: var(--space-4);
   max-width: 1400px;
@@ -342,16 +386,16 @@ function goBack() {
 .game-hero-media {
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
 }
 
-/* Force GameMediaSection to fill height nicely */
+/* Force GameMediaSection to fill available height but respect aspect ratio */
 .hero-media-component {
-  height: 100%;
+  width: 100%;
 }
 .hero-media-component :deep(.game-media-section__image-wrapper) {
-  height: 100%;
-  aspect-ratio: auto;
-  min-height: 400px;
+  min-height: 300px; /* Reduced from 380px to make image smaller */
+  max-height: 400px; /* Cap max height to prevent oversized images */
   border-radius: 20px;
 }
 
@@ -416,16 +460,60 @@ function goBack() {
   font-size: 1.1rem;
   line-height: 1.6;
   max-width: 65ch;
+  
+  /* Line clamp to 2 rows */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Stats Row - Mimics GameCard stats but inline */
+/* Badges */
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  font-size: var(--font-size-100);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Badge colors matching GameCard */
+.hero-badge--badge-onFire {
+  background-color: rgba(255, 135, 66, 0.2);
+  color: #ffbb7c;
+  border: 1px solid rgba(255, 135, 66, 0.4);
+}
+.hero-badge--badge-hardcore {
+  background-color: rgba(123, 97, 255, 0.2);
+  color: #bfa8ff;
+  border: 1px solid rgba(123, 97, 255, 0.4);
+}
+.hero-badge--badge-womenOnly {
+  background-color: rgba(255, 105, 180, 0.2);
+  color: #ffb6d9;
+  border: 1px solid rgba(255, 105, 180, 0.4);
+}
+
+/* Stats Row */
 .hero-stats-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-5);
   padding-block: var(--space-2);
-  border-block: 1px solid rgba(255, 255, 255, 0.08); /* Divider like sketch maybe? */
+  border-block: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hero-stat {
@@ -434,7 +522,7 @@ function goBack() {
   gap: var(--space-2);
   color: var(--color-text-primary);
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .hero-stat-icon {
@@ -449,19 +537,27 @@ function goBack() {
   font-size: 0.9rem;
 }
 
+/* Creator & Instructions Group */
+.hero-info-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+}
+
 .hero-creator {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    margin-inline-start: auto; /* Push to end if possible */
+    gap: var(--space-2);
 }
 
 .hero-creator-avatar {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid var(--bulma-primary);
+    border: 1.5px solid var(--bulma-primary);
+    flex-shrink: 0;
 }
 .hero-creator-avatar img {
     width: 100%;
@@ -470,11 +566,12 @@ function goBack() {
 }
 .hero-creator-details {
     display: flex;
-    flex-direction: column;
-    line-height: 1.1;
+    align-items: baseline;
+    gap: var(--space-1);
+    white-space: nowrap;
 }
 .hero-creator-by {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
 }
@@ -488,152 +585,84 @@ function goBack() {
     color: var(--bulma-primary);
 }
 
-/* Actions */
-.hero-actions {
+.hero-instructions {
+  flex: 1 1 auto;
+}
+.hero-instructions-content {
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
   display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.hero-instructions-label {
+    color: var(--bulma-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Play Action - Centered Bottom */
+.hero-play-action {
+  margin-top: auto; /* Push to bottom */
+  display: flex;
+  justify-content: center;
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  width: 100%; /* Make full width */
 }
 
-.play-button {
-  flex-grow: 1; /* Make it big */
+.action-icon-button :deep(.share-button) { /* Targeting internal button class */
+  margin: 0;
+  width: 50px; /* Reduced from 60px to make smaller */
+  max-width: 50px;
 }
-.play-button :deep(.button) {
-  width: 100%;
-  height: 60px; /* Taller */
-  font-size: 1.3rem;
-  border-radius: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 800;
-}
-
 .action-icon-button :deep(.button) {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
+  width: 50px; /* Reduced */
+  height: 50px; /* Reduced */
+  border-radius: 12px;
   border-color: var(--color-border-base);
   background: transparent;
   color: var(--color-text-primary);
-  font-size: 1.4rem;
+  font-size: 1.2rem;
+  padding: 0;
 }
 .action-icon-button :deep(.button:hover) {
     border-color: var(--bulma-primary);
     color: var(--bulma-primary);
 }
 
-/* Instructions */
-.hero-instructions {
-  background: var(--color-bg-secondary);
-  border-radius: 16px;
-  padding: var(--space-4);
-  margin-top: var(--space-2);
+.play-button {
+  flex-grow: 1; /* Take up remaining space */
 }
-.hero-instructions-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--bulma-primary);
-  font-weight: 700;
-  margin-bottom: var(--space-2);
-  font-size: 0.9rem;
+
+.play-button :deep(.button) {
+  width: 100%; /* Fill container */
+  height: 60px;
+  font-size: 1.4rem; /* Larger font */
+  border-radius: 16px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-.hero-instructions p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-weight: 800;
+  box-shadow: 0 4px 20px rgba(0, 232, 224, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.game-type-section,
-.leaderboard-section,
-.daily-challenges-section,
-.similar-games-section,
-.build-section {
-  --section-stack-gap: var(--space-3);
+.play-button :deep(.button:hover) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 232, 224, 0.4);
 }
 
-.section-heading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  text-align: center;
-}
-
-.section-title {
-  margin: 0;
-  font-size: clamp(1.8rem, 1vw + 1.2rem, 2.4rem);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  color: var(--color-text-primary);
-}
-
-.section-title svg {
-  color: var(--bulma-primary);
-  font-size: 1.4rem;
-}
-
-.section-subtitle {
-  margin: 0;
-  color: var(--color-text-tertiary);
-}
-
-.build-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  text-align: center;
-}
-
-.build-card {
-  width: min(960px, 100%);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  align-items: center;
-  text-align: center;
-  padding: clamp(var(--space-6), 5vw, var(--space-8));
-  border-radius: 28px; /* Match recent style */
-}
-
-.build-copy {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-.build-copy h3 {
-  margin: 0;
-  font-size: 1.45rem;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-primary);
-}
-
-.build-copy h3 svg {
-  color: var(--bulma-primary);
-}
-
-.build-copy p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  max-width: 32rem;
-}
-
-.build-hint {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.header-icon {
+    color: var(--bulma-primary);
+    font-size: 0.8em;
 }
 
 @media (max-width: 60rem) {
@@ -660,11 +689,15 @@ function goBack() {
       gap: var(--space-4);
   }
   
-  .hero-creator {
-      margin-inline-start: 0;
-      width: 100%;
-      padding-top: var(--space-2);
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+  .hero-info-group {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-3);
+  }
+  
+  .hero-instructions-content {
+      flex-direction: column;
+      align-items: flex-start;
   }
 }
 </style>

@@ -614,9 +614,17 @@ function ultraCleanData(obj: any): any {
 export async function createGame(gameData: Omit<Game, 'id'>): Promise<CreateGameResult> {
   try {
     console.log('[createGame] Original data keys:', Object.keys(gameData));
-    
+
+    // Add timestamps
+    const now = Date.now();
+    const dataWithTimestamps = {
+      ...gameData,
+      createdAt: now,
+      updatedAt: now,
+    };
+
     // Remove empty strings before saving to Firestore
-    const cleanedData = removeEmptyStrings(gameData);
+    const cleanedData = removeEmptyStrings(dataWithTimestamps);
     console.log('[createGame] Cleaned data keys:', Object.keys(cleanedData));
     
     // Final validation: find any remaining empty strings
@@ -659,9 +667,15 @@ export async function createGame(gameData: Omit<Game, 'id'>): Promise<CreateGame
 export async function updateGame(gameId: string, gameData: Partial<Omit<Game, 'id'>>): Promise<UpdateGameResult> {
   try {
     console.log('[updateGame] Original data keys:', Object.keys(gameData));
-    
+
+    // Add updatedAt timestamp
+    const dataWithTimestamps = {
+      ...gameData,
+      updatedAt: Date.now(),
+    };
+
     // Remove empty strings before saving to Firestore - do multiple passes to be sure
-    let cleanedData = removeEmptyStrings(gameData);
+    let cleanedData = removeEmptyStrings(dataWithTimestamps);
     console.log('[updateGame] After first pass, cleaned data keys:', Object.keys(cleanedData));
     
     // Do a second pass to catch any that might have been missed

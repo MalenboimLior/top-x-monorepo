@@ -6,6 +6,7 @@ type LocaleMessages = Record<string, string>;
 
 type GameTypeContent = {
   displayName: string;
+  goal: string;
   instructions: string;
   images: string[];
 };
@@ -88,31 +89,37 @@ const GAME_TYPE_CONTENT: Record<'en' | 'il', Record<string, GameTypeContent>> = 
   en: {
     pyramid: {
       displayName: 'Pyramid Rankings',
+      goal: 'Arrange entries hierarchically from top to bottom.',
       instructions: 'Stack your picks from top-tier icons to the bottom rung. Every placement shifts the vibe—choose wisely before you lock it in.',
       images: ['/assets/fallback.png'],
     },
     pyramidtier: {
       displayName: 'Tier Pyramid',
+      goal: 'Categorize items into ranked tiers (S to C).',
       instructions: 'Drag and drop your roster into tiers from S to C. Shuffle until the crowd agrees and publish your final board.',
       images: ['/assets/fallback.png'],
     },
     trivia: {
       displayName: 'Trivia Clash',
+      goal: 'Answer correctly and maintain your streak.',
       instructions: 'Answer fast, answer bold. Each correct hit boosts your streak; miss one and the leaderboard gets spicy.',
       images: ['/assets/fallback.png'],
     },
     zonereveal: {
       displayName: 'Zone Reveal',
+      goal: 'Identify the secret location with minimal clues.',
       instructions: 'Uncover the map before time runs out. Tap, reveal, and guess the mystery zone with the fewest clues possible.',
       images: ['/assets/zonereveal/level1.jpg', '/assets/zonereveal/heart_icon.png'],
     },
     pacman: {
       displayName: 'Pac-X Chase',
+      goal: 'Eat all dots and avoid ghosts.',
       instructions: 'Collect the dots, dodge the ghosts, and snag the power-ups. Classic arcade energy with slick TOP-X styling.',
       images: ['/assets/fallback.png'],
     },
     fishergame: {
       displayName: 'Fishing Frenzy',
+      goal: 'Catch rare fish to maximize your score.',
       instructions: 'Cast your line, hook the rares, and rack up a record haul before the timer dries up.',
       images: ['/assets/fallback.png'],
     },
@@ -120,31 +127,37 @@ const GAME_TYPE_CONTENT: Record<'en' | 'il', Record<string, GameTypeContent>> = 
   il: {
     pyramid: {
       displayName: 'דירוג פירמידה',
+      goal: 'לסדר את הפריטים בהיררכיה מהפסגה לתחתית.',
       instructions: 'סדרו את הבחירות מראש הפסגה עד הבסיס. כל מיקום משנה את האווירה – בחרו חכם לפני שסוגרים.',
       images: ['/assets/fallback.png'],
     },
     pyramidtier: {
       displayName: 'פירמידת טיארים',
+      goal: 'למיין פריטים לטיארים מדורגים (S עד C).',
       instructions: 'גררו ושחררו את הרשימה שלכם לטיארים מ־S עד C. תעדכנו עד שהחברים מרוצים ואז מפרסמים.',
       images: ['/assets/fallback.png'],
     },
     trivia: {
       displayName: 'טריוויה על אש גבוהה',
+      goal: 'לענות נכון ולשמור על רצף תשובות.',
       instructions: 'עונים מהר ובבטחון. כל פגיעה מדויקת מעלה את הרצף שלכם; טעות אחת ומישהו אחר קופץ לראשות הטבלה.',
       images: ['/assets/fallback.png'],
     },
     zonereveal: {
       displayName: 'חשיפת אזורים',
+      goal: 'לזהות את המיקום הסודי עם מינימום רמזים.',
       instructions: 'מגלים את המפה לפני שהזמן אוזל. מקישים, חושפים ומנחשים את האזור הסודי עם כמה שפחות רמזים.',
       images: ['/assets/zonereveal/level1.jpg', '/assets/zonereveal/heart_icon.png'],
     },
     pacman: {
       displayName: 'Pac-X רודפים',
+      goal: 'לאכול את כל הנקודות ולהימנע מרוחות.',
       instructions: 'אוספים את הנקודות, מתחמקים מהרוחות ולוכדים בוסטרים. נוסטלגיה ארקייד עם סטייל של TOP-X.',
       images: ['/assets/fallback.png'],
     },
     fishergame: {
       displayName: 'טירוף דייג',
+      goal: 'לתפוס דגים נדירים כדי למקסם ניקוד.',
       instructions: 'מטילים חכה, תופסים נדירים ומעמיסים ניקוד לפני שהשעון עוצר.',
       images: ['/assets/fallback.png'],
     },
@@ -258,7 +271,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
         console.info('[locale] Already initialized?', this.initialized);
         console.info('[locale] Current state - language:', this.language || '(empty)', 'direction:', this.direction);
       }
-      
+
       // Always ensure direction matches language (Pinia persist might have restored language but not direction)
       // This is critical because direction is derived from language and not persisted
       if (this.language) {
@@ -282,7 +295,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
           }
         }
       }
-      
+
       // If already initialized and direction is correct, skip full initialization
       if (this.initialized && this.language) {
         if (import.meta.env.DEV) {
@@ -294,10 +307,10 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       // First time initialization
       // Check localStorage cache first
       const cachedLanguage = loadPersistedLanguage();
-      
+
       // Determine preferred language: cached > Pinia restored > device detection
       let preferredLanguage: string;
-      
+
       if (cachedLanguage) {
         // Use cached language from localStorage
         preferredLanguage = normalizeLanguage(cachedLanguage);
@@ -321,7 +334,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       if (import.meta.env.DEV) {
         console.info('[locale] Final preferred language:', preferredLanguage);
       }
-      
+
       await this.setLanguage(preferredLanguage);
       this.initialized = true;
       if (import.meta.env.DEV) {
@@ -332,18 +345,18 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
       const normalizedLang = normalizeLanguage(language);
       const previousLanguage = this.language;
       const previousDirection = this.direction;
-      
+
       // Determine direction based on language
       const newDirection: Direction = normalizedLang === 'il' ? 'rtl' : 'ltr';
-      
+
       if (import.meta.env.DEV) {
         console.info('[locale] ===== SET LANGUAGE START =====');
         console.info('[locale] Previous language:', previousLanguage || '(none)', 'direction:', previousDirection);
         console.info('[locale] New language:', normalizedLang, 'direction:', newDirection);
       }
-      
+
       this.language = normalizedLang;
-      
+
       // Apply direction change if it changed
       if (this.direction !== newDirection) {
         this.direction = newDirection;
@@ -357,7 +370,7 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
           console.info('[locale] Direction unchanged:', newDirection);
         }
       }
-      
+
       // Update DOM attributes
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('dir', this.direction);
@@ -375,14 +388,14 @@ export const useLocaleStore = defineStore<'locale', LocaleState, {}, LocaleActio
           console.info('[locale] Updated DOM: dir="' + this.direction + '", lang="' + (this.language === 'il' ? 'he' : 'en') + '"');
         }
       }
-      
+
       // Load locale messages
       this.messages = await loadLocaleMessages(this.language);
       this.gameTypeContent = GAME_TYPE_CONTENT[this.language as 'en' | 'il'] ?? fallbackGameTypeContent;
-      
+
       // Save to cache
       persistLanguage(this.language);
-      
+
       if (import.meta.env.DEV) {
         console.info('[locale] Locale messages loaded for:', this.language);
         console.info('[locale] ===== SET LANGUAGE COMPLETE =====');
