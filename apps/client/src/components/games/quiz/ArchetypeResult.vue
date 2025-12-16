@@ -149,6 +149,7 @@ const axisLabels = computed(() => {
   margin: 0;
   max-width: 500px;
   margin: 0 auto;
+  white-space: pre-wrap;
 }
 
 /* Axis Breakdown */

@@ -42,7 +42,7 @@
       <div v-if="inviter" class="inviter-section">
         <img :src="inviter.photoURL" alt="" class="inviter-avatar" loading="lazy" />
         <p class="inviter-text">
-          Shared by <strong>{{ inviter.displayName }}</strong>
+          {{ t('games.quiz.sharedByStrong') }} <strong>{{ inviter.displayName }}</strong>
         </p>
       </div>
 
@@ -73,8 +73,12 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PersonalityResult from './PersonalityResult.vue';
 import ArchetypeResult from './ArchetypeResult.vue';
 import { useUserStore } from '@/stores/user';
+import { useLocaleStore } from '@/stores/locale';
 import type { PersonalityScoreResult, ArchetypeScoreResult } from '@top-x/shared/quiz/scoring';
 import type { QuizThemeConfig } from '@top-x/shared/types/quiz';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 interface InviterDetails {
   displayName: string;

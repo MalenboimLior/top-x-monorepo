@@ -159,7 +159,7 @@
         <div class="guidelines-footer">
           <CustomButton
             type="is-primary is-large"
-            label="Back to Home"
+            :label="t('games.backToHome')"
             @click="$router.push('/')"
           />
         </div>
@@ -170,7 +170,11 @@
 
 <script setup lang="ts">
 import { useHead } from '@vueuse/head';
+import { useLocaleStore } from '@/stores/locale';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 useHead(() => ({
   title: 'Community Guidelines - TOP-X',

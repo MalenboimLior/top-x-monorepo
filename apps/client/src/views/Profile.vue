@@ -273,12 +273,12 @@
       <div class="profile-login-banner__content" @click.stop>
         <p class="profile-login-banner__title">Unlock Your Profile? 🧐</p>
         <p class="profile-login-banner__text">
-          Log in to reveal your picks, stats and followers' results!<br />
+          {{ t('games.profile.loginToReveal') }}<br />
           Just your X username + pic - we promise, no meddling with your account! 🔒
         </p>
         <CustomButton
           type="is-primary"
-          label="Login with X"
+          :label="t('games.loginButton')"
           :icon="['fab', 'x-twitter']"
           @click="handleLogin"
         />
@@ -311,9 +311,13 @@
 
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
+import { useLocaleStore } from '@/stores/locale';
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter, useRoute } from 'vue-router';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 import { RouterLink } from 'vue-router';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';

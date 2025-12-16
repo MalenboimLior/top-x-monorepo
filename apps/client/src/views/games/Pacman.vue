@@ -58,7 +58,7 @@
         <span class="value">{{ score }}</span>
       </div>
       <div class="hud-card">
-        <span class="label">Lives</span>
+        <span class="label">{{ t('games.pacman.lives') }}</span>
         <span class="value">{{ lives }}</span>
       </div>
       <div class="hud-card">
@@ -111,10 +111,13 @@ import type { PacmanConfig } from '@top-x/shared/types/pacman'
 import { db } from '@top-x/shared'
 import { getGame } from '@/services/game'
 import { useUserStore } from '@/stores/user'
+import { useLocaleStore } from '@/stores/locale'
 import { analytics } from '@top-x/shared'
 import { logEvent } from 'firebase/analytics'
 
 const route = useRoute()
+const localeStore = useLocaleStore()
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params)
 const router = useRouter()
 const userStore = useUserStore()
 

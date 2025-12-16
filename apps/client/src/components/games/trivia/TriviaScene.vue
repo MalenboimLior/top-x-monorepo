@@ -9,15 +9,15 @@
           </header>
           <div class="start-stats">
             <div class="stat">
-              <span class="stat-label">Best Score</span>
+              <span class="stat-label">{{ t('games.trivia.bestScore') }}</span>
               <span class="stat-value">{{ bestScore }}</span>
             </div>
             <div class="stat">
-              <span class="stat-label">Best Streak</span>
+              <span class="stat-label">{{ t('games.trivia.bestStreak') }}</span>
               <span class="stat-value">{{ bestStreak }}</span>
             </div>
             <div v-if="!unlimitedLives" class="stat">
-              <span class="stat-label">Lives</span>
+              <span class="stat-label">{{ t('games.trivia.lives') }}</span>
               <span class="stat-value">{{ totalLives }}</span>
             </div>
           </div>
@@ -63,7 +63,7 @@
           <div v-if="showLeaderboard && gameId" class="leaderboard-section">
             <button class="leaderboard-toggle" @click="toggleLeaderboard">
               <font-awesome-icon :icon="['fas', 'trophy']" class="toggle-icon" />
-              <span>{{ isLeaderboardExpanded ? 'Hide Leaderboard' : 'View Leaderboard' }}</span>
+              <span>{{ isLeaderboardExpanded ? t('games.trivia.hideLeaderboard') : t('games.trivia.viewLeaderboard') }}</span>
               <font-awesome-icon
                 :icon="['fas', isLeaderboardExpanded ? 'chevron-up' : 'chevron-down']"
                 class="toggle-chevron"
@@ -101,7 +101,7 @@
         <div class="scene-hud">
           <div class="hud-main">
             <div class="hud-group hud-group--compact">
-              <span class="hud-label">Score</span>
+              <span class="hud-label">{{ t('games.trivia.score') }}</span>
               <span class="hud-value">{{ score }}</span>
             </div>
             <div
@@ -122,7 +122,7 @@
               </transition>
             </div>
             <div v-if="!unlimitedLives" class="hud-group lives-group">
-              <span class="hud-label">Lives</span>
+              <span class="hud-label">{{ t('games.trivia.lives') }}</span>
               <div class="lives">
                 <span v-for="(heart, index) in livesDisplay" :key="index" :class="{ lost: !heart }">❤️</span>
               </div>
@@ -198,16 +198,20 @@
         </div>
 
         <div class="question-wrapper" v-else>
-          <TriviaQuestion
-            :question="currentQuestion"
-            :selected-answer="selectedAnswer"
-            :is-correct="isCorrect"
-            :correct-answer-index="correctAnswerIndex"
-            :is-reviewing-answer="isReviewingAnswer"
-            :show-correct-answers="showCorrectAnswers"
-            :direction="direction"
-            @answer-question="onAnswer"
-          />
+          <transition name="fade-slide" mode="out-in">
+            <TriviaQuestion
+              v-if="currentQuestion"
+              :key="currentQuestion.id"
+              :question="currentQuestion"
+              :selected-answer="selectedAnswer"
+              :is-correct="isCorrect"
+              :correct-answer-index="correctAnswerIndex"
+              :is-reviewing-answer="isReviewingAnswer"
+              :show-correct-answers="showCorrectAnswers"
+              :direction="direction"
+              @answer-question="onAnswer"
+            />
+          </transition>
         </div>
         <div v-if="powerUps.length" class="power-ups">
           <h3 class="power-ups-title">Power-ups</h3>
@@ -580,9 +584,9 @@ const inviterText = computed(() => {
 
 const inviterScoreText = computed(() => {
   if (props.mode === 'endless') {
-    return 'Beat it and flex your streak!';
+    return t('games.trivia.beatAndFlex');
   }
-  return `Score to beat: ${props.inviter?.score}`;
+  return `${t('games.trivia.scoreToBeat')}: ${props.inviter?.score}`;
 });
 
 const startButtonIcon = computed(() => {

@@ -66,7 +66,7 @@
           v-if="!isLoggedIn"
           type="is-dark"
           :icon="['fab', 'x-twitter']"
-          label="Login with X"
+          :label="t('games.loginButton')"
           @click="$emit('login')"
         />
       </div>
@@ -152,7 +152,11 @@ import Leaderboard from '@/components/Leaderboard.vue';
 import PercentileRank from '@/components/PercentileRank.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { useUserStore } from '@/stores/user';
+import { useLocaleStore } from '@/stores/locale';
 import type { TriviaAnswerReview } from '@/stores/trivia/types';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 interface InviterDetails {
   displayName: string;

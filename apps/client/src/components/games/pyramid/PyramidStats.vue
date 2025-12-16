@@ -6,7 +6,7 @@
         <thead>
           <tr>
             <th class="has-text-centered">
-              <a href="#" class="has-text-white" @click.prevent="sortBy('rank')">Rank
+              <a href="#" class="has-text-white" @click.prevent="sortBy('rank')">{{ t('games.pyramid.table.rank') }}
                 <font-awesome-icon
                   v-if="sortColumn === 'rank'"
                   :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -14,7 +14,7 @@
               </a>
             </th>
             <th class="has-text-centered">
-              <a href="#" class="has-text-white" @click.prevent="sortBy('name')">Item
+              <a href="#" class="has-text-white" @click.prevent="sortBy('name')">{{ t('games.pyramid.table.item') }}
                 <font-awesome-icon
                   v-if="sortColumn === 'name'"
                   :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -31,7 +31,7 @@
               </a>
             </th>
             <th v-if="worstShow" class="has-text-centered">
-              <a href="#" class="has-text-white" @click.prevent="sortBy('worst')">💩
+              <a href="#" class="has-text-white" @click.prevent="sortBy('worst')">{{ t('games.pyramid.table.worst') }}
                 <font-awesome-icon
                   v-if="sortColumn === 'worst'"
                   :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -39,7 +39,7 @@
               </a>
             </th>
             <th class="has-text-centered">
-              <a href="#" class="has-text-white" @click.prevent="sortBy('score')">Score
+              <a href="#" class="has-text-white" @click.prevent="sortBy('score')">{{ t('games.pyramid.table.score') }}
                 <font-awesome-icon
                   v-if="sortColumn === 'score'"
                   :icon="['fas', sortDirection === 'asc' ? 'sort-up' : 'sort-down']"
@@ -57,19 +57,19 @@
                   v-if="index === 0"
                   :icon="['fas', 'medal']"
                   class="medal gold"
-                  title="1st Place"
+                  :title="t('games.pyramid.place.1st')"
                 />
                 <font-awesome-icon
                   v-else-if="index === 1"
                   :icon="['fas', 'medal']"
                   class="medal silver"
-                  title="2nd Place"
+                  :title="t('games.pyramid.place.2nd')"
                 />
                 <font-awesome-icon
                   v-else-if="index === 2"
                   :icon="['fas', 'medal']"
                   class="medal bronze"
-                  title="3rd Place"
+                  :title="t('games.pyramid.place.3rd')"
                 />
               </div>
             </td>
@@ -112,7 +112,7 @@ Just your X username + pic - we promise, hands off your feed! 🔒<br>
       <div  class="has-text-centered">
           <CustomButton
             type="is-primary"
-            label="Login with X"
+            :label="t('games.loginButton')"
             :icon="['fab', 'x-twitter']"
             @click="handleLogin"
           />
@@ -147,7 +147,7 @@ Just your X username + pic - we promise, hands off your feed! 🔒<br>
           <div class="buttons is-centered mt-4">
             <CustomButton
               type="is-primary"
-              label="Download image"
+              :label="t('games.pyramid.downloadImage')"
               :icon="['fas', 'download']"
               :disabled="isImageLoading"
               @click="downloadPresidentStats"
@@ -173,8 +173,12 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import html2canvas from 'html2canvas';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
+import { useLocaleStore } from '@/stores/locale';
 
 library.add(faSortUp, faSortDown, faMedal,faDownload);
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const props = defineProps<{
   gameId: string;
@@ -183,8 +187,10 @@ const props = defineProps<{
   items: PyramidItem[];
   communityItems: PyramidItem[];
   rows: PyramidRow[];
+
   worstPoints: number;
   worstShow?: boolean;
+  hideLoginTab?: boolean;
 }>();
 
 const worstShow = computed(() => props.worstShow !== false);
@@ -205,7 +211,7 @@ onMounted(async () => {
     logEvent(analytics, 'game_view', { game_name: props.gameId, view_type: 'stats' });
   }
   console.log('PyramidStats: onMounted called with gameId:', props.gameId);
-  if (!user.value) {
+  if (!user.value && !props.hideLoginTab) {
     showLoginTab.value = true;
   }
   try {
@@ -213,9 +219,9 @@ onMounted(async () => {
     if (statsResult.stats) {
       const data = statsResult.stats;
       stats.value = {
-        itemRanks: data.custom.itemRanks || {},
-        totalPlayers: data.custom.totalPlayers || 0,
-        worstItemCounts: data.custom.worstItemCounts || {},
+        itemRanks: data.custom?.itemRanks || {},
+        totalPlayers: data.custom?.totalPlayers || 0,
+        worstItemCounts: data.custom?.worstItemCounts || {},
       };
       
       totalPlayers.value = stats.value.totalPlayers;
@@ -348,127 +354,216 @@ function closeLoginTab() {
 
 <style scoped>
 .pyramid-stats {
-  padding: 0.2rem 0.1rem;
-  background-color: #000000;
-
-  color: white;
+  padding: 0.5rem;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
+.subtitle {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0.5rem 0 1.5rem;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
 .table-container {
   overflow-x: auto;
   max-width: 100%;
-  margin: 0.3rem 0;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transition: filter 0.3s ease;
 }
-.table {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  max-width: 600px;
-  overflow: hidden;
-}
-th,
-td {
-  padding: 0.5rem;
-  text-align: center;
-  border-bottom: 1px solid #333;
-  min-height: 2.5rem; /* Ensure enough space for larger numbers */
-}
-th {
-  background-color: #2a2a2a;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: #eee;
-}
-td {
-  font-size: 0.8rem;
-  color: #ddd;
-}
-.number-cell {
 
+/* Custom Table Styles */
+.table {
+  background-color: transparent;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+}
+
+/* Header Styles */
+thead tr {
+  background: linear-gradient(180deg, #252525 0%, #1e1e1e 100%);
+}
+
+th {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 2px solid #333;
+  color: #888;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  transition: color 0.2s;
+}
+
+th a {
+  color: #aaa;
+  text-decoration: none;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.1rem !important; /* Bigger font for numbers */
-  line-height: 4; /* Prevent vertical offset */
-  padding: 0rem !important;
+  gap: 0.5rem;
+  transition: color 0.2s;
 }
-tr:hover {
-  background-color: #222;
+th a:hover {
+  color: #fff;
 }
-.item-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.1rem;
+th .active-sort {
+  color: #00e8e0;
 }
-.item-image {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
+
+/* Body Styles */
+tbody tr {
+  background-color: #161616;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
 }
+
+tbody tr:nth-child(even) {
+  background-color: #121212;
+}
+
+tbody tr:hover {
+  background-color: #252525;
+  transform: scale(1.005);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  z-index: 5;
+  position: relative;
+}
+
+td {
+  padding: 1rem 0.5rem;
+  border-bottom: 1px solid #222;
+  vertical-align: middle;
+  color: #eee;
+  transition: color 0.2s;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.number-cell {
+  font-family: 'Inter', 'Roboto', sans-serif; /* Monospace-ish for numbers or just clean sans */
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ccc;
+}
+tbody tr:hover .number-cell {
+  color: #fff;
+}
+
+/* Rank Column & Medals */
 .rank-column {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 .medal {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4));
 }
-.medal.gold {
-  color: #ffd700;
-}
-.medal.silver {
-  color: #c0c0c0;
-}
-.medal.bronze {
-  color: #cd7f32;
-}
-.subtitle {
-  color: #eee;
-  font-size: 1rem;
-  margin: 0.3rem 0;
-}
-.modal-content {
-  max-width: 90%;
-  width: 400px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.president-modal-content {
+.medal.gold { color: #ffd700; }
+.medal.silver { color: #c0c0c0; }
+.medal.bronze { color: #cd7f32; }
+
+/* Item Column */
+.item-column {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.5rem;
 }
-.modal-president-image {
-  width: 150px;
-  height: 150px;
+
+.item-image {
+  width: 50px;
+  height: 50px;
   object-fit: cover;
-  object-position: center;
   border-radius: 8px;
-  border: 2px solid #fff;
+  border: 1px solid #333;
+  transition: transform 0.2s;
+  background-color: #000;
 }
+tbody tr:hover .item-image {
+  transform: scale(1.1);
+  border-color: #555;
+}
+.item-column span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Modal Styles */
+/* Reuse existing logic but improve aesthetics */
+.modal-content {
+  width: 100%;
+  max-width: 450px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.president-modal-content {
+  background: linear-gradient(135deg, #222 0%, #111 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.modal-president-image {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%; /* Circle for profile-like feel in modal */
+  border: 3px solid #00e8e0;
+  box-shadow: 0 0 20px rgba(0, 232, 224, 0.3);
+}
+
+.title {
+  font-size: 1.5rem;
+  color: #fff;
+  font-weight: 800;
+}
+
 .stats-container {
   width: 100%;
-  text-align: center;
+  background-color: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 1rem;
 }
-.stats-container p {
-  margin: 0.5rem 0;
+
+/* Tweak text in stats */
+.stats-container p, .stats-container li {
+  color: #ccc;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
 }
-.stats-container ul {
-  list-style: none;
-  padding: 0;
+
+.buttons.is-centered {
+  margin-top: 1rem;
 }
-.stats-container li {
-  margin: 0.3rem 0;
-}
-.modal-close {
-  background-color: #ff5555;
-}
+
+/* Login Tab */
 .description-tab {
   position: fixed;
   bottom: 0;
@@ -480,24 +575,24 @@ tr:hover {
   transform: translateY(100%);
   transition: transform 0.3s ease-in-out;
   z-index: 1000;
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+  border-top: 1px solid #333;
 }
 .description-tab.show {
   transform: translateY(0);
 }
-.tab-content {
-  max-height: 200px;
-  overflow-y: auto;
-}
 @media screen and (min-width: 768px) {
   .description-tab {
-    width: 400px; /* Matches image-pool: 4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 2px */
+    width: 400px;
     left: 50%;
     transform: translateX(-50%) translateY(100%);
+    border-radius: 12px 12px 0 0;
   }
   .description-tab.show {
     transform: translateX(-50%) translateY(0);
   }
 }
+
 .question-text {
   color: #00e8e0;
   font-weight: bold;
@@ -506,44 +601,61 @@ tr:hover {
 }
 .answer-text {
   color: #eee;
+  text-align: center;
+  font-size: 0.9rem;
 }
+
 .blurred {
   filter: blur(8px);
   pointer-events: none;
   user-select: none;
 }
+
+
+.modal-close {
+  background-color: #ff5555;
+  transition: transform 0.2s;
+}
+.modal-close:hover {
+  transform: scale(1.1);
+}
+
+.tab-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Mobile Responsive */
 @media screen and (max-width: 767px) {
   .pyramid-stats {
-    padding: 0.1rem 0.05rem;
+    padding: 0;
+    width: 100%;
+  }
+  .table-container {
+     border-radius: 0; /* Full width often looks better without side radius on small screens, or keep it */
+     width: 100%;
   }
   .table {
-    font-size: 0.75rem;
-    min-width: 320px;
+    font-size: 0.8rem;
+    width: 100%;
+    /* Allow horizontal scroll on table container without breaking layout */
   }
-  th,
-  td {
-    padding: 0.3rem;
-    min-height: 2rem; /* Adjusted for mobile */
-  }
-  .number-cell {
-    font-size: 0.9rem; /* Bigger font for numbers on mobile */
-    line-height: 4.5;
+  th, td {
+    padding: 0.75rem 0.2rem; /* Reduced horizontal padding inside cells */
   }
   .item-image {
-    width: 15vw;
-    height: 15vw;
-    max-width: 50px;
-    max-height: 50px;
+    width: 40px;
+    height: 40px;
   }
   .medal {
-    font-size: 0.6rem;
+    font-size: 0.8rem;
   }
-  .modal-content {
-    width: 90%;
+  .subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
   }
-  .modal-president-image {
-    width: 120px;
-    height: 120px;
+  .number-cell {
+     font-size: 0.9rem !important;
   }
 }
 </style>

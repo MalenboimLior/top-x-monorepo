@@ -101,201 +101,201 @@ export const useTriviaStore = defineStore('trivia', () => {
   const unlimitedLives = computed(() => Boolean(activeConfig.value?.unlimitedLives));
   const hasPowerUps = computed(() => Boolean(activeConfig.value?.powerUps && activeConfig.value.powerUps.length > 0));
 
-interface LegacyTriviaAnswer {
-  text?: string;
-  label?: string;
-  imageUrl?: string | null;
-  image_url?: string | null;
-  image?: string | null;
-}
+  interface LegacyTriviaAnswer {
+    text?: string;
+    label?: string;
+    imageUrl?: string | null;
+    image_url?: string | null;
+    image?: string | null;
+  }
 
-interface LegacyTriviaQuestion extends Partial<TriviaQuestion> {
-  options?: Array<string | LegacyTriviaAnswer>;
-  correct?: number;
-  question?: string;
-  prompt?: string;
-  media?: {
-    imageUrl?: string;
-    image_url?: string;
-    optionImageUrls?: Array<string | null>;
-  };
-  correctHash?: unknown;
-  correctHashes?: unknown;
-}
+  interface LegacyTriviaQuestion extends Partial<TriviaQuestion> {
+    options?: Array<string | LegacyTriviaAnswer>;
+    correct?: number;
+    question?: string;
+    prompt?: string;
+    media?: {
+      imageUrl?: string;
+      image_url?: string;
+      optionImageUrls?: Array<string | null>;
+    };
+    correctHash?: unknown;
+    correctHashes?: unknown;
+  }
 
-function extractHashValue(source: unknown): string | undefined {
-  if (!source) {
+  function extractHashValue(source: unknown): string | undefined {
+    if (!source) {
+      return undefined;
+    }
+
+    if (typeof source === 'string') {
+      return source;
+    }
+
+    if (Array.isArray(source)) {
+      for (const entry of source) {
+        const value = extractHashValue(entry);
+        if (value) {
+          return value;
+        }
+      }
+      return undefined;
+    }
+
+    if (typeof source === 'object') {
+      const record = source as Record<string, unknown>;
+      const keysToCheck = ['value', 'hash', 'correct', 'primary', 'default'];
+      for (const key of keysToCheck) {
+        const candidate = record[key];
+        if (typeof candidate === 'string' && candidate) {
+          return candidate;
+        }
+      }
+      // Some callers might just store string values under arbitrary keys
+      for (const candidate of Object.values(record)) {
+        if (typeof candidate === 'string' && candidate) {
+          return candidate;
+        }
+      }
+    }
+
     return undefined;
   }
 
-  if (typeof source === 'string') {
-    return source;
+  function createQuestionId() {
+    return `q_${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  if (Array.isArray(source)) {
-    for (const entry of source) {
-      const value = extractHashValue(entry);
-      if (value) {
-        return value;
-      }
+  function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): TriviaQuestion {
+    const legacy = question as LegacyTriviaQuestion & Record<string, unknown>;
+
+    const normalized: TriviaQuestion = {
+      id: (legacy.id as string | undefined) ?? createQuestionId(),
+      text: (legacy.text as string | undefined) ?? (legacy.question as string | undefined) ?? (legacy.prompt as string | undefined) ?? '',
+      answers: [],
+      correctAnswer: (legacy.correctAnswer as string | undefined) ?? undefined,
+      category: legacy.category,
+      difficulty: legacy.difficulty,
+      salt: legacy.salt,
+      hash:
+        extractHashValue(legacy.hash) ??
+        extractHashValue(legacy.correctHash) ??
+        extractHashValue(legacy.correctHashes),
+      imageUrl:
+        (legacy.imageUrl as string | undefined) ??
+        (legacy.media?.imageUrl as string | undefined) ??
+        (legacy.media?.image_url as string | undefined),
+    };
+
+    let answersSource: Array<string | LegacyTriviaAnswer> | undefined;
+    const legacyAnswers = legacy.answers as Array<string | LegacyTriviaAnswer> | undefined;
+    if (legacyAnswers && legacyAnswers.length) {
+      answersSource = legacyAnswers;
+    } else if (legacy.options && legacy.options.length) {
+      answersSource = legacy.options;
     }
-    return undefined;
-  }
 
-  if (typeof source === 'object') {
-    const record = source as Record<string, unknown>;
-    const keysToCheck = ['value', 'hash', 'correct', 'primary', 'default'];
-    for (const key of keysToCheck) {
-      const candidate = record[key];
-      if (typeof candidate === 'string' && candidate) {
-        return candidate;
-      }
-    }
-    // Some callers might just store string values under arbitrary keys
-    for (const candidate of Object.values(record)) {
-      if (typeof candidate === 'string' && candidate) {
-        return candidate;
-      }
-    }
-  }
+    if (answersSource) {
+      normalized.answers = answersSource.map((option, index): TriviaAnswer => {
+        if (typeof option === 'string') {
+          return {
+            text: option,
+            imageUrl: legacy.media?.optionImageUrls?.[index] || undefined,
+          };
+        }
 
-  return undefined;
-}
-
-function createQuestionId() {
-  return `q_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function normalizeQuestion(question: TriviaQuestion | LegacyTriviaQuestion): TriviaQuestion {
-  const legacy = question as LegacyTriviaQuestion & Record<string, unknown>;
-
-  const normalized: TriviaQuestion = {
-    id: (legacy.id as string | undefined) ?? createQuestionId(),
-    text: (legacy.text as string | undefined) ?? (legacy.question as string | undefined) ?? (legacy.prompt as string | undefined) ?? '',
-    answers: [],
-    correctAnswer: (legacy.correctAnswer as string | undefined) ?? undefined,
-    category: legacy.category,
-    difficulty: legacy.difficulty,
-    salt: legacy.salt,
-    hash:
-      extractHashValue(legacy.hash) ??
-      extractHashValue(legacy.correctHash) ??
-      extractHashValue(legacy.correctHashes),
-    imageUrl:
-      (legacy.imageUrl as string | undefined) ??
-      (legacy.media?.imageUrl as string | undefined) ??
-      (legacy.media?.image_url as string | undefined),
-  };
-
-  let answersSource: Array<string | LegacyTriviaAnswer> | undefined;
-  const legacyAnswers = legacy.answers as Array<string | LegacyTriviaAnswer> | undefined;
-  if (legacyAnswers && legacyAnswers.length) {
-    answersSource = legacyAnswers;
-  } else if (legacy.options && legacy.options.length) {
-    answersSource = legacy.options;
-  }
-
-  if (answersSource) {
-    normalized.answers = answersSource.map((option, index): TriviaAnswer => {
-      if (typeof option === 'string') {
+        const text = option.text || option.label || '';
+        const imageUrl = option.imageUrl || option.image_url || option.image || legacy.media?.optionImageUrls?.[index] || undefined;
         return {
-          text: option,
-          imageUrl: legacy.media?.optionImageUrls?.[index] || undefined,
+          text,
+          imageUrl: imageUrl || undefined,
         };
-      }
+      });
+    }
 
-      const text = option.text || option.label || '';
-      const imageUrl = option.imageUrl || option.image_url || option.image || legacy.media?.optionImageUrls?.[index] || undefined;
+    if (!normalized.answers.length) {
+      normalized.answers = [{ text: '' }];
+    }
+
+    const hasMatchingCorrect =
+      normalized.correctAnswer !== undefined &&
+      normalized.answers.some((answer: TriviaAnswer) => answer.text === normalized.correctAnswer);
+
+    if (!hasMatchingCorrect) {
+      if (typeof legacy.correct === 'number' && legacy.correct >= 0 && legacy.correct < normalized.answers.length) {
+        normalized.correctAnswer = normalized.answers[legacy.correct]?.text ?? undefined;
+      } else if (normalized.correctAnswer) {
+        // Provided correct answer does not match any option; clear it
+        delete normalized.correctAnswer;
+      }
+    }
+
+    return normalized;
+  }
+
+  function sleep(duration: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, duration);
+    });
+  }
+
+  function toReviewOptions(question: TriviaQuestionViewModel): TriviaAnswerReview['options'] {
+    return question.options.map((option) => {
+      if (typeof option === 'string') {
+        return { text: option };
+      }
       return {
-        text,
-        imageUrl: imageUrl || undefined,
+        text: option.text,
+        imageUrl: option.imageUrl,
       };
     });
   }
 
-  if (!normalized.answers.length) {
-    normalized.answers = [{ text: '' }];
-  }
-
-  const hasMatchingCorrect =
-    normalized.correctAnswer !== undefined &&
-    normalized.answers.some((answer: TriviaAnswer) => answer.text === normalized.correctAnswer);
-
-  if (!hasMatchingCorrect) {
-    if (typeof legacy.correct === 'number' && legacy.correct >= 0 && legacy.correct < normalized.answers.length) {
-      normalized.correctAnswer = normalized.answers[legacy.correct]?.text ?? undefined;
-    } else if (normalized.correctAnswer) {
-      // Provided correct answer does not match any option; clear it
-      delete normalized.correctAnswer;
+  async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | null): Promise<number | null> {
+    if (!question?.correctHash) {
+      if (question) {
+        console.warn('[Trivia] Missing correct hash for question; cannot determine answer', {
+          id: question.id,
+          options: question.options,
+        });
+      }
+      return null;
     }
-  }
 
-  return normalized;
-}
+    const attemptedHashes: { option: string; hash: string }[] = [];
 
-function sleep(duration: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, duration);
-  });
-}
+    for (let i = 0; i < question.options.length; i++) {
+      const option = question.options[i];
+      let answerText: string;
 
-function toReviewOptions(question: TriviaQuestionViewModel): TriviaAnswerReview['options'] {
-  return question.options.map((option) => {
-    if (typeof option === 'string') {
-      return { text: option };
-    }
-    return {
-      text: option.text,
-      imageUrl: option.imageUrl,
-    };
-  });
-}
-
-async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | null): Promise<number | null> {
-  if (!question?.correctHash) {
-    if (question) {
-      console.warn('[Trivia] Missing correct hash for question; cannot determine answer', {
-        id: question.id,
-        options: question.options,
-      });
-    }
-    return null;
-  }
-
-  const attemptedHashes: { option: string; hash: string }[] = [];
-
-  for (let i = 0; i < question.options.length; i++) {
-    const option = question.options[i];
-    let answerText: string;
-    
-    if (typeof option === 'string') {
-      answerText = option;
-    } else {
-      // For image-only answers (no text), use the index as the answer identifier
-      // This matches how the builder hashes image-only answers
-      if (!option.text || option.text.trim() === '') {
-        // Image-only answer: use index as string (matches builder logic)
-        answerText = i.toString();
+      if (typeof option === 'string') {
+        answerText = option;
       } else {
-        answerText = option.text;
+        // For image-only answers (no text), use the index as the answer identifier
+        // This matches how the builder hashes image-only answers
+        if (!option.text || option.text.trim() === '') {
+          // Image-only answer: use index as string (matches builder logic)
+          answerText = i.toString();
+        } else {
+          answerText = option.text;
+        }
+      }
+
+      const hash = await hashAnswer(question.id, answerText, question.salt);
+      attemptedHashes.push({ option: answerText, hash });
+      if (hash === question.correctHash) {
+        return i;
       }
     }
-    
-    const hash = await hashAnswer(question.id, answerText, question.salt);
-    attemptedHashes.push({ option: answerText, hash });
-    if (hash === question.correctHash) {
-      return i;
-    }
+
+    console.warn('[Trivia] No option hash matched correct hash', {
+      id: question.id,
+      correctHash: question.correctHash,
+      attemptedHashes,
+    });
+
+    return null;
   }
-
-  console.warn('[Trivia] No option hash matched correct hash', {
-    id: question.id,
-    correctHash: question.correctHash,
-    attemptedHashes,
-  });
-
-  return null;
-}
 
   let ongoingFetch: Promise<FetchTriviaQuestionsResponse | null> | null = null;
 
@@ -570,12 +570,15 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       options: optionsToDisplay,
     };
 
+    // Reset state BEFORE updating currentQuestion to prevent UI flashing old selection
+    selectedAnswer.value = null;
+    isCorrect.value = null;
+    isReviewingAnswer.value = false;
+
     currentQuestion.value = displayedQuestion;
     correctAnswerIndex.value = await determineCorrectOptionIndex(displayedQuestion);
 
     questionOrder.value.push(next.id);
-    selectedAnswer.value = null;
-    isCorrect.value = null;
     startQuestionTimer(displayedQuestion);
     console.log('[Trivia] Question displayed successfully');
   }
@@ -645,7 +648,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     // Get the answer text from the option
     const option = question.options[answerIndex];
     let answerText: string;
-    
+
     if (typeof option === 'string') {
       answerText = option;
     } else {
@@ -658,7 +661,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         answerText = option.text;
       }
     }
-    
+
     const hash = await hashAnswer(question.id, answerText, question.salt);
     const attemptEntry: TriviaAttemptPayload = {
       questionId: question.id,
@@ -799,7 +802,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
         timeRemainingSeconds,
       },
     );
-    
+
     // Validate answer by comparing hash
     const option = questionSnapshot.options[index];
     let answerText: string;
@@ -823,7 +826,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
     if (speedBonus > 0) {
       attemptEntry.speedBonus = speedBonus;
     }
-    
+
     console.log('[Trivia] Answer validation:', {
       answerText,
       answerHash,
@@ -833,7 +836,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       timeRemainingSeconds,
       speedBonus,
     });
-    
+
     isCorrect.value = correct;
     isReviewingAnswer.value = true;
 
@@ -917,12 +920,12 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
   async function startGame(): Promise<void> {
     console.log('[Trivia] startGame called');
     resetGameState();
-    
+
     console.log('[Trivia] After resetGameState:', {
       allQuestionsCount: allQuestions.value.length,
       queueLength: questionQueue.value.length,
     });
-    
+
     await ensureConfig();
 
     console.log('[Trivia] Starting game with:', {
@@ -930,7 +933,7 @@ async function determineCorrectOptionIndex(question: TriviaQuestionViewModel | n
       queueLength: questionQueue.value.length,
       screen: 'playing',
     });
-    
+
     currentScreen.value = 'playing';
     startGlobalTimer();
     await prepareNextQuestion();

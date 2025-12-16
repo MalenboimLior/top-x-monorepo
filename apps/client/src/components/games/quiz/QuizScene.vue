@@ -12,8 +12,8 @@
           <div v-if="inviter" class="inviter-card">
             <img :src="inviter.photoURL" alt="Inviter avatar" class="inviter-avatar" loading="lazy" />
             <div class="inviter-details">
-              <p class="inviter-label">Shared by {{ inviter.displayName }}</p>
-              <p class="inviter-score">Take the quiz and share your result!</p>
+              <p class="inviter-label">{{ t('games.quiz.sharedBy') }} {{ inviter.displayName }}</p>
+              <p class="inviter-score">{{ t('games.quiz.takeQuizShare') }}</p>
             </div>
           </div>
 
@@ -33,7 +33,7 @@
               class="start-button"
               type="is-primary"
               :icon="['fas', 'play']"
-              label="Start Quiz"
+              :label="t('games.quiz.startQuiz')"
               :loading="isLoading"
               disabled
             />
@@ -51,7 +51,7 @@
 
           <!-- Saved Result Display - Below Play Button -->
           <div v-if="savedResult" class="saved-result-section">
-            <h3 class="saved-result-title">Your Previous Result</h3>
+            <h3 class="saved-result-title">{{ t('games.quiz.yourPreviousResult') }}</h3>
             <PersonalityResult
               v-if="savedResult.type === 'personality'"
               :result="savedResult.result as any"
@@ -87,14 +87,18 @@
         </div>
 
         <!-- Question -->
-        <QuizQuestion
-          v-else-if="currentQuestion"
-          :question="currentQuestion"
-          :direction="direction"
-          :can-go-back="questionNumber > 1"
-          @select-answer="onSelectAnswer"
-          @go-back="onGoBack"
-        />
+        <!-- Question -->
+        <transition name="fade-slide" mode="out-in">
+          <QuizQuestion
+            v-if="currentQuestion"
+            :key="currentQuestion.id"
+            :question="currentQuestion"
+            :direction="direction"
+            :can-go-back="questionNumber > 1"
+            @select-answer="onSelectAnswer"
+            @go-back="onGoBack"
+          />
+        </transition>
       </section>
     </transition>
   </div>

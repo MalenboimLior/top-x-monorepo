@@ -136,6 +136,7 @@ const getBarWidth = (score: number): number => {
   margin: 0;
   max-width: 500px;
   margin: 0 auto;
+  white-space: pre-wrap;
 }
 
 /* Score Breakdown */

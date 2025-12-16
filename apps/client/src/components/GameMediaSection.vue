@@ -57,7 +57,7 @@
       <CustomButton
         v-if="!user"
         type="is-info"
-        label="Login with X"
+        :label="t('games.loginButton')"
         :icon="['fab', 'x-twitter']"
         @click="handleLogin"
       />

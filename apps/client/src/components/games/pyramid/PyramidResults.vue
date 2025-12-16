@@ -65,7 +65,7 @@ Username + pic - we promise, we stay out of your posts! 🔒<br>
       <div  class="has-text-centered">
           <CustomButton
             type="is-primary"
-            label="Login with X"
+            :label="t('games.loginButton')"
             :icon="['fab', 'x-twitter']"
             @click="handleLogin"
           />
@@ -78,7 +78,11 @@ Username + pic - we promise, we stay out of your posts! 🔒<br>
 import { ref, onMounted, computed } from 'vue';
 import PyramidView from '@/components/games/pyramid/PyramidView.vue';
 import { useUserStore } from '@/stores/user';
+import { useLocaleStore } from '@/stores/locale';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import { LeaderboardEntry } from '@top-x/shared/types/game';
 import router from '@/router';
@@ -194,42 +198,60 @@ function searchFrenemies() {
 
 <style scoped>
 .pyramid-results {
-  padding: 0.2rem 0.1rem;
-  background-color: #000000;
-
-  color: white;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem 0.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .votes-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
   width: 100%;
 }
+
 .vote-item {
- padding-bottom: 1rem;
+  padding: 1.5rem;
+  background-color: #121212;
+  border-radius: 12px;
+  border: 1px solid #222;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease;
 }
+
+.vote-item:hover {
+  border-color: #333;
+}
+
 .user-header {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1rem;
 }
+
 .user-profile-image {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 2px solid #00e8e0;
   object-fit: cover;
+  box-shadow: 0 0 10px rgba(0, 232, 224, 0.2);
 }
+
 .subtitle {
   color: #eee;
   font-size: 1rem;
   margin: 0.3rem 0;
 }
+
 .description-tab {
   position: fixed;
   bottom: 0;
@@ -237,44 +259,80 @@ function searchFrenemies() {
   right: 0;
   background-color: #1f1f1f;
   color: white;
-  padding: 1rem;
+  padding: 1.5rem;
   transform: translateY(100%);
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+  border-top: 1px solid #333;
+  backdrop-filter: blur(10px);
 }
+
 .description-tab.show {
   transform: translateY(0);
 }
+
 .tab-content {
   max-height: 200px;
   overflow-y: auto;
+  margin-bottom: 1rem;
 }
+
 @media screen and (min-width: 768px) {
   .description-tab {
-    width: 400px; /* Matches image-pool: 4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 2px */
+    width: 450px;
     left: 50%;
     transform: translateX(-50%) translateY(100%);
+    border-radius: 16px 16px 0 0;
+    padding: 2rem;
   }
   .description-tab.show {
     transform: translateX(-50%) translateY(0);
   }
 }
+
 .question-text {
   color: #00e8e0;
-  font-weight: bold;
+  font-weight: 800;
   margin-bottom: 0.5rem;
   text-align: center;
+  font-size: 1.1rem;
 }
+
 .answer-text {
-  color: #eee;
+  color: #ccc;
+  text-align: center;
+  line-height: 1.5;
 }
+
 @media screen and (max-width: 767px) {
   .pyramid-results {
-    padding: 0.1rem 0.05rem;
+    padding: 0.5rem 0.2rem; /* Reduced horizontal padding */
+    width: 100%;
+  }
+  .vote-item {
+    padding: 1rem 0.5rem; /* Reduced horizontal padding inside cards */
+    border-radius: 8px; /* Slightly tighter radius for mobile */
   }
   .user-profile-image {
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
   }
+}
+
+/* Blend the nested PyramidView into the card */
+:deep(.pyramid-container) {
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  max-width: 100% !important;
+}
+
+:deep(.game-header) {
+  font-size: 1rem !important;
+  margin: 0.5rem 0 1rem !important;
+  opacity: 0.9;
+  text-align: left; /* Align header with user info if desired, or keep center */
 }
 </style>
