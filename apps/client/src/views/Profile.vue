@@ -469,8 +469,16 @@ function extractGameStats(gameTypeId: string, gameData: any): {
   fishCaught?: number;
   quizResult?: { title: string; image?: string };
 } {
+  console.log('[Profile] extractGameStats called:', {
+    gameTypeId,
+    hasCustom: !!gameData.custom,
+    customKeys: gameData.custom ? Object.keys(gameData.custom) : [],
+    custom: gameData.custom,
+  });
+
   const custom = gameData.custom as UserGameCustomDataUnion | undefined;
   if (!custom) {
+    console.log('[Profile] No custom data, returning basic stats');
     return {
       score: gameData.score,
       streak: gameData.streak,
@@ -482,8 +490,11 @@ function extractGameStats(gameTypeId: string, gameData: any): {
     streak: gameData.streak,
   };
 
+  console.log('[Profile] Processing game type:', gameTypeId);
+
   switch (gameTypeId) {
-    case 'Trivia': {
+    case 'Trivia':
+    case 'trivia': {
       const triviaCustom = (custom as any).trivia;
       if (triviaCustom) {
         stats.rank = triviaCustom.leaderboardRank;
@@ -491,8 +502,18 @@ function extractGameStats(gameTypeId: string, gameData: any): {
       }
       break;
     }
-    case 'Quiz': {
+    case 'Quiz':
+    case 'quiz': {
       const quizCustom = (custom as any).quiz;
+      
+      console.log('[Profile] Extracting quiz stats:', {
+        hasQuizCustom: !!quizCustom,
+        quizCustomKeys: quizCustom ? Object.keys(quizCustom) : [],
+        hasResult: !!quizCustom?.result,
+        result: quizCustom?.result,
+        hasPersonalityResult: !!quizCustom?.personalityResult,
+        hasArchetypeResult: !!quizCustom?.archetypeResult,
+      });
 
       // Check for separated result first, then fall back to original structure
       if (quizCustom?.result) {
@@ -500,16 +521,21 @@ function extractGameStats(gameTypeId: string, gameData: any): {
           title: quizCustom.result.title,
           image: quizCustom.result.image,
         };
+        console.log('[Profile] Quiz result extracted:', stats.quizResult);
       } else if (quizCustom?.personalityResult) {
         stats.quizResult = {
           title: quizCustom.personalityResult.title,
           image: quizCustom.resultImage,
         };
+        console.log('[Profile] Quiz personality result extracted:', stats.quizResult);
       } else if (quizCustom?.archetypeResult) {
         stats.quizResult = {
           title: quizCustom.archetypeResult.title,
           image: quizCustom.resultImage,
         };
+        console.log('[Profile] Quiz archetype result extracted:', stats.quizResult);
+      } else {
+        console.warn('[Profile] No quiz result found in custom data');
       }
       break;
     }
@@ -693,7 +719,7 @@ async function loadGroupedGames() {
         gameTypeId,
         pyramidData,
         zoneRevealData,
-        quizResult,
+        // quizResult is already in stats, don't override it
       });
     }
 

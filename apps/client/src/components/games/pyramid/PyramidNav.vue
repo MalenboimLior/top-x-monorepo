@@ -106,7 +106,7 @@ function setActiveTab(tab: 'results' | 'peer-picks') {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
 }
 
 .tabs-container {
@@ -156,9 +156,10 @@ function setActiveTab(tab: 'results' | 'peer-picks') {
 
 .tab-content {
   width: 100%;
-  max-width: 1200px; /* Limit max width for large screens */
+  max-width: 100%;
   min-height: 300px;
   animation: fadeIn 0.5s ease-out;
+  margin: 0 auto;
 }
 
 @keyframes fadeIn {
@@ -169,6 +170,7 @@ function setActiveTab(tab: 'results' | 'peer-picks') {
 @media screen and (max-width: 767px) {
   .pyramid-nav {
     padding: 0.5rem 0;
+    width: 100%;
   }
   .tabs-list {
     gap: 0.5rem;
@@ -177,6 +179,12 @@ function setActiveTab(tab: 'results' | 'peer-picks') {
   .tab-link {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
+  }
+  .tab-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
   }
 }
 </style>

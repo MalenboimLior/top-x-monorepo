@@ -37,9 +37,10 @@ import {
 } from './submitGameScore/trivia';
 import { processZoneRevealSubmission } from './submitGameScore/zoneReveal';
 import { processDailyChallengeSubmission } from './submitGameScore/dailyChallenge';
-import { processQuizSubmission, QuizProcessingOutcome } from './submitGameScore/quiz';
+import { processQuizSubmission, QuizProcessingOutcome, extractQuizSubmission } from './submitGameScore/quiz';
 import {
   separateTriviaData,
+  separateQuizData,
   separatePyramidData,
   separateZoneRevealData,
   separatePacmanData,
@@ -128,7 +129,7 @@ export const submitGameScore = functions.https.onCall(async (
       const gameRef = db.collection('games').doc(gameId);
       const statsRef = gameRef.collection('stats').doc('general');
       const leaderboardRef = gameRef.collection('leaderboard').doc(uid);
-      
+
       // Daily challenge references (only created if this is a challenge submission)
       const challengeRef = isDailyChallengeSubmission && rawDailyChallengeId
         ? gameRef.collection('daily_challenges').doc(rawDailyChallengeId)
@@ -148,7 +149,7 @@ export const submitGameScore = functions.https.onCall(async (
       const userData = userDoc.data() as User;
       const previousGameData = userData.games?.[gameTypeId]?.[gameId] as UserGameData | undefined;
       const previousScore = previousGameData?.score ?? null;
-      
+
       // Special handling for PyramidTier game: allow updates if custom data changed even if score didn't improve
       const isPyramidGame = gameTypeId === 'PyramidTier';
       const pyramidCustomChanged = isPyramidGame
@@ -182,7 +183,7 @@ export const submitGameScore = functions.https.onCall(async (
       // Fetch game documents
       const statsDoc = await tx.get(statsRef);
       const gameDoc = await tx.get(gameRef);
-      
+
       // Get current sessionsPlayed value before incrementing (for milestone detection)
       const currentStats = statsDoc.exists ? (statsDoc.data() as Partial<GameStats>) : {};
       const currentSessionsPlayed = typeof currentStats.sessionsPlayed === 'number' ? currentStats.sessionsPlayed : 0;
@@ -259,109 +260,81 @@ export const submitGameScore = functions.https.onCall(async (
       let triviaOutcome: TriviaProcessingOutcome | null = null;
       let quizOutcome: QuizProcessingOutcome | null = null;
 
-      // Check if this is a quiz game (personality/archetype) - no leaderboard updates needed
+      // Check if this is a quiz game (personality/archetype)
       quizOutcome = processQuizSubmission({
         gameSnapshot,
         submittedGameData: enrichedGameData,
       });
 
       if (quizOutcome) {
-        // Quiz games don't have scores or leaderboards
-        // But we still need to save the custom data (personalityResult/archetypeResult)
-        console.log('[submitGameScore] Quiz game completed', {
-          uid,
-          gameId,
-          mode: quizOutcome.mode,
-          resultId: quizOutcome.resultId,
-          resultTitle: quizOutcome.resultTitle,
-        });
+        console.log('========================================');
+        console.log('[submitGameScore] QUIZ GAME DETECTED');
+        console.log('========================================');
+        console.log('[submitGameScore] User ID:', uid);
+        console.log('[submitGameScore] Game ID:', gameId);
+        console.log('[submitGameScore] Mode:', quizOutcome.mode);
+        console.log('[submitGameScore] Result ID:', quizOutcome.resultId);
+        console.log('[submitGameScore] Result Title:', quizOutcome.resultTitle);
+        console.log('========================================');
 
-        // Log previous game data
-        console.log('[submitGameScore] Previous game data:', {
-          hasPreviousData: !!previousGameData,
-          hasPreviousCustom: !!previousGameData?.custom,
-          previousCustomKeys: previousGameData?.custom ? Object.keys(previousGameData.custom) : [],
-          previousPersonalityResult: previousGameData?.custom ? (previousGameData.custom as Record<string, unknown>).personalityResult : undefined,
-          previousArchetypeResult: previousGameData?.custom ? (previousGameData.custom as Record<string, unknown>).archetypeResult : undefined,
-        });
+        // Extract quiz submission from custom data
+        console.log('[submitGameScore] Extracting quiz submission from custom data...');
+        console.log('[submitGameScore] enrichedGameData.custom keys:', enrichedGameData.custom ? Object.keys(enrichedGameData.custom) : []);
+        console.log('[submitGameScore] enrichedGameData.custom:', JSON.stringify(enrichedGameData.custom, null, 2));
 
-        // Log incoming custom data
-        console.log('[submitGameScore] Incoming custom data:', {
-          hasCustom: !!enrichedGameData.custom,
-          customKeys: enrichedGameData.custom ? Object.keys(enrichedGameData.custom) : [],
-          personalityResult: enrichedGameData.custom ? (enrichedGameData.custom as Record<string, unknown>).personalityResult : undefined,
-          archetypeResult: enrichedGameData.custom ? (enrichedGameData.custom as Record<string, unknown>).archetypeResult : undefined,
-        });
+        const quizSubmission = extractQuizSubmission(
+          enrichedGameData.custom as Record<string, unknown> | undefined
+        );
 
-        // For quiz games, we need to completely replace the custom data with the new result
-        // Start fresh with previous custom data (excluding old quiz results)
-        const previousCustom = previousGameData?.custom ?? {} as Record<string, unknown>;
-        const baseCustom: UserGameCustomData = {};
-        
-        // Copy all previous custom fields EXCEPT quiz results
-        Object.keys(previousCustom).forEach((key) => {
-          if (key !== 'personalityResult' && key !== 'archetypeResult' && key !== 'dailyChallenges') {
-            (baseCustom as Record<string, unknown>)[key] = previousCustom[key];
-          }
-        });
-        
-        // Now add the new custom data from submission (which includes the new quiz result)
-        const customFromSubmission = enrichedGameData.custom ?? {} as Record<string, unknown>;
-        Object.keys(customFromSubmission).forEach((key) => {
-          if (key !== 'dailyChallenges') {
-            (baseCustom as Record<string, unknown>)[key] = customFromSubmission[key];
-          }
-        });
-
-        console.log('[submitGameScore] Merged custom data:', {
-          baseCustomKeys: Object.keys(baseCustom),
-          hasPersonalityResult: !!(baseCustom as Record<string, unknown>).personalityResult,
-          hasArchetypeResult: !!(baseCustom as Record<string, unknown>).archetypeResult,
-          personalityResult: (baseCustom as Record<string, unknown>).personalityResult,
-          archetypeResult: (baseCustom as Record<string, unknown>).archetypeResult,
-          fullBaseCustom: JSON.stringify(baseCustom, null, 2),
-        });
-        
-        // Verify the new result is actually in baseCustom
-        const baseCustomRecord = baseCustom as Record<string, unknown>;
-        if (quizOutcome.mode === 'personality' && baseCustomRecord.personalityResult) {
-          console.log('[submitGameScore] VERIFIED: New personality result is in baseCustom:', {
-            bucketId: (baseCustomRecord.personalityResult as any)?.bucketId,
-            title: (baseCustomRecord.personalityResult as any)?.title,
-          });
-        } else if (quizOutcome.mode === 'archetype' && baseCustomRecord.archetypeResult) {
-          console.log('[submitGameScore] VERIFIED: New archetype result is in baseCustom:', {
-            id: (baseCustomRecord.archetypeResult as any)?.id,
-            title: (baseCustomRecord.archetypeResult as any)?.title,
-          });
-        } else {
-          console.error('[submitGameScore] ERROR: New quiz result NOT found in baseCustom!', {
-            mode: quizOutcome.mode,
-            hasPersonalityResult: !!baseCustomRecord.personalityResult,
-            hasArchetypeResult: !!baseCustomRecord.archetypeResult,
-          });
+        if (!quizSubmission) {
+          console.error('[submitGameScore] ERROR: Quiz submission data is missing!');
+          console.error('[submitGameScore] enrichedGameData:', enrichedGameData);
+          throw new functions.https.HttpsError('invalid-argument', 'Quiz submission data is missing');
         }
 
-        // Remove nested dailyChallenges from custom (it's stored separately)
-        delete (baseCustom as Record<string, unknown>).dailyChallenges;
+        console.log('[submitGameScore] Quiz submission extracted successfully:');
+        console.log('[submitGameScore] - Mode:', quizSubmission.mode);
+        console.log('[submitGameScore] - Selected Answers:', quizSubmission.selectedAnswers);
+        console.log('[submitGameScore] - Selected Answers Count:', Object.keys(quizSubmission.selectedAnswers).length);
+        console.log('[submitGameScore] - Personality Result:', quizSubmission.personalityResult);
+        console.log('[submitGameScore] - Archetype Result:', quizSubmission.archetypeResult);
 
-        // Build merged game data for quiz
+        // Separate quiz data into leaderboard and user data
+        console.log('[submitGameScore] Separating quiz data...');
+        const { leaderboard: quizLeaderboardData, user: quizUserData } = separateQuizData(
+          enrichedGameData.custom as UserGameCustomData,
+          {
+            questionIds: Object.keys(quizSubmission.selectedAnswers),
+            selectedAnswers: quizSubmission.selectedAnswers,
+            result: quizSubmission.mode === 'personality' && quizSubmission.personalityResult
+              ? { id: quizSubmission.personalityResult.bucketId, title: quizSubmission.personalityResult.title }
+              : quizSubmission.mode === 'archetype' && quizSubmission.archetypeResult
+                ? { id: quizSubmission.archetypeResult.id, title: quizSubmission.archetypeResult.title }
+                : { id: '', title: '' },
+            mode: quizSubmission.mode,
+            image: quizSubmission.mode === 'personality' && quizSubmission.personalityResult
+              ? (quizSubmission.personalityResult as any).imageUrl
+              : quizSubmission.mode === 'archetype' && quizSubmission.archetypeResult
+                ? (quizSubmission.archetypeResult as any).imageUrl
+                : undefined,
+          }
+        );
+
+        console.log('[submitGameScore] ===== DATA SEPARATION COMPLETE =====');
+        console.log('[submitGameScore] LEADERBOARD DATA:');
+        console.log(JSON.stringify(quizLeaderboardData, null, 2));
+        console.log('[submitGameScore] USER DATA:');
+        console.log(JSON.stringify(quizUserData, null, 2));
+        console.log('[submitGameScore] ======================================');
+
+        // Build merged game data for user with separated user custom data
         const mergedGameData: UserGameData = {
           ...(previousGameData ?? {}),
-          ...enrichedGameData,
           score: 0, // Quiz doesn't use score
           streak: 0,
           lastPlayed: serverLastPlayed,
-          custom: baseCustom,
+          custom: quizUserData as unknown as UserGameCustomData, // Use separated minimal custom data for user
         };
-
-        console.log('[submitGameScore] Merged game data to save:', {
-          lastPlayed: mergedGameData.lastPlayed,
-          hasCustom: !!mergedGameData.custom,
-          customKeys: mergedGameData.custom ? Object.keys(mergedGameData.custom) : [],
-          personalityResult: mergedGameData.custom ? (mergedGameData.custom as Record<string, unknown>).personalityResult : undefined,
-          archetypeResult: mergedGameData.custom ? (mergedGameData.custom as Record<string, unknown>).archetypeResult : undefined,
-        });
 
         // Preserve existing daily challenge data
         if (previousGameData?.dailyChallenges) {
@@ -369,7 +342,12 @@ export const submitGameScore = functions.https.onCall(async (
         }
 
         // Save quiz custom data to user document
-        console.log('[submitGameScore] Saving quiz data to Firestore...');
+        console.log('[submitGameScore] ===== SAVING TO USER DOCUMENT =====');
+        console.log('[submitGameScore] User path: users/' + uid);
+        console.log('[submitGameScore] Game path: games.quiz.' + gameId);
+        console.log('[submitGameScore] Data to save:', JSON.stringify(mergedGameData, null, 2));
+        console.log('[submitGameScore] ====================================');
+
         tx.set(userRef, {
           games: {
             [gameTypeId]: {
@@ -378,14 +356,40 @@ export const submitGameScore = functions.https.onCall(async (
           },
         }, { merge: true });
 
-        console.log('[submitGameScore] Quiz data saved successfully');
+        console.log('[submitGameScore] ✓ User document updated');
+
+        // Update leaderboard with quiz analytics data
+        const regularDatePayload = createLeaderboardDatePayload(serverLastPlayed);
+        const leaderboardUpdate = {
+          uid,
+          displayName: userData.displayName,
+          username: userData.username,
+          photoURL: userData.photoURL || DEFAULT_LEADERBOARD_PHOTO,
+          score: 0, // Quiz doesn't use score
+          streak: 0,
+          updatedAt: Date.now(),
+          custom: quizLeaderboardData, // Use separated leaderboard data with selectedAnswers
+          ...(regularDatePayload ? { date: regularDatePayload } : {}),
+        };
+
+        console.log('[submitGameScore] ===== SAVING TO LEADERBOARD =====');
+        console.log('[submitGameScore] Leaderboard path: games/' + gameId + '/leaderboard/' + uid);
+        console.log('[submitGameScore] Data to save:', JSON.stringify(leaderboardUpdate, null, 2));
+        console.log('[submitGameScore] ==================================');
+
+        tx.set(leaderboardRef, leaderboardUpdate);
+        console.log('[submitGameScore] ✓ Leaderboard updated');
 
         // Update game counters (sessions played, total players for first-time players)
         increaseSessionCounter({ tx, statsRef });
-        
+
         if (!previousGameData) {
           incrementTotalPlayersCounter({ tx, statsRef });
         }
+
+        console.log('[submitGameScore] ===== QUIZ SUBMISSION COMPLETE =====');
+        console.log('[submitGameScore] Success: true');
+        console.log('[submitGameScore] ======================================');
 
         return {
           success: true,
@@ -439,7 +443,7 @@ export const submitGameScore = functions.https.onCall(async (
       if (typeof gameData.streak === 'number') {
         streakToPersist = Math.max(streakToPersist, gameData.streak);
       }
-      
+
       // Daily challenge-specific variables
       let challengeBestScore: number | undefined;
       let challengeGameDataUpdate: UserGameData | undefined;
@@ -594,16 +598,16 @@ export const submitGameScore = functions.https.onCall(async (
 
       // Update game counters (sessions played, total players for first-time players)
       increaseSessionCounter({ tx, statsRef });
-      
+
       // Calculate new sessions count after increment
       const newSessionsPlayed = currentSessionsPlayed + 1;
-      
+
       // Check for milestone thresholds (100 and 1000 sessions)
       // Only check if this is not a daily challenge submission (to avoid duplicate notifications)
       const milestoneToNotify = !isDailyChallengeSubmission &&
         ((currentSessionsPlayed < 100 && newSessionsPlayed >= 100) ? 100 :
-        (currentSessionsPlayed < 1000 && newSessionsPlayed >= 1000) ? 1000 :
-        null);
+          (currentSessionsPlayed < 1000 && newSessionsPlayed >= 1000) ? 1000 :
+            null);
 
       if (!previousGameData) {
         incrementTotalPlayersCounter({ tx, statsRef });

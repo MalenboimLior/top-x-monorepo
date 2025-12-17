@@ -125,68 +125,60 @@ async function saveQuizResult() {
     return;
   }
 
-  const custom: Record<string, unknown> = {};
-  
   // Build quiz submission data
   const quizData: Record<string, unknown> = {
     mode: props.mode,
   };
   
   if (props.mode === 'personality' && props.personalityResult) {
-    // Include full result data for backend processing
-    custom.personalityResult = props.personalityResult;
-    
     // Add selectedAnswers for leaderboard analytics
     quizData.selectedAnswers = props.personalityResult.selectedAnswers || {};
     quizData.personalityResult = {
       bucketId: props.personalityResult.bucketId,
       title: props.personalityResult.title,
+      imageUrl: props.personalityResult.result?.imageUrl,
     };
     
-    console.log('[QuizEndScreen] Saving personality result:', {
-      gameId: props.gameId,
-      mode: props.mode,
-      result: {
-        bucketId: props.personalityResult.bucketId,
-        title: props.personalityResult.title,
-        points: props.personalityResult.points,
-        selectedAnswersCount: Object.keys(props.personalityResult.selectedAnswers || {}).length,
-      },
-    });
+    console.log('[QuizEndScreen] ===== PERSONALITY QUIZ SUBMISSION =====');
+    console.log('[QuizEndScreen] Game ID:', props.gameId);
+    console.log('[QuizEndScreen] Mode:', props.mode);
+    console.log('[QuizEndScreen] Bucket ID:', props.personalityResult.bucketId);
+    console.log('[QuizEndScreen] Title:', props.personalityResult.title);
+    console.log('[QuizEndScreen] Points:', props.personalityResult.points);
+    console.log('[QuizEndScreen] Selected Answers:', props.personalityResult.selectedAnswers);
+    console.log('[QuizEndScreen] Selected Answers Count:', Object.keys(props.personalityResult.selectedAnswers || {}).length);
+    console.log('[QuizEndScreen] =====================================');
   } else if (props.mode === 'archetype' && props.archetypeResult) {
-    // Include full result data for backend processing
-    custom.archetypeResult = props.archetypeResult;
-    
     // Add selectedAnswers for leaderboard analytics
     quizData.selectedAnswers = props.archetypeResult.selectedAnswers || {};
     quizData.archetypeResult = {
       id: props.archetypeResult.id,
       title: props.archetypeResult.title,
       pattern: props.archetypeResult.pattern,
+      imageUrl: props.archetypeResult.result?.imageUrl,
     };
     
-    console.log('[QuizEndScreen] Saving archetype result:', {
-      gameId: props.gameId,
-      mode: props.mode,
-      result: {
-        id: props.archetypeResult.id,
-        title: props.archetypeResult.title,
-        pattern: props.archetypeResult.pattern,
-        selectedAnswersCount: Object.keys(props.archetypeResult.selectedAnswers || {}).length,
-      },
-    });
+    console.log('[QuizEndScreen] ===== ARCHETYPE QUIZ SUBMISSION =====');
+    console.log('[QuizEndScreen] Game ID:', props.gameId);
+    console.log('[QuizEndScreen] Mode:', props.mode);
+    console.log('[QuizEndScreen] Result ID:', props.archetypeResult.id);
+    console.log('[QuizEndScreen] Title:', props.archetypeResult.title);
+    console.log('[QuizEndScreen] Pattern:', props.archetypeResult.pattern);
+    console.log('[QuizEndScreen] Selected Answers:', props.archetypeResult.selectedAnswers);
+    console.log('[QuizEndScreen] Selected Answers Count:', Object.keys(props.archetypeResult.selectedAnswers || {}).length);
+    console.log('[QuizEndScreen] =====================================');
   }
   
-  // Add quiz data to custom
-  custom.quiz = quizData;
+  // Only send quiz data (not both quiz and personalityResult/archetypeResult)
+  const custom: Record<string, unknown> = {
+    quiz: quizData,
+  };
 
   if (Object.keys(custom).length > 0) {
     try {
-      console.log('[QuizEndScreen] Calling updateGameProgress with custom data:', {
-        gameId: props.gameId,
-        customKeys: Object.keys(custom),
-        custom,
-      });
+      console.log('[QuizEndScreen] ===== SENDING TO BACKEND =====');
+      console.log('[QuizEndScreen] Custom data structure:', JSON.stringify(custom, null, 2));
+      console.log('[QuizEndScreen] ==============================');
       
       // Check what's currently in the profile before saving
       const currentGameData = userStore.profile?.games?.['quiz']?.[props.gameId];
@@ -194,8 +186,6 @@ async function saveQuizResult() {
         hasGameData: !!currentGameData,
         hasCustom: !!currentGameData?.custom,
         customKeys: currentGameData?.custom ? Object.keys(currentGameData.custom as Record<string, unknown>) : [],
-        personalityResult: currentGameData?.custom ? (currentGameData.custom as Record<string, unknown>).personalityResult : undefined,
-        archetypeResult: currentGameData?.custom ? (currentGameData.custom as Record<string, unknown>).archetypeResult : undefined,
       });
 
       await userStore.updateGameProgress('quiz', props.gameId, {
@@ -204,9 +194,24 @@ async function saveQuizResult() {
         custom,
       });
       
-      console.log('[QuizEndScreen] updateGameProgress completed successfully');
+      console.log('[QuizEndScreen] ===== SUBMISSION COMPLETE =====');
+      console.log('[QuizEndScreen] Waiting for profile update...');
+      
+      // Wait a bit for the profile to update
+      setTimeout(() => {
+        const updatedGameData = userStore.profile?.games?.['quiz']?.[props.gameId];
+        console.log('[QuizEndScreen] Profile after save:', {
+          hasGameData: !!updatedGameData,
+          hasCustom: !!updatedGameData?.custom,
+          customKeys: updatedGameData?.custom ? Object.keys(updatedGameData.custom as Record<string, unknown>) : [],
+          customData: updatedGameData?.custom,
+        });
+        console.log('[QuizEndScreen] ==================================');
+      }, 2000);
     } catch (err) {
-      console.error('[QuizEndScreen] Failed to save quiz result:', err);
+      console.error('[QuizEndScreen] ===== SUBMISSION FAILED =====');
+      console.error('[QuizEndScreen] Error:', err);
+      console.error('[QuizEndScreen] =============================');
     }
   } else {
     console.warn('[QuizEndScreen] No quiz result to save', {

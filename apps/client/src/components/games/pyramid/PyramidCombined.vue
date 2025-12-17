@@ -1,9 +1,11 @@
 <template>
   <div class="pyramid-combined">
     <!-- Top Section: User's Vote (Thumbnail) -->
+    <!-- Top Section: User's Vote (Thumbnail) -->
     <div class="user-vote-section">
-      <div class="vote-thumbnail-container">
-        <h3 class="vote-title">{{ t('games.pyramid.yourVote') }}</h3>
+      <h3 class="vote-title desktop-only">{{ t('games.pyramid.yourVote') }}</h3>
+      
+      <div class="vote-row">
         <div class="thumbnail-wrapper">
           <PyramidImage
             ref="pyramidImageRef"
@@ -21,17 +23,17 @@
             :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
           />
         </div>
-      </div>
 
-      <div class="buttons-container">
-        <ShareButton 
-          :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
-          :image-url="imageUrl"
-          class="share-btn"
-        />
-        <a class="edit-btn" @click="editPyramid">
-          <font-awesome-icon :icon="['fas', 'pen']" class="mr-1" /> {{ t('games.pyramid.edit') }}
-        </a>
+        <div class="buttons-container">
+          <ShareButton 
+            :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
+            :image-url="imageUrl"
+            class="share-btn"
+          />
+          <a class="edit-btn" @click="editPyramid">
+            <font-awesome-icon :icon="['fas', 'pen']" class="mr-1" /> {{ t('games.pyramid.edit') }}
+          </a>
+        </div>
       </div>
     </div>
 
@@ -134,11 +136,12 @@ async function handleLogin() {
 .pyramid-combined {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Center everything */
+  align-items: stretch;
   width: 100%;
-  max-width: 1000px; /* Slightly wider for desktop stats */
+  max-width: 1000px; /* Limit width on desktop */
   margin: 0 auto;
   padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 .user-vote-section {
@@ -167,7 +170,7 @@ async function handleLogin() {
   opacity: 0.5;
 }
 
-.vote-thumbnail-container {
+.vote-row {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -245,7 +248,7 @@ async function handleLogin() {
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
-  margin: 1rem 0 3rem; /* More bottom margin to separate from stats */
+  margin: 1rem auto 3rem; /* More bottom margin to separate from stats */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -271,8 +274,11 @@ async function handleLogin() {
 
 .stats-section {
   width: 100%;
+  max-width: 100%;
   animation: slideUp 0.6s ease-out;
+  box-sizing: border-box;
 }
+
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -284,16 +290,45 @@ async function handleLogin() {
     padding: 0; /* Full width */
   }
   .user-vote-section {
-    padding: 1.5rem 0.2rem; /* Minimal padding */
+    padding: 1rem 0.5rem; /* Minimal padding */
     border-radius: 0; /* Edge to edge design */
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     border-left: none;
     border-right: none;
   }
-  .thumbnail-wrapper {
-    max-width: 100%; /* Allow full width scaling if needed */
-    width: auto;
+
+  .vote-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
   }
+
+  /* Hide the big title on mobile to save space */
+  .desktop-only {
+    display: none;
+  }
+
+  .thumbnail-wrapper {
+    /* Scale down the thumbnail significantly to act as a card/icon */
+    max-width: 80px; 
+    width: 80px;
+    margin: 0;
+  }
+
+  .buttons-container {
+    margin-top: 0; /* Remove top margin in horizontal layout */
+    width: auto;
+    flex-direction: column; /* Stack buttons vertically next to image? Or allow Row. User said "one line next to share button" */
+    gap: 0.5rem;
+    align-items: flex-start; /* Align left */
+  }
+
+  .edit-btn {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+  }
+
   .login-promo-container {
     padding: 1.5rem 0.5rem; /* Reduced horizontal padding */
     margin-bottom: 2rem;
@@ -301,9 +336,13 @@ async function handleLogin() {
   .login-subtitle {
     max-width: 100%;
   }
-  .buttons-container {
-    flex-direction: column;
-    gap: 1rem;
+
+  .stats-section {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 </style>

@@ -356,10 +356,13 @@ function closeLoginTab() {
 .pyramid-stats {
   padding: 0.5rem;
   width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  box-sizing: border-box;
 }
+
 
 .subtitle {
   color: #fff;
@@ -378,6 +381,7 @@ function closeLoginTab() {
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   transition: filter 0.3s ease;
+  box-sizing: border-box;
 }
 
 /* Custom Table Styles */
@@ -630,14 +634,22 @@ tbody tr:hover .item-image {
   .pyramid-stats {
     padding: 0;
     width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 100%;
   }
   .table-container {
      border-radius: 0; /* Full width often looks better without side radius on small screens, or keep it */
      width: 100%;
+     max-width: 100%;
+     margin-left: 0;
+     margin-right: 0;
   }
   .table {
     font-size: 0.8rem;
     width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     /* Allow horizontal scroll on table container without breaking layout */
   }
   th, td {

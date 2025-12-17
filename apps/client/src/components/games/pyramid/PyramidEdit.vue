@@ -974,7 +974,10 @@ function closeTab() {
   padding: 0.3rem;
   margin-top: 0.3rem;
   background-color: #1f1f1f;
-  
+  width: fit-content;
+  max-width: calc(4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 4px); /* 4 items + gaps + padding + border */
+  margin-left: auto;
+  margin-right: auto;
 }
 .image-box {
   width: 100%;

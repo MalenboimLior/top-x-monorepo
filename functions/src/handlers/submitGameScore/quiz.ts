@@ -43,8 +43,20 @@ export function isQuizConfig(config: unknown): config is QuizConfig {
     return false;
   }
 
-  const mode = (config as { mode?: unknown }).mode;
-  return mode === 'personality' || mode === 'archetype';
+  const c = config as Record<string, unknown>;
+  const mode = c.mode;
+
+  // Check if mode is explicitly set to quiz modes
+  if (mode === 'personality' || mode === 'archetype') {
+    return true;
+  }
+
+  // Also check for quiz-specific fields (personalityBuckets or archetypeAxes)
+  // This handles cases where the mode might be incorrectly set
+  const hasPersonalityBuckets = Array.isArray(c.personalityBuckets) && c.personalityBuckets.length > 0;
+  const hasArchetypeAxes = Array.isArray(c.archetypeAxes) && c.archetypeAxes.length > 0;
+
+  return hasPersonalityBuckets || hasArchetypeAxes;
 }
 
 /**
@@ -93,12 +105,24 @@ export function processQuizSubmission({
   gameSnapshot: Game | undefined;
   submittedGameData: UserGameDataSubmission;
 }): QuizProcessingOutcome | null {
+  console.log('[processQuizSubmission] ===== ENTRY =====');
+  console.log('[processQuizSubmission] Has gameSnapshot:', !!gameSnapshot);
+  console.log('[processQuizSubmission] gameSnapshot.gameTypeId:', gameSnapshot?.gameTypeId);
+  console.log('[processQuizSubmission] gameSnapshot.custom:', gameSnapshot?.custom);
+  console.log('[processQuizSubmission] Is quiz config:', gameSnapshot ? isQuizConfig(gameSnapshot.custom) : false);
+
   // Check if this is a quiz game
   if (!gameSnapshot || !isQuizConfig(gameSnapshot.custom)) {
+    console.log('[processQuizSubmission] NOT a quiz game - returning null');
+    console.log('[processQuizSubmission] Reason:', !gameSnapshot ? 'No gameSnapshot' : 'Not a quiz config');
     return null;
   }
 
+  console.log('[processQuizSubmission] Confirmed: This IS a quiz game');
   const quizConfig = gameSnapshot.custom as QuizConfig;
+  console.log('[processQuizSubmission] Quiz config mode:', quizConfig.mode);
+  console.log('[processQuizSubmission] submittedGameData.custom:', submittedGameData.custom);
+
   const quizSubmission = extractQuizSubmission(
     submittedGameData.custom as Record<string, unknown> | undefined
   );
@@ -106,8 +130,16 @@ export function processQuizSubmission({
   if (!quizSubmission) {
     // This is a quiz game but no quiz data was submitted
     // Could be initial load or other non-submission request
+    console.log('[processQuizSubmission] Quiz game but NO quiz submission data - returning null');
     return null;
   }
+
+  console.log('[processQuizSubmission] Quiz submission found:', {
+    mode: quizSubmission.mode,
+    hasPersonalityResult: !!quizSubmission.personalityResult,
+    hasArchetypeResult: !!quizSubmission.archetypeResult,
+    selectedAnswersCount: Object.keys(quizSubmission.selectedAnswers).length,
+  });
 
   console.log('submitGameScore: processing quiz submission', {
     mode: quizConfig.mode,
@@ -131,6 +163,8 @@ export function processQuizSubmission({
     outcome.resultTitle = quizSubmission.archetypeResult.title;
   }
 
+  console.log('[processQuizSubmission] Returning outcome:', outcome);
+  console.log('[processQuizSubmission] ===== EXIT =====');
   return outcome;
 }
 

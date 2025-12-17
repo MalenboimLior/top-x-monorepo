@@ -50,7 +50,7 @@
       <!-- Enhanced Game Details -->
 
       <!-- Quiz Result -->
-      <div v-if="gameTypeId === 'Quiz' && quizResult" class="stat-item stat-item--full">
+      <div v-if="(gameTypeId === 'Quiz' || gameTypeId === 'quiz') && quizResult" class="stat-item stat-item--full">
         <span class="stat-label">Your Result</span>
         <div class="quiz-result-enhanced">
           <img v-if="quizResult.image" :src="quizResult.image" :alt="quizResult.title" class="quiz-result-image-enhanced" />
@@ -97,6 +97,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { onMounted } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PercentileRank from './PercentileRank.vue';
 import PyramidView from './games/pyramid/PyramidView.vue';
@@ -121,6 +122,16 @@ interface Props {
 
 const props = defineProps<Props>();
 const router = useRouter();
+
+onMounted(() => {
+  console.log('[GameStatsCard] Mounted with props:', {
+    gameId: props.gameId,
+    gameName: props.gameName,
+    gameTypeId: props.gameTypeId,
+    hasQuizResult: !!props.quizResult,
+    quizResult: props.quizResult,
+  });
+});
 
 const playGame = () => {
   if (props.gameId) {

@@ -275,7 +275,19 @@ function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null)
 </script>
 
 <style scoped>
-/*.pyramid-tier {
-  padding: 20px;
-}*/
+.pyramid-tier {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@media screen and (max-width: 767px) {
+  .pyramid-tier {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
 </style>
