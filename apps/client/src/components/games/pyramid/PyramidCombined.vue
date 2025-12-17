@@ -281,11 +281,14 @@ async function handleLogin() {
 
 @media screen and (max-width: 767px) {
   .pyramid-combined {
-    padding: 0 0.2rem; /* Reduced horizontal padding */
+    padding: 0; /* Full width */
   }
   .user-vote-section {
-    padding: 1.5rem 0.5rem; /* Reduced horizontal padding */
-    border-radius: 12px;
+    padding: 1.5rem 0.2rem; /* Minimal padding */
+    border-radius: 0; /* Edge to edge design */
+    margin-bottom: 1rem;
+    border-left: none;
+    border-right: none;
   }
   .thumbnail-wrapper {
     max-width: 100%; /* Allow full width scaling if needed */

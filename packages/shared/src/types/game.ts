@@ -82,6 +82,7 @@ export interface Game {
    * per-challenge leaderboards themselves are stored under
    * `/daily_challenges/{challengeId}`.
    */
+  adConfig?: GameAdConfig;
   leaderboard?: {
     updatedAt: string;
     topEntries: LeaderboardEntry[];
@@ -89,6 +90,15 @@ export interface Game {
   };
   createdAt?: number;
   updatedAt?: number;
+}
+
+export type AdStrategy = 'no_ads' | 'before_end' | 'every_x_questions';
+
+export interface GameAdConfig {
+  strategy: AdStrategy;
+  interval?: number;
+  adClient?: string; // Optional override
+  adSlot?: string;   // Optional override
 }
 
 // Leaderboard types are now in ./leaderboard.ts

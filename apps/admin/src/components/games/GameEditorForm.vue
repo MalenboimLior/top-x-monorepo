@@ -205,6 +205,38 @@
           </div>
         </div>
       </div>
+
+      <div class="column is-full">
+        <div class="field">
+          <label class="label">Ad Configuration</label>
+          <div class="field">
+            <label class="label" :for="fieldId('adStrategy')">Ad Strategy</label>
+            <div class="control">
+              <div class="select is-fullwidth">
+                <select :id="fieldId('adStrategy')" v-model="adStrategy">
+                  <option value="no_ads">No Ads</option>
+                  <option value="before_end">Before End Screen (Default)</option>
+                  <option value="every_x_questions">Every X Questions</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div v-if="adStrategy === 'every_x_questions'" class="field mt-3">
+            <label class="label" :for="fieldId('adInterval')">Show Ad Every X Questions</label>
+            <div class="control">
+              <input
+                :id="fieldId('adInterval')"
+                class="input"
+                type="number"
+                v-model.number="adInterval"
+                min="1"
+                placeholder="e.g. 3"
+              />
+            </div>
+            <p class="help">Ad will be shown after every X questions</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="custom-config">
@@ -241,6 +273,7 @@ import AddTrivia from '@/components/games/AddTrivia.vue';
 import AddPacman from '@/components/games/AddPacman.vue';
 import AddFisherGame from './AddFisherGame.vue';
 import type { Game, GameType } from '@top-x/shared/types/game';
+import type { AdStrategy } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
 import type { PacmanConfig } from '@top-x/shared/types/pacman';
@@ -257,6 +290,8 @@ const emit = defineEmits(['saved', 'cancel', 'dirty-change']);
 const activeTab = ref<'general' | 'custom'>('general');
 const isSaving = ref(false);
 const vipList = ref('');
+const adStrategy = ref<AdStrategy>('before_end');
+const adInterval = ref<number>(3);
 const initialSnapshot = ref('');
 const isDirty = ref(false);
 
@@ -289,6 +324,10 @@ const defaultGame = (): Game => ({
   gameInstruction: '',
   shareLink: '',
   dailyChallengeActive: false,
+  adConfig: {
+    strategy: 'before_end',
+    interval: 3,
+  },
 });
 
 const game = ref<Game>(defaultGame());
@@ -311,11 +350,20 @@ watch(
         clone.custom = withDefaultPacmanConfig(clone.custom);
       }
       clone.creator = clone.creator || { userid: '', username: '' };
+      // Initialize adConfig if missing
+      if (!clone.adConfig) {
+        clone.adConfig = { strategy: 'before_end', interval: 3 };
+      }
       game.value = clone;
       vipList.value = clone.vip?.join(',') ?? '';
+      // Sync ad config to local state
+      adStrategy.value = clone.adConfig?.strategy || 'before_end';
+      adInterval.value = clone.adConfig?.interval || 3;
     } else {
       game.value = defaultGame();
       vipList.value = '';
+      adStrategy.value = 'before_end';
+      adInterval.value = 3;
     }
     nextTick(setInitialSnapshot);
   },
@@ -354,8 +402,20 @@ watch(
   },
 );
 
+// Sync ad config changes to game object
 watch(
-  [game, vipList],
+  [adStrategy, adInterval],
+  () => {
+    if (!game.value.adConfig) {
+      game.value.adConfig = { strategy: 'before_end', interval: 3 };
+    }
+    game.value.adConfig.strategy = adStrategy.value;
+    game.value.adConfig.interval = adInterval.value;
+  },
+);
+
+watch(
+  [game, vipList, adStrategy, adInterval],
   () => {
     const next = snapshotState();
     updateDirty(next !== initialSnapshot.value);

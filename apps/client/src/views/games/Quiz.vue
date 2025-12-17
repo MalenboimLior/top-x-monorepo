@@ -38,7 +38,7 @@
       />
 
       <QuizEndScreen
-        v-else
+        v-else-if="currentScreen === 'result'"
         :mode="mode"
         :is-logged-in="isLoggedIn"
         :personality-result="personalityResult"
@@ -53,6 +53,11 @@
         @play-again="resetGame"
         @login="login"
       />
+
+      <GameAdOverlay
+        v-else-if="currentScreen === 'ad'"
+        @continue="handleAdContinue"
+      />
     </div>
   </div>
 </template>
@@ -63,6 +68,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import QuizScene from '@/components/games/quiz/QuizScene.vue';
 import QuizEndScreen from '@/components/games/quiz/QuizEndScreen.vue';
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
 import { useQuizStore } from '@/stores/quiz';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
@@ -238,6 +244,10 @@ const resetGame = () => {
 
 const login = async () => {
   await userStore.loginWithX();
+};
+
+const handleAdContinue = () => {
+  quizStore.continueFromAd();
 };
 
 // Watch for error and redirect if game is not active

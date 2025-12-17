@@ -463,12 +463,14 @@ function handleShareClick(e: MouseEvent) {
   .pyramid-container {
     padding: 0.2rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 100%; /* Allow full width */
   }
   .pyramid-slot,
   .worst-slot {
-    width: 80px;
-    height: 80px;
+    width: 19.5vw;
+    height: 19.5vw;
+    max-width: 95px;
+    max-height: 95px;
   }
   .draggable-image {
     width: 100%;

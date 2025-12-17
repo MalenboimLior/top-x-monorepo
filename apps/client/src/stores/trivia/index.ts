@@ -47,12 +47,14 @@ const REVIEW_DELAY_MS = 2000;
 export const useTriviaStore = defineStore('trivia', () => {
   const userStore = useUserStore();
 
-  const currentScreen = ref<'start' | 'playing' | 'gameover'>('start');
+  const currentScreen = ref<'start' | 'playing' | 'ad' | 'gameover'>('start');
   const activeGameId = ref<string>(GAME_ID);
   const baseConfig = ref<TriviaConfig | null>(null);
   const overrideConfig = ref<TriviaConfig | null>(null);
   const configLoaded = ref(false);
   const activeDailyChallengeId = ref<string | null>(null);
+  const gameData = ref<any>(null); // Store full game data for adConfig
+  const lastAdQuestionIndex = ref(-1); // Track when last ad was shown
 
   const currentQuestion = ref<TriviaQuestionViewModel | null>(null);
   const selectedAnswer = ref<number | null>(null);
@@ -877,7 +879,26 @@ export const useTriviaStore = defineStore('trivia', () => {
 
     if (answeredAll) {
       console.log('[Trivia] All questions answered after review, ending game');
+      // Check if we should show ad before end screen
+      if (shouldShowAdBeforeEnd()) {
+        console.log('[Trivia] Triggering ad before end screen');
+        currentScreen.value = 'ad';
+        return;
+      }
       endGame();
+      return;
+    }
+
+    // Check if we should show an ad
+    const shouldShowAd = checkShouldShowAd();
+    if (shouldShowAd) {
+      console.log('[Trivia] Triggering ad display', {
+        answeredCount: answeredQuestionIds.value.length,
+        lastAdQuestionIndex: lastAdQuestionIndex.value,
+        adConfig: gameData.value?.adConfig,
+      });
+      lastAdQuestionIndex.value = answeredQuestionIds.value.length - 1;
+      currentScreen.value = 'ad';
       return;
     }
 
@@ -915,7 +936,58 @@ export const useTriviaStore = defineStore('trivia', () => {
     hasMoreQuestions.value = false;
     ongoingFetch = null;
     configLoaded.value = false;
+    lastAdQuestionIndex.value = -1;
   }
+
+  function checkShouldShowAd(): boolean {
+    const adConfig = gameData.value?.adConfig;
+    if (!adConfig || adConfig.strategy === 'no_ads') {
+      return false;
+    }
+
+    // Don't show ad if we're about to end the game
+    const totalQuestions = totalQuestionsCount.value;
+    const answeredAll =
+      totalQuestions > 0 && answeredQuestionIds.value.length >= totalQuestions;
+    if (answeredAll) {
+      return false;
+    }
+
+    if (adConfig.strategy === 'every_x_questions') {
+      const interval = adConfig.interval || 3;
+      const questionsSinceLastAd = answeredQuestionIds.value.length - 1 - lastAdQuestionIndex.value;
+      return questionsSinceLastAd >= interval;
+    }
+
+    return false;
+  }
+
+  function shouldShowAdBeforeEnd(): boolean {
+    const adConfig = gameData.value?.adConfig;
+    if (!adConfig) {
+      return false;
+    }
+    return adConfig.strategy === 'before_end';
+  }
+
+  function continueFromAd(): void {
+    console.log('[Trivia] Continuing from ad');
+
+    // Check if we were at the end
+    const totalQuestions = totalQuestionsCount.value;
+    const answeredAll =
+      totalQuestions > 0 && answeredQuestionIds.value.length >= totalQuestions;
+
+    if (answeredAll) {
+      // End the game
+      endGame();
+    } else {
+      // Continue to next question
+      currentScreen.value = 'playing';
+      void prepareNextQuestion();
+    }
+  }
+
 
   async function startGame(): Promise<void> {
     console.log('[Trivia] startGame called');
@@ -1184,6 +1256,24 @@ export const useTriviaStore = defineStore('trivia', () => {
     }
   }
 
+  async function loadGameData(): Promise<void> {
+    try {
+      const gameRef = doc(db, 'games', activeGameId.value);
+      const gameSnap = await getDoc(gameRef);
+
+      if (gameSnap.exists()) {
+        gameData.value = gameSnap.data();
+        console.log('[Trivia] Game data loaded:', {
+          gameId: activeGameId.value,
+          hasAdConfig: !!gameData.value?.adConfig,
+          adStrategy: gameData.value?.adConfig?.strategy,
+        });
+      }
+    } catch (error) {
+      console.error('[Trivia] Failed to load game data:', error);
+    }
+  }
+
   return {
     currentScreen,
     currentQuestion,
@@ -1234,5 +1324,7 @@ export const useTriviaStore = defineStore('trivia', () => {
     saveScoreAfterLogin,
     applyConfigOverride,
     setGameId,
+    continueFromAd,
+    loadGameData,
   };
 });

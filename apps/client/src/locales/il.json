@@ -171,6 +171,8 @@
   "gameInfo.createNow": "צרו עכשיו",
   "gameInfo.buildHint": "(רק למשתמשים רשומים)",
   "gameInfo.loginToBuild": "אנא התחברו כדי לבנות משחק משלכם.",
+  "gameInfo.similarGames": "משחקים דומים",
+  "gameInfo.similarGamesSubtitle": "משחקים שיכולים לעניין אתכם גם",
   "about.title": "אודות TOP-X",
   "about.subtitle": "עלו לאתגר! ⚔️",
   "about.paragraph1": "TOP-X היא הזירה האולטימטיבית שלך למשחקים שמלטשים אגו, דירוגים ועימותים ויראליים. תחשבו פירמידות של תהילה (מי למעלה?), טריוויה שמפילה יריבים, חידונים שבודקים את הווייב ואתגרים מותאמים שבהם אתה מול X בדו-קרב בזמן אמת. בנו, התחרו, דרגו, שתפו – ותזרקו עקיצות בדרך לפסגת הפיד. 📈🚀",
@@ -506,5 +508,8 @@
   "games.backToHome": "חזרה לעמוד הבית",
   "games.quiz.sharedByStrong": "שותף על ידי",
   "games.profile.loginToReveal": "התחבר כדי לחשוף את הבחירות שלך, הסטטיסטיקות והתוצאות של העוקבים!",
-  "games.pacman.lives": "חיים"
+  "games.pacman.lives": "חיים",
+  "games.ad.title": "מודעה",
+  "games.ad.continue": "המשך",
+  "games.ad.countdown": "ממשיכים בעוד {seconds} שניות..."
 }

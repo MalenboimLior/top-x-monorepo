@@ -60,7 +60,7 @@
       />
 
       <TriviaEndScreen
-        v-else
+        v-else-if="currentScreen === 'gameover'"
         :game-id="activeGameId"
         :is-logged-in="isLoggedIn"
         :score="score"
@@ -83,6 +83,11 @@
         @login="login"
         @add-frenemy="addToFrenemies"
       />
+
+      <GameAdOverlay
+        v-else-if="currentScreen === 'ad'"
+        @continue="handleAdContinue"
+      />
     </div>
   </div>
 </template>
@@ -94,6 +99,7 @@ import { useHead } from '@vueuse/head';
 import { doc, getDoc } from 'firebase/firestore';
 import TriviaScene from '@/components/games/trivia/TriviaScene.vue';
 import TriviaEndScreen from '@/components/games/trivia/TriviaEndScreen.vue';
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
 import { useTriviaStore } from '@/stores/trivia';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
@@ -305,6 +311,7 @@ async function checkGameActive() {
 
 onMounted(async () => {
   await checkGameActive();
+  await triviaStore.loadGameData();
   void loadDailyChallengeConfig(dailyChallengeId.value);
   const inviterUid = route.query.inviterUid as string;
   const routeGameId = route.query.gameId as string;
@@ -351,6 +358,10 @@ const login = async () => {
 
 const addToFrenemies = async (uid: string) => {
   await userStore.addFrenemy(uid);
+};
+
+const handleAdContinue = () => {
+  triviaStore.continueFromAd();
 };
 </script>
 

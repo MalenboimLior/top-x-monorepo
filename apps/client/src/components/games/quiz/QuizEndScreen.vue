@@ -126,8 +126,23 @@ async function saveQuizResult() {
   }
 
   const custom: Record<string, unknown> = {};
+  
+  // Build quiz submission data
+  const quizData: Record<string, unknown> = {
+    mode: props.mode,
+  };
+  
   if (props.mode === 'personality' && props.personalityResult) {
+    // Include full result data for backend processing
     custom.personalityResult = props.personalityResult;
+    
+    // Add selectedAnswers for leaderboard analytics
+    quizData.selectedAnswers = props.personalityResult.selectedAnswers || {};
+    quizData.personalityResult = {
+      bucketId: props.personalityResult.bucketId,
+      title: props.personalityResult.title,
+    };
+    
     console.log('[QuizEndScreen] Saving personality result:', {
       gameId: props.gameId,
       mode: props.mode,
@@ -135,10 +150,21 @@ async function saveQuizResult() {
         bucketId: props.personalityResult.bucketId,
         title: props.personalityResult.title,
         points: props.personalityResult.points,
+        selectedAnswersCount: Object.keys(props.personalityResult.selectedAnswers || {}).length,
       },
     });
   } else if (props.mode === 'archetype' && props.archetypeResult) {
+    // Include full result data for backend processing
     custom.archetypeResult = props.archetypeResult;
+    
+    // Add selectedAnswers for leaderboard analytics
+    quizData.selectedAnswers = props.archetypeResult.selectedAnswers || {};
+    quizData.archetypeResult = {
+      id: props.archetypeResult.id,
+      title: props.archetypeResult.title,
+      pattern: props.archetypeResult.pattern,
+    };
+    
     console.log('[QuizEndScreen] Saving archetype result:', {
       gameId: props.gameId,
       mode: props.mode,
@@ -146,9 +172,13 @@ async function saveQuizResult() {
         id: props.archetypeResult.id,
         title: props.archetypeResult.title,
         pattern: props.archetypeResult.pattern,
+        selectedAnswersCount: Object.keys(props.archetypeResult.selectedAnswers || {}).length,
       },
     });
   }
+  
+  // Add quiz data to custom
+  custom.quiz = quizData;
 
   if (Object.keys(custom).length > 0) {
     try {

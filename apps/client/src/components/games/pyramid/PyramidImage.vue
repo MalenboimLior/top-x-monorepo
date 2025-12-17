@@ -625,8 +625,9 @@ defineExpose({ getImageDataUrl });
 }
 @media screen and (max-width: 767px) {
   .pyramid-container {
-    padding: 0.2rem;
-    max-width: calc(100% - 0.4rem);
+    padding: 0;
+    max-width: 100%;
+    box-shadow: none; /* Flatten for simpler look on mobile if embedded */
   }
   .pyramid-image {
     max-width: 100%;

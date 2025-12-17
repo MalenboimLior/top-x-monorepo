@@ -29,7 +29,7 @@ import { useUserStore } from './user';
 // Types
 // =============================================================================
 
-export type QuizScreen = 'start' | 'playing' | 'result';
+export type QuizScreen = 'start' | 'playing' | 'ad' | 'result';
 
 export interface QuizQuestionViewModel {
   id: string;
@@ -62,6 +62,7 @@ export const useQuizStore = defineStore('quiz', () => {
   const configLoaded = ref(false);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const gameData = ref<any>(null); // Store full game data for adConfig
 
   // ---------------------------------------------------------------------------
   // Question State
@@ -72,6 +73,7 @@ export const useQuizStore = defineStore('quiz', () => {
   const selectedAnswers = ref<Record<string, number>>({});
   // Maps questionId -> shuffledIndex -> originalIndex for answer order mapping
   const answerIndexMappings = ref<Record<string, number[]>>({});
+  const lastAdQuestionIndex = ref(-1); // Track when last ad was shown
 
   // ---------------------------------------------------------------------------
   // Result State
@@ -91,7 +93,7 @@ export const useQuizStore = defineStore('quiz', () => {
   // ---------------------------------------------------------------------------
 
   const mode = computed(() => config.value?.mode ?? 'personality');
-  
+
   const theme = computed<QuizThemeConfig>(() => ({
     primaryColor: config.value?.theme?.primaryColor ?? '#6366f1',
     secondaryColor: config.value?.theme?.secondaryColor ?? '#ec4899',
@@ -125,15 +127,15 @@ export const useQuizStore = defineStore('quiz', () => {
     return currentQuestionIndex.value >= questions.value.length;
   });
 
-  const personalityBuckets = computed<PersonalityBucket[]>(() => 
+  const personalityBuckets = computed<PersonalityBucket[]>(() =>
     config.value?.personalityBuckets ?? []
   );
 
-  const archetypeAxes = computed<ArchetypeAxis[]>(() => 
+  const archetypeAxes = computed<ArchetypeAxis[]>(() =>
     config.value?.archetypeAxes ?? []
   );
 
-  const archetypeResults = computed<ArchetypeResult[]>(() => 
+  const archetypeResults = computed<ArchetypeResult[]>(() =>
     config.value?.archetypeResults ?? []
   );
 
@@ -192,33 +194,36 @@ export const useQuizStore = defineStore('quiz', () => {
         return;
       }
 
-      const gameData = snapshot.data() as Game;
-      
+      const gameSnapshot = snapshot.data() as Game;
+
+      // Store game data for adConfig access
+      gameData.value = gameSnapshot;
+
       // Check if game is active - if not, set error (game is not playable)
-      if (!gameData.active) {
+      if (!gameSnapshot.active) {
         error.value = 'Game is not active';
         isLoading.value = false;
         return;
       }
-      
+
       console.log('[QuizStore] Game data loaded:', {
         gameId: activeGameId.value,
-        gameTypeId: gameData.gameTypeId,
-        hasCustom: !!gameData.custom,
-        customType: typeof gameData.custom,
-        customKeys: gameData.custom ? Object.keys(gameData.custom) : [],
+        gameTypeId: gameSnapshot.gameTypeId,
+        hasCustom: !!gameSnapshot.custom,
+        customType: typeof gameSnapshot.custom,
+        customKeys: gameSnapshot.custom ? Object.keys(gameSnapshot.custom) : [],
       });
-      
-      console.log('[QuizStore] Full custom config:', JSON.stringify(gameData.custom, null, 2));
-      
+
+      console.log('[QuizStore] Full custom config:', JSON.stringify(gameSnapshot.custom, null, 2));
+
       // If gameTypeId is 'quiz', treat it as a quiz even if mode is wrong
-      if (gameData.gameTypeId !== 'quiz') {
+      if (gameSnapshot.gameTypeId !== 'quiz') {
         error.value = 'Game is not a quiz type';
         return;
       }
 
-      const rawConfig = gameData.custom as Record<string, unknown>;
-      
+      const rawConfig = gameSnapshot.custom as Record<string, unknown>;
+
       // Auto-fix mode if it's wrong but has quiz structure
       if (rawConfig.mode !== 'personality' && rawConfig.mode !== 'archetype') {
         // Check if it has personalityBuckets (personality quiz)
@@ -328,7 +333,7 @@ export const useQuizStore = defineStore('quiz', () => {
         preparedQuestions as QuizQuestion[],
         config.value.shuffleAnswers ?? false
       );
-      
+
       // Build answer index mappings for shuffled questions
       if (config.value.shuffleAnswers) {
         preparedQuestions.forEach((q) => {
@@ -361,17 +366,17 @@ export const useQuizStore = defineStore('quiz', () => {
         // Create array of indices [0, 1, 2, ...] and shuffle them using Fisher-Yates
         const indices = q.answers.map((_, idx) => idx);
         const shuffledIndices = shuffleArray(indices);
-        
+
         // Create mapping: shuffledIndex -> originalIndex
         const mapping: number[] = [];
         shuffledIndices.forEach((originalIndex, shuffledIndex) => {
           mapping[shuffledIndex] = originalIndex;
         });
         answerIndexMappings.value[q.id] = mapping;
-        
+
         // Shuffle answers using the shuffled indices
         const shuffledAnswers = shuffledIndices.map((idx) => q.answers[idx]);
-        
+
         return {
           ...q,
           answers: shuffledAnswers,
@@ -427,10 +432,30 @@ export const useQuizStore = defineStore('quiz', () => {
     // Record the answer using the original index (for scoring)
     selectedAnswers.value[question.id] = originalIndex;
 
+    // Check if we should show an ad
+    const shouldShowAd = checkShouldShowAd();
+
+    if (shouldShowAd) {
+      console.log('[QuizStore] Triggering ad display', {
+        currentQuestionIndex: currentQuestionIndex.value,
+        lastAdQuestionIndex: lastAdQuestionIndex.value,
+        adConfig: gameData.value?.adConfig,
+      });
+      lastAdQuestionIndex.value = currentQuestionIndex.value;
+      currentScreen.value = 'ad';
+      return;
+    }
+
     // Move to next question or calculate results
     if (currentQuestionIndex.value < questions.value.length - 1) {
       currentQuestionIndex.value++;
     } else {
+      // Check if we should show ad before end screen
+      if (shouldShowAdBeforeEnd()) {
+        console.log('[QuizStore] Triggering ad before end screen');
+        currentScreen.value = 'ad';
+        return;
+      }
       // Quiz complete - calculate results
       calculateResults();
       currentScreen.value = 'result';
@@ -457,6 +482,49 @@ export const useQuizStore = defineStore('quiz', () => {
     }
   }
 
+  function checkShouldShowAd(): boolean {
+    const adConfig = gameData.value?.adConfig;
+    if (!adConfig || adConfig.strategy === 'no_ads') {
+      return false;
+    }
+
+    // Don't show ad on last question (handled separately)
+    if (currentQuestionIndex.value >= questions.value.length - 1) {
+      return false;
+    }
+
+    if (adConfig.strategy === 'every_x_questions') {
+      const interval = adConfig.interval || 3;
+      const questionsSinceLastAd = currentQuestionIndex.value - lastAdQuestionIndex.value;
+      return questionsSinceLastAd >= interval;
+    }
+
+    return false;
+  }
+
+  function shouldShowAdBeforeEnd(): boolean {
+    const adConfig = gameData.value?.adConfig;
+    if (!adConfig) {
+      return false;
+    }
+    return adConfig.strategy === 'before_end';
+  }
+
+  function continueFromAd(): void {
+    console.log('[QuizStore] Continuing from ad');
+
+    // Check if we were at the last question
+    if (currentQuestionIndex.value >= questions.value.length - 1) {
+      // Calculate results and show end screen
+      calculateResults();
+      currentScreen.value = 'result';
+    } else {
+      // Continue to next question
+      currentQuestionIndex.value++;
+      currentScreen.value = 'playing';
+    }
+  }
+
   function resetGame(): void {
     currentScreen.value = 'start';
     currentQuestionIndex.value = 0;
@@ -464,7 +532,8 @@ export const useQuizStore = defineStore('quiz', () => {
     answerIndexMappings.value = {};
     personalityResult.value = null;
     archetypeResult.value = null;
-    
+    lastAdQuestionIndex.value = -1;
+
     // Re-prepare questions for fresh shuffle if needed
     if (config.value?.shuffleQuestions || config.value?.shuffleAnswers) {
       prepareQuestions();
@@ -513,7 +582,7 @@ export const useQuizStore = defineStore('quiz', () => {
     const baseUrl = window.location.origin;
     const params = new URLSearchParams();
     params.set('game', activeGameId.value);
-    
+
     if (userStore.user?.uid) {
       params.set('inviter', userStore.user.uid);
     }
@@ -580,6 +649,7 @@ export const useQuizStore = defineStore('quiz', () => {
     resetGame,
     goBack,
     setInviter,
+    continueFromAd,
   };
 });
 

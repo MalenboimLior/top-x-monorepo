@@ -22,6 +22,14 @@ export interface PersonalityScoreResult {
   result: PersonalityResultVariant | null;
   /** All bucket scores sorted by value (descending) */
   sortedBuckets: Array<{ id: string; label: string; score: number }>;
+  /** Map of questionId to selected answer index (for analytics) */
+  selectedAnswers: Record<string, number>;
+  /** Bucket ID of the winning bucket (for easy access) */
+  bucketId: string;
+  /** Title of the result (for easy access) */
+  title: string;
+  /** Points accumulated in the winning bucket (for easy access) */
+  points: number;
 }
 
 /**
@@ -122,6 +130,10 @@ export function calculatePersonalityResult(
     winningBucket,
     result,
     sortedBuckets,
+    selectedAnswers,
+    bucketId: winningBucket?.id ?? '',
+    title: result?.title ?? '',
+    points: highestScore,
   };
 }
 
@@ -147,6 +159,12 @@ export interface ArchetypeScoreResult {
     normalizedScore: number;
     direction: 'low' | 'high';
   }>;
+  /** Map of questionId to selected answer index (for analytics) */
+  selectedAnswers: Record<string, number>;
+  /** ID of the matching result (for easy access) */
+  id: string;
+  /** Title of the result (for easy access) */
+  title: string;
 }
 
 /**
@@ -180,10 +198,10 @@ export function calculateArchetypeResult(
   questions.forEach((question) => {
     question.answers.forEach((answer) => {
       if (!answer.axisPoints) return;
-      
+
       Object.entries(answer.axisPoints).forEach(([axisId, points]) => {
         if (!(axisId in axisRanges)) return;
-        
+
         if (points > 0) {
           axisRanges[axisId].max += points;
         } else {
@@ -225,7 +243,7 @@ export function calculateArchetypeResult(
     const score = axisScores[axis.id];
     const range = axisRanges[axis.id];
     const totalRange = range.max - range.min;
-    
+
     if (totalRange === 0) {
       normalizedScores[axis.id] = 50; // Neutral if no range
     } else {
@@ -255,6 +273,9 @@ export function calculateArchetypeResult(
     pattern,
     result,
     axisLabels,
+    selectedAnswers,
+    id: result?.id ?? '',
+    title: result?.title ?? '',
   };
 }
 
@@ -327,7 +348,7 @@ export function shuffleQuizQuestions(
   shuffleAnswers: boolean = false
 ): QuizQuestion[] {
   const shuffledQuestions = shuffleArray(questions);
-  
+
   if (!shuffleAnswers) {
     return shuffledQuestions;
   }
