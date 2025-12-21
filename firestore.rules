@@ -10,7 +10,7 @@ service cloud.firestore {
     // Uses hardcoded UID list to avoid expensive get() operations
     function isAdmin() {
       return isAuthenticated() && 
-             request.auth.uid in ['ssZniBNnBpchbaZyis16gNNvt9f1'];
+             request.auth.uid in ['ssZniBNnBpchbaZyis16gNNvt9f1','ohY3Co2zYLRuNBxR9pwXHv42IMi1'];
     }
     
     // Helper function to check if user is the game creator
@@ -47,16 +47,16 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                        request.resource.data.creator.userid == request.auth.uid;
       
-      // Only the game creator can update their own games
-      allow update: if isGameCreator();
+      // Only the game creator or admins can update games
+      allow update: if isGameCreator() || isAdmin();
       
-      // Only the game creator can delete their own games
-      allow delete: if isGameCreator();
+      // Only the game creator or admins can delete games
+      allow delete: if isGameCreator() || isAdmin();
       
       // Subcollections
       match /{subcollection=**} {
         allow read: if true;
-        allow write: if isGameCreator();
+        allow write: if isGameCreator() || isAdmin();
       }
     }
     

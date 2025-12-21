@@ -13,7 +13,7 @@
       </div>
 
       <QuizScene
-        v-if="currentScreen !== 'result'"
+        v-if="currentScreen === 'start' || currentScreen === 'playing'"
         :screen="currentScreen"
         :mode="mode"
         :current-question="currentQuestion"
@@ -56,6 +56,8 @@
 
       <GameAdOverlay
         v-else-if="currentScreen === 'ad'"
+        :ad-client="quizStore.gameData?.adConfig?.adClient"
+        :ad-slot="quizStore.gameData?.adConfig?.adSlot"
         @continue="handleAdContinue"
       />
     </div>

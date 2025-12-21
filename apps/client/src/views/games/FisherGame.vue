@@ -17,6 +17,13 @@
       @close="restartGame"
       @login="handleLogin"
     />
+
+    <GameAdOverlay
+      v-if="showAd"
+      :ad-client="gameData?.adConfig?.adClient"
+      :ad-slot="gameData?.adConfig?.adSlot"
+      @continue="handleAdContinue"
+    />
   </div>
 </template>
 
@@ -26,11 +33,18 @@ import { useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import FisherGameEndScreen from '@/components/games/FisherGame/FisherGameEndScreen.vue';
 import createFisherGameScene from '@/components/games/FisherGame/FisherGameScene';
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
+import { getGame } from '@/services/game';
+import { useRoute } from 'vue-router';
 
 const phaserContainer = ref<HTMLDivElement | null>(null);
 const showEndScreen = ref(false);
 const finalScore = ref(0);
 const router = useRouter();
+const route = useRoute();
+const gameId = ref((route.query.game as string) || '');
+const gameData = ref<any>(null);
+const showAd = ref(false);
 
 let Phaser: any;
 let game: any;
@@ -81,9 +95,34 @@ onMounted(async () => {
   // 4. Safe event listener
   sceneInstance.events.on('gameover', (score: number) => {
     finalScore.value = score;
-    showEndScreen.value = true;
+    
+    // Check if we should show an ad before the end screen
+    if (gameData.value?.adConfig?.strategy === 'before_end') {
+      console.log('[FisherGame] Triggering ad before end screen');
+      showAd.value = true;
+    } else {
+      showEndScreen.value = true;
+    }
   });
+
+  // Fetch game config for ads
+  if (gameId.value) {
+    try {
+      const result = await getGame(gameId.value);
+      if (result.game) {
+        gameData.value = result.game;
+      }
+    } catch (err) {
+      console.error('[FisherGame] Failed to load game config:', err);
+    }
+  }
 });
+
+function handleAdContinue() {
+  console.log('[FisherGame] Continuing from ad');
+  showAd.value = false;
+  showEndScreen.value = true;
+}
 
 onUnmounted(() => {
   game?.destroy(true);

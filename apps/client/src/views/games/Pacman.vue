@@ -99,6 +99,13 @@
       @close="handleEndScreenClose"
       @mounted="handleEndScreenMounted"
     />
+
+    <GameAdOverlay
+      v-if="showAd"
+      :ad-client="gameData?.adConfig?.adClient"
+      :ad-slot="gameData?.adConfig?.adSlot"
+      @continue="handleAdContinue"
+    />
   </div>
 </template>
 
@@ -107,6 +114,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import PacmanEndScreen from '@/components/games/pacman/PacmanEndScreen.vue'
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue'
 import type { PacmanConfig } from '@top-x/shared/types/pacman'
 import { db } from '@top-x/shared'
 import { getGame } from '@/services/game'
@@ -138,6 +146,8 @@ const gameId = ref((route.query.game as string) || 'PacmanDemo')
 const gameTitle = ref('Pacman Demo')
 const gameDescription = ref('Chomp pellets, dodge ghosts, and chase the top score!')
 const pacmanConfig = ref<PacmanConfig | null>(null)
+const gameData = ref<any>(null)
+const showAd = ref(false)
 
 const score = ref(0)
 const lives = ref(0)
@@ -254,6 +264,7 @@ async function loadRemoteConfig(id: string) {
 
     gameTitle.value = data.name || gameTitle.value
     gameDescription.value = data.description || gameDescription.value
+    gameData.value = data
     pacmanConfig.value = data.custom as PacmanConfig
   } catch (err) {
     console.error('Pacman: Failed to load config', err)
@@ -266,11 +277,26 @@ function handleGameOver(event: Event) {
 
   endScreenScore.value = detail.score
   endScreenMeta.value = { totalTime: detail.totalTime, meta: detail.meta || null }
-  showEndScreen.value = true
-  showChrome()
+  
+  // Check if we should show an ad before the end screen
+  if (gameData.value?.adConfig?.strategy === 'before_end') {
+    console.log('[Pacman] Triggering ad before end screen');
+    showAd.value = true;
+    showChrome();
+  } else {
+    showEndScreen.value = true;
+    showChrome();
+  }
+
   if (game && game.scene.isActive('PacmanScene')) {
     game.scene.pause('PacmanScene')
   }
+}
+
+function handleAdContinue() {
+  console.log('[Pacman] Continuing from ad');
+  showAd.value = false;
+  showEndScreen.value = true;
 }
 
 function handlePacmanState(event: Event) {

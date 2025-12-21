@@ -17,12 +17,14 @@
       </div>
 
       <div class="ad-footer">
-        <button class="continue-button" @click="handleContinue">
-          {{ t('games.ad.continue') }}
+        <button 
+          class="continue-button" 
+          :disabled="countdown > 0"
+          @click="handleContinue"
+        >
+          <span v-if="countdown > 0">{{ t('games.ad.continue') }} ({{ countdown }})</span>
+          <span v-else>{{ t('games.ad.continue') }}</span>
         </button>
-        <p class="ad-timer" v-if="countdown > 0">
-          {{ t('games.ad.countdown', { seconds: countdown }) }}
-        </p>
       </div>
     </div>
   </div>
@@ -40,8 +42,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  adClient: 'ca-pub-1234567890', // Default - should be overridden
-  adSlot: '1234567890',
+  adClient: import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID || 'ca-pub-1234567890',
+  adSlot: import.meta.env.VITE_GOOGLE_ADS_SLOT_ID || '1234567890',
   autoCloseDelay: 5,
 });
 
@@ -88,12 +90,13 @@ onMounted(() => {
     }
   }, 1000);
 
-  // Start countdown if auto-close is enabled
+  // Start countdown - enables the button when finished
   if (props.autoCloseDelay > 0) {
     countdownInterval = setInterval(() => {
       countdown.value--;
       if (countdown.value <= 0) {
-        handleContinue();
+        if (countdownInterval) clearInterval(countdownInterval);
+        console.log('[GameAdOverlay] Countdown finished - Continue button enabled');
       }
     }, 1000);
   }
@@ -106,7 +109,8 @@ onUnmounted(() => {
 });
 
 const handleContinue = () => {
-  console.log('[GameAdOverlay] User clicked continue or auto-close triggered');
+  if (countdown.value > 0) return; // Prevent accidental bypass
+  console.log('[GameAdOverlay] User clicked continue');
   emit('continue');
 };
 </script>
@@ -179,6 +183,15 @@ const handleContinue = () => {
 
 .continue-button:active {
   transform: translateY(0);
+}
+
+.continue-button:disabled {
+  background: #333;
+  color: #777;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
 }
 
 .ad-timer {

@@ -36,6 +36,13 @@
       :worst-points="worstPoints"
       :worst-show="worstShow"
     />
+
+    <GameAdOverlay
+      v-if="showAd"
+      :ad-client="gameData?.adConfig?.adClient"
+      :ad-slot="gameData?.adConfig?.adSlot"
+      @continue="handleAdContinue"
+    />
   </div>
 </template>
 
@@ -46,8 +53,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { getGame } from '@/services/game';
 import PyramidEdit from '@/components/games/pyramid/PyramidEdit.vue';
 import PyramidNav from '@/components/games/pyramid/PyramidNav.vue';
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
 import { useUserStore } from '@/stores/user';
-import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
+import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption, PyramidConfig } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics, db } from '@top-x/shared';
 import { doc, getDoc } from 'firebase/firestore';
@@ -81,6 +89,9 @@ const shareImageTitle = ref('');
 const shareLink = ref('');
 const communityHeader = ref('');
 const hasSubmitted = ref(false);
+const showAd = ref(false);
+const gameData = ref<any>(null);
+const pendingSubmission = ref<PyramidData | null>(null);
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
   [{ image: null }, { image: null }],
@@ -125,32 +136,34 @@ onMounted(async () => {
       return;
     }
 
-    const gameData = gameResult.game;
+    const gameDataRes = gameResult.game;
+    gameData.value = gameDataRes;
     
     // Check if game is active - if not, redirect home (game is not playable)
-    if (!gameData.active) {
+    if (!gameDataRes.active) {
       console.error('PyramidTier: Game is not active, redirecting home');
       router.push('/');
       return;
     }
-      gameTitle.value = gameData.name || '';
-      gameDescription.value = gameData.description || '';
-      gameHeader.value = gameData.gameHeader || 'Your Pyramid';
-      gameInstruction.value = gameData.gameInstruction || '';
-      poolHeader.value = gameData.custom?.poolHeader || 'Item Pool';
-      communityHeader.value = gameData.custom?.communityHeader || '';
-      worstHeader.value = gameData.custom?.worstHeader || 'Worst Item';
-      baseShareText.value = gameData.shareText || '';
+      gameTitle.value = gameDataRes.name || '';
+      gameDescription.value = gameDataRes.description || '';
+      gameHeader.value = gameDataRes.gameHeader || 'Your Pyramid';
+      gameInstruction.value = gameDataRes.gameInstruction || '';
+      const pyramidConfig = gameDataRes.custom as PyramidConfig;
+      poolHeader.value = pyramidConfig?.poolHeader || 'Item Pool';
+      communityHeader.value = pyramidConfig?.communityHeader || '';
+      worstHeader.value = pyramidConfig?.worstHeader || 'Worst Item';
+      baseShareText.value = gameDataRes.shareText || '';
       updateShareText();
-      shareImageTitle.value = gameData.custom?.shareImageTitle || '';
-      shareLink.value = gameData.shareLink || '';
-      items.value = gameData.custom?.items || [];
-      communityItems.value = gameData.custom?.communityItems || [];
-      rows.value = gameData.custom?.rows || [];
-      sortItems.value = gameData.custom?.sortItems || { orderBy: 'id', order: 'asc' };
-      hideRowLabel.value = gameData.custom?.HideRowLabel ?? false;
-      worstPoints.value = gameData.custom?.worstPoints ?? 0;
-      worstShow.value = gameData.custom?.worstShow !== false;
+      shareImageTitle.value = pyramidConfig?.shareImageTitle || '';
+      shareLink.value = gameDataRes.shareLink || '';
+      items.value = pyramidConfig?.items || [];
+      communityItems.value = pyramidConfig?.communityItems || [];
+      rows.value = pyramidConfig?.rows || [];
+      sortItems.value = pyramidConfig?.sortItems || { orderBy: 'id', order: 'asc' };
+      hideRowLabel.value = pyramidConfig?.HideRowLabel ?? false;
+      worstPoints.value = pyramidConfig?.worstPoints ?? 0;
+      worstShow.value = pyramidConfig?.worstShow !== false;
 
       console.log('PyramidTier: Game data fetched:', {
         gameTitle: gameTitle.value,
@@ -209,6 +222,27 @@ onMounted(async () => {
 
 async function handleSubmit(data: PyramidData) {
   console.log('PyramidTier: handleSubmit called with data:', data);
+  
+  // Check if we should show an ad before finishing
+  if (gameData.value?.adConfig?.strategy === 'before_end') {
+    console.log('[PyramidTier] Triggering ad before submission');
+    pendingSubmission.value = data;
+    showAd.value = true;
+  } else {
+    await finishSubmit(data);
+  }
+}
+
+function handleAdContinue() {
+  console.log('[PyramidTier] Continuing from ad');
+  showAd.value = false;
+  if (pendingSubmission.value) {
+    void finishSubmit(pendingSubmission.value);
+    pendingSubmission.value = null;
+  }
+}
+
+async function finishSubmit(data: PyramidData) {
   pyramid.value = data.pyramid;
   worstItem.value = data.worstItem;
 
@@ -248,7 +282,7 @@ async function handleSubmit(data: PyramidData) {
     hasSubmitted.value = true;
     router.push({ name: 'PyramidTier', query: { game: gameId.value } });
   } catch (err: any) {
-    console.error('PyramidTier: Error in handleSubmit:', err.message, err);
+    console.error('PyramidTier: Error in finishSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');
   }
   if (analytics) {

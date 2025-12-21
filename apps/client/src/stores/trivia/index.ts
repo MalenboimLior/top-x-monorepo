@@ -941,6 +941,14 @@ export const useTriviaStore = defineStore('trivia', () => {
 
   function checkShouldShowAd(): boolean {
     const adConfig = gameData.value?.adConfig;
+    console.log('[TriviaStore] checkShouldShowAd check:', {
+      hasAdConfig: !!adConfig,
+      strategy: adConfig?.strategy,
+      answeredCount: answeredQuestionIds.value.length,
+      lastAdQuestionIndex: lastAdQuestionIndex.value,
+      totalQuestions: totalQuestionsCount.value
+    });
+
     if (!adConfig || adConfig.strategy === 'no_ads') {
       return false;
     }
@@ -950,13 +958,16 @@ export const useTriviaStore = defineStore('trivia', () => {
     const answeredAll =
       totalQuestions > 0 && answeredQuestionIds.value.length >= totalQuestions;
     if (answeredAll) {
+      console.log('[TriviaStore] Skipping ad - game ending');
       return false;
     }
 
     if (adConfig.strategy === 'every_x_questions') {
       const interval = adConfig.interval || 3;
       const questionsSinceLastAd = answeredQuestionIds.value.length - 1 - lastAdQuestionIndex.value;
-      return questionsSinceLastAd >= interval;
+      const result = questionsSinceLastAd >= interval;
+      console.log('[TriviaStore] Every X strategy check:', { interval, questionsSinceLastAd, result });
+      return result;
     }
 
     return false;
@@ -964,10 +975,13 @@ export const useTriviaStore = defineStore('trivia', () => {
 
   function shouldShowAdBeforeEnd(): boolean {
     const adConfig = gameData.value?.adConfig;
-    if (!adConfig) {
-      return false;
-    }
-    return adConfig.strategy === 'before_end';
+    const result = adConfig?.strategy === 'before_end';
+    console.log('[TriviaStore] shouldShowAdBeforeEnd check:', {
+      hasAdConfig: !!adConfig,
+      strategy: adConfig?.strategy,
+      result
+    });
+    return result;
   }
 
   function continueFromAd(): void {
@@ -1326,5 +1340,6 @@ export const useTriviaStore = defineStore('trivia', () => {
     setGameId,
     continueFromAd,
     loadGameData,
+    gameData,
   };
 });

@@ -85,11 +85,19 @@
       :challenge-context="challengeContext"
       @close="showEndScreen = false"
     />
+
+    <GameAdOverlay
+      v-if="showAd"
+      :ad-client="gameData?.adConfig?.adClient"
+      :ad-slot="gameData?.adConfig?.adSlot"
+      @continue="handleAdContinue"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import ZoneRevealEndScreen from '@/components/games/zonereveal/ZoneRevealEndScreen.vue'
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue'
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
@@ -130,6 +138,8 @@ const challengeContext = ref<{
 const gameTitle = ref('')
 const gameDescription = ref('')
 const showEndScreen = ref(false)
+const showAd = ref(false)
+const gameData = ref<any>(null)
 const endScreenScore = ref(0)
 const revealAt = ref('')
 
@@ -276,23 +286,24 @@ onMounted(async () => {
         return
       }
 
-      const gameData = gameResult.game
+      const gameDataRes = gameResult.game
+      gameData.value = gameDataRes
       
       // Check if game is active - if not, redirect home (game is not playable)
-      if (!gameData.active) {
+      if (!gameDataRes.active) {
         console.error('ZoneReveal: Game is not active, redirecting home')
         router.push('/')
         return
       }
-      gameTitle.value = gameData.name || ''
-      gameDescription.value = gameData.description || ''
+      gameTitle.value = gameDataRes.name || ''
+      gameDescription.value = gameDataRes.description || ''
 
       let loadedChallenge: ZoneRevealDailyChallenge | null = null
 
       if (initialChallengeId) {
         loadedChallenge = await loadDailyChallengeDocument(gameId.value, initialChallengeId)
-      } else if (gameData.dailyChallengeActive) {
-        loadedChallenge = await findActiveDailyChallengeLocal(gameId.value, gameData.dailyChallengeCurrent)
+      } else if (gameDataRes.dailyChallengeActive) {
+        loadedChallenge = await findActiveDailyChallengeLocal(gameId.value, gameDataRes.dailyChallengeCurrent)
       }
 
       if (loadedChallenge) {
@@ -311,7 +322,7 @@ onMounted(async () => {
           dailyDate
         }
       } else {
-        zoneRevealConfig.value = ensureZoneRevealAnswer(gameData.custom as ZoneRevealConfig)
+        zoneRevealConfig.value = ensureZoneRevealAnswer(gameDataRes.custom as ZoneRevealConfig)
         revealAt.value = ''
         resolvedChallengeId.value = null
         challengeContext.value = null
@@ -371,11 +382,26 @@ onBeforeUnmount(() => {
 function handleGameOver(e: Event) {
   const customEvent = e as CustomEvent<{ score: number; totalTime: number }>
   endScreenScore.value = customEvent.detail.score
-  showEndScreen.value = true
-  showChrome()
+  
+  // Check if we should show an ad before the end screen
+  if (gameData.value?.adConfig?.strategy === 'before_end') {
+    console.log('[ZoneReveal] Triggering ad before end screen');
+    showAd.value = true;
+    showChrome();
+  } else {
+    showEndScreen.value = true;
+    showChrome();
+  }
+
   if (game && game.scene.isActive('GameScene')) {
     game.scene.pause('GameScene')
   }
+}
+
+function handleAdContinue() {
+  console.log('[ZoneReveal] Continuing from ad');
+  showAd.value = false;
+  showEndScreen.value = true;
 }
 
 function setDirection(dir: 'up' | 'down' | 'left' | 'right') {

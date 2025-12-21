@@ -484,19 +484,30 @@ export const useQuizStore = defineStore('quiz', () => {
 
   function checkShouldShowAd(): boolean {
     const adConfig = gameData.value?.adConfig;
+    console.log('[QuizStore] checkShouldShowAd check:', {
+      hasAdConfig: !!adConfig,
+      strategy: adConfig?.strategy,
+      currentQuestionIndex: currentQuestionIndex.value,
+      lastAdQuestionIndex: lastAdQuestionIndex.value,
+      questionsLength: questions.value.length
+    });
+
     if (!adConfig || adConfig.strategy === 'no_ads') {
       return false;
     }
 
     // Don't show ad on last question (handled separately)
     if (currentQuestionIndex.value >= questions.value.length - 1) {
+      console.log('[QuizStore] Skipping ad - last question');
       return false;
     }
 
     if (adConfig.strategy === 'every_x_questions') {
       const interval = adConfig.interval || 3;
       const questionsSinceLastAd = currentQuestionIndex.value - lastAdQuestionIndex.value;
-      return questionsSinceLastAd >= interval;
+      const result = questionsSinceLastAd >= interval;
+      console.log('[QuizStore] Every X strategy check:', { interval, questionsSinceLastAd, result });
+      return result;
     }
 
     return false;
@@ -504,10 +515,13 @@ export const useQuizStore = defineStore('quiz', () => {
 
   function shouldShowAdBeforeEnd(): boolean {
     const adConfig = gameData.value?.adConfig;
-    if (!adConfig) {
-      return false;
-    }
-    return adConfig.strategy === 'before_end';
+    const result = adConfig?.strategy === 'before_end';
+    console.log('[QuizStore] shouldShowAdBeforeEnd check:', {
+      hasAdConfig: !!adConfig,
+      strategy: adConfig?.strategy,
+      result
+    });
+    return result;
   }
 
   function continueFromAd(): void {
@@ -619,6 +633,7 @@ export const useQuizStore = defineStore('quiz', () => {
     personalityResult,
     archetypeResult,
     inviter,
+    gameData,
 
     // Computed
     mode,

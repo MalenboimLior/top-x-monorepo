@@ -13,7 +13,7 @@
       </div>
 
       <TriviaScene
-        v-if="currentScreen !== 'gameover'"
+        v-if="currentScreen === 'start' || currentScreen === 'playing'"
         :screen="currentScreen"
         :mode="mode"
         :best-score="bestScore"
@@ -86,6 +86,8 @@
 
       <GameAdOverlay
         v-else-if="currentScreen === 'ad'"
+        :ad-client="triviaStore.gameData?.adConfig?.adClient"
+        :ad-slot="triviaStore.gameData?.adConfig?.adSlot"
         @continue="handleAdContinue"
       />
     </div>
