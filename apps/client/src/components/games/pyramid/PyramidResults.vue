@@ -199,7 +199,7 @@ function searchFrenemies() {
 <style scoped>
 .pyramid-results {
   width: 100%;
-  max-width: 1000px;
+  max-width: 500px;
   margin: 0 auto;
   padding: 1rem 0.5rem;
   display: flex;

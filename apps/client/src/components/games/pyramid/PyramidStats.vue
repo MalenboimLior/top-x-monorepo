@@ -96,28 +96,13 @@
     </div>
 
     <!-- Login Tab -->
-    <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
-      <div class="tab-content" @click.stop>
-            <p class="question-text">Want the full scoop on rankings? 📊</p> 
-
-        <p class="answer-text">
-Log in to unlock them & make your vote count!<br>
-Just your X username + pic - we promise, hands off your feed! 🔒<br>
-</p>
-        <!-- <p class="answer-text">We only use your username and image, and we’ll never post on your behalf.</p> -->
-        
-        
-        <!-- <button style="color:#c4ff00;" @click="closeLoginTab">Close</button> -->
-      </div>
-      <div  class="has-text-centered">
-          <CustomButton
-            type="is-primary"
-            :label="t('games.loginButton')"
-            :icon="['fab', 'x-twitter']"
-            @click="handleLogin"
-          />
-        </div>
-    </div>
+    <GameLoginPromo
+      mode="fixed"
+      :is-visible="showLoginTab"
+      :game-id="gameId"
+      context="stats_tab"
+      @login-success="handleLoginSuccess"
+    />
 
     <!-- President Details Modal -->
     <div class="modal" :class="{ 'is-active': selectedPresident }" ref="modalContainer">
@@ -167,6 +152,7 @@ import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidStats } from '@top-x/shared/types/pyramid';
 import { formatNumber } from '@top-x/shared/utils/format';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import GameLoginPromo from '@/components/games/shared/GameLoginPromo.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faSortUp, faSortDown, faMedal, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -339,11 +325,7 @@ async function downloadPresidentStats() {
   }
 }
 
-async function handleLogin() {
-  await userStore.loginWithX();
-  if (analytics) {
-    logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'stats_tab', game_id: props.gameId });
-  }
+function handleLoginSuccess() {
   closeLoginTab();
 }
 
@@ -568,46 +550,7 @@ tbody tr:hover .item-image {
 }
 
 /* Login Tab */
-.description-tab {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #1f1f1f;
-  color: white;
-  padding: 1rem;
-  transform: translateY(100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1000;
-  box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-  border-top: 1px solid #333;
-}
-.description-tab.show {
-  transform: translateY(0);
-}
-@media screen and (min-width: 768px) {
-  .description-tab {
-    width: 400px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100%);
-    border-radius: 12px 12px 0 0;
-  }
-  .description-tab.show {
-    transform: translateX(-50%) translateY(0);
-  }
-}
 
-.question-text {
-  color: #00e8e0;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
-.answer-text {
-  color: #eee;
-  text-align: center;
-  font-size: 0.9rem;
-}
 
 .blurred {
   filter: blur(8px);

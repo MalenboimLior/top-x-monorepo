@@ -503,5 +503,8 @@
   "games.backToHome": "Back to Home",
   "games.quiz.sharedByStrong": "Shared by",
   "games.profile.loginToReveal": "Log in to reveal your picks, stats and followers' results!",
-  "games.pacman.lives": "Lives"
+  "games.pacman.lives": "Lives",
+  "games.promo.title": "Want the full scoop? 📊",
+  "games.promo.subtitle": "Log in to unlock stats & make your vote count!",
+  "games.promo.privacy": "Just your X username + pic - we promise, hands off your feed! 🔒"
 }

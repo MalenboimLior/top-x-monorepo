@@ -511,5 +511,8 @@
   "games.pacman.lives": "חיים",
   "games.ad.title": "מודעה",
   "games.ad.continue": "המשך",
-  "games.ad.countdown": "ממשיכים בעוד {seconds} שניות..."
+  "games.ad.countdown": "ממשיכים בעוד {seconds} שניות...",
+  "games.promo.title": "רוצים את התמונה המלאה? 📊",
+  "games.promo.subtitle": "התחברו כדי לחשוף את הדירוגים ולהשפיע!",
+  "games.promo.privacy": "רק שם משתמש ותמונה - בלי לגעת בפיד שלכם! 🔒"
 }

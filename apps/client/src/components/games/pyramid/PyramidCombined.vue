@@ -38,18 +38,12 @@
     </div>
 
     <!-- Login Promo (Inline) if not logged in -->
-    <div v-if="!userStore.user" class="login-promo-container">
-      <div class="login-message">
-        <p class="login-title">{{ t('games.pyramid.makeVoteCount') }}</p>
-        <p class="login-subtitle">{{ t('games.pyramid.loginToReveal') }}</p>
-      </div>
-      <CustomButton
-        type="is-primary"
-        :label="t('games.loginButton')"
-        :icon="['fab', 'x-twitter']"
-        @click="handleLogin"
-      />
-    </div>
+    <GameLoginPromo 
+      v-if="!userStore.user"
+      mode="inline"
+      :game-id="gameId"
+      context="combined_view"
+    />
 
     <!-- Bottom Section: Results (Stats) -->
     <div class="stats-section mt-4">
@@ -77,6 +71,7 @@ import PyramidImage from '@/components/games/pyramid/PyramidImage.vue';
 import PyramidStats from '@/components/games/pyramid/PyramidStats.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import GameLoginPromo from '@/components/games/shared/GameLoginPromo.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
@@ -138,7 +133,7 @@ async function handleLogin() {
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  max-width: 1000px; /* Limit width on desktop */
+  max-width: 500px; /* Limit width on desktop */
   margin: 0 auto;
   padding: 0 1rem;
   box-sizing: border-box;
@@ -241,36 +236,7 @@ async function handleLogin() {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.login-promo-container {
-  background: linear-gradient(135deg, rgba(31, 31, 31, 0.95) 0%, rgba(20, 20, 20, 0.98) 100%);
-  border: 1px solid #00e8e0;
-  box-shadow: 0 0 20px rgba(0, 232, 224, 0.15);
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-  margin: 1rem auto 3rem; /* More bottom margin to separate from stats */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.2rem;
-  width: 100%;
-  max-width: 600px;
-}
-
-.login-title {
-  color: #00e8e0;
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin-bottom: 0.2rem;
-  letter-spacing: 0.5px;
-}
-
-.login-subtitle {
-  color: #ccc;
-  font-size: 1rem;
-  line-height: 1.5;
-  max-width: 80%;
-}
+/* .login-promo-container removed - replaced by GameLoginPromo component */
 
 .stats-section {
   width: 100%;
@@ -329,13 +295,7 @@ async function handleLogin() {
     padding: 0.3rem 0.5rem;
   }
 
-  .login-promo-container {
-    padding: 1.5rem 0.5rem; /* Reduced horizontal padding */
-    margin-bottom: 2rem;
-  }
-  .login-subtitle {
-    max-width: 100%;
-  }
+
 
   .stats-section {
     width: 100%;
