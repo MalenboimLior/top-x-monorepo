@@ -16,9 +16,10 @@
       :share-text="shareText"
       :worst-points="worstPoints"
       :worst-show="worstShow"
+      :hide-info-button="hideInfoButton"
       @submit="handleSubmit"
     />
-    <PyramidNav
+    <PyramidCombined
       v-else
       :game-id="gameId"
       :pyramid="pyramid"
@@ -52,7 +53,7 @@ import { useHead } from '@vueuse/head';
 import { useRoute, useRouter } from 'vue-router';
 import { getGame } from '@/services/game';
 import PyramidEdit from '@/components/games/pyramid/PyramidEdit.vue';
-import PyramidNav from '@/components/games/pyramid/PyramidNav.vue';
+import PyramidCombined from '@/components/games/pyramid/PyramidCombined.vue';
 import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption, PyramidConfig } from '@top-x/shared/types/pyramid';
@@ -85,6 +86,7 @@ const shareText = ref('');
 const baseShareText = ref('');
 const worstPoints = ref(0);
 const worstShow = ref(true);
+const hideInfoButton = ref(false);
 const shareImageTitle = ref('');
 const shareLink = ref('');
 const communityHeader = ref('');
@@ -164,6 +166,7 @@ onMounted(async () => {
       hideRowLabel.value = pyramidConfig?.HideRowLabel ?? false;
       worstPoints.value = pyramidConfig?.worstPoints ?? 0;
       worstShow.value = pyramidConfig?.worstShow !== false;
+      hideInfoButton.value = pyramidConfig?.hideInfoButton ?? false;
 
       console.log('PyramidTier: Game data fetched:', {
         gameTitle: gameTitle.value,
@@ -182,7 +185,8 @@ onMounted(async () => {
         sortItems: sortItems.value,
         hideRowLabel: hideRowLabel.value,
         worstPoints: worstPoints.value,
-        worstShow: worstShow.value
+        worstShow: worstShow.value,
+        hideInfoButton: hideInfoButton.value
       });
 
     // Load pyramid state based on user login status

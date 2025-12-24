@@ -120,6 +120,13 @@
       </label>
     </div>
 
+    <div class="field">
+      <label class="checkbox">
+        <input type="checkbox" v-model="config.hideInfoButton" />
+        Hide Info Button
+      </label>
+    </div>
+
     <!-- Community Items -->
     <div class="field">
       <label class="label">Community Items</label>
@@ -183,6 +190,7 @@ const emptyConfig = (): PyramidConfig => ({
   worstShow: false,
   communityItems: [],
   communityHeader: '',
+  hideInfoButton: false,
 });
 
 const config = ref<PyramidConfig>(JSON.parse(JSON.stringify(props.modelValue || emptyConfig())));

@@ -31,10 +31,10 @@
                   <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
                   <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
                 </div>
-                <div v-else class="slot-label-container">
-                  <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
-                  <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} pts</div>
-                </div>
+            <div v-else class="slot-label-container">
+              <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+              <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} {{ t('games.pyramid.points') }}</div>
+            </div>
               </div>
             </div>
             <!-- Animation container for row 2 -->
@@ -66,8 +66,8 @@
               <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
             </div>
             <div v-else class="worst-slot-label-container">
-              <div class="tier-label has-text-danger">Worst</div>
-              <div class="worst-slot-points has-text-danger">{{ props.worstPoints || 0 }} pts</div>
+              <div class="tier-label has-text-danger">{{ t('games.pyramid.worst') }}</div>
+              <div class="worst-slot-points has-text-danger">{{ props.worstPoints || 0 }} {{ t('games.pyramid.points') }}</div>
             </div>
           </div>
           <!-- Animation container for worst slot -->
@@ -79,7 +79,7 @@
 <div style="padding: 10px;">
       <CustomButton
         type="is-primary"
-        label="Place your Vote"
+        :label="t('games.pyramid.placeVote')"
         :icon="['fas', 'square-poll-vertical']"
         :disabled="isSubmitting"
         @click="submitPyramid"
@@ -93,7 +93,7 @@
             <input
               class="input is-dark"
               type="text"
-              placeholder="Search..."
+              :placeholder="t('games.pyramid.search')"
               v-model="searchQuery"
             />
             <span class="icon is-left">
@@ -105,12 +105,12 @@
           <a
             style="font-size: 14px;"
             @click.stop.prevent="clearPyramid"
-          >clear pyramid</a>
+          >{{ t('games.pyramid.clearPyramid') }}</a>
           <div v-if="showConfirm" class="confirm-tooltip">
-            <p>Are you sure you want to clear the pyramid?</p>
+            <p>{{ t('games.pyramid.confirmClear') }}</p>
             <div class="buttons">
-              <button class="button is-small is-success" @click="confirmClear(true)">Yes</button>
-              <button class="button is-small is-danger" @click="confirmClear(false)">No</button>
+              <button class="button is-small is-success" @click="confirmClear(true)">{{ t('games.pyramid.yes') }}</button>
+              <button class="button is-small is-danger" @click="confirmClear(false)">{{ t('games.pyramid.no') }}</button>
             </div>
           </div>
         </div>
@@ -129,11 +129,12 @@
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
           <font-awesome-icon
-  :icon="['fas', 'circle-info']"
-  class="info-icon"
-  :class="{ 'selected': selectedInfoIcon === image.id }"
-  @click.stop="showDescription(image)"
-/>
+            v-if="!props.hideInfoButton"
+            :icon="['fas', 'circle-info']"
+            class="info-icon"
+            :class="{ 'selected': selectedInfoIcon === image.id }"
+            @click.stop="showDescription(image)"
+          />
         </div>
       </div>
        <div class="pool-controls mb-4">
@@ -141,7 +142,7 @@
     
         <CustomButton
           type="is-success"
-          label="Add New Item"
+          :label="t('games.pyramid.addNewItem')"
           :icon="['fas', 'plus']"
           @click="showAddItemPopup"
         />
@@ -162,6 +163,7 @@
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
           <font-awesome-icon
+            v-if="!props.hideInfoButton"
             :icon="['fas', 'circle-info']"
             class="info-icon"
             :class="{ 'selected': selectedInfoIcon === image.id }"
@@ -174,7 +176,7 @@
         <div class="tab-content" @click.stop>
           <p class="question-text">Hi @Grok, what can you say about {{ describedItem?.label }}?</p>
           <p class="answer-text">{{ displayedDescription }}</p>
-          <button style="color:#c4ff00;" @click="closeTab">Close</button>
+          <button style="color:#c4ff00;" @click="closeTab">{{ t('games.pyramid.close') }}</button>
         </div>
       </div>
 
@@ -200,8 +202,12 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.vue';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
+import { useLocaleStore } from '@/stores/locale';
 
 library.add(faCircleInfo, faSearch, faEraser, faPlus);
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const route = useRoute();
 const gameId = ref((route.query.game as string).toLowerCase());
@@ -221,6 +227,7 @@ const props = defineProps<{
   shareText?: string;
   worstPoints?: number;
   worstShow?: boolean;
+  hideInfoButton?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -536,7 +543,7 @@ function onSlotClick(row: number, col: number) {
   }
 
   targetSlot.image = selectedItem.value;
-  animatedPoints.value = `+${props.rows[row]?.points || 0} pts`;
+  animatedPoints.value = `+${props.rows[row]?.points || 0} ${t('games.pyramid.points')}`;
   setTimeout(() => {
     animatedPoints.value = null;
   }, 1000);
@@ -594,7 +601,7 @@ function onWorstSlotClick() {
   }
 
   worstItem.value = selectedItem.value;
-  worstAnimatedPoints.value = `${props.worstPoints || 0} pts`;
+  worstAnimatedPoints.value = `${props.worstPoints || 0} ${t('games.pyramid.points')}`;
   setTimeout(() => {
     worstAnimatedPoints.value = null;
   }, 1000);
@@ -845,7 +852,7 @@ function closeTab() {
   z-index: 10;
 }
 .slot-points {
-  font-size: 0.6rem;
+  font-size: 1rem;
   font-weight: bold;
   color: #22b573 !important;
 }
@@ -921,7 +928,7 @@ function closeTab() {
   z-index: 10;
 }
 .worst-slot-points {
-  font-size: 0.6rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 .worst-animation-container {
@@ -1173,7 +1180,7 @@ function closeTab() {
     gap: 0.1rem;
   }
   .slot-points {
-    font-size: 0.6rem;
+    font-size: 0.9rem;
   }
   .animation-container {
     right: -60px;
@@ -1207,7 +1214,7 @@ function closeTab() {
     gap: 0.1rem;
   }
   .worst-slot-points {
-    font-size: 0.6rem;
+    font-size: 0.9rem;
   }
   .worst-animation-container {
     right: -60px;

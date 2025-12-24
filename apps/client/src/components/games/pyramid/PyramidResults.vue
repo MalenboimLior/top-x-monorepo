@@ -1,11 +1,12 @@
 <template>
   <div class="pyramid-results">
     <!-- <h2 class="subtitle has-text-white">Other Users' Votes</h2> -->
-    <div v-if="userVotes.length === 0" class="notification is-info">
+    <!-- Only show votes list if user is logged in and has votes -->
+    <div v-if="user && userVotes.length === 0 && !showLoginTab" class="notification is-info">
       <p>No votes found for this game.</p>
     </div>
-    <div v-else class="votes-list">
-      <div v-for="vote in userVotes" :key="vote.uid" class="vote-item">
+    <div v-if="user && userVotes.length > 0" class="votes-list">
+      <div v-for="vote in paginatedVotes" :key="vote.uid" class="vote-item">
         <div class="user-header has-text-centered">
           <img :src="vote.photoURL" alt="User Profile" class="user-profile-image" />
           <h3 class="has-text-white" style="font-size:22px">
@@ -20,7 +21,7 @@
           <CustomButton
             v-if="user && user.uid !== vote.uid && !frenemies.includes(vote.uid)"
             type="is-primary is-small"
-            label="Follow"
+            :label="t('games.pyramid.follow')"
             @click="addFrenemy(vote.uid)"
           />
         </div>
@@ -41,35 +42,52 @@
     </div>
 
     <div v-if="user" class="has-text-centered mt-4">
-      <p class="has-text-white">Can't spot your pals? Time to find more users to follow!</p>
+      <p class="has-text-white">{{ t('games.pyramid.cantFindPals') }}</p>
       <CustomButton
         type="is-primary"
-        label="Find users to follow"
+        :label="t('games.pyramid.findUsers')"
         @click="searchFrenemies"
       />
     </div>
+    
+    <!-- Pagination Controls - Only show if user is logged in and has votes -->
+    <div v-if="user && totalPages > 1" class="pagination-controls">
+      <button 
+        class="pagination-button" 
+        :disabled="currentPage === 1"
+        @click="currentPage = currentPage - 1"
+      >
+        {{ t('games.pagination.previous') }}
+      </button>
+      <span class="pagination-info">
+        {{ t('games.pagination.pageInfo', { start: pageInfo.start, end: pageInfo.end, total: pageInfo.total }) }}
+      </span>
+      <button 
+        class="pagination-button" 
+        :disabled="currentPage === totalPages"
+        @click="currentPage = currentPage + 1"
+      >
+        {{ t('games.pagination.next') }}
+      </button>
+    </div>
 
-    <!-- Login Tab -->
-    <div v-show="showLoginTab" :class="['description-tab', { show: showLoginTab }]">
-      <div class="tab-content" @click.stop>
-    <p class="question-text">See your friends' picks? 👥</p> 
+    <!-- Login Tab - Inline Display -->
+    <div v-if="!user && showLoginTab" class="login-tab-inline">
+      <div class="login-tab-content">
+        <p class="question-text">{{ t('games.pyramid.results.seeFriendsPicks') }}</p> 
         <p class="answer-text">
-
-          Log in to add people you want to follow & check their votes.<br>
-Username + pic - we promise, we stay out of your posts! 🔒<br>
-</p>
-
-      
-        <!-- <button style="color:#c4ff00;" @click="closeLoginTab">Close</button> -->
+          {{ t('games.pyramid.results.loginToFollow') }}<br>
+          {{ t('games.pyramid.results.privacyNote') }}<br>
+        </p>
       </div>
-      <div  class="has-text-centered">
-          <CustomButton
-            type="is-primary"
-            :label="t('games.loginButton')"
-            :icon="['fab', 'x-twitter']"
-            @click="handleLogin"
-          />
-        </div>
+      <div class="has-text-centered">
+        <CustomButton
+          type="is-primary"
+          :label="t('games.loginButton')"
+          :icon="['fab', 'x-twitter']"
+          @click="handleLogin"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -109,6 +127,8 @@ const userStore = useUserStore();
 const user = computed(() => userStore.user);
 const frenemies = computed(() => userStore.profile?.frenemies || []);
 const showLoginTab = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
 const userVotes = ref<
   Array<{
@@ -122,28 +142,35 @@ const userVotes = ref<
 
 onMounted(async () => {
   console.log('PyramidResults: onMounted called with gameId:', props.gameId);
+  // Only load votes if user is logged in
   if (!user.value) {
     showLoginTab.value = true;
-    const votes = await getVipLeaderboard(props.gameId);
-    processVotes(votes);
-  } else {
-    // const friendsVotes = await getFriendsLeaderboard(props.gameId, user.value.uid);
-    // let votes = friendsVotes;
-    // if (friendsVotes.length === 0) {
-    //   votes = await getVipLeaderboard(props.gameId);
-    // }
-    //remove frendes for now
-    const votes = await getVipLeaderboard(props.gameId);
-
-    processVotes(votes);
+    // Don't fetch votes for non-logged-in users
+    return;
   }
-  if (analytics) {
-    logEvent(analytics, 'game_view', { game_name: props.gameId, view_type: 'results' });
-  }
+  
+  // User is logged in, fetch votes asynchronously
+  // Use setTimeout to allow component to render first, then fetch data
+  setTimeout(async () => {
+    try {
+      const votes = await getVipLeaderboard(props.gameId);
+      processVotes(votes);
+      
+      if (analytics) {
+        logEvent(analytics, 'game_view', { game_name: props.gameId, view_type: 'results' });
+      }
+    } catch (error) {
+      console.error('PyramidResults: Error loading votes:', error);
+    }
+  }, 0);
 });
 
 function processVotes(leaderboard: LeaderboardEntry[]) {
   const allItems = [...props.items, ...props.communityItems];
+  // Create a map for faster lookups instead of using find() repeatedly
+  const itemsMap = new Map(allItems.map(item => [item.id, item]));
+  
+  // Process votes more efficiently
   userVotes.value = leaderboard
     .filter(entry => entry.custom && entry.custom.pyramid) // Filter out entries without pyramid data
     .map(entry => ({
@@ -152,15 +179,32 @@ function processVotes(leaderboard: LeaderboardEntry[]) {
       photoURL: entry.photoURL || '/assets/profile.png',
       pyramid: (entry.custom!.pyramid as Array<{ tier: number; slots: string[] }>).map(tier => 
         tier.slots.map(itemId => ({
-          image: itemId ? allItems.find(item => item.id === itemId) || null : null,
+          image: itemId ? (itemsMap.get(itemId) || null) : null,
         }))
       ),
       worstItem: entry.custom!.worstItem 
-        ? allItems.find(item => item.id === (entry.custom!.worstItem as { id: string }).id) || null 
+        ? (itemsMap.get((entry.custom!.worstItem as { id: string }).id) || null)
         : null,
     }));
   console.log('PyramidResults: Processed votes:', userVotes.value);
+  currentPage.value = 1; // Reset to first page when votes are loaded
 }
+
+const paginatedVotes = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return userVotes.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(userVotes.value.length / itemsPerPage);
+});
+
+const pageInfo = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage + 1;
+  const end = Math.min(currentPage.value * itemsPerPage, userVotes.value.length);
+  return { start, end, total: userVotes.value.length };
+});
 
 async function handleLogin() {
   await userStore.loginWithX();
@@ -252,43 +296,18 @@ function searchFrenemies() {
   margin: 0.3rem 0;
 }
 
-.description-tab {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.login-tab-inline {
   background-color: #1f1f1f;
   color: white;
-  padding: 1.5rem;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
-  border-top: 1px solid #333;
-  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #333;
+  margin: 2rem 0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-.description-tab.show {
-  transform: translateY(0);
-}
-
-.tab-content {
-  max-height: 200px;
-  overflow-y: auto;
-  margin-bottom: 1rem;
-}
-
-@media screen and (min-width: 768px) {
-  .description-tab {
-    width: 450px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100%);
-    border-radius: 16px 16px 0 0;
-    padding: 2rem;
-  }
-  .description-tab.show {
-    transform: translateX(-50%) translateY(0);
-  }
+.login-tab-content {
+  margin-bottom: 1.5rem;
 }
 
 .question-text {
@@ -334,5 +353,40 @@ function searchFrenemies() {
   margin: 0.5rem 0 1rem !important;
   opacity: 0.9;
   text-align: left; /* Align header with user info if desired, or keep center */
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #222;
+}
+
+.pagination-button {
+  background-color: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #3a3a3a;
+  border-color: #00e8e0;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  color: #ccc;
+  font-size: 0.9rem;
 }
 </style>

@@ -1,6 +1,13 @@
 <template>
   <div class="pyramid-combined">
-    <!-- Top Section: User's Vote (Thumbnail) -->
+    <!-- Login Promo (Above user-vote-section) if not logged in -->
+    <GameLoginPromo 
+      v-if="!userStore.user"
+      mode="inline"
+      :game-id="gameId"
+      context="combined_view"
+    />
+
     <!-- Top Section: User's Vote (Thumbnail) -->
     <div class="user-vote-section">
       <h3 class="vote-title desktop-only">{{ t('games.pyramid.yourVote') }}</h3>
@@ -37,16 +44,8 @@
       </div>
     </div>
 
-    <!-- Login Promo (Inline) if not logged in -->
-    <GameLoginPromo 
-      v-if="!userStore.user"
-      mode="inline"
-      :game-id="gameId"
-      context="combined_view"
-    />
-
-    <!-- Bottom Section: Results (Stats) -->
-    <div class="stats-section mt-4">
+    <!-- Bottom Section: Results (Stats) - Loaded after user-vote-section -->
+    <div v-if="showStats" class="stats-section mt-4">
       <PyramidStats
         :game-id="gameId"
         :items="items"
@@ -59,16 +58,33 @@
         :hide-login-tab="true" 
       />
     </div>
+
+    <!-- Community Votes Section - Loaded after stats, shows login tab if not logged in -->
+    <div v-if="showResults" class="community-votes-section mt-4">
+      <h2 v-if="userStore.user" class="community-votes-header">{{ t('games.pyramid.communityVotes') }}</h2>
+      <PyramidResults
+        :game-id="gameId"
+        :items="items"
+        :community-items="communityItems"
+        :rows="rows"
+        :game-header="gameHeader"
+        :worst-header="worstHeader"
+        :game-title="gameTitle"
+        :share-image-title="shareImageTitle"
+        :hide-row-label="hideRowLabel"
+        :worst-show="worstShow"
+        :share-link="shareLink"
+      />
+    </div>
     
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, nextTick, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/games/pyramid/PyramidImage.vue';
-import PyramidStats from '@/components/games/pyramid/PyramidStats.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import GameLoginPromo from '@/components/games/shared/GameLoginPromo.vue';
@@ -80,6 +96,10 @@ import { faPen } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { useLocaleStore } from '@/stores/locale';
 
+// Lazy load heavy components to prioritize user-vote-section
+const PyramidStats = defineAsyncComponent(() => import('@/components/games/pyramid/PyramidStats.vue'));
+const PyramidResults = defineAsyncComponent(() => import('@/components/games/pyramid/PyramidResults.vue'));
+
 library.add(faPen);
 
 const router = useRouter();
@@ -88,6 +108,24 @@ const t = (key: string, params?: Record<string, unknown>) => localeStore.transla
 const userStore = useUserStore();
 const pyramidImageRef = ref<any>(null);
 const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
+const showStats = ref(false);
+const showResults = ref(false);
+
+// Prioritize user-vote-section loading - delay stats and results
+onMounted(async () => {
+  // Wait for user-vote-section to render first
+  await nextTick();
+  // Small delay to ensure user-vote-section is fully rendered
+  setTimeout(() => {
+    showStats.value = true;
+    // Only show results if user is logged in
+    if (userStore.user) {
+      setTimeout(() => {
+        showResults.value = true;
+      }, 100);
+    }
+  }, 200);
+});
 
 const props = defineProps<{
   gameId: string;
@@ -170,6 +208,7 @@ async function handleLogin() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 1rem;
 }
 
 .vote-title {
@@ -185,8 +224,7 @@ async function handleLogin() {
 
 .thumbnail-wrapper {
   width: 100%;
-  max-width: 300px; /* Slightly larger thumbnail */
-  /* margin-bottom: 1.5rem; */ /* removed margin */
+  max-width: 300px; /* Desktop size */
   pointer-events: none;
   transition: transform 0.3s ease;
 }
@@ -220,20 +258,25 @@ async function handleLogin() {
 }
 
 .edit-btn {
-  color: #bbb;
-  font-size: 0.95rem;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   transition: all 0.2s ease;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  border: 1px solid transparent;
+  background: rgba(0, 232, 224, 0.2);
+  border: 2px solid #00e8e0;
+  box-shadow: 0 0 10px rgba(0, 232, 224, 0.3);
 }
 .edit-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 232, 224, 0.3);
+  border-color: #00e8e0;
+  box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
+  transform: translateY(-2px);
 }
 
 /* .login-promo-container removed - replaced by GameLoginPromo component */
@@ -243,6 +286,22 @@ async function handleLogin() {
   max-width: 100%;
   animation: slideUp 0.6s ease-out;
   box-sizing: border-box;
+}
+
+.community-votes-section {
+  width: 100%;
+  max-width: 100%;
+  animation: slideUp 0.6s ease-out;
+  box-sizing: border-box;
+}
+
+.community-votes-header {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 1.5rem 0 1rem;
+  text-align: center;
+  letter-spacing: 1px;
 }
 
 
@@ -263,36 +322,28 @@ async function handleLogin() {
     border-right: none;
   }
 
-  .vote-row {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-  }
-
   /* Hide the big title on mobile to save space */
   .desktop-only {
     display: none;
   }
 
   .thumbnail-wrapper {
-    /* Scale down the thumbnail significantly to act as a card/icon */
-    max-width: 80px; 
-    width: 80px;
-    margin: 0;
+    /* Smaller image on mobile */
+    max-width: 150px;
+    width: 100%;
   }
 
   .buttons-container {
-    margin-top: 0; /* Remove top margin in horizontal layout */
-    width: auto;
-    flex-direction: column; /* Stack buttons vertically next to image? Or allow Row. User said "one line next to share button" */
-    gap: 0.5rem;
-    align-items: flex-start; /* Align left */
+    width: 100%;
+    flex-direction: row;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
   }
 
   .edit-btn {
-    font-size: 0.8rem;
-    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.6rem 1.2rem;
   }
 
 

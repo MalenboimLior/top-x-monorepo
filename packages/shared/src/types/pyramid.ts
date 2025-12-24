@@ -25,6 +25,7 @@ export interface PyramidConfig {
   worstShow?: boolean;
   communityItems: PyramidItem[];
   communityHeader?: string;
+  hideInfoButton?: boolean;
 }
 export interface PyramidRow {
   id: number;

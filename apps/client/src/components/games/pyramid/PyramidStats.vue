@@ -49,24 +49,24 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(item, index) in sortedItemStats" :key="item.id" @click="showPresidentModal(item)">
+          <tr v-for="(item, index) in paginatedStats" :key="item.id" @click="showPresidentModal(item)">
             <td class="has-text-centered number-cell">
               <div class="rank-column">
-                <span>{{ formatNumber(index + 1) }}</span>
+                <span>{{ formatNumber((currentPage - 1) * itemsPerPage + index + 1) }}</span>
                 <font-awesome-icon
-                  v-if="index === 0"
+                  v-if="(currentPage - 1) * itemsPerPage + index === 0"
                   :icon="['fas', 'medal']"
                   class="medal gold"
                   :title="t('games.pyramid.place.1st')"
                 />
                 <font-awesome-icon
-                  v-else-if="index === 1"
+                  v-else-if="(currentPage - 1) * itemsPerPage + index === 1"
                   :icon="['fas', 'medal']"
                   class="medal silver"
                   :title="t('games.pyramid.place.2nd')"
                 />
                 <font-awesome-icon
-                  v-else-if="index === 2"
+                  v-else-if="(currentPage - 1) * itemsPerPage + index === 2"
                   :icon="['fas', 'medal']"
                   class="medal bronze"
                   :title="t('games.pyramid.place.3rd')"
@@ -93,6 +93,27 @@
           </tr>
         </tbody>
       </table>
+      
+      <!-- Pagination Controls -->
+      <div v-if="totalPages > 1" class="pagination-controls">
+        <button 
+          class="pagination-button" 
+          :disabled="currentPage === 1"
+          @click="currentPage = currentPage - 1"
+        >
+          {{ t('games.pagination.previous') }}
+        </button>
+        <span class="pagination-info">
+          {{ t('games.pagination.pageInfo', { start: pageInfo.start, end: pageInfo.end, total: pageInfo.total }) }}
+        </span>
+        <button 
+          class="pagination-button" 
+          :disabled="currentPage === totalPages"
+          @click="currentPage = currentPage + 1"
+        >
+          {{ t('games.pagination.next') }}
+        </button>
+      </div>
     </div>
 
     <!-- Login Tab -->
@@ -191,6 +212,8 @@ const modalContainer = ref<HTMLElement | null>(null);
 const isImageLoading = ref(true);
 const totalPlayers = ref(0);
 const showLoginTab = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
 onMounted(async () => {
   if (analytics) {
@@ -258,6 +281,22 @@ const sortedItemStats = computed(() => {
   });
 });
 
+const paginatedStats = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return sortedItemStats.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(sortedItemStats.value.length / itemsPerPage);
+});
+
+const pageInfo = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage + 1;
+  const end = Math.min(currentPage.value * itemsPerPage, sortedItemStats.value.length);
+  return { start, end, total: sortedItemStats.value.length };
+});
+
 /**
  * Handles sorting when a column header is clicked.
  */
@@ -268,6 +307,8 @@ function sortBy(column: string) {
     sortColumn.value = column;
     sortDirection.value = 'desc';
   }
+  // Reset to first page when sorting changes
+  currentPage.value = 1;
 }
 
 function toRoman(num: number): string {
@@ -612,5 +653,40 @@ tbody tr:hover .item-image {
   .number-cell {
      font-size: 0.9rem !important;
   }
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #222;
+}
+
+.pagination-button {
+  background-color: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #3a3a3a;
+  border-color: #00e8e0;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  color: #ccc;
+  font-size: 0.9rem;
 }
 </style>
