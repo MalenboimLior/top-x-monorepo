@@ -36,6 +36,7 @@
       :hide-row-label="hideRowLabel"
       :worst-points="worstPoints"
       :worst-show="worstShow"
+      :stats-reveal-date="statsRevealDate"
     />
 
     <GameAdOverlay
@@ -90,6 +91,7 @@ const hideInfoButton = ref(false);
 const shareImageTitle = ref('');
 const shareLink = ref('');
 const communityHeader = ref('');
+const statsRevealDate = ref<string | undefined>(undefined);
 const hasSubmitted = ref(false);
 const showAd = ref(false);
 const gameData = ref<any>(null);
@@ -167,6 +169,7 @@ onMounted(async () => {
       worstPoints.value = pyramidConfig?.worstPoints ?? 0;
       worstShow.value = pyramidConfig?.worstShow !== false;
       hideInfoButton.value = pyramidConfig?.hideInfoButton ?? false;
+      statsRevealDate.value = pyramidConfig?.statsRevealDate;
 
       console.log('PyramidTier: Game data fetched:', {
         gameTitle: gameTitle.value,

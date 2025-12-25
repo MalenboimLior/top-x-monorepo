@@ -28,6 +28,7 @@
         :hide-row-label="hideRowLabel"
         :worst-show="worstShow"
         :worstPoints="worstPoints || 0"
+        :stats-reveal-date="statsRevealDate"
       />
       <PyramidResults
         v-if="activeTab === 'peer-picks'"
@@ -73,6 +74,7 @@ const props = defineProps<{
   shareText?: string;
   shareLink?: string;
   worstShow?: boolean;
+  statsRevealDate?: string;
 }>();
 
 const activeTab = ref<'results' | 'peer-picks'>('results');

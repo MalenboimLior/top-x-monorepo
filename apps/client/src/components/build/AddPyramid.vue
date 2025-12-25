@@ -210,6 +210,26 @@
       <input class="field-input" v-model="config.shareImageTitle" :placeholder="t('build.pyramid.shareImageTitle')" />
     </div>
 
+    <!-- Stats Reveal Date -->
+    <div class="field">
+      <label class="toggle">
+        <input type="checkbox" v-model="enableStatsRevealDate" />
+        <span>{{ t('build.pyramid.statsRevealDate.enable') }}</span>
+      </label>
+      <div v-if="enableStatsRevealDate" class="field" style="margin-top: 0.5rem;">
+        <label class="field-label">{{ t('build.pyramid.statsRevealDate.label') }}</label>
+        <input 
+          type="datetime-local" 
+          class="field-input" 
+          v-model="statsRevealDateLocal" 
+          :placeholder="t('build.pyramid.statsRevealDate.placeholder')"
+        />
+        <p v-if="statsRevealDateLocal" class="field-help">
+          {{ t('build.pyramid.statsRevealDate.help', { date: formatDateForDisplay(statsRevealDateLocal) }) }}
+        </p>
+      </div>
+    </div>
+
     <!-- Community Items Section -->
     <section ref="communitySection" class="config-section">
       <button
@@ -470,7 +490,71 @@ const config = ref<PyramidConfig>(JSON.parse(JSON.stringify(props.modelValue || 
   communityItems: [],
   communityHeader: '',
   hideInfoButton: false,
+  statsRevealDate: undefined,
 })));
+
+// Stats reveal date management
+const enableStatsRevealDate = ref(!!config.value.statsRevealDate);
+const statsRevealDateLocal = ref<string>('');
+
+// Convert ISO string to datetime-local format
+function isoToLocalDateTime(isoString: string | undefined): string {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '';
+  // Format as YYYY-MM-DDTHH:mm for datetime-local input
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Convert datetime-local format to ISO string
+function localDateTimeToIso(localDateTime: string): string {
+  if (!localDateTime) return '';
+  const date = new Date(localDateTime);
+  if (isNaN(date.getTime())) return '';
+  return date.toISOString();
+}
+
+// Format date for display
+function formatDateForDisplay(localDateTime: string): string {
+  if (!localDateTime) return '';
+  const date = new Date(localDateTime);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleString();
+}
+
+// Initialize statsRevealDateLocal from config
+if (config.value.statsRevealDate) {
+  statsRevealDateLocal.value = isoToLocalDateTime(config.value.statsRevealDate);
+}
+
+// Watch enableStatsRevealDate
+watch(enableStatsRevealDate, (enabled) => {
+  if (!enabled) {
+    config.value.statsRevealDate = undefined;
+    statsRevealDateLocal.value = '';
+  } else if (!statsRevealDateLocal.value) {
+    // Set default to tomorrow if enabling for the first time
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(12, 0, 0, 0);
+    statsRevealDateLocal.value = isoToLocalDateTime(tomorrow.toISOString());
+    config.value.statsRevealDate = tomorrow.toISOString();
+  }
+});
+
+// Watch statsRevealDateLocal and update config
+watch(statsRevealDateLocal, (newValue) => {
+  if (enableStatsRevealDate.value && newValue) {
+    config.value.statsRevealDate = localDateTimeToIso(newValue);
+  } else if (!newValue) {
+    config.value.statsRevealDate = undefined;
+  }
+});
 
 // Ensure all items have valid IDs
 function ensureItemIds() {
@@ -500,6 +584,13 @@ watch(() => props.modelValue, (newVal) => {
     console.log('AddPyramid: modelValue changed, updating config', newVal);
     config.value = JSON.parse(JSON.stringify(newVal));
     ensureItemIds();
+    // Update stats reveal date UI state
+    enableStatsRevealDate.value = !!config.value.statsRevealDate;
+    if (config.value.statsRevealDate) {
+      statsRevealDateLocal.value = isoToLocalDateTime(config.value.statsRevealDate);
+    } else {
+      statsRevealDateLocal.value = '';
+    }
   }
 }, { deep: true });
 
@@ -932,6 +1023,12 @@ function removeCommunityItem(index: number) {
 .field-input--compact {
   font-size: 0.85rem;
   padding: 0.35rem 0.5rem;
+}
+
+.field-help {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin-top: 0.25rem;
 }
 
 .toggle {

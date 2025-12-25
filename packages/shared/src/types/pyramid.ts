@@ -26,6 +26,7 @@ export interface PyramidConfig {
   communityItems: PyramidItem[];
   communityHeader?: string;
   hideInfoButton?: boolean;
+  statsRevealDate?: string; // ISO date string - stats will only be shown after this date
 }
 export interface PyramidRow {
   id: number;
