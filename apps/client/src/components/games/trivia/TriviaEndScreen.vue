@@ -268,6 +268,7 @@ watch(
     if (
       !hasRefreshedAfterSubmission.value &&
       newScore !== undefined &&
+      newScore !== null &&
       newScore !== oldScore &&
       newScore >= props.score
     ) {
