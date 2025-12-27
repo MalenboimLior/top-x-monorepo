@@ -33,7 +33,9 @@
               v-if="isOwnProfile"
               type="is-light is-small"
               label="Logout"
+              :icon="['fas', 'right-from-bracket']"
               @click="logout"
+              class="logout-button"
             />
             <div v-else-if="isLoggedIn" class="follow-controls">
               <CustomButton
@@ -118,22 +120,20 @@
             Badges
           </button> -->
           <button
-            v-if="isOwnProfile"
             type="button"
             class="profile-tab"
             :class="{ active: activeTab === 'frenemies' }"
             @click="setActiveTab('frenemies')"
           >
-            Following ({{ userStore.profile?.frenemies?.length || 0 }})
+            Following ({{ profile?.frenemies?.length || 0 }})
           </button>
           <button
-            v-if="isOwnProfile"
             type="button"
             class="profile-tab"
             :class="{ active: activeTab === 'whoadded' }"
             @click="setActiveTab('whoadded')"
           >
-            Followers ({{ userStore.profile?.addedBy?.length || 0 }})
+            Followers ({{ profile?.addedBy?.length || 0 }})
           </button>
           <button
             type="button"
@@ -144,6 +144,13 @@
             My Games
           </button>
         </nav>
+
+        <div v-if="!activeTab" class="profile-panel profile-panel--empty">
+          <div class="profile-select-hint">
+            <font-awesome-icon :icon="['fas', 'hand-pointer']" class="hint-icon" />
+            <p>Select a tab above to explore activity</p>
+          </div>
+        </div>
 
         <div v-if="activeTab === 'games'" class="profile-panel">
 
@@ -167,9 +174,11 @@
           <p class="profile-empty">Coming soon.</p>
         </div> -->
 
-        <div v-if="activeTab === 'frenemies' && isOwnProfile" class="profile-panel">
+        <div v-if="activeTab === 'frenemies'" class="profile-panel">
           <div v-if="loadingFrenemies" class="profile-empty">Loading following...</div>
-          <div v-else-if="!frenemyEntries.length" class="profile-empty">You're not following anyone yet.</div>
+          <div v-else-if="!frenemyEntries.length" class="profile-empty">
+            {{ isOwnProfile ? "You're not following anyone yet." : "This user isn't following anyone yet." }}
+          </div>
           <div v-else class="profile-list">
             <article v-for="entry in frenemyEntries" :key="entry.uid" class="profile-list-item">
               <div class="profile-list-item__avatar">
@@ -189,12 +198,12 @@
               </div>
             </article>
           </div>
-          <div class="profile-panel__cta">
+          <div v-if="isOwnProfile" class="profile-panel__cta">
             <CustomButton type="is-primary" label="Find users to follow" @click="searchMoreFrenemies" />
           </div>
         </div>
 
-        <div v-if="activeTab === 'whoadded' && isOwnProfile" class="profile-panel">
+        <div v-if="activeTab === 'whoadded'" class="profile-panel">
           <div v-if="loadingAddedBy" class="profile-empty">Loading...</div>
           <div v-else-if="!addedByEntries.length" class="profile-empty">No followers yet.</div>
           <div v-else class="profile-list">
@@ -367,7 +376,7 @@ const addedByEntries = ref<User[]>([]);
 const loadingFrenemies = ref(false);
 const loadingAddedBy = ref(false);
 const showLoginTab = ref(false);
-const activeTab = ref('mygames');
+const activeTab = ref('');
 const loadedFrenemies = ref(false);
 const loadedAddedBy = ref(false);
 const selectedGameId = ref('');
@@ -822,12 +831,12 @@ async function loadProfile() {
 async function fetchFrenemies() {
   loadingFrenemies.value = true;
   frenemyEntries.value = [];
-  if (!userStore.profile?.frenemies || userStore.profile.frenemies.length === 0) {
+  if (!profile.value?.frenemies || profile.value.frenemies.length === 0) {
     loadingFrenemies.value = false;
     return;
   }
   try {
-    const frenemyPromises = userStore.profile.frenemies.map((uid) => getDoc(doc(db, 'users', uid)));
+    const frenemyPromises = profile.value.frenemies.map((uid) => getDoc(doc(db, 'users', uid)));
     const frenemyDocs = await Promise.all(frenemyPromises);
     frenemyEntries.value = frenemyDocs.filter((docItem) => docItem.exists()).map((docItem) => docItem.data() as User);
   } catch (err) {
@@ -840,12 +849,12 @@ async function fetchFrenemies() {
 async function fetchAddedBy() {
   loadingAddedBy.value = true;
   addedByEntries.value = [];
-  if (!userStore.profile?.addedBy || userStore.profile.addedBy.length === 0) {
+  if (!profile.value?.addedBy || profile.value.addedBy.length === 0) {
     loadingAddedBy.value = false;
     return;
   }
   try {
-    const addedByPromises = userStore.profile.addedBy.map((uid) => getDoc(doc(db, 'users', uid)));
+    const addedByPromises = profile.value.addedBy.map((uid) => getDoc(doc(db, 'users', uid)));
     const addedByDocs = await Promise.all(addedByPromises);
     addedByEntries.value = addedByDocs.filter((docItem) => docItem.exists()).map((docItem) => docItem.data() as User);
   } catch (err) {
@@ -1026,9 +1035,7 @@ watch(
     } else {
       showLoginTab.value = false;
     }
-    if (!isOwnProfile.value) {
-      activeTab.value = 'games';
-    }
+    // Deep link support or default tab can go here if needed, but keeping it empty for optimization
     if (isOwnProfile.value && isLoggedIn.value) {
       await loadAvailableGames();
     }
@@ -1399,6 +1406,60 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 1.25rem;
   transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.logout-button {
+  background: rgba(255, 69, 58, 0.1) !important;
+  border-color: rgba(255, 69, 58, 0.2) !important;
+  color: #ff453a !important;
+  font-weight: 700 !important;
+  transition: all 0.3s ease !important;
+  border-radius: 12px !important;
+}
+
+.logout-button:hover {
+  background: rgba(255, 69, 58, 0.2) !important;
+  border-color: #ff453a !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(255, 69, 58, 0.2);
+}
+
+.profile-panel--empty {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-select-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--color-text-tertiary);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.hint-icon {
+  font-size: 2.5rem;
+  opacity: 0.3;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.profile-select-hint p {
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 0.5; }
 }
 
 .my-game-card:hover {
