@@ -27,14 +27,18 @@
                 @drop="() => onDropToSlot(rowIndex, colIndex)"
                 @click="onSlotClick(rowIndex, colIndex)"
               >
-                <div v-if="slot.image" class="draggable-item slot-style">
-                  <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
-                  <div class="color-indicator-pyramid" :style="{ backgroundColor: slot.image.color || '#fff' }"></div>
+                <div class="hex-outer" :class="{ 'has-image': slot.image }">
+                  <div class="hex-border" :style="{ background: slot.image?.color || '' }"></div>
+                  <div class="hex-inner">
+                    <div v-if="slot.image" class="draggable-item slot-style">
+                      <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
+                    </div>
+                    <div v-else class="slot-label-container">
+                      <div class="tier-label"></div>
+                    </div>
+                  </div>
+                  <div class="rank-tag" v-if="slot.image" :style="{ background: slot.image?.color || '' }"></div>
                 </div>
-            <div v-else class="slot-label-container">
-              <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
-              <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }} {{ t('games.pyramid.points') }}</div>
-            </div>
               </div>
             </div>
             <!-- Animation container for row 2 -->
@@ -62,12 +66,18 @@
             @drop="onDropToWorst"
             @click="onWorstSlotClick"
           >
-            <div v-if="worstItem" class="draggable-item slot-style">
-              <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
-            </div>
-            <div v-else class="worst-slot-label-container">
-              <div class="tier-label has-text-danger">{{ t('games.pyramid.worst') }}</div>
-              <div class="worst-slot-points has-text-danger">{{ props.worstPoints || 0 }} {{ t('games.pyramid.points') }}</div>
+            <div class="hex-outer worst" :class="{ 'has-image': worstItem }">
+              <div class="hex-border"></div>
+              <div class="hex-inner">
+                <div v-if="worstItem" class="draggable-item slot-style">
+                  <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
+                </div>
+                <div v-else class="worst-slot-label-container">
+                  <div class="tier-label has-text-danger">{{ t('games.pyramid.worst') }}</div>
+                  <div class="worst-slot-points has-text-danger">{{ props.worstPoints || 0 }}</div>
+                </div>
+              </div>
+              <div class="rank-tag" v-if="worstItem"></div>
             </div>
           </div>
           <!-- Animation container for worst slot -->
@@ -800,7 +810,11 @@ function closeTab() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0;
+  margin-top: -22px; /* Tighter vertical overlap */
+}
+.pyramid-row-container:first-child {
+  margin-top: 0;
 }
 .pyramid-row-wrapper {
   position: relative;
@@ -1073,18 +1087,90 @@ function closeTab() {
   z-index: 10;
 }
 .selected {
-  border: 3px solid #00e8e0;
-  box-shadow: 0 0 0 2px #3273dc33;
+  border-color: #00e8e0;
+  box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
 }
-.highlight-empty {
-  background-color: #f7ffdc;
-  border-color: #f7ffdc;
-  animation: pulse 1s infinite alternate;
+
+/* Hexagon Styles for Interactive Editor */
+.hex-outer {
+  width: 90px;
+  height: 104px;
+  position: relative;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: #1e1e1e;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-@keyframes pulse {
-  from { box-shadow: 0 0 0 0 rgba(255, 211, 92, 0.6); }
-  to { box-shadow: 0 0 0 6px rgba(255, 211, 92, 0); }
+.hex-border {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #00e8e0; /* Default cyan fallback */
+  z-index: 1;
 }
+.hex-inner {
+  width: calc(100% - 8px); /* Thicker border in editor */
+  height: calc(100% - 8px);
+  background: #0c0c0c;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  z-index: 2;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hex-outer.worst .hex-border {
+  background: #ff5555;
+}
+
+.rank-tag {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 4px;
+  border-radius: 2px;
+  background: #00e8e0;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 0 5px rgba(0, 232, 224, 0.5);
+}
+.hex-outer.worst .rank-tag {
+  background: #ff5555;
+}
+
+.pyramid-slot {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  width: 95px; /* Slightly wider to match hex */
+}
+.pyramid-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px; /* Tighter horizontal gap */
+}
+.highlight-empty .hex-border {
+  background: linear-gradient(135deg, #00e8e0, transparent);
+  animation: pulseHex 1s infinite alternate;
+}
+@keyframes pulseHex {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+
+@media screen and (max-width: 767px) {
+  .hex-outer {
+    width: 70px;
+    height: 80px;
+  }
+}
+
 .subtitle {
   color: #eee;
   font-size: 30px;

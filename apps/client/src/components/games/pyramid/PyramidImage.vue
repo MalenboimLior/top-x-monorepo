@@ -219,208 +219,144 @@ async function renderPyramidImage() {
     tempDiv.style.position = 'absolute';
     tempDiv.style.top = '-9999px';
     tempDiv.style.left = '-9999px';
-    tempDiv.style.width = '1000px';
+    tempDiv.style.width = '1080px'; // High res width
+    tempDiv.style.padding = '80px 40px';
     tempDiv.style.display = 'flex';
     tempDiv.style.flexDirection = 'column';
     tempDiv.style.alignItems = 'center';
-    tempDiv.style.backgroundColor = '#121212';
-    tempDiv.className = 'pyramid-container';
+    tempDiv.style.backgroundColor = '#0c0c0c';
+    tempDiv.style.backgroundImage = 'radial-gradient(circle at center, #1a1a2e 0%, #0c0c0c 100%)';
+    tempDiv.className = 'pyramid-generator-container';
     document.body.appendChild(tempDiv);
     tempContainer.value = tempDiv;
 
+    // We use programmatic styles to ensure html2canvas captures everything correctly
+    // Dynamic Styles for the generator
     const styleElement = document.createElement('style');
     styleElement.textContent = `
-      .box { padding: 0 !important; box-sizing: border-box; }
-      .pyramid-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        background-color: #121212;
-        padding: 0.5rem;
+      .pyramid-generator-container {
+        font-family: 'Outfit', 'Inter', sans-serif;
+        color: white;
         box-sizing: border-box;
       }
-      .user-image-container { position: absolute; top: 0.6rem; left: 0.6rem; }
-      .user-image {
-        width: 8rem;
-        height: 8rem;
-        border-radius: 50%;
-        border: 2px solid #00e8e0;
-        object-fit: cover;
-      }
-      .logo-container {
-        position: absolute;
-        top: 0.6rem;
-        right: 0.2rem;
-        width: 160px;
+      .header-section {
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+        width: 100%;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        overflow: hidden;
+      }
+      .brand-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .user-image {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #00e8e0;
+        box-shadow: 0 0 30px rgba(0, 232, 224, 0.4);
       }
       .logo {
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
-        object-fit: contain;
+        width: 200px;
       }
-      .pyramid {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.05rem;
-        width: 100%;
-        max-width: 100%;
-      }
-      .pyramid-row-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.2rem;
-        width: 100%;
-      }
-      .row-label {
-        width: 100%;
-        text-align: center;
-        font-weight: bold;
-        font-size: 0.7rem;
+      .game-title {
+        font-size: 72px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 10px 0 5px;
         color: #fff;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .game-subtitle {
+        font-size: 26px;
+        color: #00e8e0;
+        letter-spacing: 10px;
+        margin-bottom: 40px;
+        text-transform: uppercase;
+        font-weight: 600;
+        opacity: 0.8;
+      }
+      
+      .pyramid-grid {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        padding: 20px 0;
       }
       .pyramid-row {
         display: flex;
         justify-content: center;
-        gap: 0.05rem;
-        width: 100%;
-        flex-wrap: nowrap;
-      }
-      .pyramid-slot {
-        width: 180px;
-        height: 180px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: #1f1f1f;
-        border: 1px dashed #444;
-        border-radius: 4px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        text-align: center;
-        overflow: hidden;
-        box-sizing: border-box;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      .worst-item-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        margin: 0.3rem 0;
-      }
-      .worst-item-container .subtitle {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 5px;
-        color: #eee;
-        font-size: 1rem;
-        font-weight: bold;
-      }
-      .worst-slot {
-        border: 2px dashed #ff7777;
-        background-color: #3d1f1f;
-        width: 180px;
-        height: 180px;
-        box-sizing: border-box;
-      }
-      .slot-style {
-        width: 100%;
-        height: 100%;
-        border-radius: 0.5rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        background: linear-gradient(to bottom, #2a2a2a, #1f1f1f);
-        border: 1px solid #444;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        box-sizing: border-box;
+        gap: 20px;
+        margin-top: -50px; /* Matched to View spacing */
         position: relative;
       }
-      .pyramid-slot .slot-style,
-      .worst-slot .slot-style { padding: 0 !important; }
-      .draggable-image {
-        user-select: none;
-        touch-action: none;
-        width: 100%;
-        height: calc(100% - 4px);
-        object-fit: cover;
-        object-position: top;
-        border-radius: 0.5rem 0.5rem 0 0;
+      .pyramid-row:first-child {
+        margin-top: 0;
+        z-index: 4;
       }
-      .color-indicator-pyramid {
-        width: 100%;
-        height: 4px;
-        border-radius: 0 0 0.5rem 0.5rem;
+      .pyramid-row:nth-child(2) { z-index: 3; }
+      .pyramid-row:nth-child(3) { z-index: 2; }
+      .pyramid-row:nth-child(4) { z-index: 1; }
+      
+      .hex-wrapper {
+        width: 220px;
+        height: 254px;
+        position: relative;
+      }
+      
+      .rank-bar {
         position: absolute;
-        bottom: 0;
-        left: 0;
-        z-index: 10;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 12px;
+        border-radius: 6px;
+        z-index: 20;
       }
-      .tier-label {
-        color: #bbb;
-        font-size: 0.9rem;
-        font-weight: bold;
-        pointer-events: none;
+      
+      .footer-section {
+        margin-top: 60px;
+        text-align: center;
+        width: 100%;
       }
-      .tier-label.has-text-danger { color: #ff5555; }
-      .top-x-label {
+      .cta-text {
+        font-size: 40px;
+        font-weight: 800;
+        margin-bottom: 15px;
+        color: #fff;
+      }
+      .link-text {
         font-size: 34px;
-        font-weight: bold;
-        color: #fff;
-        text-align: center;
-        margin-top: 0.5rem;
-      }
-        .top-x-labelsmall {
-        font-size: 30px;
-        font-weight: bold;
-        color: #fff;
-        text-align: center;
-        margin-top: 0.5rem;
-      }
-      .subtitle {
-        color: #eee;
-        font-size: 1rem;
-        font-weight: bold;
-        margin: 0.3rem 0;
-      }
-      .game-header {
-        margin: 0.3rem 2rem 1rem;
-        font-size: 50px !important;
-        text-align: center;
+        font-weight: 700;
         color: #00e8e0;
+        background: rgba(0, 232, 224, 0.1);
+        padding: 5px 20px;
+        border-radius: 30px;
+        display: inline-block;
       }
-      @media screen and (max-width: 767px) {
-        .pyramid-container { padding: 0.2rem; width: 100%; max-width: 400px; }
-        .pyramid-slot, .worst-slot {
-          width: 80px;
-          height: 80px;
-        }
-        .draggable-image {
-          width: 100%;
-          height: calc(100% - 4px);
-        }
-        .tier-label { font-size: 0.8rem; }
-        .row-label { font-size: 0.6rem; }
-        .top-x-label { font-size: 1rem; }
-        .top-x-labelsmall { font-size: 0.8rem; }
-       .game-header {font-size: 22px !important;}
-       .logo-container {width: 70px;}
-       .user-image {
-        width: 3rem;
-        height: 3rem;}
 
+      .worst-section {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .worst-title {
+        font-size: 28px;
+        color: #ff5555;
+        text-transform: uppercase;
+        letter-spacing: 6px;
+        margin-bottom: 20px;
+        font-weight: 800;
       }
     `;
     tempDiv.appendChild(styleElement);
@@ -429,113 +365,98 @@ async function renderPyramidImage() {
     const profileImage = props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile;
     const highResProfile = getHighResProfileUrl(profileImage);
 
+    // SVG Hexagon Scale for 220px
+    const generateHexSvg = (imageSrc: string | null, borderColor: string, id: string) => {
+      const dataUrl = imageSrc ? (preprocessedImages.value.get(imageSrc) || imageSrc) : '';
+      return `
+        <svg width="220" height="254" viewBox="0 0 100 115.47" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="clip-${id}">
+              <polygon points="50,0 100,28.87 100,86.6 50,115.47 0,86.6 0,28.87" />
+            </clipPath>
+          </defs>
+          <polygon points="50,0 100,28.87 100,86.6 50,115.47 0,86.6 0,28.87" fill="${borderColor}" />
+          <g transform="scale(0.93) translate(3.75 4.0)">
+            <polygon points="50,0 100,28.87 100,86.6 50,115.47 0,86.6 0,28.87" fill="#0c0c0c" />
+            <g clip-path="url(#clip-${id})">
+              ${dataUrl ? `<image x="0" y="0" width="100" height="115.47" preserveAspectRatio="xMidYMid slice" href="${dataUrl}" />` : ''}
+            </g>
+          </g>
+        </svg>
+      `;
+    };
+
     tempDiv.innerHTML += `
-      <div class="content-wrapper">
-        <div class="user-image-container">
-          <img
-            src="${preprocessedImages.value.get(highResProfile) || defaultProfile}"
-            alt="User Profile"
-            class="user-image"
-            crossorigin="anonymous"
-          />
+      <div class="header-section">
+        <div class="brand-row">
+          <img src="${preprocessedImages.value.get(highResProfile) || defaultProfile}" class="user-image" />
+          <img src="${preprocessedImages.value.get(logoSrc) || logoSrc}" class="logo" />
         </div>
-        <div class="logo-container">
-          <img
-            src="${preprocessedImages.value.get(logoSrc) || logoSrc}"
-            alt="TOP-X Logo"
-            class="logo"
-            crossorigin="anonymous"
-          />
-        </div>
-        <h2 class="subtitle has-text-success game-header">${props.shareImageTitle || props.gameHeader || 'Your Pyramid'}</h2>
-        <div class="pyramid">
-          ${props.pyramid
-            .map(
-              (row, rowIndex) => `
-            <div class="pyramid-row-container">
-              <div class="row-label has-text-white" style="${props.hideRowLabel ? 'display: none;' : ''}">
-                ${props.rows[rowIndex]?.label || toRoman(rowIndex + 1)}
-              </div>
+        <h1 class="game-title">${props.shareImageTitle || props.gameHeader || 'Top Ranking'}</h1>
+        <p class="game-subtitle">THE ULTIMATE PYRAMID</p>
+      </div>
+
+      <div class="pyramid-grid">
+        ${props.pyramid
+          .map((row, rowIndex) => {
+            return `
               <div class="pyramid-row">
-                ${row
-                  .map(
-                    (slot) => `
-                  <div class="pyramid-slot box dark-slot">
-                    ${
-                      slot.image
-                        ? `
-                      <div class="slot-style">
-                        <img
-                          src="${preprocessedImages.value.get(slot.image.src) || slot.image.src}"
-                          alt="${slot.image.label}"
-                          class="draggable-image"
-                          crossorigin="anonymous"
-                        />
-                        <div class="color-indicator-pyramid" style="background-color: ${slot.image.color || '#fff'}"></div>
-                      </div>`
-                        : `<div class="tier-label">${toRoman(rowIndex + 1)}</div>`
-                    }
-                  </div>`
-                  )
-                  .join('')}
+                ${row.map((slot, colIndex) => {
+                  const id = `s-${rowIndex}-${colIndex}`;
+                  const color = slot.image?.color || '#00e8e0';
+                  return `
+                    <div class="hex-wrapper">
+                      ${generateHexSvg(slot.image?.src || null, color, id)}
+                      ${slot.image ? `<div class="rank-bar" style="background: ${color}; box-shadow: 0 0 20px ${color}"></div>` : ''}
+                    </div>
+                  `;
+                }).join('')}
               </div>
-            </div>`
-            )
-            .join('')}
-        </div>
-        ${
-          props.worstShow === false
-            ? ''
-            : `<div class="worst-item-container">
-          <h3 class="subtitle has-text-centered has-text-white">${props.worstHeader || 'Worst Item'}</h3>
-          <div class="pyramid-slot box worst-slot dark-slot">
-            ${
-              props.worstItem
-                ? `<div class="slot-style">
-                <img
-                  src="${preprocessedImages.value.get(props.worstItem.src) || props.worstItem.src}"
-                  alt="${props.worstItem.label}"
-                  class="draggable-image"
-                  crossorigin="anonymous"
-                />
-                <div class="color-indicator-pyramid" style="background-color: ${props.worstItem.color || '#fff'}"></div>
-              </div>`
-                : `<div class="tier-label has-text-danger">Worst</div>`
-            }
+            `;
+          }).join('')}
+      </div>
+
+      ${props.worstShow !== false ? `
+        <div class="worst-section">
+          <h3 class="worst-title">${props.worstHeader || 'The Worst'}</h3>
+          <div class="hex-wrapper">
+            ${generateHexSvg(props.worstItem?.src || null, '#ff5555', 'worst')}
+            ${props.worstItem ? `<div class="rank-bar" style="background: #ff5555; box-shadow: 0 0 20px #ff5555"></div>` : ''}
           </div>
-        </div>`
-        }
-        <p class="top-x-label has-text-white has-text-centered">
-          And what’s your vote?
-        </p>
-        <p class="top-x-labelsmall has-text-centered" >
-          ${props.shareLink || 'https://top-x.co'}
-        </p>
-        
+        </div>
+      ` : ''}
+
+      <div class="footer-section">
+        <p class="cta-text">And what's your vote?</p>
+        <p class="link-text">${props.shareLink || 'top-x.co'}</p>
       </div>
     `;
 
+    // Wait for fonts and layout
+    await new Promise(resolve => setTimeout(resolve, 800));
+
     const canvas = await html2canvas(tempDiv, {
-      backgroundColor: '#121212',
-      scale: 3,
+      backgroundColor: '#0c0c0c',
+      scale: 2,
       useCORS: true,
-      logging: true,
-      allowTaint: false,
+      logging: false,
+      width: 1080,
       height: tempDiv.offsetHeight,
+      imageTimeout: 0,
+      onclone: (clonedDoc) => {
+        // Fix for SVG clipPath in some html2canvas builds if needed
+      }
     });
-    console.log('PyramidView: Canvas generated, size:', canvas.width, 'x', canvas.height);
-    console.log('tempDiv:', tempDiv);
+    
     generatedImage.value = canvas.toDataURL('image/png');
     isImageLoading.value = false;
   } catch (err: any) {
     console.error('PyramidView: Error generating image:', err.message, err);
     isImageLoading.value = false;
     generatedImage.value = null;
-    alert('Failed to generate image. Some images may not be accessible due to CORS restrictions.');
   } finally {
     if (tempContainer.value && document.body.contains(tempContainer.value)) {
       document.body.removeChild(tempContainer.value);
-      console.log('PyramidView: Removed tempContainer from DOM');
     }
     tempContainer.value = null;
     isRendering.value = false;
@@ -559,82 +480,44 @@ defineExpose({ getImageDataUrl });
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+}
+.pyramid-row-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: -25px; /* Tighter vertical overlap in editor */
+}
+.pyramid-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px; /* Tighter horizontal gap in editor */
 }
 .pyramid-container {
   position: relative;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 232, 224, 0.7), 0 0 20px rgba(0, 232, 224, 0.3);
-  max-width: calc(100% - 0.4rem);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0, 232, 224, 0.2);
+  width: 100%;
+  max-width: 500px;
   margin: 0 auto;
   overflow: hidden;
-  background-color: #121212;
-  padding: 0.5rem;
+  background-color: #0c0c0c;
+  padding: 1rem;
+  border: 1px solid rgba(0, 232, 224, 0.1);
 }
 .pyramid-image {
   width: 100%;
-  max-width: 500px;
   height: auto;
   display: block;
-  margin: 0 !important;
   border-radius: 8px;
-}
-.button.is-primary {
-  margin: 0.3rem 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 4px;
-  background-color: #3273dc;
-  color: #fff;
-  border: 1px solid #3273dc;
-  text-decoration: none;
-}
-.button.is-primary:hover {
-  background-color: #276cda;
-  border-color: #276cda;
-}
-.button.is-primary.is-disabled {
-  background-color: #7a7a7a;
-  border-color: #7a7a7a;
-  color: #dbdbdb;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-.share-button-container {
-  position: relative;
-  display: inline-block;
-}
-.share-tooltip {
-  position: absolute;
-  bottom: 120%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #3273dc;
-  color: #fff;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  white-space: nowrap;
-  z-index: 20;
-}
-.mr-2 {
-  margin-right: 0.5rem;
 }
 @media screen and (max-width: 767px) {
   .pyramid-container {
     padding: 0;
     max-width: 100%;
-    box-shadow: none; /* Flatten for simpler look on mobile if embedded */
-  }
-  .pyramid-image {
-    max-width: 100%;
-  }
-  .button.is-primary {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
+    box-shadow: none;
+    border: none;
   }
 }
 </style>

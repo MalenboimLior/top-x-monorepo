@@ -329,15 +329,11 @@ async function handleLogin() {
 /* Override/Deep select to ensure PyramidImage scales nicely */
 :deep(.pyramid-container) {
   padding: 0.5rem !important;
-  background: transparent !important; /* Let container bg show */
-  box-shadow: none !important; /* Use section shadow instead */
-  border: none !important;
+  /* background, shadow, border now inherited from the View's new style */
 }
 
 :deep(.game-header) {
-    font-size: 1rem !important;
-    margin: 0.5rem 0 !important;
-    opacity: 0.8;
+    display: none !important;
 }
 
 .buttons-container {

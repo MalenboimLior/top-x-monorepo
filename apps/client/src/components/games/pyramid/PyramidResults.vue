@@ -36,7 +36,7 @@
           :hide-row-label="props.hideRowLabel"
           :worst-show="props.worstShow"
           :share-link="shareLink"
-
+          :user-profile="{ photoURL: vote.photoURL }"
         />
       </div>
     </div>
@@ -341,18 +341,11 @@ function searchFrenemies() {
 
 /* Blend the nested PyramidView into the card */
 :deep(.pyramid-container) {
-  padding: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
   max-width: 100% !important;
 }
 
 :deep(.game-header) {
-  font-size: 1rem !important;
-  margin: 0.5rem 0 1rem !important;
-  opacity: 0.9;
-  text-align: left; /* Align header with user info if desired, or keep center */
+  display: none !important;
 }
 
 .pagination-controls {
