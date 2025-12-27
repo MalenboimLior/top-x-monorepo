@@ -229,15 +229,15 @@ onMounted(async () => {
 
 async function handleSubmit(data: PyramidData) {
   console.log('PyramidTier: handleSubmit called with data:', data);
-  
-  // Check if we should show an ad before finishing
-  if (gameData.value?.adConfig?.strategy === 'before_end') {
-    console.log('[PyramidTier] Triggering ad before submission');
-    pendingSubmission.value = data;
-    showAd.value = true;
-  } else {
+
+  // Ad is now handled in PyramidCombined component, so skip PyramidTier's ad logic
+  // if (gameData.value?.adConfig?.strategy === 'before_end') {
+  //   console.log('[PyramidTier] Triggering ad before submission');
+  //   pendingSubmission.value = data;
+  //   showAd.value = true;
+  // } else {
     await finishSubmit(data);
-  }
+  // }
 }
 
 function handleAdContinue() {
@@ -250,6 +250,7 @@ function handleAdContinue() {
 }
 
 async function finishSubmit(data: PyramidData) {
+  console.log('PyramidTier: finishSubmit called, current hasSubmitted:', hasSubmitted.value);
   pyramid.value = data.pyramid;
   worstItem.value = data.worstItem;
 
@@ -261,6 +262,7 @@ async function finishSubmit(data: PyramidData) {
   }
 
   const score = calculateScore(data.pyramid, data.worstItem);
+  console.log('PyramidTier: Calculated score:', score);
 
   if (!userStore.user) {
     console.log('PyramidTier: User not logged in, storing vote in localStorage');
@@ -270,6 +272,7 @@ async function finishSubmit(data: PyramidData) {
     }));
     localStorage.setItem(`showLoginPopup_${gameId.value}`, 'true');
     hasSubmitted.value = true;
+    console.log('PyramidTier: Set hasSubmitted to true (guest), navigating...');
     router.push({ name: 'PyramidTier', query: { game: gameId.value } });
     return;
   }
@@ -287,10 +290,14 @@ async function finishSubmit(data: PyramidData) {
     await userStore.updateGameProgress(gameTypeId, gameId.value, { score, streak: 0, custom });
     console.log('PyramidTier: User progress updated successfully');
     hasSubmitted.value = true;
+    console.log('PyramidTier: Set hasSubmitted to true (logged in), navigating...');
     router.push({ name: 'PyramidTier', query: { game: gameId.value } });
   } catch (err: any) {
     console.error('PyramidTier: Error in finishSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');
+    // Reset isSubmitting in PyramidEdit if submission failed
+    // Note: Since PyramidEdit gets unmounted on navigation, this won't help,
+    // but if there's an error, the user can try again
   }
   if (analytics) {
     logEvent(analytics, 'user_action', { action: 'submit_vote', game_id: gameId.value, score });

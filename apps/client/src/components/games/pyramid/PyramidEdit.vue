@@ -34,7 +34,8 @@
                       <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
                     </div>
                     <div v-else class="slot-label-container">
-                      <div class="tier-label"></div>
+                      <div class="tier-label">{{ toRoman(rowIndex + 1) }}</div>
+                      <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }}</div>
                     </div>
                   </div>
                   <div class="rank-tag" v-if="slot.image" :style="{ background: slot.image?.color || '' }"></div>
@@ -736,6 +737,7 @@ function submitPyramid() {
   if (analytics) {
     logEvent(analytics, 'user_action', { action: 'vote', game_id: gameId.value });
   }
+  isSubmitting.value = true;
   emit('submit', { pyramid: pyramid.value, worstItem: worstItem.value });
 }
 
@@ -1251,16 +1253,27 @@ function closeTab() {
   }
   .pyramid-row-container {
     width: 100%;
+    margin-top: -18px; /* Tighter vertical overlap for mobile */
   }
-  .pyramid-row-wrapper {
-    position: relative;
+  .pyramid-row {
+    gap: 4px; /* Tighter horizontal gap */
+  }
+  .hex-outer {
+    width: 76px;
+    height: 88px;
+  }
+  .hex-inner {
+    width: calc(100% - 6px);
+    height: calc(100% - 6px);
   }
   .pyramid-slot {
-    height: 25vw;
-    max-width: 90px;
-    max-height: 90px;
-    min-width: 50px;
-    min-height: 50px;
+    width: 76px;
+    height: 88px;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
   }
   .slot-label-container {
     gap: 0.1rem;
@@ -1287,11 +1300,14 @@ function closeTab() {
     position: relative;
   }
   .worst-slot {
+    width: 76px;
+    height: 88px;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
     border: 2px solid #ff3333;
-    max-width: 90px;
-    max-height: 90px;
-    min-width: 50px;
-    min-height: 50px;
   }
   .worst-slot.drop-hover {
     border: 2px solid #ff3333;

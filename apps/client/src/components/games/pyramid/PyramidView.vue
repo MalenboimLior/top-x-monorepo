@@ -319,11 +319,14 @@ function toRoman(num: number): string {
     width: 65px;
     height: 75px;
   }
+  .pyramid-row-container {
+    margin-top: -15px;
+  }
   .pyramid-row {
-    gap: 5px;
+    gap: 3px;
   }
   .pyramid {
-    gap: 5px;
+    gap: 0;
   }
 }
 </style>

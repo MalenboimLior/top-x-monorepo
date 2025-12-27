@@ -1,5 +1,11 @@
 <template>
   <div class="pyramid-combined">
+    <!-- Ad Overlay - Show initially while content loads -->
+    <GameAdOverlay
+      v-if="showAdOverlay"
+      @continue="handleAdContinue"
+    />
+
     <!-- Login Promo (Above user-vote-section) if not logged in -->
     <GameLoginPromo 
       v-if="!userStore.user"
@@ -114,6 +120,7 @@ import PyramidImage from '@/components/games/pyramid/PyramidImage.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import GameLoginPromo from '@/components/games/shared/GameLoginPromo.vue';
+import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
@@ -136,18 +143,33 @@ const pyramidImageRef = ref<any>(null);
 const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
 const showStats = ref(false);
 const showResults = ref(false);
+const showAdOverlay = ref(true); // Show ad initially
+let adTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Prioritize user-vote-section loading - delay stats and results
 onMounted(async () => {
+  console.log('PyramidCombined: Component mounted, showing ad overlay');
+
   // Wait for user-vote-section to render first
   await nextTick();
-  
+
   // Start countdown immediately if needed (before stats delay)
   if (props.statsRevealDate && !canShowStats.value) {
     updateCountdown();
     countdownInterval = setInterval(updateCountdown, 1000);
   }
-  
+
+  // Start ad auto-hide timer (5 seconds like GameAdOverlay default)
+  adTimer = setTimeout(() => {
+    if (showAdOverlay.value) {
+      console.log('PyramidCombined: Ad auto-hide timer expired, showing content');
+      showAdOverlay.value = false;
+      if (analytics) {
+        logEvent(analytics, 'user_action', { action: 'ad_auto_hide', game_id: props.gameId });
+      }
+    }
+  }, 5000); // 5 seconds
+
   // Small delay to ensure user-vote-section is fully rendered
   setTimeout(() => {
     showStats.value = true;
@@ -161,6 +183,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (adTimer) clearTimeout(adTimer);
   if (countdownInterval) {
     clearInterval(countdownInterval);
     countdownInterval = null;
@@ -246,13 +269,21 @@ function editPyramid() {
   }
 }
 
+function handleAdContinue() {
+  console.log('PyramidCombined: Ad overlay dismissed, showing content');
+  showAdOverlay.value = false;
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'ad_continue', game_id: props.gameId });
+  }
+}
+
 async function handleLogin() {
   await userStore.loginWithX();
   if (analytics) {
     logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'combined_view', game_id: props.gameId });
   }
   // Reload might be needed if state doesn't update cleanly, but store should handle it.
-  // location.reload(); 
+  // location.reload();
 }
 
 </script>
