@@ -54,13 +54,6 @@
         :image-url="game.image"
         :file-name="game.name"
       />
-      <CustomButton
-        v-if="!user"
-        type="is-info"
-        :label="t('games.loginButton')"
-        :icon="['fab', 'x-twitter']"
-        @click="handleLogin"
-      />
     </div>
   </div>
 </template>
@@ -301,7 +294,8 @@ async function handleLogin() {
   inset-block-start: var(--space-3);
   inset-inline: var(--space-3);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-2);
   z-index: 2;
 }

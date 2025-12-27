@@ -1,7 +1,11 @@
 <template>
   <div class="page-container game-info-page section-stack">
     <!-- Hero Card Section -->
-    <section class="game-hero-card surface">
+    <section class="game-hero-card surface fade-in-up">
+      <!-- Background Glows -->
+      <div class="hero-bg-glow hero-bg-glow--1"></div>
+      <div class="hero-bg-glow hero-bg-glow--2"></div>
+
       <!-- Media/Image Side -->
       <div class="game-hero-media">
         <GameMediaSection
@@ -25,7 +29,7 @@
         <!-- Header -->
         <div class="hero-header">
           <span class="hero-eyebrow">{{ t('gameInfo.featuredGame') }}</span>
-          <h1 class="hero-title">{{ game.name }}</h1>
+          <h1 class="hero-title text-gradient-primary">{{ game.name }}</h1>
           <p class="hero-description">{{ game.description }}</p>
         </div>
         
@@ -89,7 +93,7 @@
         <!-- Actions - Centered at bottom -->
         <div class="hero-play-action">
            <CustomButton
-            type="is-primary is-large"
+            type="is-primary is-large play-button-premium"
             class="play-button"
             :label="t('home.playNow')"
             @click="playGame"
@@ -99,7 +103,8 @@
             :share-text="shareText"
             :image-url="game.image || null"
             :file-name="game.name"
-            class="action-icon-button"
+            :label="t('common.share')"
+            button-type="is-secondary share-button-premium"
           />
         </div>
 
@@ -364,10 +369,23 @@ function goBack() {
 @import '@/styles/components/Home.css';
 
 .game-info-page {
-  --section-stack-gap: var(--space-4);
-  max-width: 1400px;
+  --section-stack-gap: var(--space-8);
+  max-width: 1200px;
   margin-inline: auto;
   padding-inline: var(--space-4);
+  padding-bottom: var(--space-12);
+  animation: page-fade-in 0.6s ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-stack-gap);
 }
 
 /* Hero Card Styling */
@@ -376,35 +394,76 @@ function goBack() {
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: var(--space-6);
   padding: var(--space-5);
-  border-radius: 28px;
-  background-color: var(--color-surface);
+  border-radius: 32px;
+  background: rgba(20, 20, 20, 0.4);
+  backdrop-filter: blur(20px);
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  align-items: stretch;
+  min-height: 520px;
+}
+
+/* Background Glows */
+.hero-bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-bg-glow--1 {
+  top: -10%;
+  left: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, var(--bulma-primary) 0%, transparent 70%);
+}
+
+.hero-bg-glow--2 {
+  bottom: -10%;
+  right: -10%;
+  width: 40%;
+  height: 40%;
+  background: radial-gradient(circle, #7b61ff 0%, transparent 70%);
 }
 
 .game-hero-media {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  height: 100%;
 }
 
 /* Force GameMediaSection to fill available height but respect aspect ratio */
 .hero-media-component {
   width: 100%;
+  height: 100%;
+  display: flex;
+}
+.hero-media-component :deep(.game-media-section) {
+  height: 100%;
+  flex: 1;
 }
 .hero-media-component :deep(.game-media-section__image-wrapper) {
-  min-height: 300px; /* Reduced from 380px to make image smaller */
-  max-height: 400px; /* Cap max height to prevent oversized images */
+  flex: 1;
   border-radius: 20px;
+  aspect-ratio: unset;
+  height: 100%;
+  min-height: 380px;
 }
 
 .game-hero-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   position: relative;
   padding-block: var(--space-2);
+  z-index: 1;
+  justify-content: space-between;
 }
 
 /* Close Button */
@@ -448,10 +507,14 @@ function goBack() {
 
 .hero-title {
   margin: 0;
-  font-size: clamp(2.5rem, 3vw, 4rem);
-  font-weight: 800;
+  font-size: clamp(1.8rem, 3.5vw, 3rem);
+  font-weight: 900;
   line-height: 1.1;
   color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hero-description {
@@ -613,30 +676,50 @@ function goBack() {
   margin-top: auto; /* Push to bottom */
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: var(--space-3);
-  padding-top: var(--space-2);
+  align-items: stretch;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
   width: 100%; /* Make full width */
+  z-index: 2;
 }
 
-.action-icon-button :deep(.share-button) { /* Targeting internal button class */
-  margin: 0;
-  width: 50px; /* Reduced from 60px to make smaller */
-  max-width: 50px;
-}
-.action-icon-button :deep(.button) {
-  width: 50px; /* Reduced */
-  height: 50px; /* Reduced */
-  border-radius: 12px;
-  border-color: var(--color-border-base);
-  background: transparent;
+:deep(.share-button-premium) {
+  height: 64px;
+  min-width: 64px;
+  padding-inline: var(--space-4);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--color-text-primary);
-  font-size: 1.2rem;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: all 0.3s ease;
 }
-.action-icon-button :deep(.button:hover) {
-    border-color: var(--bulma-primary);
-    color: var(--bulma-primary);
+
+:deep(.share-button-premium:hover) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--bulma-primary);
+  color: var(--bulma-primary);
+  transform: translateY(-4px);
+}
+
+:deep(.share-button-premium .icon) {
+  margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+:deep(.share-button-premium span) {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.9rem;
 }
 
 .play-button {
@@ -645,19 +728,30 @@ function goBack() {
 
 .play-button :deep(.button) {
   width: 100%; /* Fill container */
-  height: 60px;
-  font-size: 1.4rem; /* Larger font */
-  border-radius: 16px;
+  height: 64px;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 800;
-  box-shadow: 0 4px 20px rgba(0, 232, 224, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.08em;
+  font-weight: 900;
+  background: linear-gradient(135deg, #00e8e0 0%, #00d1c9 100%);
+  border: none;
+  color: #000;
+  box-shadow: 0 8px 25px rgba(0, 232, 224, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: pulse-glow 3s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(0, 232, 224, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 232, 224, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 232, 224, 0); }
 }
 
 .play-button :deep(.button:hover) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(0, 232, 224, 0.4);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(0, 232, 224, 0.5);
+    filter: brightness(1.1);
 }
 
 .header-icon {
@@ -671,22 +765,65 @@ function goBack() {
     gap: var(--space-5);
   }
   
+  .hero-play-action {
+    padding-top: var(--space-4);
+    gap: var(--space-3);
+  }
+  
+  :deep(.share-button-premium) {
+    height: 60px;
+    width: auto;
+    min-width: 60px;
+    border-radius: 16px;
+    padding-inline: var(--space-3);
+    gap: 6px;
+  }
+  
+  :deep(.share-button-premium span) {
+    font-size: 0.7rem;
+    letter-spacing: 0.01em;
+  }
+  
+  :deep(.share-button-premium .icon) {
+    font-size: 0.9rem;
+  }
+  
+  .play-button :deep(.button) {
+    height: 60px;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+  }
+  
   .hero-media-component :deep(.game-media-section__image-wrapper) {
       min-height: 250px;
   }
   
   .hero-header {
       margin-inline-end: 0;
+      text-align: center;
+  }
+  
+  .hero-badges {
+      justify-content: center;
+  }
+
+  .hero-description {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    text-align: center;
   }
   
   .close-button {
-      top: -10px;
-      inset-inline-end: -10px;
+      top: -15px;
+      inset-inline-end: 0;
+      background: var(--color-bg-secondary);
   }
   
   .hero-stats-row {
       flex-wrap: wrap;
       gap: var(--space-4);
+      justify-content: center;
   }
   
   .hero-info-group {
@@ -695,9 +832,46 @@ function goBack() {
       gap: var(--space-3);
   }
   
+  .hero-creator {
+    justify-content: center;
+  }
+  
   .hero-instructions-content {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
+      text-align: center;
   }
+  
+  .game-hero-media {
+    order: -1;
+  }
+}
+
+/* Glass Surface for sections */
+.surface {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: var(--space-6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  margin-bottom: var(--space-2);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+  color: var(--color-text-muted);
+  font-size: 1rem;
 }
 </style>

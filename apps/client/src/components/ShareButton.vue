@@ -2,15 +2,14 @@
   <div class="share-button-container">
     <CustomButton 
       class="share-button"
-      type="is-primary"
-      label="Share"
+      :type="buttonType || 'is-primary'"
+      :label="label ?? t('common.share')"
       :icon="['fas', 'share']"
       :disabled="!isShareSupported && !isAndroid"
       @click="handleShare"
     />
     <div v-if="showShareTooltip" class="share-tooltip">
-        Nailed it! Image saved. Text copied → <br>
-         paste it in your post and show off your top picks! 🚀
+        {{ t('gameInfo.shareSuccess') || 'Nailed it! Image saved & Text copied! 🚀' }}
     </div>
   </div>
 </template>
@@ -18,12 +17,19 @@
 <script lang="ts" setup>
 import { computed,ref} from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import { useLocaleStore } from '@/stores/locale';
+
+const localeStore = useLocaleStore();
+const t = (key: string) => localeStore.translate(key);
+
 const showShareTooltip = ref(false);
 
 const props = defineProps<{
   shareText: string;
   imageUrl: string | null;
   fileName?: string;
+  label?: string;
+  buttonType?: string;
 }>();
 
 // Check if Web Share API is supported
@@ -100,20 +106,32 @@ const handleShare = async () => {
   display: inline-block;
 }
 .share-button {
-  margin: 0.5rem;
-  width: 140px;
+  margin: 0;
+  min-width: 50px;
 }
 .share-tooltip {
   position: absolute;
-  bottom: 120%;
+  bottom: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  background-color: #00e8e0;
-  color: black;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
+  background-color: var(--bulma-primary);
+  color: #000;
+  padding: var(--space-2) var(--space-4);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
   white-space: nowrap;
   z-index: 20;
+  box-shadow: 0 10px 25px rgba(0, 232, 224, 0.4);
+  pointer-events: none;
+}
+.share-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bulma-primary);
 }
 </style>
