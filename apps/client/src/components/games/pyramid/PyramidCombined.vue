@@ -34,6 +34,7 @@
             :hide-row-label="hideRowLabel"
             :worst-show="worstShow"
             :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
+            :user-name="userStore.profile?.username"
           />
         </div>
 
@@ -144,7 +145,6 @@ const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null
 const showStats = ref(false);
 const showResults = ref(false);
 const showAdOverlay = ref(true); // Show ad initially
-let adTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Prioritize user-vote-section loading - delay stats and results
 onMounted(async () => {
@@ -159,17 +159,6 @@ onMounted(async () => {
     countdownInterval = setInterval(updateCountdown, 1000);
   }
 
-  // Start ad auto-hide timer (5 seconds like GameAdOverlay default)
-  adTimer = setTimeout(() => {
-    if (showAdOverlay.value) {
-      console.log('PyramidCombined: Ad auto-hide timer expired, showing content');
-      showAdOverlay.value = false;
-      if (analytics) {
-        logEvent(analytics, 'user_action', { action: 'ad_auto_hide', game_id: props.gameId });
-      }
-    }
-  }, 5000); // 5 seconds
-
   // Small delay to ensure user-vote-section is fully rendered
   setTimeout(() => {
     showStats.value = true;
@@ -183,7 +172,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (adTimer) clearTimeout(adTimer);
   if (countdownInterval) {
     clearInterval(countdownInterval);
     countdownInterval = null;

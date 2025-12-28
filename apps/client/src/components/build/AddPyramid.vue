@@ -74,6 +74,10 @@
                 class="field-input field-input--compact"
                 @input="updateItemId(index)"
               />
+              <div v-if="item.color" class="item-card__color-tag">
+                <span class="item-card__color-preview" :style="{ backgroundColor: item.color }"></span>
+                <span class="item-card__color-label">{{ getColorTagLabel(item.color) }}</span>
+              </div>
             </div>
             <button
               type="button"
@@ -230,6 +234,48 @@
       </div>
     </div>
 
+    <!-- Color Tags Section -->
+    <section ref="colorTagsSection" class="config-section">
+      <button
+        type="button"
+        class="section-toggle"
+        @click="toggleSection('colorTags')"
+      >
+        <span class="section-toggle__title">Color Tags ({{ colorTagsCount }})</span>
+        <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showColorTags }">
+          ▼
+        </span>
+      </button>
+      
+      <div v-if="showColorTags" class="section-content">
+        <div v-if="colorTagsCount > 0" class="color-tags-list">
+          <div
+            v-for="(color, label) in config.colorsTag"
+            :key="label"
+            class="color-tag-card"
+          >
+            <div class="color-tag-preview" :style="{ backgroundColor: color }"></div>
+            <div class="color-tag-info">
+              <div class="color-tag-label">{{ label }}</div>
+              <div class="color-tag-hex">{{ color }}</div>
+            </div>
+            <button
+              type="button"
+              class="color-tag-remove"
+              @click="removeColorTag(label)"
+              title="Remove color tag"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        
+        <div v-else class="empty-state">
+          <p>No color tags yet. Add your first color tag when creating an item.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Community Items Section -->
     <section ref="communitySection" class="config-section">
       <button
@@ -282,6 +328,10 @@
                 class="field-input field-input--compact"
                 @input="updateCommunityItemId(index)"
               />
+              <div v-if="item.color" class="item-card__color-tag">
+                <span class="item-card__color-preview" :style="{ backgroundColor: item.color }"></span>
+                <span class="item-card__color-label">{{ getColorTagLabel(item.color) }}</span>
+              </div>
             </div>
             <button
               type="button"
@@ -351,6 +401,100 @@
           />
         </div>
 
+        <!-- Color Tag Selection -->
+        <div class="field">
+          <label class="label has-text-white">Color Tag</label>
+          <div v-if="colorTagsCount === 0" class="color-tag-empty">
+            <button
+              type="button"
+              class="button is-small is-light"
+              @click="showAddColorTagPanel = true"
+              :disabled="!newItem.src || !newItem.label"
+            >
+              Add Color Tag
+            </button>
+          </div>
+          <div v-else-if="colorTagsCount === 1" class="color-tag-single">
+            <div class="color-tag-chip selected">
+              <span class="color-tag-chip__preview" :style="{ backgroundColor: Object.values(config.colorsTag || {})[0] }"></span>
+              <span class="color-tag-chip__label">{{ Object.keys(config.colorsTag || {})[0] }}</span>
+            </div>
+            <button
+              type="button"
+              class="button is-small is-text has-text-white"
+              @click="showAddColorTagPanel = true"
+              :disabled="!newItem.src || !newItem.label"
+            >
+              Add New Color Tag
+            </button>
+          </div>
+          <div v-else class="color-tag-multiple">
+            <div class="color-tag-chips">
+              <div
+                v-for="(color, label) in config.colorsTag"
+                :key="label"
+                class="color-tag-chip"
+                :class="{ selected: newItem.color === color }"
+                @click="newItem.color = color"
+              >
+                <span class="color-tag-chip__preview" :style="{ backgroundColor: color }"></span>
+                <span class="color-tag-chip__label">{{ label }}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="button is-small is-text has-text-white"
+              @click="showAddColorTagPanel = true"
+              :disabled="!newItem.src || !newItem.label"
+            >
+              Add New Color Tag
+            </button>
+          </div>
+          
+          <!-- Add Color Tag Panel -->
+          <div v-if="showAddColorTagPanel" class="add-color-tag-panel">
+            <div class="field">
+              <label class="label has-text-white">Tag Label</label>
+              <input
+                class="input is-dark"
+                v-model="newColorTagLabel"
+                placeholder="e.g., Red, Blue, Premium"
+              />
+            </div>
+            <div class="field">
+              <label class="label has-text-white">Color</label>
+              <div class="color-picker-wrapper">
+                <input
+                  type="color"
+                  v-model="newColorTagColor"
+                  class="color-picker"
+                />
+                <input
+                  class="input is-dark"
+                  v-model="newColorTagColor"
+                  placeholder="#9900ff"
+                  style="flex: 1;"
+                />
+              </div>
+            </div>
+            <div class="buttons">
+              <button
+                class="button is-success is-small"
+                @click="addColorTagAndAssignToItem"
+                :disabled="!newColorTagLabel.trim()"
+              >
+                Add & Assign
+              </button>
+              <button
+                class="button is-text has-text-white is-small"
+                @click="cancelAddColorTag"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="buttons">
           <button
             class="button is-success"
@@ -402,6 +546,100 @@
             :placeholder="t('build.pyramid.modal.searchNamePlaceholder')"
             :disabled="!newCommunityItem.src || !newCommunityItem.label"
           />
+        </div>
+
+        <!-- Color Tag Selection -->
+        <div class="field">
+          <label class="label has-text-white">Color Tag</label>
+          <div v-if="colorTagsCount === 0" class="color-tag-empty">
+            <button
+              type="button"
+              class="button is-small is-light"
+              @click="showAddColorTagPanelCommunity = true"
+              :disabled="!newCommunityItem.src || !newCommunityItem.label"
+            >
+              Add Color Tag
+            </button>
+          </div>
+          <div v-else-if="colorTagsCount === 1" class="color-tag-single">
+            <div class="color-tag-chip selected">
+              <span class="color-tag-chip__preview" :style="{ backgroundColor: Object.values(config.colorsTag || {})[0] }"></span>
+              <span class="color-tag-chip__label">{{ Object.keys(config.colorsTag || {})[0] }}</span>
+            </div>
+            <button
+              type="button"
+              class="button is-small is-text has-text-white"
+              @click="showAddColorTagPanelCommunity = true"
+              :disabled="!newCommunityItem.src || !newCommunityItem.label"
+            >
+              Add New Color Tag
+            </button>
+          </div>
+          <div v-else class="color-tag-multiple">
+            <div class="color-tag-chips">
+              <div
+                v-for="(color, label) in config.colorsTag"
+                :key="label"
+                class="color-tag-chip"
+                :class="{ selected: newCommunityItem.color === color }"
+                @click="newCommunityItem.color = color"
+              >
+                <span class="color-tag-chip__preview" :style="{ backgroundColor: color }"></span>
+                <span class="color-tag-chip__label">{{ label }}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="button is-small is-text has-text-white"
+              @click="showAddColorTagPanelCommunity = true"
+              :disabled="!newCommunityItem.src || !newCommunityItem.label"
+            >
+              Add New Color Tag
+            </button>
+          </div>
+          
+          <!-- Add Color Tag Panel -->
+          <div v-if="showAddColorTagPanelCommunity" class="add-color-tag-panel">
+            <div class="field">
+              <label class="label has-text-white">Tag Label</label>
+              <input
+                class="input is-dark"
+                v-model="newColorTagLabel"
+                placeholder="e.g., Red, Blue, Premium"
+              />
+            </div>
+            <div class="field">
+              <label class="label has-text-white">Color</label>
+              <div class="color-picker-wrapper">
+                <input
+                  type="color"
+                  v-model="newColorTagColor"
+                  class="color-picker"
+                />
+                <input
+                  class="input is-dark"
+                  v-model="newColorTagColor"
+                  placeholder="#9900ff"
+                  style="flex: 1;"
+                />
+              </div>
+            </div>
+            <div class="buttons">
+              <button
+                class="button is-success is-small"
+                @click="addColorTagAndAssignToCommunityItem"
+                :disabled="!newColorTagLabel.trim()"
+              >
+                Add & Assign
+              </button>
+              <button
+                class="button is-text has-text-white is-small"
+                @click="cancelAddColorTagCommunity"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="buttons">
@@ -464,17 +702,26 @@ const activeSection = ref<string | null>(null);
 const showItems = computed(() => activeSection.value === 'items');
 const showRows = computed(() => activeSection.value === 'rows');
 const showCommunity = computed(() => activeSection.value === 'community');
+const showColorTags = computed(() => activeSection.value === 'colorTags');
 
 // Section refs for scrolling
 const itemsSection = ref<HTMLElement | null>(null);
 const rowsSection = ref<HTMLElement | null>(null);
 const communitySection = ref<HTMLElement | null>(null);
+const colorTagsSection = ref<HTMLElement | null>(null);
 
 // Modal state
 const showAddItemModal = ref(false);
 const showAddCommunityItemModal = ref(false);
-const newItem = ref<Partial<PyramidItem>>({ id: '', label: '', name: '', src: '', active: true, source: '' });
-const newCommunityItem = ref<Partial<PyramidItem>>({ id: '', label: '', name: '', src: '', active: true, source: '' });
+const newItem = ref<Partial<PyramidItem>>({ id: '', label: '', name: '', src: '', active: true, source: '', color: '' });
+const newCommunityItem = ref<Partial<PyramidItem>>({ id: '', label: '', name: '', src: '', active: true, source: '', color: '' });
+
+// Color tag management state
+const showAddColorTagPanel = ref(false);
+const showAddColorTagPanelCommunity = ref(false);
+const newColorTagLabel = ref('');
+const newColorTagColor = ref('#9900ff');
+const editingColorTag = ref<string | null>(null);
 
 // Initialize config with a deep clone of modelValue
 const config = ref<PyramidConfig>(JSON.parse(JSON.stringify(props.modelValue || {
@@ -489,8 +736,9 @@ const config = ref<PyramidConfig>(JSON.parse(JSON.stringify(props.modelValue || 
   worstShow: false,
   communityItems: [],
   communityHeader: '',
-  hideInfoButton: false,
+  hideInfoButton: true,
   statsRevealDate: undefined,
+  colorsTag: {},
 })));
 
 // Stats reveal date management
@@ -640,6 +888,9 @@ function toggleSection(section: string) {
           case 'community':
             sectionElement = communitySection.value;
             break;
+          case 'colorTags':
+            sectionElement = colorTagsSection.value;
+            break;
         }
         
         if (sectionElement) {
@@ -676,15 +927,93 @@ function updateCommunityItemId(index: number) {
   }
 }
 
+// Computed for color tags count
+const colorTagsCount = computed(() => {
+  return config.value.colorsTag ? Object.keys(config.value.colorsTag).length : 0;
+});
+
+// Auto-assign color tag when there's only one
+watch(() => [config.value.colorsTag, newItem.value.src, newItem.value.label], () => {
+  if (colorTagsCount.value === 1 && newItem.value.src && newItem.value.label && !newItem.value.color) {
+    const firstColor = Object.values(config.value.colorsTag || {})[0] as string;
+    newItem.value.color = firstColor;
+  }
+}, { deep: true });
+
+watch(() => [config.value.colorsTag, newCommunityItem.value.src, newCommunityItem.value.label], () => {
+  if (colorTagsCount.value === 1 && newCommunityItem.value.src && newCommunityItem.value.label && !newCommunityItem.value.color) {
+    const firstColor = Object.values(config.value.colorsTag || {})[0] as string;
+    newCommunityItem.value.color = firstColor;
+  }
+}, { deep: true });
+
+// Color tag management functions
+function addColorTag(label: string, color: string) {
+  if (!config.value.colorsTag) {
+    config.value.colorsTag = {};
+  }
+  config.value.colorsTag[label] = color;
+}
+
+function removeColorTag(label: string) {
+  if (config.value.colorsTag) {
+    delete config.value.colorsTag[label];
+  }
+}
+
+// Get color tag label from color value
+function getColorTagLabel(color: string): string {
+  if (!color || !config.value.colorsTag) return '';
+  for (const [label, tagColor] of Object.entries(config.value.colorsTag)) {
+    if (tagColor === color) {
+      return label;
+    }
+  }
+  return '';
+}
+
+function addColorTagAndAssignToItem() {
+  if (!newColorTagLabel.value.trim()) return;
+  addColorTag(newColorTagLabel.value.trim(), newColorTagColor.value);
+  newItem.value.color = newColorTagColor.value;
+  cancelAddColorTag();
+}
+
+function addColorTagAndAssignToCommunityItem() {
+  if (!newColorTagLabel.value.trim()) return;
+  addColorTag(newColorTagLabel.value.trim(), newColorTagColor.value);
+  newCommunityItem.value.color = newColorTagColor.value;
+  cancelAddColorTagCommunity();
+}
+
+function cancelAddColorTag() {
+  showAddColorTagPanel.value = false;
+  newColorTagLabel.value = '';
+  newColorTagColor.value = '#9900ff';
+}
+
+function cancelAddColorTagCommunity() {
+  showAddColorTagPanelCommunity.value = false;
+  newColorTagLabel.value = '';
+  newColorTagColor.value = '#9900ff';
+}
+
 // Modal functions
 function openAddItemModal() {
-  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '' };
+  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
   showAddItemModal.value = true;
+  // Auto-assign if only one tag exists
+  if (colorTagsCount.value === 1) {
+    const firstColor = Object.values(config.value.colorsTag || {})[0] as string;
+    newItem.value.color = firstColor;
+  }
 }
 
 function closeAddItemModal() {
   showAddItemModal.value = false;
-  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '' };
+  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
+  showAddColorTagPanel.value = false;
+  cancelAddColorTag();
 }
 
 function saveNewItem() {
@@ -698,6 +1027,7 @@ function saveNewItem() {
     src: newItem.value.src || '',
     active: true,
     source: '',
+    color: newItem.value.color || undefined,
   };
   
   config.value.items.push(item);
@@ -705,13 +1035,20 @@ function saveNewItem() {
 }
 
 function openAddCommunityItemModal() {
-  newCommunityItem.value = { id: '', label: '', name: '', src: '', active: true, source: '' };
+  newCommunityItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
   showAddCommunityItemModal.value = true;
+  // Auto-assign if only one tag exists
+  if (colorTagsCount.value === 1) {
+    const firstColor = Object.values(config.value.colorsTag || {})[0] as string;
+    newCommunityItem.value.color = firstColor;
+  }
 }
 
 function closeAddCommunityItemModal() {
   showAddCommunityItemModal.value = false;
-  newCommunityItem.value = { id: '', label: '', name: '', src: '', active: true, source: '' };
+  newCommunityItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
+  showAddColorTagPanelCommunity.value = false;
+  cancelAddColorTagCommunity();
 }
 
 function saveNewCommunityItem() {
@@ -725,6 +1062,7 @@ function saveNewCommunityItem() {
     src: newCommunityItem.value.src || '',
     active: true,
     source: '',
+    color: newCommunityItem.value.color || undefined,
   };
   
   config.value.communityItems.push(item);
@@ -910,6 +1248,31 @@ function removeCommunityItem(index: number) {
   gap: 0.5rem;
 }
 
+.item-card__color-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.item-card__color-preview {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-base);
+  flex-shrink: 0;
+}
+
+.item-card__color-label {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
 .item-card__remove {
   position: absolute;
   top: 0.5rem;
@@ -1064,6 +1427,142 @@ function removeCommunityItem(index: number) {
   width: 90%;
 }
 
+/* Color Tags */
+.color-tags-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.color-tag-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+}
+
+.color-tag-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  flex-shrink: 0;
+}
+
+.color-tag-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.color-tag-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.color-tag-hex {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-family: monospace;
+}
+
+.color-tag-remove {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.color-tag-remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.color-tag-empty,
+.color-tag-single,
+.color-tag-multiple {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.color-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-tag-chip:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
+}
+
+.color-tag-chip.selected {
+  background: var(--color-primary-bg);
+  border-color: var(--bulma-primary);
+}
+
+.color-tag-chip__preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-base);
+  flex-shrink: 0;
+}
+
+.color-tag-chip__label {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.add-color-tag-panel {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-picker {
+  width: 50px;
+  height: 38px;
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .row-card__fields {
     grid-template-columns: 1fr;
@@ -1075,6 +1574,10 @@ function removeCommunityItem(index: number) {
 
   .worst-fields {
     grid-template-columns: 1fr;
+  }
+
+  .color-tag-chips {
+    flex-direction: column;
   }
 }
 </style>

@@ -535,6 +535,8 @@
   "games.promo.title": "Want the full scoop? 📊",
   "games.promo.subtitle": "Log in to unlock stats & make your vote count!",
   "games.promo.privacy": "Just your X username + pic - we promise, hands off your feed! 🔒",
+  "games.ad.title": "Ad",
+  "games.ad.continue": "Continue",
   "build.pyramid.items.title": "Items ({count})",
   "build.pyramid.items.displayName": "Display Name",
   "build.pyramid.items.searchName": "Search Name",

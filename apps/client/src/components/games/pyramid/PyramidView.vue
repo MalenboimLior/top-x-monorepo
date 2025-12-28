@@ -9,7 +9,7 @@
             <img :src="topxLogo" class="logo" />
           </div>
           <h1 class="game-title" v-html="props.shareImageTitle || props.gameHeader || 'Top Ranking'"></h1>
-          <p class="game-subtitle">THE ULTIMATE PYRAMID</p>
+          <p v-if="props.userName" class="game-subtitle">By {{ props.userName.startsWith('@') ? props.userName : '@' + props.userName }}</p>
         </div>
 
 
@@ -88,6 +88,7 @@ const props = defineProps<{
   shareLink?: string;
   worstShow?: boolean;
   userProfile?: { photoURL: string };
+  userName?: string;
 }>();
 
 import defaultProfile from '@/assets/profile.png';
@@ -172,13 +173,13 @@ function toRoman(num: number): string {
   line-height: 1.2;
 }
 .game-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #00e8e0;
-  letter-spacing: 6px;
+  letter-spacing: 4px; /* Reduced for better name readability */
   margin-bottom: 1rem;
   text-transform: uppercase;
-  font-weight: 600;
-  opacity: 0.8;
+  font-weight: 700;
+  opacity: 0.9;
 }
 
 .pyramid {

@@ -27,6 +27,7 @@ export interface PyramidConfig {
   communityHeader?: string;
   hideInfoButton?: boolean;
   statsRevealDate?: string; // ISO date string - stats will only be shown after this date
+  colorsTag?: { [label: string]: string }; // Key-value object where key is tag label and value is hex color
 }
 export interface PyramidRow {
   id: number;

@@ -26,7 +26,31 @@
           <div class="control">
             <textarea class="textarea is-dark" v-model="form.description" placeholder="Item description"></textarea>
           </div>
-        </div> 
+        </div>
+        <!-- Color Tag Selection -->
+        <div v-if="colorTagsCount > 0" class="field">
+          <label class="label has-text-white">Color Tag</label>
+          <div v-if="colorTagsCount === 1" class="color-tag-single">
+            <div class="color-tag-chip selected">
+              <span class="color-tag-chip__preview" :style="{ backgroundColor: Object.values(props.colorsTag || {})[0] }"></span>
+              <span class="color-tag-chip__label">{{ Object.keys(props.colorsTag || {})[0] }}</span>
+            </div>
+          </div>
+          <div v-else class="color-tag-multiple">
+            <div class="color-tag-chips">
+              <div
+                v-for="(color, label) in props.colorsTag"
+                :key="label"
+                class="color-tag-chip"
+                :class="{ selected: form.color === color }"
+                @click="form.color = color"
+              >
+                <span class="color-tag-chip__preview" :style="{ backgroundColor: color }"></span>
+                <span class="color-tag-chip__label">{{ label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="field">
           <label class="label has-text-white">Image</label>
           <div class="control">
@@ -55,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { addCommunityItem } from '@/services/pyramid';
 import { PyramidItem } from '@top-x/shared/types/pyramid';
@@ -65,6 +89,7 @@ import { analytics } from '@top-x/shared';
 const props = defineProps<{
   isActive: boolean;
   gameId: string;
+  colorsTag?: { [label: string]: string };
 }>();
 
 const emit = defineEmits<{
@@ -83,9 +108,21 @@ const form = ref({
 const imagePreview = ref<string | null>(null);
 const isSaving = ref(false);
 
+const colorTagsCount = computed(() => {
+  return props.colorsTag ? Object.keys(props.colorsTag).length : 0;
+});
+
 const isFormValid = computed(() => {
   return  form.value.name.trim() && form.value.image;
 });
+
+// Auto-assign color tag when there's only one
+watch(() => [props.colorsTag, form.value.name], () => {
+  if (colorTagsCount.value === 1 && form.value.name && !form.value.color) {
+    const firstColor = Object.values(props.colorsTag || {})[0] as string;
+    form.value.color = firstColor;
+  }
+}, { immediate: true });
 
 async function handleLogin() {
   try {
@@ -229,5 +266,60 @@ function close() {
 }
 .label {
   color: white;
+}
+
+/* Color Tag Selection */
+.color-tag-single,
+.color-tag-multiple {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.color-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-tag-chip:hover {
+  background: #333;
+  border-color: #555;
+}
+
+.color-tag-chip.selected {
+  background: rgba(196, 255, 0, 0.2);
+  border-color: #c4ff00;
+}
+
+.color-tag-chip__preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #444;
+  flex-shrink: 0;
+}
+
+.color-tag-chip__label {
+  font-size: 0.9rem;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .color-tag-chips {
+    flex-direction: column;
+  }
 }
 </style>

@@ -60,6 +60,7 @@ import {
   faCheck,
   faCrosshairs,
   faRightFromBracket,
+  faHandPointer,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -119,6 +120,7 @@ library.add(
   faCheck,
   faCrosshairs,
   faRightFromBracket,
+  faHandPointer,
 );
 
 import 'bulma/css/bulma.min.css';

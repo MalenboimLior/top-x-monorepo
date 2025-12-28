@@ -3,8 +3,8 @@
 <template>
   <section class="section">
     <div class="container has-text-centered">
-      <h2 class="subtitle has-text-success" v-html="props.gameHeader"></h2>
-      <h2 class="has-text-white" style="margin-bottom: 1rem;" v-html="props.gameInstruction"></h2>
+      <h1 class="main-game-title" v-html="props.gameHeader"></h1>
+      <p class="game-subtitle" v-html="props.gameInstruction"></p>
 
       <div class="pyramid" ref="pyramidRef">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -195,6 +195,7 @@
       <PyramidAddItemPopup
         :is-active="showAddPopup"
         :game-id="gameId"
+        :colors-tag="props.colorsTag"
         @add-item="addNewItem"
         @close="showAddPopup = false"
       />
@@ -214,10 +215,12 @@ import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
+import { useUserStore } from '@/stores/user';
 
 library.add(faCircleInfo, faSearch, faEraser, faPlus);
 
 const localeStore = useLocaleStore();
+const userStore = useUserStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const route = useRoute();
@@ -236,9 +239,12 @@ const props = defineProps<{
   communityHeader?: string;
   worstHeader?: string;
   shareText?: string;
+  shareImageTitle?: string;
   worstPoints?: number;
   worstShow?: boolean;
   hideInfoButton?: boolean;
+  colorsTag?: { [label: string]: string };
+  userName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -989,25 +995,24 @@ function closeTab() {
 }
 .image-pool {
   display: grid;
-  /*grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));*/
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.2rem;
+  gap: 0;
   justify-content: center;
   border: 2px dashed #666;
-  padding: 0.3rem;
-  margin-top: 0.3rem;
+  padding: 4px;
+  margin-top: 0.5rem;
   background-color: #1f1f1f;
-  width: fit-content;
-  max-width: calc(4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 4px); /* 4 items + gaps + padding + border */
+  width: 100%;
+  max-width: 660px; /* Normal proportions for 4 columns */
   margin-left: auto;
   margin-right: auto;
 }
-.image-box {
-  width: 100%;
-  height: 27vw;
-  max-width: 90px;
-  max-height: 100px;
-  min-height: 45px;
+.image-pool .pyramid-slot.image-box {
+  width: 100% !important;
+  max-width: none !important;
+  height: 140px !important; /* More proportional height for desktop */
+  max-height: 140px !important;
+  min-height: 100px;
   padding: 0;
   position: relative;
 }
@@ -1058,16 +1063,16 @@ function closeTab() {
   bottom: 4px;
   left: 0;
   width: 100%;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #fff;
-  background-color: #000;
+  background-color: rgba(0, 0, 0, 0.8);
   text-align: center;
-  line-height: 1.1;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0.1rem;
+  padding: 0.2rem;
   z-index: 10;
 }
 .color-indicator {
@@ -1173,11 +1178,38 @@ function closeTab() {
   }
 }
 
+.main-game-title {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 1rem 0 0.2rem;
+  color: #fff;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  line-height: 1.1;
+}
+
+.main-game-title :deep(span) {
+  color: #00e8e0 !important;
+}
+
+.game-subtitle {
+  font-size: 1.25rem;
+  color: #00e8e0;
+  letter-spacing: 2px;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
 .subtitle {
   color: #eee;
-  font-size: 30px;
+  font-size: 24px;
   font-weight: bold;
-  margin: 0.3rem 0 0 0.1rem;
+  margin: 0.3rem 0;
   text-align: center;
   margin-bottom: 8px !important;
 }
@@ -1246,40 +1278,43 @@ function closeTab() {
 }
 @media screen and (max-width: 767px) {
   .section {
-    padding: 0.1rem 0.05rem;
+    padding: 0.1rem 0;
   }
   .pyramid {
-    overflow-x: hidden;
+    width: 100%;
+    padding: 0 4px;
   }
   .pyramid-row-container {
     width: 100%;
-    margin-top: -18px; /* Tighter vertical overlap for mobile */
+    margin-top: -20px;
   }
   .pyramid-row {
-    gap: 4px; /* Tighter horizontal gap */
+    gap: 2px;
   }
   .hex-outer {
-    width: 76px;
-    height: 88px;
+    width: 23vw;
+    height: 26.5vw;
+    max-width: 88px;
+    max-height: 102px;
   }
   .hex-inner {
-    width: calc(100% - 6px);
-    height: calc(100% - 6px);
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
   }
   .pyramid-slot {
-    width: 76px;
-    height: 88px;
-    max-width: none;
-    max-height: none;
+    width: 23vw;
+    height: 26.5vw;
+    max-width: 88px;
+    max-height: 102px;
     min-width: 0;
     min-height: 0;
     padding: 0 !important;
   }
   .slot-label-container {
-    gap: 0.1rem;
+    gap: 0.05rem;
   }
   .slot-points {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   .animation-container {
     right: -60px;
@@ -1300,10 +1335,10 @@ function closeTab() {
     position: relative;
   }
   .worst-slot {
-    width: 76px;
-    height: 88px;
-    max-width: none;
-    max-height: none;
+    width: 23vw;
+    height: 26.5vw;
+    max-width: 88px;
+    max-height: 102px;
     min-width: 0;
     min-height: 0;
     padding: 0 !important;
@@ -1313,10 +1348,10 @@ function closeTab() {
     border: 2px solid #ff3333;
   }
   .worst-slot-label-container {
-    gap: 0.1rem;
+    gap: 0.05rem;
   }
   .worst-slot-points {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   .worst-animation-container {
     right: -60px;
@@ -1332,21 +1367,23 @@ function closeTab() {
     border-radius: 0.5rem 0.5rem 0 0;
   }
  
-  .image-box {
-    min-width: 40px;
-    min-height: 45px;
-    max-height: 100px;
+  .image-pool {
+    grid-template-columns: repeat(3, 1fr);
+    width: calc(100% - 30px);
+    max-width: 380px;
+    gap: 0;
+    padding: 2px;
   }
-  .image-box .draggable-image {
-    width: 100%;
-    height: calc(100% - 8px);
-    object-fit: cover;
-    object-position: top;
-    border-radius: 0.5rem 0.5rem 0 0;
+  .image-box {
+    width: 100% !important;
+    height: 32vw;
+    max-height: 140px;
+    min-width: 0;
+    max-width: none;
   }
   .image-label {
-    /*font-size: 0.6rem;*/
-    padding: 0.05rem;
+    font-size: 0.75rem;
+    padding: 0.1rem;
   }
   .tier-label {
     font-size: 0.8rem;

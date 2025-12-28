@@ -37,6 +37,7 @@
           :worst-show="props.worstShow"
           :share-link="shareLink"
           :user-profile="{ photoURL: vote.photoURL }"
+          :user-name="vote.username || vote.displayName"
         />
       </div>
     </div>
@@ -133,6 +134,7 @@ const itemsPerPage = 10;
 const userVotes = ref<
   Array<{
     uid: string;
+    username: string;
     displayName: string;
     photoURL: string;
     pyramid: PyramidSlot[][];
@@ -175,6 +177,7 @@ function processVotes(leaderboard: LeaderboardEntry[]) {
     .filter(entry => entry.custom && entry.custom.pyramid) // Filter out entries without pyramid data
     .map(entry => ({
       uid: entry.uid,
+      username: entry.username || '',
       displayName: entry.displayName || 'Anonymous',
       photoURL: entry.photoURL || '/assets/profile.png',
       pyramid: (entry.custom!.pyramid as Array<{ tier: number; slots: string[] }>).map(tier => 

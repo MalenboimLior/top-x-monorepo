@@ -37,6 +37,7 @@ const props = defineProps<{
   shareText?: string;
   shareLink?: string;
   worstShow?: boolean;
+  userName?: string;
 }>();
 
 const userStore = useUserStore();
@@ -275,13 +276,13 @@ async function renderPyramidImage() {
         text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       }
       .game-subtitle {
-        font-size: 26px;
+        font-size: 24px; /* Slightly smaller for name */
         color: #00e8e0;
-        letter-spacing: 10px;
+        letter-spacing: 4px; /* Reduced for readability */
         margin-bottom: 40px;
         text-transform: uppercase;
-        font-weight: 600;
-        opacity: 0.8;
+        font-weight: 700;
+        opacity: 0.9;
       }
       
       .pyramid-grid {
@@ -393,7 +394,7 @@ async function renderPyramidImage() {
           <img src="${preprocessedImages.value.get(logoSrc) || logoSrc}" class="logo" />
         </div>
         <h1 class="game-title">${props.shareImageTitle || props.gameHeader || 'Top Ranking'}</h1>
-        <p class="game-subtitle">THE ULTIMATE PYRAMID</p>
+        ${props.userName ? `<p class="game-subtitle">BY ${props.userName.startsWith('@') ? props.userName.toUpperCase() : '@' + props.userName.toUpperCase()}</p>` : ''}
       </div>
 
       <div class="pyramid-grid">

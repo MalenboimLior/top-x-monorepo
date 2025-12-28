@@ -17,6 +17,7 @@
       :worst-points="worstPoints"
       :worst-show="worstShow"
       :hide-info-button="hideInfoButton"
+      :colors-tag="colorsTag"
       @submit="handleSubmit"
     />
     <PyramidCombined
@@ -92,6 +93,7 @@ const shareImageTitle = ref('');
 const shareLink = ref('');
 const communityHeader = ref('');
 const statsRevealDate = ref<string | undefined>(undefined);
+const colorsTag = ref<{ [label: string]: string } | undefined>(undefined);
 const hasSubmitted = ref(false);
 const showAd = ref(false);
 const gameData = ref<any>(null);
@@ -170,6 +172,7 @@ onMounted(async () => {
       worstShow.value = pyramidConfig?.worstShow !== false;
       hideInfoButton.value = pyramidConfig?.hideInfoButton ?? false;
       statsRevealDate.value = pyramidConfig?.statsRevealDate;
+      colorsTag.value = pyramidConfig?.colorsTag;
 
       console.log('PyramidTier: Game data fetched:', {
         gameTitle: gameTitle.value,

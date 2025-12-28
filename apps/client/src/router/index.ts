@@ -146,6 +146,13 @@ const routes = [
     },
   },
   {
+    path: '/FoodPyramidIL',
+    redirect: {
+      path: '/games/PyramidTier',
+      query: { game: 'FoodPyramidIL' },
+    },
+  },
+  {
     path: '/build',
     name: 'Build',
     component: () => import(/* webpackChunkName: "build" */ '@/views/Build.vue'),
