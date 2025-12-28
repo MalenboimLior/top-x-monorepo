@@ -30,10 +30,10 @@ const routes = [
     component: () => import(/* webpackChunkName: "home" */ '@/views/Home.vue'),
   },
   {
-  path: '/games/FisherGame',
-  name: 'FisherGame',
-  component: FisherGame,
-},
+    path: '/games/FisherGame',
+    name: 'FisherGame',
+    component: FisherGame,
+  },
   {
     path: '/games/SampleGame',
     name: 'SampleGame',
@@ -159,6 +159,11 @@ const routes = [
     path: '/build/edit/:gameId',
     name: 'BuildEdit',
     component: () => import(/* webpackChunkName: "build-edit" */ '@/views/BuildEdit.vue'),
+  },
+  {
+    path: '/share-test',
+    name: 'ShareTest',
+    component: () => import('@/views/ShareTest.vue'),
   },
   {
     path: '/:pathMatch(.*)*',

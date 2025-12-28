@@ -299,6 +299,7 @@ import { useLocaleStore } from '@/stores/locale';
 import type { Game, GameType, GameCustomConfig } from '@top-x/shared/types/game';
 import type { PyramidConfig } from '@top-x/shared/types/pyramid';
 import type { ZoneRevealConfig } from '@top-x/shared/types/zoneReveal';
+import { DEFAULT_ZONE_REVEAL_CONFIG } from '../../components/games/zonereveal/ZoneRevealScene';
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { QuizConfig } from '@top-x/shared/types/quiz';
 import { MAX_GAMES_PER_USER } from '@top-x/shared/constants/gameLimits';
@@ -815,12 +816,10 @@ async function performDelete() {
   }
 }
 
-const createDefaultAnswer = () => ({ solution: '', accepted: [] as string[], image: '' });
-
 function withDefaultZoneRevealAnswer(config: ZoneRevealConfig): ZoneRevealConfig {
   const clone = JSON.parse(JSON.stringify(config)) as ZoneRevealConfig;
   if (!clone.answer) {
-    clone.answer = createDefaultAnswer();
+    clone.answer = { solution: '', accepted: [], image: '' };
   } else {
     clone.answer.accepted = clone.answer.accepted ?? [];
   }
@@ -846,12 +845,12 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
   if (customType === 'ZoneRevealConfig') {
     return withDefaultZoneRevealAnswer({
       levelsConfig: [],
-      backgroundImage: '',
-      spritesheets: {},
-      playerSpeed: 0,
-      enemiesSpeedArray: {},
-      finishPercent: 0,
-      heartIcon: '',
+      backgroundImage: DEFAULT_ZONE_REVEAL_CONFIG.backgroundImage,
+      spritesheets: { ...DEFAULT_ZONE_REVEAL_CONFIG.spritesheets },
+      playerSpeed: DEFAULT_ZONE_REVEAL_CONFIG.playerSpeed,
+      enemiesSpeedArray: { ...DEFAULT_ZONE_REVEAL_CONFIG.enemiesSpeedArray },
+      finishPercent: DEFAULT_ZONE_REVEAL_CONFIG.finishPercent,
+      heartIcon: DEFAULT_ZONE_REVEAL_CONFIG.heartIcon,
     });
   }
   if (customType === 'TriviaConfig') {

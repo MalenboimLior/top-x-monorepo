@@ -55,8 +55,13 @@
             <span style="min-width: 60px; display: inline-block;">Zoom: {{ scale.toFixed(2) }}</span>
             <button type="button" class="button is-small ml-2" @click="zoomIn" :disabled="scale >= 3">+</button>
           </div>
+          <div class="explanation mt-3 has-text-centered">
+            <p class="help has-text-grey-light">
+              Position and crop your sprite image within the circle. After generating, this will create a 6-frame animated spritesheet.
+            </p>
+          </div>
           <div class="controls mt-4 has-text-centered">
-            <button type="button" class="button is-success" @click="cropAndGenerateSprite">Upload</button>
+            <button type="button" class="button is-success" @click="cropAndGenerateSprite">Generate Sprite</button>
             <button type="button" class="button is-danger ml-2" @click="cancel">Cancel</button>
           </div>
         </div>
@@ -166,7 +171,7 @@ const onImageLoad = () => {
     props.cropSize / imgNatural.value.height
   );
   scale.value = minScale.value;
-  // Center image
+  // Auto-center image for sprites - ensure perfect centering
   offset.value = {
     x: (props.cropSize - imgNatural.value.width * scale.value) / 2,
     y: (props.cropSize - imgNatural.value.height * scale.value) / 2,

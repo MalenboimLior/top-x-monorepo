@@ -22,12 +22,17 @@ export interface ZoneRevealAnswer {
   image: string;
 }
 
+export interface SpriteSheetConfig {
+  url: string;
+  speed?: number; // Speed for enemy spritesheets, undefined for non-enemy spritesheets
+}
+
 export interface ZoneRevealConfig {
   levelsConfig: LevelConfig[];
   backgroundImage: string;
-  spritesheets?: Record<string, string>;
+  spritesheets?: Record<string, string | SpriteSheetConfig>; // Support both old (string) and new (SpriteSheetConfig) format
   playerSpeed?: number;
-  enemiesSpeedArray?: Record<string, number>;
+  enemiesSpeedArray?: Record<string, number>; // Deprecated: use spritesheets[].speed instead, kept for backward compatibility
   finishPercent?: number;
   heartIcon?: string;
   answer: ZoneRevealAnswer;

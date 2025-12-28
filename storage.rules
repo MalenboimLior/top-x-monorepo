@@ -35,7 +35,13 @@ service firebase.storage {
       allow read: if true; // Anyone can read images
       allow write: if isAuthenticated(); // Only authenticated users can upload
     }
-    
+
+    // Allow authenticated users to upload and read zonereveal images
+    match /zonereveal/{allPaths=**} {
+      allow read: if true; // Anyone can read images
+      allow write: if isAuthenticated(); // Only authenticated users can upload
+    }
+
     // Default: deny all other paths
     match /{allPaths=**} {
       allow read, write: if false;

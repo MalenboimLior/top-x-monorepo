@@ -14,23 +14,25 @@ const GRID_W = WIDTH / TILE_SIZE;
 const GRID_H = HEIGHT / TILE_SIZE;
 const PLAYER_VISUAL_SIZE = 30;
 
-const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
+export const DEFAULT_ZONE_REVEAL_CONFIG: ZoneRevealConfig = {
   backgroundImage: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fdefault%2Fanonymous.png?alt=media',
   spritesheets: {
-    player: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fdefault%2FMonocle_spritesheet.png?alt=media&token=61581744-60e8-417a-bf5c-eb65b5c2b4b1',
-    enemy: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fmonster_spritesheet.png?alt=media',
-    robot: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fdefault%2FAlien_spritesheet.png?alt=media&token=19c85bae-5f19-49d7-96e4-708cdf7ac0ad',
-    microbe: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fmicrobe_spritesheet.png?alt=media',
-    heart: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fheart_spritesheet.png?alt=media',
-    clock: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Ftime_spritesheet.png?alt=media',
-    speed: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fspeed_spritesheet.png?alt=media',
-    freeze: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Ffreeze_spritesheet.png?alt=media',
-    smoke: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fsmoke.png?alt=media'
-  },
+    player: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fdefault%2FMonocle_spritesheet.png?alt=media&token=61581744-60e8-417a-bf5c-eb65b5c2b4b1', speed: 200 },
+    enemy: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fmonster_spritesheet.png?alt=media', speed: 100 },
+    robot: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fdefault%2FAlien_spritesheet.png?alt=media&token=19c85bae-5f19-49d7-96e4-708cdf7ac0ad', speed: 120 },
+    microbe: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fmicrobe_spritesheet.png?alt=media', speed: 90 },
+    straightUp: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fmonster_spritesheet.png?alt=media', speed: 150 },
+    straightLeft: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fmonster_spritesheet.png?alt=media', speed: 150 },
+    heart: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fheart_spritesheet.png?alt=media' },
+    clock: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Ftime_spritesheet.png?alt=media' },
+    speed: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fspeed_spritesheet.png?alt=media' },
+    freeze: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Ffreeze_spritesheet.png?alt=media' },
+    smoke: { url: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fsmoke.png?alt=media' }
+  } as any,
   playerSpeed: 200,
-  enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90, straightUp: 150, straightleft: 150 },
-  finishPercent: 50,
-  heartIcon: 'https://firebasestorage.googleapis.com/v0/b/top-x-co.firebasestorage.app/o/zonereveal%2Fheart_icon.png?alt=media',
+  enemiesSpeedArray: { bouncing: 100, robot: 80, microbe: 90, straightUp: 150, straightLeft: 150 },
+  finishPercent: 80,
+  heartIcon: '/assets/zonereveal/heart_icon.png',
   answer: {
     solution: 'Top X',
     accepted: ['TopX', 'Top-X'],
@@ -102,7 +104,13 @@ export default function createZoneRevealScene(
     this.zoneRevealConfig = config || DEFAULT_ZONE_REVEAL_CONFIG;
     this.levels = this.zoneRevealConfig.levelsConfig;
     this.remainingTime = this.levels.length > 0 ? this.levels[0].timeLimit : 60;
-    this.playerSpeed = this.zoneRevealConfig.playerSpeed ?? 200;
+    // Get player speed from spritesheets['player'].speed or fall back to playerSpeed field
+    const playerSprite = this.zoneRevealConfig.spritesheets?.['player'];
+    if (playerSprite && typeof playerSprite === 'object' && playerSprite.speed !== undefined) {
+      this.playerSpeed = playerSprite.speed;
+    } else {
+      this.playerSpeed = this.zoneRevealConfig.playerSpeed ?? 200;
+    }
   }
 
   preload() {
@@ -142,7 +150,9 @@ export default function createZoneRevealScene(
 
     // Load spritesheets from config (all spritesheets including smoke)
     if (this.zoneRevealConfig.spritesheets) {
-      Object.entries(this.zoneRevealConfig.spritesheets).forEach(([key, path]) => {
+      Object.entries(this.zoneRevealConfig.spritesheets).forEach(([key, value]) => {
+        // Handle both old format (string) and new format (SpriteSheetConfig)
+        const path = typeof value === 'string' ? value : value.url;
         if (path) {
           // Smoke is a single image, not a spritesheet
           if (key === 'smoke') {
@@ -181,7 +191,7 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     const mask = this.revealMask.createGeometryMask();
     this.hiddenImage.setMask(mask);
 
-    this.trailGraphics = this.add.graphics();
+    this.trailGraphics = this.add.graphics().setDepth(10);
     this.borderGraphics = this.add.graphics().setDepth(0);
 
     this.physics.world.setBounds(0, 0, WIDTH, HEIGHT);
@@ -203,27 +213,57 @@ this.hiddenImage = this.add.image(innerX, innerY, `hidden0`)
     }
 
     // Create player
-    this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
-      .setScale(PLAYER_VISUAL_SIZE / 512)
-      .setOrigin(0.5, 0.5)
-      .setDepth(50)
-      .setDisplaySize(PLAYER_VISUAL_SIZE, PLAYER_VISUAL_SIZE);
-    this.player.play('move');
+    if (this.textures.exists('player')) {
+      this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'player')
+        .setScale(PLAYER_VISUAL_SIZE / 512)
+        .setOrigin(0.5, 0.5)
+        .setDepth(50)
+        .setDisplaySize(PLAYER_VISUAL_SIZE, PLAYER_VISUAL_SIZE);
+    } else {
+      // Fallback: create a colored circle for player
+      const graphics = this.add.graphics();
+      graphics.fillStyle(0x00ffff, 1); // Cyan for player
+      graphics.fillCircle(0, 0, PLAYER_VISUAL_SIZE / 2);
+      graphics.generateTexture('fallback_player', PLAYER_VISUAL_SIZE, PLAYER_VISUAL_SIZE);
+      graphics.destroy();
+
+      this.player = this.add.sprite(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2, 'fallback_player')
+        .setOrigin(0.5, 0.5)
+        .setDepth(50);
+    }
+    if (this.anims.exists('move')) {
+      this.player.play('move');
+    }
 
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
 
     // Create smoke effect for player
-    this.smokeEmitter = this.add.particles(0, 0, 'smoke', {
-      lifespan: 600,
-      speed: { min: 10, max: 30 },
-      scale: { start: 0.4, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      follow: this.player,
-      blendMode: BlendModes.ADD,
-      frequency: 50,
-      quantity: 1
-    });
+    if (this.textures.exists('smoke')) {
+      this.smokeEmitter = this.add.particles(0, 0, 'smoke', {
+        lifespan: 600,
+        speed: { min: 10, max: 30 },
+        scale: { start: 0.4, end: 0 },
+        alpha: { start: 0.6, end: 0 },
+        follow: this.player,
+        blendMode: BlendModes.ADD,
+        frequency: 50,
+        quantity: 1
+      });
+    } else {
+      // Fallback: create simple particle effect without texture
+      this.smokeEmitter = this.add.particles(0, 0, null, {
+        lifespan: 600,
+        speed: { min: 10, max: 30 },
+        scale: { start: 0.4, end: 0 },
+        alpha: { start: 0.6, end: 0 },
+        follow: this.player,
+        blendMode: BlendModes.ADD,
+        frequency: 50,
+        quantity: 1,
+        color: [0x888888, 0x666666] // Gray particles
+      });
+    }
 
     this.renderBorder();
 
@@ -266,14 +306,16 @@ for (let i = 0; i < 5; i++) {
     const enemyTypes = new Set<string>();
     this.zoneRevealConfig.levelsConfig.forEach(level => {
       level.enemyConfig.forEach(e => {
-        const key = this.zoneRevealConfig.spritesheets?.[e.type] ? e.type : 'enemy';
+        const spriteValue = this.zoneRevealConfig.spritesheets?.[e.type];
+        const hasSprite = spriteValue && (typeof spriteValue === 'string' ? spriteValue : spriteValue.url);
+        const key = hasSprite ? e.type : 'enemy';
         enemyTypes.add(key);
       });
     });
     enemyTypes.forEach(type => {
       const endFrame = type === 'robot' ? 3 : 5;
       const key = `${type}_move`;
-      if (!this.anims.exists(key)) {
+      if (!this.anims.exists(key) && this.textures.exists(type)) {
         this.anims.create({
           key,
           frames: this.anims.generateFrameNumbers(type, { start: 0, end: endFrame }),
@@ -286,7 +328,7 @@ for (let i = 0; i < 5; i++) {
     this.enemyGroup = this.physics.add.group();
 
     // Create powerup group
-    if (!this.anims.exists('heart_anim')) {
+    if (!this.anims.exists('heart_anim') && this.textures.exists('heart')) {
       this.anims.create({
         key: 'heart_anim',
         frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 4 }),
@@ -295,7 +337,7 @@ for (let i = 0; i < 5; i++) {
       });
     }
 
-    if (!this.anims.exists('clock_anim')) {
+    if (!this.anims.exists('clock_anim') && this.textures.exists('clock')) {
       this.anims.create({
         key: 'clock_anim',
         frames: this.anims.generateFrameNumbers('clock', { start: 0, end: 4 }),
@@ -304,7 +346,7 @@ for (let i = 0; i < 5; i++) {
       });
     }
 
-    if (!this.anims.exists('speed_anim')) {
+    if (!this.anims.exists('speed_anim') && this.textures.exists('speed')) {
       this.anims.create({
         key: 'speed_anim',
         frames: this.anims.generateFrameNumbers('speed', { start: 0, end: 4 }),
@@ -313,7 +355,7 @@ for (let i = 0; i < 5; i++) {
       });
     }
 
-    if (!this.anims.exists('freeze_anim')) {
+    if (!this.anims.exists('freeze_anim') && this.textures.exists('freeze')) {
       this.anims.create({
         key: 'freeze_anim',
         frames: this.anims.generateFrameNumbers('freeze', { start: 0, end: 4 }),
@@ -435,6 +477,8 @@ for (let i = 0; i < 5; i++) {
     this.renderRevealMask();
     this.renderTrail();
     this.player.setPosition(WIDTH / 2, HEIGHT - PLAYER_VISUAL_SIZE / 2);
+    this.player.setData('prevGx', Math.floor(this.player.x / TILE_SIZE));
+    this.player.setData('prevGy', Math.floor(this.player.y / TILE_SIZE));
     this.direction = null;
 
     // Clear existing enemy and powerup timers
@@ -455,14 +499,35 @@ for (let i = 0; i < 5; i++) {
     this.enemyGroup.clear(true, true);
     for (const conf of level.enemyConfig) {
       for (let i = 0; i < conf.count; i++) {
-        const texture = this.zoneRevealConfig.spritesheets?.[conf.type] ? conf.type : 'enemy';
+        const spriteValue = this.zoneRevealConfig.spritesheets?.[conf.type];
+        const hasSprite = spriteValue && (typeof spriteValue === 'string' ? spriteValue : spriteValue.url);
+        const texture = hasSprite ? conf.type : 'enemy';
         const animKey = `${texture}_move`;
         const visualSize = conf.type === 'robot' ? 40 : PLAYER_VISUAL_SIZE;
-        const enemy = this.physics.add.sprite(0, 0, texture)
-          .setScale(visualSize / 512)
-          .setOrigin(0.5, 0.5)
-          .setDepth(40);
-        enemy.play(animKey);
+
+        // Create enemy sprite, use fallback if texture doesn't exist
+        let enemy: Phaser.Physics.Arcade.Sprite;
+        if (this.textures.exists(texture)) {
+          enemy = this.physics.add.sprite(0, 0, texture)
+            .setScale(visualSize / 512)
+            .setOrigin(0.5, 0.5)
+            .setDepth(40);
+        } else {
+          // Fallback: create a colored rectangle
+          const graphics = this.add.graphics();
+          const color = this.getEnemyColor(conf.type);
+          graphics.fillStyle(color, 1);
+          graphics.fillRect(-visualSize/2, -visualSize/2, visualSize, visualSize);
+          graphics.generateTexture(`fallback_${conf.type}`, visualSize, visualSize);
+          graphics.destroy();
+
+          enemy = this.physics.add.sprite(0, 0, `fallback_${conf.type}`)
+            .setOrigin(0.5, 0.5)
+            .setDepth(40);
+        }
+        if (this.anims.exists(animKey)) {
+          enemy.play(animKey);
+        }
         (enemy.body as Phaser.Physics.Arcade.Body).setSize(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
         (enemy.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(false);
         (enemy.body as Phaser.Physics.Arcade.Body).setBounce(1, 1);
@@ -544,11 +609,32 @@ for (let i = 0; i < 5; i++) {
       const gx = Math.floor(this.player.x / TILE_SIZE);
       const gy = Math.floor(this.player.y / TILE_SIZE);
 
-      if (this.fillMask[gy]?.[gx] === 0) {
-        this.fillMask[gy][gx] = 2;
-        this.trail.push({ x: gx, y: gy });
+      // Store previous position to interpolate trail
+      const prevGx = this.player.getData('prevGx') ?? gx;
+      const prevGy = this.player.getData('prevGy') ?? gy;
+
+      // Interpolate trail points between previous and current position
+      if (prevGx !== gx || prevGy !== gy) {
+        const dx = gx - prevGx;
+        const dy = gy - prevGy;
+        const steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+        for (let i = 0; i <= steps; i++) {
+          const ix = Math.round(prevGx + (dx * i) / steps);
+          const iy = Math.round(prevGy + (dy * i) / steps);
+
+          if (this.fillMask[iy]?.[ix] === 0 && !this.trail.some(p => p.x === ix && p.y === iy)) {
+            this.fillMask[iy][ix] = 2;
+            this.trail.push({ x: ix, y: iy });
+          }
+        }
       }
 
+      // Update stored position
+      this.player.setData('prevGx', gx);
+      this.player.setData('prevGy', gy);
+
+      // Check if we closed a loop (touched an already filled area)
       if (this.trail.length > 0 && this.fillMask[gy]?.[gx] === 1) {
         this.floodFillAndUpdate();
         this.trail = [];
@@ -762,9 +848,27 @@ for (let i = 0; i < 5; i++) {
     enemy.setAngle(angle);
   }
 
+  private getEnemyColor(type: string): number {
+    const colors: { [key: string]: number } = {
+      bouncing: 0xff0000,    // Red
+      robot: 0x00ff00,       // Green
+      microbe: 0x0000ff,     // Blue
+      straightUp: 0xffff00,  // Yellow
+      straightLeft: 0xff00ff // Magenta
+    };
+    return colors[type] || 0xff0000; // Default to red
+  }
+
   private setEnemyVelocity(enemy: Phaser.Physics.Arcade.Sprite, type: string) {
     const enemyBody = enemy.body as Phaser.Physics.Arcade.Body;
-    const baseSpeed = this.zoneRevealConfig.enemiesSpeedArray?.[type] ?? 100;
+    // Get speed from spritesheets (new format) or enemiesSpeedArray (old format for backward compatibility)
+    let baseSpeed = 100;
+    const spriteConfig = this.zoneRevealConfig.spritesheets?.[type];
+    if (spriteConfig && typeof spriteConfig === 'object' && spriteConfig.speed !== undefined) {
+      baseSpeed = spriteConfig.speed;
+    } else if (this.zoneRevealConfig.enemiesSpeedArray?.[type]) {
+      baseSpeed = this.zoneRevealConfig.enemiesSpeedArray[type];
+    }
     let vx = 0;
     let vy = 0;
 
@@ -1088,7 +1192,7 @@ this.enemyGroup.clear(true, true);
 
   private renderTrail() {
     this.trailGraphics.clear();
-    this.trailGraphics.fillStyle(0xff0000, 1);
+    this.trailGraphics.fillStyle(0xff0000, 0.8);
     for (const { x, y } of this.trail) {
       this.trailGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
