@@ -185,9 +185,9 @@
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content" @click.stop>
-          <p class="question-text">Hi @Grok, what can you say about {{ describedItem?.label }}?</p>
-          <p class="answer-text">{{ displayedDescription }}</p>
-          <button style="color:#c4ff00;" @click="closeTab">{{ t('games.pyramid.close') }}</button>
+          <p class="question-text">{{ t('games.pyramid.questionAbout') }}{{ describedItem?.label }}״?</p>
+          <p class="answer-text" v-html="displayedDescription"></p>
+          <button class="button is-small is-primary" @click="closeTab">{{ t('games.pyramid.close') }}</button>
         </div>
       </div>
 
@@ -333,9 +333,11 @@ const filteredOfficialPool = computed(() => {
     return officialPool.value;
   }
   const query = searchQuery.value.toLowerCase().trim();
-  return officialPool.value.filter(item =>
-    item.label.toLowerCase().includes(query) || item.name.toLowerCase().includes(query)
-  );
+  return officialPool.value.filter(item => {
+    const label = item.label?.toLowerCase() || '';
+    const name = item.name?.toLowerCase() || '';
+    return label.includes(query) || name.includes(query);
+  });
 });
 
 const filteredCommunityPool = computed(() => {
@@ -343,9 +345,11 @@ const filteredCommunityPool = computed(() => {
     return communityPool.value;
   }
   const query = searchQuery.value.toLowerCase().trim();
-  return communityPool.value.filter(item =>
-    item.label.toLowerCase().includes(query) || item.name.toLowerCase().includes(query)
-  );
+  return communityPool.value.filter(item => {
+    const label = item.label?.toLowerCase() || '';
+    const name = item.name?.toLowerCase() || '';
+    return label.includes(query) || name.includes(query);
+  });
 });
 
 watch(
@@ -761,15 +765,16 @@ function startTypingAnimation(fullDescription: string) {
   if (typingInterval) {
     clearInterval(typingInterval);
   }
-  const words = fullDescription.split(/\s+/); // Split on whitespace to get words
+  // Convert line breaks to <br> tags and preserve existing HTML
+  const formattedDescription = fullDescription.replace(/\n/g, '<br>');
+  const chars = formattedDescription.split(''); // Split into individual characters to handle HTML properly
 
   let index = 0;
   displayedDescription.value = '';
 
   typingInterval = setInterval(() => {
-    if (index < words.length) {
-      // Append the next word and a space (unless it's the last word)
-      displayedDescription.value += words[index] + (index < words.length - 1 ? ' ' : '');
+    if (index < chars.length) {
+      displayedDescription.value += chars[index];
       index++;
     } else {
       clearInterval(typingInterval!);
@@ -1255,11 +1260,14 @@ function closeTab() {
 @media screen and (min-width: 768px) {
   .description-tab {
     width: 400px; /* Matches image-pool: 4 * 90px + 3 * 0.2rem + 2 * 0.3rem + 2px */
-    left: 50%;
-    transform: translateX(-50%) translateY(100%);
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    transform: translateY(100%);
   }
   .description-tab.show {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 .question-text {
