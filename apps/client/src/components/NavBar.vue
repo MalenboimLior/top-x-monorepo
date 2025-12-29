@@ -10,131 +10,111 @@
         >
           <img :src="logo" alt="TOP-X Logo">
         </router-link>
-        <a
-          role="button"
-          class="navbar-burger"
+        
+        <button
+          class="navbar-burger-custom"
           :class="{ 'is-active': isMenuActive }"
           aria-label="menu"
-          aria-expanded="false"
+          :aria-expanded="isMenuActive"
           @click="toggleMenu"
         >
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-        </a>
+          <div class="burger-lines">
+            <span class="line"></span>
+            <span class="line"></span>
+            <span class="line"></span>
+          </div>
+        </button>
       </div>
+
+      <Transition name="fade">
+        <div v-if="isMenuActive" class="navbar-backdrop" @click="closeMenu"></div>
+      </Transition>
 
       <div class="navbar-menu" :class="{ 'is-active': isMenuActive }">
         <div class="navbar-start">
-        <!-- <router-link class="navbar-item" to="/" @click="closeMenu">{{ t('nav.home') }}</router-link> -->
-        <!-- <router-link class="navbar-item" to="/users" @click="closeMenu">
-          <font-awesome-icon :icon="['fas', 'search']" class="navbar-icon" />
-          Users
-        </router-link>        -->
-        <router-link class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
-        <router-link class="navbar-item" to="/users" @click="closeMenu">{{ t('nav.users') }}</router-link>
-        <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
-        <router-link class="navbar-item" to="/games" @click="closeMenu">{{ t('nav.games') }}</router-link>
-
-        <router-link class="navbar-item build-link" to="/build" @click="closeMenu">{{ t('nav.build') }}</router-link>
-
-      </div>
-
+          <router-link class="navbar-item" to="/profile" @click="closeMenu">{{ t('nav.profile') }}</router-link>
+          <router-link class="navbar-item" to="/users" @click="closeMenu">{{ t('nav.users') }}</router-link>
+          <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
+          <router-link class="navbar-item" to="/games" @click="closeMenu">{{ t('nav.games') }}</router-link>
+          <router-link class="navbar-item build-link" to="/build" @click="closeMenu">{{ t('nav.build') }}</router-link>
+        </div>
 
         <div class="navbar-end">
-          <div class="navbar-item theme-toggle">
-            <div class="theme-toggle-inner" role="group" aria-label="Theme toggle">
-              <button
-                type="button"
-                class="theme-button"
-                :class="{ 'is-active': theme === 'dark' }"
-                :aria-pressed="(theme === 'dark').toString()"
-                @click="themeStore.setTheme('dark')"
-                aria-label="Dark mode"
-              >
-                <font-awesome-icon
-                  :icon="['fas', 'moon']"
-                  class="theme-icon"
-                />
-              </button>
-              <button
-                type="button"
-                class="theme-button"
-                :class="{ 'is-active': theme === 'light' }"
-                :aria-pressed="(theme === 'light').toString()"
-                @click="themeStore.setTheme('light')"
-                aria-label="Light mode"
-              >
-                <font-awesome-icon
-                  :icon="['fas', 'lightbulb']"
-                  class="theme-icon"
-                />
-              </button>
-            </div>
-          </div>
-          <div class="navbar-item language-toggle">
-            <div class="language-toggle-wrapper">
-              <button
-                type="button"
-                class="language-current-button"
-                :aria-expanded="isLanguageMenuOpen.toString()"
-                :aria-label="`Current language: ${currentLanguageLabel}`"
-                @click="toggleLanguageMenu"
-              >
-                <img
-                  :src="currentLanguageFlag"
-                  class="language-flag"
-                  :alt="currentLanguageLabel"
-                />
-              </button>
-              <div
-                v-if="isLanguageMenuOpen"
-                class="language-dropdown"
-                @click.stop
-              >
+          <div class="nav-actions-group">
+            <div class="navbar-item theme-toggle">
+              <div class="theme-toggle-inner" role="group" aria-label="Theme toggle">
                 <button
-                  v-for="option in languageOptions"
-                  :key="option.code"
                   type="button"
-                  class="language-dropdown-item"
-                  :class="{ 'is-active': currentLanguage === option.code }"
-                  @click="selectLanguage(option.code)"
+                  class="theme-button"
+                  :class="{ 'is-active': theme === 'dark' }"
+                  :aria-pressed="theme === 'dark'"
+                  @click="themeStore.setTheme('dark')"
+                  aria-label="Dark mode"
                 >
-                  <img
-                    :src="option.flag"
-                    class="language-flag"
-                    :alt="option.label"
-                  />
-                  <span>{{ option.label }}</span>
+                  <font-awesome-icon :icon="['fas', 'moon']" class="theme-icon" />
+                </button>
+                <button
+                  type="button"
+                  class="theme-button"
+                  :class="{ 'is-active': theme === 'light' }"
+                  :aria-pressed="theme === 'light'"
+                  @click="themeStore.setTheme('light')"
+                  aria-label="Light mode"
+                >
+                  <font-awesome-icon :icon="['fas', 'lightbulb']" class="theme-icon" />
                 </button>
               </div>
             </div>
-          </div>
-          <div class="navbar-item profile-div">
-            <div class="buttons">
-              <CustomButton
-                v-if="!user"
-                type="is-primary"
-                :label="t('nav.loginWith')"
-                :icon="['fab', 'x-twitter']"
-                @click="handleLogin"
-              />
-              <router-link
-                v-else
-                to="/profile"
-                @click="closeMenu"
-                class="navbar-item profile-link"
-                :title="hasRewardNotification ? 'Daily challenge results ready' : undefined"
-              >
-                <figure class="image is-48x48">
-                  <img :src="user.photoURL || '/assets/profile.png'" alt="Profile" class="is-rounded" />
-                </figure>
-                <span
-                  v-if="hasRewardNotification"
-                  class="challenge-reward-indicator"
-                  aria-hidden="true"
-                ></span>
-              </router-link>
+
+            <div class="navbar-item language-toggle">
+              <div class="language-toggle-wrapper">
+                <button
+                  type="button"
+                  class="language-current-button"
+                  :aria-expanded="isLanguageMenuOpen"
+                  :aria-label="`Current language: ${currentLanguageLabel}`"
+                  @click="toggleLanguageMenu"
+                >
+                  <img :src="currentLanguageFlag" class="language-flag" :alt="currentLanguageLabel" />
+                </button>
+                <div v-if="isLanguageMenuOpen" class="language-dropdown" @click.stop>
+                  <button
+                    v-for="option in languageOptions"
+                    :key="option.code"
+                    type="button"
+                    class="language-dropdown-item"
+                    :class="{ 'is-active': currentLanguage === option.code }"
+                    @click="selectLanguage(option.code)"
+                  >
+                    <img :src="option.flag" class="language-flag" :alt="option.label" />
+                    <span>{{ option.label }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar-item profile-div">
+              <div class="buttons">
+                <CustomButton
+                  v-if="!user"
+                  type="is-primary"
+                  :label="t('nav.loginWith')"
+                  :icon="['fab', 'x-twitter']"
+                  @click="handleLogin"
+                />
+                <router-link
+                  v-else
+                  to="/profile"
+                  @click="closeMenu"
+                  class="navbar-item profile-link"
+                  :title="hasRewardNotification ? 'Daily challenge results ready' : undefined"
+                >
+                  <figure class="image is-40x40">
+                    <img :src="user.photoURL || '/assets/profile.png'" alt="Profile" class="is-rounded" />
+                  </figure>
+                  <span v-if="hasRewardNotification" class="challenge-reward-indicator" aria-hidden="true"></span>
+                </router-link>
+              </div>
             </div>
           </div>
         </div>
@@ -499,47 +479,17 @@ onUnmounted(() => {
   inset-inline-end: auto;
 }
 
-.navbar-burger {
-  display: none;
-  color: var(--bulma-primary);
-  background-color: var(--color-primary-bg);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  margin-inline-start: var(--space-3);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.navbar-burger:hover,
-.navbar-burger.is-active {
-  background-color: var(--color-primary-bg-hover);
-  border-color: var(--color-border-primary);
-}
-
-.navbar-icon {
-  font-size: 1.2rem;
-}
-
-.profile-div .buttons {
+.nav-actions-group {
   display: flex;
   align-items: center;
-}
-
-.profile-div .button {
-  display: inline-flex;
-  align-items: center;
-}
-
-.profile-div .button .icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  height: auto;
+  gap: var(--space-3);
 }
 
 .profile-link {
   padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-link .image {
@@ -548,6 +498,11 @@ onUnmounted(() => {
   border-radius: 50%;
   overflow: hidden;
   transition: border-color var(--transition-fast);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-link:hover .image {
@@ -555,18 +510,21 @@ onUnmounted(() => {
 }
 
 .profile-link .image img {
-  width: 48px;
-  height: 48px;
-  max-height: 48px;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: cover;
+}
+
+.navbar-burger {
+  display: none;
 }
 
 .build-link {
   border: 1px solid var(--color-border-primary);
- 
   border-radius: var(--radius-md);
-  padding: calc(var(--space-3) - 2px) calc(var(--space-4) - 2px);
+  padding: calc(var(--space-2) - 1px) var(--space-4);
   background-color: var(--color-primary-bg);
-  
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
@@ -581,57 +539,164 @@ onUnmounted(() => {
   color: var(--bulma-primary);
   background-color: var(--color-primary-bg-hover);
   border-color: var(--color-border-primary);
+}
 
-  
+.navbar-burger-custom {
+  display: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  cursor: pointer;
+  z-index: 1001;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  color: var(--bulma-primary);
+}
+
+.navbar-burger-custom:hover {
+  background: var(--color-primary-bg);
+  border-color: var(--color-border-primary);
+}
+
+.navbar-burger-custom.is-active {
+  background: var(--color-bg-card);
+  border-color: var(--bulma-primary);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.burger-lines {
+  position: relative;
+  width: 18px;
+  height: 14px;
+}
+
+.line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  left: 0;
+}
+
+.line:nth-child(1) { top: 0; }
+.line:nth-child(2) { top: 50%; transform: translateY(-50%); }
+.line:nth-child(3) { bottom: 0; }
+
+.navbar-burger-custom.is-active .line:nth-child(1) {
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.navbar-burger-custom.is-active .line:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-burger-custom.is-active .line:nth-child(3) {
+  bottom: 50%;
+  transform: translateY(50%) rotate(-45deg);
+}
+
+.navbar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media screen and (max-width: 64rem) {
   .navbar-inner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-    padding-block: var(--space-3);
+    padding-inline: var(--space-4);
+  }
+
+  .navbar-brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    z-index: 1001;
+  }
+
+  .navbar-burger-custom {
+    display: flex;
   }
 
   .navbar-menu {
-    display: none;
+    display: flex;
+    position: fixed;
+    top: 70px;
+    left: 1rem;
+    right: 1rem;
     flex-direction: column;
     align-items: stretch;
-    width: 100%;
-    background-color: var(--color-bg-card);
+    background: var(--color-bg-navbar);
     border: 1px solid var(--color-border-base);
-    border-radius: var(--radius-md);
+    border-radius: 24px;
     padding: var(--space-4);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transform: translateY(-20px) scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
   }
 
   .navbar-menu.is-active {
-    display: flex;
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .navbar-start,
   .navbar-end {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-2);
   }
 
-  .language-toggle,
-  .theme-toggle {
-    width: 100%;
+  .nav-actions-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-base);
+    gap: var(--space-2);
   }
 
-  .theme-toggle-inner {
-    justify-content: center;
-  }
-
-  .language-dropdown {
-    inset-inline-end: auto;
-    inset-inline-start: 0;
-    width: 100%;
+  .nav-actions-group .navbar-item {
+    padding: 0;
+    flex: 0 0 auto;
+    width: auto;
+    background: transparent !important;
   }
 
   .navbar-item {
-    border-radius: 12px;
+    border-radius: 16px;
     padding: var(--space-3) var(--space-4);
+    text-align: center;
   }
 
   .navbar-item:hover,
@@ -639,13 +704,21 @@ onUnmounted(() => {
     background-color: var(--color-primary-bg);
   }
 
-  .profile-div .buttons {
-    width: 100%;
-    justify-content: center;
+  .profile-link .image {
+    width: 40px;
+    height: 40px;
   }
 
-  .navbar-burger {
-    display: inline-flex;
+  .build-link {
+    width: 100%;
+    margin-top: var(--space-2);
+    border-radius: 16px;
+  }
+
+  .profile-link .image img {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
   }
 }
 

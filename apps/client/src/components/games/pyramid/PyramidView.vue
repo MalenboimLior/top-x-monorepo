@@ -34,7 +34,7 @@
                     </div>
                     <div v-else class="tier-label"></div>
                   </div>
-                  <div class="rank-tag" v-if="slot.image" :style="{ background: slot.image?.color || '' }"></div>
+                  
                 </div>
               </div>
             </div>
@@ -56,7 +56,7 @@
               </div>
               <div v-else class="tier-label has-text-danger">!</div>
             </div>
-            <div class="rank-tag" v-if="worstItem"></div>
+           
           </div>
         </div>
         <!-- Top-X Label / Footer -->
@@ -138,7 +138,7 @@ function toRoman(num: number): string {
 /* Header Styles */
 .header-section {
   text-align: center;
-  margin-bottom: 2rem;
+  /*margin-bottom: 2rem;*/
   width: 100%;
 }
 .brand-row {
@@ -176,7 +176,7 @@ function toRoman(num: number): string {
   font-size: 0.9rem;
   color: #00e8e0;
   letter-spacing: 4px; /* Reduced for better name readability */
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
   text-transform: uppercase;
   font-weight: 700;
   opacity: 0.9;
@@ -255,7 +255,7 @@ function toRoman(num: number): string {
 }
 
 .worst-item-container {
-  margin-top: 30px;
+  margin-top: 1px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -265,7 +265,7 @@ function toRoman(num: number): string {
   color: #ff5555;
   text-transform: uppercase;
   letter-spacing: 3px;
-  margin-bottom: 15px;
+  
   font-weight: 700;
 }
 .hex-outer.worst .hex-border {
@@ -281,7 +281,7 @@ function toRoman(num: number): string {
 
 /* Footer Styles */
 .footer-section {
-  margin-top: 2rem;
+  margin-top: 5px;
   text-align: center;
   width: 100%;
 }

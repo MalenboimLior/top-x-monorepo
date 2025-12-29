@@ -294,7 +294,7 @@ async function handleLogin() {
   align-items: center;
   background: radial-gradient(circle at top, rgba(30, 30, 30, 0.8) 0%, rgba(18, 18, 18, 0.95) 100%);
   border-radius: 16px; /* Dofter corners */
-  padding: 2rem;
+  padding: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 100%;
@@ -319,14 +319,14 @@ async function handleLogin() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .vote-title {
   color: #fff;
   font-size: 1.1rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   text-transform: uppercase;
   letter-spacing: 2px;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -360,24 +360,34 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   width: 100%;
 }
 
 .edit-btn {
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375em;
   /*background: rgba(0, 232, 224, 0.2);*/
   border: 1px solid #00e8e0;
   box-shadow: 0 0 10px rgba(0, 232, 224, 0.3);
+  min-height: 2.25em;
+  white-space: nowrap;
 }
+.share-btn {
+  min-height: 2.5em;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
 .edit-btn:hover {
   color: #fff;
   background: rgba(0, 232, 224, 0.3);
@@ -508,7 +518,7 @@ async function handleLogin() {
     padding: 0; /* Full width */
   }
   .user-vote-section {
-    padding: 1rem 0.5rem; /* Minimal padding */
+    padding: 0.75rem 0.5rem; /* Minimal padding */
     border-radius: 0; /* Edge to edge design */
     margin-bottom: 0.5rem;
     border-left: none;
@@ -529,13 +539,18 @@ async function handleLogin() {
   .buttons-container {
     width: 100%;
     flex-direction: row;
-    gap: 1rem;
+    
     justify-content: center;
     align-items: center;
   }
 
   .edit-btn {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .share-btn {
+    font-size: 1rem;
     padding: 0.6rem 1.2rem;
   }
 

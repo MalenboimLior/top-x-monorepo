@@ -38,7 +38,7 @@
                       <div class="slot-points has-text-success">+{{ rows[rowIndex]?.points || 0 }}</div>
                     </div>
                   </div>
-                  <div class="rank-tag" v-if="slot.image" :style="{ background: slot.image?.color || '' }"></div>
+                  
                 </div>
               </div>
             </div>
@@ -78,7 +78,6 @@
                   <div class="worst-slot-points has-text-danger">{{ props.worstPoints || 0 }}</div>
                 </div>
               </div>
-              <div class="rank-tag" v-if="worstItem"></div>
             </div>
           </div>
           <!-- Animation container for worst slot -->
@@ -96,7 +95,7 @@
         @click="submitPyramid"
       />
       </div>
-      <h2 class="subtitle has-text-white" style="font-size: 20px;">{{ props.poolHeader }}</h2>
+      
       <div class="pool-controls mb-4">
        
         <div class="field">
@@ -126,6 +125,7 @@
           </div>
         </div>
       </div>
+      <h2 class="subtitle has-text-white" style="font-size: 20px;">{{ props.poolHeader }}</h2>
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToOfficialPool">
         <div
           v-for="image in filteredOfficialPool"
@@ -882,6 +882,7 @@ function closeTab() {
   font-size: 1rem;
   font-weight: bold;
   color: #22b573 !important;
+  direction: ltr;
 }
 .animation-container {
   position: absolute;
@@ -899,6 +900,7 @@ function closeTab() {
   font-weight: bold;
   color: #22b573 !important;
   animation: floatAndFade 1s ease-out forwards;
+  direction: ltr;
 }
 @keyframes floatAndFade {
   0% {
@@ -957,6 +959,7 @@ function closeTab() {
 .worst-slot-points {
   font-size: 1rem;
   font-weight: bold;
+  direction: ltr;
 }
 .worst-animation-container {
   position: absolute;

@@ -242,7 +242,7 @@ async function renderPyramidImage() {
       }
       .header-section {
         text-align: center;
-        margin-bottom: 20px;
+        
         position: relative;
         width: 100%;
         display: flex;
@@ -279,7 +279,7 @@ async function renderPyramidImage() {
         font-size: 24px; /* Slightly smaller for name */
         color: #00e8e0;
         letter-spacing: 4px; /* Reduced for readability */
-        margin-bottom: 40px;
+        margin-bottom: 10px;
         text-transform: uppercase;
         font-weight: 700;
         opacity: 0.9;
@@ -325,7 +325,7 @@ async function renderPyramidImage() {
       }
       
       .footer-section {
-        margin-top: 60px;
+        margin-top: 5px;
         text-align: center;
         width: 100%;
       }
@@ -346,7 +346,7 @@ async function renderPyramidImage() {
       }
 
       .worst-section {
-        margin-top: 20px;
+        margin-top: 1px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -356,7 +356,6 @@ async function renderPyramidImage() {
         color: #ff5555;
         text-transform: uppercase;
         letter-spacing: 6px;
-        margin-bottom: 20px;
         font-weight: 800;
       }
     `;
@@ -408,7 +407,7 @@ async function renderPyramidImage() {
                   return `
                     <div class="hex-wrapper">
                       ${generateHexSvg(slot.image?.src || null, color, id)}
-                      ${slot.image ? `<div class="rank-bar" style="background: ${color}; box-shadow: 0 0 20px ${color}"></div>` : ''}
+                    
                     </div>
                   `;
                 }).join('')}
@@ -422,7 +421,7 @@ async function renderPyramidImage() {
           <h3 class="worst-title">${props.worstHeader || 'The Worst'}</h3>
           <div class="hex-wrapper">
             ${generateHexSvg(props.worstItem?.src || null, '#ff5555', 'worst')}
-            ${props.worstItem ? `<div class="rank-bar" style="background: #ff5555; box-shadow: 0 0 20px #ff5555"></div>` : ''}
+            
           </div>
         </div>
       ` : ''}
