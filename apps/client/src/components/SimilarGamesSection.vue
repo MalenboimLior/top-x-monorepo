@@ -24,14 +24,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import type { Game, GameStats } from '@top-x/shared/types';
 import GameCard from '@/components/GameCard.vue';
 import GameSection from '@/components/home/GameSection.vue';
-import { getGames, subscribeToGameStats, type GamesResult } from '@/services/game';
+import { getGames, getGameStats, type GamesResult } from '@/services/game';
 import { useLocaleStore } from '@/stores/locale';
 import { useRouter } from 'vue-router';
-import type { Unsubscribe } from 'firebase/firestore';
 
 const props = defineProps({
   gameTypeId: {
@@ -54,7 +53,28 @@ const t = (key: string) => localeStore.translate(key);
 
 const similarGames = ref<Game[]>([]);
 const gameStats = ref<Record<string, Partial<GameStats>>>({});
-const statsUnsubscribers = ref<Map<string, Unsubscribe>>(new Map());
+
+// Load game stats for a specific game
+async function loadGameStats(gameId: string) {
+  if (gameStats.value[gameId]) {
+    return; // Already loaded
+  }
+
+  try {
+    const result = await getGameStats(gameId);
+    if (result.stats) {
+      gameStats.value[gameId] = result.stats;
+    }
+  } catch (error) {
+    console.error(`Error fetching stats for game ${gameId}:`, error);
+  }
+}
+
+// Load game stats for multiple games
+async function loadGameStatsForGames(gameIds: string[]) {
+  const promises = gameIds.map(gameId => loadGameStats(gameId));
+  await Promise.all(promises);
+}
 
 const fetchSimilarGames = async () => {
   if (!props.gameTypeId) {
@@ -72,15 +92,9 @@ const fetchSimilarGames = async () => {
     // Sort by sessions played (descending) can be enhanced if needed
     similarGames.value = filtered;
 
-    // Subscribe to stats for each game 
-    for (const game of filtered) {
-      if (!statsUnsubscribers.value.has(game.id)) {
-        const unsubscribe = subscribeToGameStats(game.id, (stats) => {
-          gameStats.value[game.id] = stats || {};
-        });
-        statsUnsubscribers.value.set(game.id, unsubscribe);
-      }
-    }
+    // Load stats for all similar games
+    const gameIds = filtered.map(game => game.id);
+    await loadGameStatsForGames(gameIds);
   } catch (error) {
     console.error('Error fetching similar games:', error);
     similarGames.value = [];
@@ -93,13 +107,6 @@ const handlePlay = (gameId: string, gameTypeId: string) => {
 
 onMounted(() => {
   void fetchSimilarGames();
-});
-
-onBeforeUnmount(() => {
-  for (const unsubscribe of statsUnsubscribers.value.values()) {
-    unsubscribe();
-  }
-  statsUnsubscribers.value.clear();
 });
 </script>
 

@@ -159,7 +159,7 @@ import { computed, ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { useUserStore } from '@/stores/user';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import type { GameType, Game } from '@top-x/shared/types/game';
@@ -253,39 +253,35 @@ function resolveIcon(gameTypeId: string | undefined) {
   return GAME_TYPE_ICON_MAP[normalized] ?? DEFAULT_GAME_TYPE_ICON;
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (user.value) {
-    fetchAvailableGameTypes();
-    fetchMyGames();
+    await Promise.all([
+      fetchAvailableGameTypes(),
+      fetchMyGames(),
+    ]);
   }
 });
 
 
-function fetchAvailableGameTypes() {
-  const q = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
-  onSnapshot(
-    q,
-    (snapshot) => {
-      availableGameTypes.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as GameType));
-    },
-    (err) => {
-      console.error('Error fetching game types:', err);
-    },
-  );
+async function fetchAvailableGameTypes() {
+  try {
+    const q = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
+    const snapshot = await getDocs(q);
+    availableGameTypes.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as GameType));
+  } catch (err) {
+    console.error('Error fetching game types:', err);
+  }
 }
 
-function fetchMyGames() {
+async function fetchMyGames() {
   if (!user.value?.uid) return;
-  const q = query(collection(db, 'games'), where('creator.userid', '==', user.value.uid));
-  onSnapshot(
-    q,
-    (snapshot) => {
-      myGames.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as Game));
-    },
-    (err) => {
-      console.error('Error fetching my games:', err);
-    },
-  );
+  try {
+    const q = query(collection(db, 'games'), where('creator.userid', '==', user.value.uid));
+    const snapshot = await getDocs(q);
+    myGames.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as Game));
+  } catch (err) {
+    console.error('Error fetching my games:', err);
+  }
 }
 
 function selectGameType(gameType: GameType) {

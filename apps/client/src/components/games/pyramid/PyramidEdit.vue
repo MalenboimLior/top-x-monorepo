@@ -128,15 +128,18 @@
         </div>
       </div>
 <div style="padding: 10px;">
-      <CustomButton
-        type="is-primary"
-        class="vote-button"
+      <button 
+        class="btn-primary vote-button"
         :class="{ 'pulse-vote': isPyramidFull }"
-        :label="t('games.pyramid.placeVote')"
-        :icon="['fas', 'square-poll-vertical']"
         :disabled="isSubmitting"
         @click="submitPyramid"
-      />
+      >
+        <span class="btn-content">
+          {{ t('games.pyramid.placeVote') }}
+          <i class="fas fa-arrow-right btn-icon" :class="{ 'fa-flip-horizontal': localeStore.direction === 'rtl' }"></i>
+        </span>
+        <div class="btn-glow"></div>
+      </button>
       </div>
       
       <!-- Pool Scroll Indicator for Mobile -->
@@ -893,7 +896,18 @@ function startTypingAnimation(fullDescription: string) {
   }
   // Convert line breaks to <br> tags and preserve existing HTML
   const formattedDescription = fullDescription.replace(/\n/g, '<br>');
-  const chars = formattedDescription.split(''); // Split into individual characters to handle HTML properly
+  
+  // Check if description contains HTML tags
+  const hasHTML = /<[^>]+>/.test(formattedDescription);
+  
+  if (hasHTML) {
+    // If HTML is present, show it immediately to avoid breaking tags
+    displayedDescription.value = formattedDescription;
+    return;
+  }
+  
+  // For plain text, use typing animation
+  const chars = formattedDescription.split('');
 
   let index = 0;
   displayedDescription.value = '';
@@ -943,7 +957,7 @@ function closeTab() {
   gap: 0.05rem;
   width: fit-content;
   margin: 0 auto;
-  overflow-x: hidden;
+  overflow: hidden !important;
 }
 .pyramid-row-container {
   display: flex;
@@ -983,7 +997,7 @@ function closeTab() {
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   text-align: center;
-  overflow: hidden;
+  overflow: hidden !important;
   box-sizing: border-box;
   margin-bottom: 0 !important;
   position: relative;
@@ -1050,7 +1064,7 @@ function closeTab() {
   width: 100%;
   max-width: max-content;
   margin: 0.3rem auto;
-  overflow-x: hidden;
+  overflow: hidden !important;
 }
 .worst-item-container .subtitle {
   width: 100%;
@@ -1070,6 +1084,7 @@ function closeTab() {
   min-height: 60px;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden !important;
 }
 .worst-slot.drop-hover {
   background-color: #ff3333;
@@ -1158,6 +1173,7 @@ function closeTab() {
   justify-content: space-between;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden !important;
 }
 .pyramid-slot .slot-style,
 .worst-slot .slot-style {
@@ -1561,7 +1577,7 @@ function closeTab() {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 .hex-outer.worst .hex-border {
@@ -1591,6 +1607,7 @@ function closeTab() {
   box-shadow: none !important;
   margin: 0 !important;
   width: 95px; /* Slightly wider to match hex */
+  overflow: hidden !important;
 }
 .pyramid-row {
   display: flex;
@@ -1957,34 +1974,72 @@ function closeTab() {
   border-color: #fff;
 }
 
-/* Enhanced Vote Button */
+/* Vote Button - Matching HeroSection btn-primary style */
 .vote-button {
+  position: relative;
+  padding: 1rem 2rem;
+  background: var(--color-primary);
+  color: #000;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
   min-width: 180px;
-  height: 48px !important;
-  font-size: 1.1rem !important;
-  font-weight: 800 !important;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  border-radius: 50px !important;
-  background: linear-gradient(135deg, #00e8e0 0%, #00b8b1 100%) !important;
-  border: none !important;
-  box-shadow: 0 6px 15px rgba(0, 232, 224, 0.3) !important;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
 
 .vote-button:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 10px 20px rgba(0, 232, 224, 0.4) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 232, 224, 0.3);
 }
 
-.vote-button :deep(.icon) {
-  font-size: 1.3rem !important;
-  margin-left: 8px;
+.vote-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vote-button .btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.vote-button .btn-icon {
+  transition: transform 0.2s ease;
+}
+
+.vote-button:hover:not(:disabled) .btn-icon {
+  transform: translateX(4px);
+}
+
+.vote-button:hover:not(:disabled) .btn-icon.fa-flip-horizontal {
+  transform: translateX(-4px);
+}
+
+.vote-button .btn-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  transform: scale(0);
+  transition: transform 0.4s ease;
+  z-index: 1;
+}
+
+.vote-button:hover:not(:disabled) .btn-glow {
+  transform: scale(1);
 }
 
 .vote-button.pulse-vote {
-  background: linear-gradient(135deg, #00e8e0 0%, #c4ff00 100%) !important;
-  animation: pulseVoteAttractive 2s infinite !important;
+  background: linear-gradient(135deg, #00e8e0 0%, #c4ff00 100%);
+  animation: pulseVoteAttractive 2s infinite;
 }
 
 @keyframes pulseVoteAttractive {

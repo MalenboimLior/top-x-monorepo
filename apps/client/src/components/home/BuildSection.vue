@@ -34,7 +34,9 @@
               :key="gameType.id"
               type="button"
               class="build-card"
-              @click="handleSelect(gameType.id)"
+              :class="{ 'build-card--disabled': !gameType.availableToBuild }"
+              :disabled="!gameType.availableToBuild"
+              @click="gameType.availableToBuild ? handleSelect(gameType.id) : undefined"
             >
               <span class="build-card__icon" aria-hidden="true">
                 <font-awesome-icon :icon="resolveIcon(gameType.id)" />
@@ -46,8 +48,13 @@
                 </span>
               </span>
               <span class="build-card__cta">
-                {{ ctaTile }}
-                <font-awesome-icon :icon="isRTL ? ['fas', 'arrow-left'] : ['fas', 'arrow-right']" />
+                <span v-if="!gameType.availableToBuild" class="build-card__coming-soon">
+                  {{ t('home.buildSection.comingSoon') }}
+                </span>
+                <span v-else>
+                  {{ ctaTile }}
+                  <font-awesome-icon :icon="isRTL ? ['fas', 'arrow-left'] : ['fas', 'arrow-right']" />
+                </span>
               </span>
             </button>
           </div>
@@ -100,6 +107,7 @@ const emit = defineEmits<{
 
 const localeStore = useLocaleStore();
 const isRTL = computed(() => localeStore.direction === 'rtl');
+const t = (key: string) => localeStore.translate(key);
 
 const ctaTile = computed(() => props.tileCta || localeStore.translate('home.buildSection.cta'));
 
@@ -298,6 +306,7 @@ watch(() => props.gameTypes, () => {
   overflow: hidden;
   flex: 1;
   min-width: 0;
+  padding-top: 4px; /* Allow space for hover transform */
 }
 
 .build-carousel-track {
@@ -311,7 +320,7 @@ watch(() => props.gameTypes, () => {
   display: flex;
   justify-content: center;
   gap: clamp(var(--space-5), 3vw, var(--space-6));
-  padding: 0 var(--space-2);
+  padding: 4px var(--space-2) 0; /* Top padding for hover transform */
   box-sizing: border-box;
 }
 
@@ -342,13 +351,26 @@ watch(() => props.gameTypes, () => {
   display: none; /* Removed for flat design */
 }
 
-.build-card:hover,
-.build-card:focus-visible {
+.build-card:hover:not(.build-card--disabled),
+.build-card:focus-visible:not(.build-card--disabled) {
   outline: none;
   border-color: var(--color-border-primary);
   background-color: var(--color-bg-card-hover);
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.build-card--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-base);
+}
+
+.build-card--disabled .build-card__icon {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-base);
+  color: var(--color-text-secondary);
 }
 
 .build-card__icon {
@@ -390,6 +412,17 @@ watch(() => props.gameTypes, () => {
   color: var(--color-accent);
   background-color: var(--color-accent-bg);
   border: 1px solid var(--color-border-accent);
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.build-card__coming-soon {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-base);
   border-radius: 999px;
   padding: 0.55rem 1.1rem;
   text-transform: uppercase;

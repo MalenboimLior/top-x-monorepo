@@ -5,11 +5,11 @@ import { auth, db, functions, analytics, trackEvent } from '@top-x/shared';
 import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
   doc,
-  onSnapshot,
   updateDoc,
   arrayUnion,
   arrayRemove,
   getDoc,
+  getDocs,
   setDoc,
   collection,
   query,
@@ -50,22 +50,119 @@ export const useUserStore = defineStore('user', () => {
       return !Number.isNaN(revealAtMillis) && revealAtMillis <= now;
     });
   });
-  let unsubscribeProfile: (() => void) | null = null;
-  let unsubscribeRewards: (() => void) | null = null;
   let rewardClockInterval: number | null = null;
 
-  onAuthStateChanged(auth, (currentUser) => {
+  // Refresh profile from Firestore
+  async function refreshProfile() {
+    if (!user.value) {
+      console.log('[UserStore] Cannot refresh profile: no user logged in');
+      return;
+    }
+
+    try {
+      const userDoc = doc(db, 'users', user.value.uid);
+      const snapshot = await getDoc(userDoc);
+      
+      if (snapshot.exists()) {
+        const newProfile = snapshot.data() as User;
+        const oldProfile = profile.value;
+
+        // Log trivia data changes
+        const oldTriviaData = oldProfile?.games?.Trivia;
+        const newTriviaData = newProfile.games?.Trivia;
+        if (oldTriviaData || newTriviaData) {
+          console.log('[UserStore] Trivia profile update:', {
+            oldKeys: oldTriviaData ? Object.keys(oldTriviaData) : [],
+            newKeys: newTriviaData ? Object.keys(newTriviaData) : [],
+            sampleGame: newTriviaData ? Object.keys(newTriviaData)[0] : null,
+            sampleTriviaKeys: newTriviaData && Object.keys(newTriviaData)[0]
+              ? Object.keys(newTriviaData[Object.keys(newTriviaData)[0]]?.custom?.trivia || {})
+              : [],
+          });
+        }
+        
+        // Log quiz-related changes
+        if (oldProfile) {
+          const oldQuizGames = oldProfile.games?.quiz || {};
+          const newQuizGames = newProfile.games?.quiz || {};
+          
+          Object.keys(newQuizGames).forEach((gameId) => {
+            const oldGameData = oldQuizGames[gameId];
+            const newGameData = newQuizGames[gameId];
+            
+            if (oldGameData?.custom !== newGameData?.custom) {
+              console.log('[UserStore] Profile updated - quiz game data changed:', {
+                gameId,
+                oldCustomKeys: oldGameData?.custom ? Object.keys(oldGameData.custom) : [],
+                newCustomKeys: newGameData?.custom ? Object.keys(newGameData.custom) : [],
+                oldPersonalityResult: oldGameData?.custom ? (oldGameData.custom as Record<string, unknown>).personalityResult : undefined,
+                newPersonalityResult: newGameData?.custom ? (newGameData.custom as Record<string, unknown>).personalityResult : undefined,
+                oldArchetypeResult: oldGameData?.custom ? (oldGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+                newArchetypeResult: newGameData?.custom ? (newGameData.custom as Record<string, unknown>).archetypeResult : undefined,
+                lastPlayed: newGameData?.lastPlayed,
+              });
+            }
+          });
+        }
+        
+        profile.value = newProfile;
+
+        // Log when profile is updated from Firestore
+        console.log('[UserStore] Profile updated from Firestore:', {
+          hasTriviaGames: !!newProfile.games?.Trivia,
+          triviaGameCount: newProfile.games?.Trivia ? Object.keys(newProfile.games.Trivia).length : 0,
+          sampleTriviaKeys: newProfile.games?.Trivia && Object.keys(newProfile.games.Trivia).length > 0
+            ? Object.keys(newProfile.games.Trivia[Object.keys(newProfile.games.Trivia)[0]]?.custom?.trivia || {})
+            : [],
+        });
+        console.log('[UserStore] Profile loaded/updated:', {
+          uid: newProfile.uid,
+          hasGames: !!newProfile.games,
+          quizGames: newProfile.games?.quiz ? Object.keys(newProfile.games.quiz) : [],
+        });
+      } else {
+        console.log('[UserStore] No profile found, creating new one');
+        if (user.value) {
+          // Get Firebase user from auth
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            await createUserProfile(currentUser);
+            // Refresh after creation
+            await refreshProfile();
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[UserStore] Firestore error:', err);
+      error.value = err.message;
+    }
+  }
+
+  // Refresh daily challenge rewards from Firestore
+  async function refreshDailyChallengeRewards() {
+    if (!user.value) {
+      console.log('[UserStore] Cannot refresh rewards: no user logged in');
+      return;
+    }
+
+    try {
+      const rewardsRef = collection(db, 'users', user.value.uid, 'dailyChallengeRewards');
+      const rewardsQuery = query(rewardsRef, orderBy('updatedAt', 'desc'));
+      const snapshot = await getDocs(rewardsQuery);
+      
+      dailyChallengeRewards.value = snapshot.docs.map((docSnapshot) => ({
+        id: docSnapshot.id,
+        ...(docSnapshot.data() as DailyChallengeRewardRecord),
+      }));
+      rewardClock.value = Date.now();
+    } catch (err: any) {
+      console.error('Daily challenge rewards fetch error:', err);
+      error.value = err.message;
+    }
+  }
+
+  onAuthStateChanged(auth, async (currentUser) => {
     console.log('onAuthStateChanged triggered:', currentUser?.uid || 'No user');
-
-    if (unsubscribeProfile) {
-      unsubscribeProfile();
-      unsubscribeProfile = null;
-    }
-
-    if (unsubscribeRewards) {
-      unsubscribeRewards();
-      unsubscribeRewards = null;
-    }
 
     if (rewardClockInterval !== null && typeof window !== 'undefined') {
       window.clearInterval(rewardClockInterval);
@@ -82,93 +179,10 @@ export const useUserStore = defineStore('user', () => {
         photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal', '_400x400')
             : '/assets/profile.png',
       };
-      const userDoc = doc(db, 'users', currentUser.uid);
-      unsubscribeProfile = onSnapshot(
-        userDoc,
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const newProfile = snapshot.data() as User;
-            const oldProfile = profile.value;
-
-            // Log trivia data changes
-            const oldTriviaData = oldProfile?.games?.Trivia;
-            const newTriviaData = newProfile.games?.Trivia;
-            if (oldTriviaData || newTriviaData) {
-              console.log('[UserStore] Trivia profile update:', {
-                oldKeys: oldTriviaData ? Object.keys(oldTriviaData) : [],
-                newKeys: newTriviaData ? Object.keys(newTriviaData) : [],
-                sampleGame: newTriviaData ? Object.keys(newTriviaData)[0] : null,
-                sampleTriviaKeys: newTriviaData && Object.keys(newTriviaData)[0]
-                  ? Object.keys(newTriviaData[Object.keys(newTriviaData)[0]]?.custom?.trivia || {})
-                  : [],
-              });
-            }
-            
-            // Log quiz-related changes
-            if (oldProfile) {
-              const oldQuizGames = oldProfile.games?.quiz || {};
-              const newQuizGames = newProfile.games?.quiz || {};
-              
-              Object.keys(newQuizGames).forEach((gameId) => {
-                const oldGameData = oldQuizGames[gameId];
-                const newGameData = newQuizGames[gameId];
-                
-                if (oldGameData?.custom !== newGameData?.custom) {
-                  console.log('[UserStore] Profile updated - quiz game data changed:', {
-                    gameId,
-                    oldCustomKeys: oldGameData?.custom ? Object.keys(oldGameData.custom) : [],
-                    newCustomKeys: newGameData?.custom ? Object.keys(newGameData.custom) : [],
-                    oldPersonalityResult: oldGameData?.custom ? (oldGameData.custom as Record<string, unknown>).personalityResult : undefined,
-                    newPersonalityResult: newGameData?.custom ? (newGameData.custom as Record<string, unknown>).personalityResult : undefined,
-                    oldArchetypeResult: oldGameData?.custom ? (oldGameData.custom as Record<string, unknown>).archetypeResult : undefined,
-                    newArchetypeResult: newGameData?.custom ? (newGameData.custom as Record<string, unknown>).archetypeResult : undefined,
-                    lastPlayed: newGameData?.lastPlayed,
-                  });
-                }
-              });
-            }
-            
-            profile.value = newProfile;
-
-            // Log when profile is updated from Firestore
-            console.log('[UserStore] Profile updated from Firestore:', {
-              hasTriviaGames: !!newProfile.games?.Trivia,
-              triviaGameCount: newProfile.games?.Trivia ? Object.keys(newProfile.games.Trivia).length : 0,
-              sampleTriviaKeys: newProfile.games?.Trivia && Object.keys(newProfile.games.Trivia).length > 0
-                ? Object.keys(newProfile.games.Trivia[Object.keys(newProfile.games.Trivia)[0]]?.custom?.trivia || {})
-                : [],
-            });
-            console.log('[UserStore] Profile loaded/updated:', {
-              uid: newProfile.uid,
-              hasGames: !!newProfile.games,
-              quizGames: newProfile.games?.quiz ? Object.keys(newProfile.games.quiz) : [],
-            });
-          } else {
-            console.log('[UserStore] No profile found, creating new one');
-            createUserProfile(currentUser);
-          }
-        },
-        (err) => {
-          console.error('[UserStore] Firestore error:', err);
-          error.value = err.message;
-        },
-      );
-
-      const rewardsRef = collection(db, 'users', currentUser.uid, 'dailyChallengeRewards');
-      const rewardsQuery = query(rewardsRef, orderBy('updatedAt', 'desc'));
-      unsubscribeRewards = onSnapshot(
-        rewardsQuery,
-        (snapshot) => {
-          dailyChallengeRewards.value = snapshot.docs.map((docSnapshot) => ({
-            id: docSnapshot.id,
-            ...(docSnapshot.data() as DailyChallengeRewardRecord),
-          }));
-          rewardClock.value = Date.now();
-        },
-        (err) => {
-          console.error('Daily challenge rewards subscription error:', err);
-        },
-      );
+      
+      // Load profile and rewards on login
+      await refreshProfile();
+      await refreshDailyChallengeRewards();
 
       if (typeof window !== 'undefined') {
         rewardClockInterval = window.setInterval(() => {
@@ -228,22 +242,8 @@ export const useUserStore = defineStore('user', () => {
       });
       console.log('Triggered syncXUserData');
 
-      if (!profile.value) {
-        console.log('Waiting for profile to load...');
-        await new Promise<void>((resolve) => {
-          const unsubscribe = watch(
-            () => profile.value,
-            (newProfile) => {
-              if (newProfile) {
-                console.log('Profile loaded after login:', newProfile);
-                unsubscribe();
-                resolve();
-              }
-            },
-            { immediate: true }
-          );
-        });
-      }
+      // Refresh profile after sync
+      await refreshProfile();
 
       return true;
     } catch (err: any) {
@@ -459,7 +459,10 @@ export const useUserStore = defineStore('user', () => {
 
       console.log(`[UserStore] Submitted game progress for ${gameTypeId}/${gameId}`, data);
       
-      // Log profile state after update (profile should update via onSnapshot)
+      // Refresh profile once after successful submission
+      await refreshProfile();
+      
+      // Log profile state after update
       console.log('[UserStore] Profile state after update:', {
         hasProfile: !!profile.value,
         gameData: profile.value?.games?.[gameTypeId]?.[gameId],
@@ -529,6 +532,10 @@ export const useUserStore = defineStore('user', () => {
         'claimDailyChallengeRewards',
       );
       const { data } = await callable(options ?? {});
+      
+      // Refresh rewards after claiming
+      await refreshDailyChallengeRewards();
+      
       return data;
     } catch (err: any) {
       console.error('Error claiming daily challenge rewards:', err);
@@ -554,6 +561,8 @@ export const useUserStore = defineStore('user', () => {
     toggleFavorite,
     isGameFavorite,
     claimDailyChallengeReward,
+    refreshProfile,
+    refreshDailyChallengeRewards,
     clearError,
   };
 }, {

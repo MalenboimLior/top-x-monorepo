@@ -76,7 +76,7 @@
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import BuildAddNewGame from '@/components/build/BuildAddNewGame.vue';
 import type { GameType, GameCustomConfig } from '@top-x/shared/types/game';
@@ -133,36 +133,31 @@ useHead(() => ({
   ].filter(Boolean) as { name: string; content: string }[],
 }));
 
-function fetchGameType() {
+async function fetchGameType() {
   if (!gameTypeId.value) {
     router.push('/build');
     return;
   }
 
-  const q = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      const types = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as GameType));
-      const foundType = types.find((type) => type.id === gameTypeId.value);
-      
-      if (foundType) {
-        gameType.value = foundType;
-        // Check if game type has default configs that should be shown
-        const availableDefaults = foundType.defaultConfigs?.filter((dc) => dc.show) ?? [];
-        showDefaultConfigSelection.value = availableDefaults.length > 0;
-      } else {
-        console.error('Game type not found:', gameTypeId.value);
-        router.push('/build');
-      }
-    },
-    (err) => {
-      console.error('Error fetching game types:', err);
+  try {
+    const q = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
+    const snapshot = await getDocs(q);
+    const types = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as GameType));
+    const foundType = types.find((type) => type.id === gameTypeId.value);
+    
+    if (foundType) {
+      gameType.value = foundType;
+      // Check if game type has default configs that should be shown
+      const availableDefaults = foundType.defaultConfigs?.filter((dc) => dc.show) ?? [];
+      showDefaultConfigSelection.value = availableDefaults.length > 0;
+    } else {
+      console.error('Game type not found:', gameTypeId.value);
       router.push('/build');
-    },
-  );
-
-  return unsubscribe;
+    }
+  } catch (err) {
+    console.error('Error fetching game types:', err);
+    router.push('/build');
+  }
 }
 
 function selectDefaultConfig(defaultConfig: { name: string; config: GameCustomConfig; image?: string }) {

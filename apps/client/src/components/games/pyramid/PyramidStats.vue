@@ -137,21 +137,21 @@
           <tr v-for="(item, index) in paginatedStats" :key="item.id" @click="showPresidentModal(item)">
             <td class="has-text-centered number-cell">
               <div class="rank-column">
-                <span>{{ formatNumber((currentPage - 1) * itemsPerPage.value + index + 1) }}</span>
+                <span>{{ formatNumber((currentPage - 1) * itemsPerPage + index + 1) }}</span>
                 <font-awesome-icon
-                  v-if="(currentPage - 1) * itemsPerPage.value + index === 0"
+                  v-if="(currentPage - 1) * itemsPerPage + index === 0"
                   :icon="['fas', 'medal']"
                   class="medal gold"
                   :title="t('games.pyramid.place.1st')"
                 />
                 <font-awesome-icon
-                  v-else-if="(currentPage - 1) * itemsPerPage.value + index === 1"
+                  v-else-if="(currentPage - 1) * itemsPerPage + index === 1"
                   :icon="['fas', 'medal']"
                   class="medal silver"
                   :title="t('games.pyramid.place.2nd')"
                 />
                 <font-awesome-icon
-                  v-else-if="(currentPage - 1) * itemsPerPage.value + index === 2"
+                  v-else-if="(currentPage - 1) * itemsPerPage + index === 2"
                   :icon="['fas', 'medal']"
                   class="medal bronze"
                   :title="t('games.pyramid.place.3rd')"

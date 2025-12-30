@@ -14,14 +14,14 @@
               <img :src="photoURL" alt="Profile picture" />
             </div>
             <div class="profile-card__info">
-              <h1>@{{ displayName }}</h1>
+              <h1>{{ displayName }}</h1>
               <a
                 :href="`https://x.com/${profile?.username || ''}`"
                 target="_blank"
                 rel="noopener"
                 class="profile-card__username"
               >
-                {{ username }}
+                @{{ username }}
               </a>
               <p class="profile-card__meta">
                 {{ profile?.followersCount || 0 }} followers · {{ profile?.followingCount || 0 }} following
@@ -325,14 +325,14 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
-import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter, useRoute } from 'vue-router';
 
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 import { RouterLink } from 'vue-router';
-import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import { getGame, getGames, getGamesBatch } from '@/services/game';
 
@@ -386,7 +386,6 @@ const myCreatedGames = ref<Game[]>([]);
 const loadingMyGames = ref(false);
 const loadingGroupedGames = ref(false);
 const groupedGamesLoaded = ref(false);
-let myGamesUnsubscribe: (() => void) | null = null;
 
 type ChallengeReward = DailyChallengeRewardRecord & { id: string };
 
@@ -919,38 +918,21 @@ function createNewGame() {
 }
 
 // My Games functions
-function fetchMyCreatedGames() {
+async function fetchMyCreatedGames() {
   if (!profile.value?.uid) {
     myCreatedGames.value = [];
     return;
   }
 
-  // Unsubscribe from previous listener if exists
-  if (myGamesUnsubscribe) {
-    myGamesUnsubscribe();
-    myGamesUnsubscribe = null;
-  }
-
   loadingMyGames.value = true;
-  const q = query(collection(db, 'games'), where('creator.userid', '==', profile.value.uid));
-  
-  myGamesUnsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      myCreatedGames.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as Game));
-      loadingMyGames.value = false;
-    },
-    (err) => {
-      console.error('Error fetching created games:', err);
-      loadingMyGames.value = false;
-    }
-  );
-}
-
-function stopMyGamesListener() {
-  if (myGamesUnsubscribe) {
-    myGamesUnsubscribe();
-    myGamesUnsubscribe = null;
+  try {
+    const q = query(collection(db, 'games'), where('creator.userid', '==', profile.value.uid));
+    const snapshot = await getDocs(q);
+    myCreatedGames.value = snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() } as Game));
+  } catch (err) {
+    console.error('Error fetching created games:', err);
+  } finally {
+    loadingMyGames.value = false;
   }
 }
 
@@ -1081,14 +1063,9 @@ watch(activeTab, (newTab) => {
     loadedAddedBy.value = true;
     fetchAddedBy();
   } else if (newTab === 'mygames') {
-    // Start listener when tab becomes active
-    if (profile.value?.uid && !myGamesUnsubscribe) {
+    // Load games when tab becomes active
+    if (profile.value?.uid) {
       fetchMyCreatedGames();
-    }
-  } else {
-    // Stop listener when switching away from my games tab
-    if (newTab !== 'mygames') {
-      stopMyGamesListener();
     }
   }
 });
@@ -1097,10 +1074,6 @@ onMounted(() => {
   trackEvent(analytics, 'page_view', { page_name: 'profile' });
 });
 
-onBeforeUnmount(() => {
-  // Cleanup: stop my games listener when component unmounts
-  stopMyGamesListener();
-});
 </script>
 
 <style scoped>

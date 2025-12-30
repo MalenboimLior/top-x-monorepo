@@ -379,12 +379,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, reactive, watch } from 'vue';
+import { computed, onMounted, ref, reactive, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { useRouter } from 'vue-router';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '@top-x/shared';
-import { subscribeToGames, subscribeToGameStats } from '@/services/game';
+import { getGames, getGameStats } from '@/services/game';
 import GameCard from '@/components/GameCard.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import { useLocaleStore } from '@/stores/locale';
@@ -430,10 +430,8 @@ const showFiltersModal = ref(false);
 const gamesPerPage = 12;
 const currentPage = ref(1);
 
-// Subscriptions
-let gamesUnsubscribe: (() => void) | null = null;
-let gameTypesUnsubscribe: (() => void) | null = null;
-const statsUnsubscribers = new Map<string, () => void>();
+// Stats loading state
+const loadingStats = reactive<Record<string, boolean>>({});
 
 // LocalStorage key
 const STORAGE_KEY = 'games-page-filters';
@@ -642,48 +640,41 @@ function navigateToGame(gameId: string, gameTypeId: string) {
   router.push(`/games/info?game=${gameId}`);
 }
 
-// Stats subscription
-function subscribeToGameStatsLocal(gameId: string) {
-  if (statsUnsubscribers.has(gameId)) {
-    return;
+// Load game stats for a specific game (lazy loading)
+async function loadGameStats(gameId: string) {
+  if (gameStats[gameId] || loadingStats[gameId]) {
+    return; // Already loaded or loading
   }
 
-  const unsubscribe = subscribeToGameStats(gameId, (stats, error) => {
-    if (error) {
-      console.error(`Games: Error fetching stats for game ${gameId}:`, error);
-      delete gameStats[gameId];
-    } else {
-      if (stats) {
-        gameStats[gameId] = stats;
-      } else {
-        delete gameStats[gameId];
-      }
+  loadingStats[gameId] = true;
+  try {
+    const result = await getGameStats(gameId);
+    if (result.stats) {
+      gameStats[gameId] = result.stats;
     }
-  });
-
-  statsUnsubscribers.set(gameId, unsubscribe);
-}
-
-function cleanupStatsSubscriptions(activeGameIds: Set<string>) {
-  for (const [gameId, unsubscribe] of statsUnsubscribers) {
-    if (!activeGameIds.has(gameId)) {
-      unsubscribe();
-      statsUnsubscribers.delete(gameId);
-      delete gameStats[gameId];
-    }
+  } catch (error) {
+    console.error(`Games: Error fetching stats for game ${gameId}:`, error);
+  } finally {
+    loadingStats[gameId] = false;
   }
 }
 
-// Watch games changes to update stats subscriptions
+// Load game stats for visible games on current page (lazy loading)
+async function loadStatsForVisibleGames() {
+  const visibleGames = paginatedGames.value;
+  const gameIds = visibleGames.map(game => game.id);
+  const promises = gameIds.map(gameId => loadGameStats(gameId));
+  await Promise.all(promises);
+}
+
+// Watch paginated games to load stats lazily
 watch(
-  () => allGames.value.map((g) => g.id),
-  (gameIds) => {
-    const activeIds = new Set(gameIds);
-    gameIds.forEach((gameId) => {
-      subscribeToGameStatsLocal(gameId);
-    });
-    cleanupStatsSubscriptions(activeIds);
-  }
+  () => paginatedGames.value.map((g) => g.id),
+  async (gameIds) => {
+    // Only load stats for games on current page
+    await loadStatsForVisibleGames();
+  },
+  { immediate: true }
 );
 
 // Watch filter changes to reset page
@@ -702,56 +693,50 @@ watch(
   }
 );
 
+// Load games from Firestore
+async function loadGames() {
+  isLoading.value = true;
+  try {
+    const result = await getGames({ activeOnly: false });
+    if (result.error) {
+      console.error('Games: Error fetching games:', result.error);
+      return;
+    }
+    // Filter active games only
+    allGames.value = result.games.filter((game) => game.active);
+  } catch (error) {
+    console.error('Games: Error loading games:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Load game types from Firestore
+async function loadGameTypes() {
+  try {
+    const gameTypesQuery = query(collection(db, 'gameTypes'));
+    const snapshot = await getDocs(gameTypesQuery);
+    gameTypes.value = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as GameType),
+    }));
+  } catch (err) {
+    console.error('Games: Error fetching game types:', err);
+  }
+}
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   // Load filters from localStorage
   loadFiltersFromLocalStorage();
 
-  // Subscribe to games
-  isLoading.value = true;
-  gamesUnsubscribe = subscribeToGames(
-    (games, error) => {
-      isLoading.value = false;
-      if (error) {
-        console.error('Games: Error fetching games:', error);
-        return;
-      }
-      // Filter active games only
-      allGames.value = games.filter((game) => game.active);
-    },
-    { activeOnly: false } // We filter manually to maintain control
-  );
-
-  // Subscribe to game types
-  const gameTypesQuery = query(collection(db, 'gameTypes'));
-  gameTypesUnsubscribe = onSnapshot(
-    gameTypesQuery,
-    (snapshot) => {
-      gameTypes.value = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as GameType),
-      }));
-    },
-    (err) => {
-      console.error('Games: Error fetching game types:', err);
-    }
-  );
+  // Load games and game types in parallel
+  await Promise.all([
+    loadGames(),
+    loadGameTypes(),
+  ]);
 });
 
-onBeforeUnmount(() => {
-  if (gamesUnsubscribe) {
-    gamesUnsubscribe();
-    gamesUnsubscribe = null;
-  }
-  if (gameTypesUnsubscribe) {
-    gameTypesUnsubscribe();
-    gameTypesUnsubscribe = null;
-  }
-  for (const unsubscribe of statsUnsubscribers.values()) {
-    unsubscribe();
-  }
-  statsUnsubscribers.clear();
-});
 
 // SEO
 useHead(() => ({

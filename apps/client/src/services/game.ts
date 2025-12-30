@@ -19,14 +19,12 @@ import {
   where,
   orderBy,
   limit,
-  onSnapshot,
   addDoc,
   updateDoc,
   deleteDoc,
   setDoc,
   documentId,
   type Firestore,
-  type Unsubscribe,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
@@ -291,32 +289,6 @@ export async function getGames(options?: {
   }
 }
 
-/**
- * Subscribes to real-time updates for all games
- * Returns an unsubscribe function
- */
-export function subscribeToGames(
-  callback: (games: Game[], error?: string) => void,
-  options?: {
-    activeOnly?: boolean;
-  }
-): Unsubscribe {
-  const gamesQuery = query(collection(db, 'games'));
-
-  return onSnapshot(
-    gamesQuery,
-    (snapshot) => {
-      const games = snapshot.docs
-        .map((docSnap) => mapGameDocument(docSnap))
-        .filter((g) => !options?.activeOnly || g.active);
-      callback(games);
-    },
-    (err) => {
-      console.error('Error subscribing to games:', err);
-      callback([], err.message);
-    }
-  );
-}
 
 /**
  * Fetches game stats for a specific game
@@ -337,32 +309,6 @@ export async function getGameStats(gameId: string): Promise<GameStatsResult> {
   }
 }
 
-/**
- * Subscribes to real-time updates for game stats
- * Returns an unsubscribe function
- */
-export function subscribeToGameStats(
-  gameId: string,
-  callback: (stats: Partial<GameStats> | null, error?: string) => void
-): Unsubscribe {
-  const statsDocRef = doc(db, 'games', gameId, 'stats', 'general');
-
-  return onSnapshot(
-    statsDocRef,
-    (snapshot) => {
-      if (snapshot.exists()) {
-        const stats = snapshot.data() as Partial<GameStats>;
-        callback(stats);
-      } else {
-        callback(null);
-      }
-    },
-    (err) => {
-      console.error('Error subscribing to game stats:', err);
-      callback(null, err.message);
-    }
-  );
-}
 
 // ----------------------
 // Daily Challenges API

@@ -162,15 +162,15 @@ import {
   collection,
   getDocs,
   query,
-  onSnapshot,
+  getDoc,
   doc,
   where,
   documentId,
 } from 'firebase/firestore';
 import { db } from '@top-x/shared';
 import {
-  subscribeToGames,
-  subscribeToGameStats,
+  getGames,
+  getGameStats,
 } from '@/services/game';
 import HeroSection from '@/components/home/HeroSection.vue';
 import HowItWorksSection from '@/components/home/HowItWorksSection.vue';
@@ -300,41 +300,35 @@ useHead({
 });
 
 let resizeObserver: ResizeObserver | null = null;
-let gamesUnsubscribe: (() => void) | null = null;
-let configUnsubscribe: (() => void) | null = null;
-let gameTypesUnsubscribe: (() => void) | null = null;
-const statsUnsubscribers = new Map<string, () => void>();
 
-
-function subscribeToGameStatsLocal(gameId: string) {
-  if (statsUnsubscribers.has(gameId)) {
-    return;
+// Load game stats for a specific game
+async function loadGameStats(gameId: string) {
+  if (gameStats[gameId]) {
+    return; // Already loaded
   }
 
-  const unsubscribe = subscribeToGameStats(gameId, (stats, error) => {
-    if (error) {
-      console.error(`Home: Error fetching stats for game ${gameId}:`, error);
-      delete gameStats[gameId];
-    } else {
-      if (stats) {
-        gameStats[gameId] = stats;
-      } else {
-        delete gameStats[gameId];
-      }
+  try {
+    const result = await getGameStats(gameId);
+    if (result.stats) {
+      gameStats[gameId] = result.stats;
     }
-  });
-
-  statsUnsubscribers.set(gameId, unsubscribe);
+  } catch (error) {
+    console.error(`Home: Error fetching stats for game ${gameId}:`, error);
+  }
 }
 
-function cleanupStatsSubscriptions(activeGameIds: Set<string>) {
-  for (const [gameId, unsubscribe] of statsUnsubscribers) {
-    if (!activeGameIds.has(gameId)) {
-      unsubscribe();
-      statsUnsubscribers.delete(gameId);
-      delete gameStats[gameId];
-    }
-  }
+// Load game stats for multiple games
+async function loadGameStatsForGames(gameIds: string[]) {
+  const promises = gameIds.map(gameId => loadGameStats(gameId));
+  await Promise.all(promises);
+}
+
+// Refresh all data
+async function refreshData() {
+  await loadGames();
+  await loadHomeConfig();
+  await loadGameTypes();
+  await loadCreators();
 }
 
 type GameStatMetric = 'totalPlayers' | 'favoriteCounter' | 'sessionsPlayed';
@@ -432,61 +426,68 @@ function normalizeHomeConfig(raw: Partial<HomePageConfig> | undefined): HomePage
   };
 }
 
-onMounted(() => {
+// Load games from Firestore
+async function loadGames() {
+  try {
+    const result = await getGames({ activeOnly: false });
+    if (result.error) {
+      console.error('Home: Error fetching games:', result.error);
+      return;
+    }
+
+    // Filter games: must be active=true AND unlisted=false to appear on home page
+    // active=false: not visible and not playable
+    // unlisted=true: not visible on home but still playable via direct link
+    const activeGames = result.games.filter((g) => g.active && !g.unlisted);
+    games.value = activeGames;
+
+    // Load stats for all active games
+    const gameIds = activeGames.map(game => game.id);
+    await loadGameStatsForGames(gameIds);
+
+    console.log('Home: Games loaded:', games.value);
+  } catch (error) {
+    console.error('Home: Error loading games:', error);
+  }
+}
+
+// Load home config from Firestore
+async function loadHomeConfig() {
+  try {
+    const configRef = doc(db, 'config', 'homepage');
+    const snapshot = await getDoc(configRef);
+    const rawData = snapshot.exists() ? (snapshot.data() as Partial<HomePageConfig>) : undefined;
+    homeConfig.value = normalizeHomeConfig(rawData);
+    configLoaded.value = true;
+    void loadCreators();
+  } catch (err: any) {
+    console.error('Home: Error fetching home configuration:', err.message, err);
+    homeConfig.value = { ...defaultHomePageConfig };
+    configLoaded.value = true;
+  }
+}
+
+// Load game types from Firestore
+async function loadGameTypes() {
+  try {
+    const gameTypesQuery = query(collection(db, 'gameTypes'));
+    const snapshot = await getDocs(gameTypesQuery);
+    gameTypes.value = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...(docSnapshot.data() as GameType) }));
+  } catch (err: any) {
+    console.error('Home: Error fetching game types:', err.message, err);
+  }
+}
+
+onMounted(async () => {
   console.log('Home: Fetching games and configuration from Firestore...');
   trackEvent(analytics, 'page_view', { page_name: 'home' });
 
-  gamesUnsubscribe = subscribeToGames(
-    (mappedGames, error) => {
-      if (error) {
-        console.error('Home: Error fetching games:', error);
-        return;
-      }
-
-      // Filter games: must be active=true AND unlisted=false to appear on home page
-      // active=false: not visible and not playable
-      // unlisted=true: not visible on home but still playable via direct link
-      const activeGames = mappedGames.filter((g) => g.active && !g.unlisted);
-      games.value = activeGames;
-
-      const activeIds = new Set<string>();
-      activeGames.forEach((game) => {
-        activeIds.add(game.id);
-        subscribeToGameStatsLocal(game.id);
-      });
-      cleanupStatsSubscriptions(activeIds);
-
-      console.log('Home: Games updated:', games.value);
-    },
-    { activeOnly: false } // We filter active games manually to maintain existing behavior
-  );
-
-  const configRef = doc(db, 'config', 'homepage');
-  configUnsubscribe = onSnapshot(
-    configRef,
-    (snapshot) => {
-      const rawData = snapshot.exists() ? (snapshot.data() as Partial<HomePageConfig>) : undefined;
-      homeConfig.value = normalizeHomeConfig(rawData);
-      configLoaded.value = true;
-      void loadCreators();
-    },
-    (err) => {
-      console.error('Home: Error fetching home configuration:', err.message, err);
-      homeConfig.value = { ...defaultHomePageConfig };
-      configLoaded.value = true;
-    },
-  );
-
-  const gameTypesQuery = query(collection(db, 'gameTypes'), where('availableToBuild', '==', true));
-  gameTypesUnsubscribe = onSnapshot(
-    gameTypesQuery,
-    (snapshot) => {
-      gameTypes.value = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...(docSnapshot.data() as GameType) }));
-    },
-    (err) => {
-      console.error('Home: Error fetching game types:', err.message, err);
-    },
-  );
+  // Load all data in parallel
+  await Promise.all([
+    loadGames(),
+    loadHomeConfig(),
+    loadGameTypes(),
+  ]);
 
   if (shouldDisplayAds.value) {
     nextTick(() => {
@@ -600,20 +601,40 @@ const orderedGameTypes = computed(() => {
   if (!gameTypes.value.length) {
     return [] as GameType[];
   }
+
+  // Separate active and inactive game types
+  const activeGameTypes = gameTypes.value.filter(type => type.availableToBuild);
+  const inactiveGameTypes = gameTypes.value.filter(type => !type.availableToBuild);
+
   const order = homeConfig.value.build.gameTypeIds;
+  const activeOrdered: GameType[] = [];
+  const inactiveOrdered: GameType[] = [];
+
   if (!order.length) {
-    return [...gameTypes.value].sort((a, b) => a.name.localeCompare(b.name));
+    // No specific order configured - sort both groups alphabetically
+    activeOrdered.push(...activeGameTypes.sort((a, b) => a.name.localeCompare(b.name)));
+    inactiveOrdered.push(...inactiveGameTypes.sort((a, b) => a.name.localeCompare(b.name)));
+  } else {
+    // Handle prioritized active types
+    const lookup = new Map(gameTypes.value.map((type) => [type.id, type]));
+    const prioritizedActive = order.map((id) => lookup.get(id))
+      .filter((type): type is GameType => Boolean(type) && type?.availableToBuild);
+
+    const remainingActive = activeGameTypes
+      .filter((type) => !order.includes(type.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    activeOrdered.push(...prioritizedActive, ...remainingActive);
+
+    // Sort inactive types alphabetically
+    inactiveOrdered.push(...inactiveGameTypes.sort((a, b) => a.name.localeCompare(b.name)));
   }
-  const lookup = new Map(gameTypes.value.map((type) => [type.id, type]));
-  const prioritized = order.map((id) => lookup.get(id)).filter((type): type is GameType => Boolean(type));
-  const remaining = gameTypes.value
-    .filter((type) => !order.includes(type.id))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  return [...prioritized, ...remaining];
+
+  return [...activeOrdered, ...inactiveOrdered];
 });
 
 const featuredRows = 1;
-const featuredItemsPerRow = 3;
+const featuredItemsPerRow = 4;
 
 function normalizePositiveInt(value: number | null | undefined, fallback: number): number {
   if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
@@ -711,25 +732,6 @@ onBeforeUnmount(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
-  }
-  if (gamesUnsubscribe) {
-    gamesUnsubscribe();
-    gamesUnsubscribe = null;
-  }
-  if (configUnsubscribe) {
-    configUnsubscribe();
-    configUnsubscribe = null;
-  }
-  if (gameTypesUnsubscribe) {
-    gameTypesUnsubscribe();
-    gameTypesUnsubscribe = null;
-  }
-  for (const unsubscribe of statsUnsubscribers.values()) {
-    unsubscribe();
-  }
-  statsUnsubscribers.clear();
-  for (const key of Object.keys(gameStats)) {
-    delete gameStats[key];
   }
 });
 </script>
