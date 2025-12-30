@@ -144,7 +144,7 @@ const GAME_TYPE_CONTENT: Record<'en' | 'il', Record<string, GameTypeContent>> = 
       images: ['/assets/fallback.png'],
     },
     zonereveal: {
-      displayName: 'חשיפת אזורים',
+      displayName: 'סוגר שטחים',
       goal: 'לזהות את המיקום הסודי עם מינימום רמזים.',
       instructions: 'מגלים את המפה לפני שהזמן אוזל. מקישים, חושפים ומנחשים את האזור הסודי עם כמה שפחות רמזים.',
       images: ['/assets/zonereveal/level1.jpg', '/assets/zonereveal/heart_icon.png'],

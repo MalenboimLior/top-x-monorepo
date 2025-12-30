@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { nextTick } from 'vue';
 import { useUserStore } from '../stores/user';
 import { useThemeStore } from '../stores/theme';
 import { logEvent } from 'firebase/analytics';
@@ -220,6 +221,12 @@ router.afterEach((to, from) => {
     themeStore.restoreUserPreference();
   }
   // If navigating between game routes, stay in dark mode (no action needed)
+
+  // Force scroll to top on route change
+  // Use nextTick to ensure DOM is updated before scrolling
+  nextTick(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
 
   if (analytics) {
     const userStore = useUserStore();

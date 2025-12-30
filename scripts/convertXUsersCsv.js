@@ -107,7 +107,7 @@ function main() {
       sortItems: { orderBy: 'id', order: 'asc' },
       HideRowLabel: false,
       shareImageTitle: 'החשבונות הכי חמים בטוויטר הישראלי',
-      poolHeader: 'בחר מתוך הפרטים הבאים:',
+      poolHeader: 'בחר מתוך הפריטים הבאים:',
       worstHeader: 'הכי גרוע',
       worstPoints: 0,
       worstShow: true,

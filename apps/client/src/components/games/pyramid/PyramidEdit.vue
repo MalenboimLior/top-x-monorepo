@@ -8,17 +8,27 @@
       
       <!-- Step Instruction -->
       <div class="step-guide-container">
-        <div class="step-guide" :class="{ 'step-2-active': !!selectedItem }">
+        <div class="step-guide" :class="[
+          { 'step-2-active': !!selectedItem },
+          { 'step-3-active': isPyramidFull && !selectedItem }
+        ]">
           <div class="step-item step-1">
             <span class="step-number">1</span>
             <span class="step-text">{{ t('games.pyramid.step1') }}</span>
           </div>
-          <div class="step-arrow" :style="{ transform: localeStore.direction === 'rtl' ? 'rotate(180deg)' : 'none' }">
+          <div class="step-arrow arrow-1" :style="{ '--arrow-rotation': localeStore.direction === 'rtl' ? '180deg' : '0deg' }">
             <font-awesome-icon :icon="['fas', 'arrow-right']" class="arrow-icon" />
           </div>
           <div class="step-item step-2">
             <span class="step-number">2</span>
             <span class="step-text">{{ t('games.pyramid.step2') }}</span>
+          </div>
+          <div class="step-arrow arrow-2" :style="{ '--arrow-rotation': localeStore.direction === 'rtl' ? '180deg' : '0deg' }">
+            <font-awesome-icon :icon="['fas', 'arrow-right']" class="arrow-icon" />
+          </div>
+          <div class="step-item step-3">
+            <span class="step-number">3</span>
+            <span class="step-text">{{ t('games.pyramid.step3') }}</span>
           </div>
         </div>
       </div>
@@ -51,6 +61,9 @@
                     <div v-if="slot.image" class="draggable-item slot-style">
                       <div v-if="(selectedItem || draggedItem) && !isSelected(slot.image)" class="swap-badge-mobile">
                         <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+                      </div>
+                      <div v-if="isSelected(slot.image)" class="remove-item-badge" @click.stop="removeItemFromSlot(rowIndex, colIndex)">
+                        <font-awesome-icon :icon="['fas', 'trash-can']" />
                       </div>
                       <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
                     </div>
@@ -96,6 +109,9 @@
                   <div v-if="(selectedItem || draggedItem) && !isSelected(worstItem)" class="swap-badge-mobile">
                     <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
                   </div>
+                  <div v-if="isSelected(worstItem)" class="remove-item-badge danger" @click.stop="removeWorstItem">
+                    <font-awesome-icon :icon="['fas', 'trash-can']" />
+                  </div>
                   <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
                 </div>
                 <div v-else class="worst-slot-label-container">
@@ -114,6 +130,8 @@
 <div style="padding: 10px;">
       <CustomButton
         type="is-primary"
+        class="vote-button"
+        :class="{ 'pulse-vote': isPyramidFull }"
         :label="t('games.pyramid.placeVote')"
         :icon="['fas', 'square-poll-vertical']"
         :disabled="isSubmitting"
@@ -130,7 +148,7 @@
       <div class="pool-controls mb-4" id="item-pool-scroll-target">
        
         <div class="field">
-          <div class="control has-icons-left">
+          <div class="control has-icons-left has-icons-right">
             <input
               class="input is-dark"
               type="text"
@@ -139,6 +157,9 @@
             />
             <span class="icon is-left">
               <font-awesome-icon :icon="['fas', 'search']" />
+            </span>
+            <span v-if="searchQuery" class="icon is-right is-clickable" @click="searchQuery = ''">
+              <font-awesome-icon :icon="['fas', 'circle-xmark']" />
             </span>
           </div>
         </div>
@@ -228,7 +249,7 @@
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content" @click.stop>
-          <p class="question-text">{{ t('games.pyramid.questionAbout') }}{{ describedItem?.label }}״?</p>
+          <p class="question-text">{{ t('games.pyramid.questionAbout') }}{{ describedItem?.label }}?</p>
           <p class="answer-text" v-html="displayedDescription"></p>
           <button class="button is-small is-primary" @click="closeTab">{{ t('games.pyramid.close') }}</button>
         </div>
@@ -251,7 +272,7 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate, faCircleXmark, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.vue';
@@ -260,7 +281,7 @@ import { analytics } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
 import { useUserStore } from '@/stores/user';
 
-library.add(faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate);
+library.add(faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate, faCircleXmark, faTrashCan);
 
 const localeStore = useLocaleStore();
 const userStore = useUserStore();
@@ -309,6 +330,11 @@ const droppableSlot = ref<{ row: number; col: number } | null>(null);
 const animatedPoints = ref<string | null>(null);
 const worstAnimatedPoints = ref<string | null>(null);
 const worstShow = computed(() => props.worstShow ?? true);
+const isPyramidFull = computed(() => {
+  const pyramidFull = pyramid.value.every(row => row.every(slot => !!slot.image));
+  const worstFull = worstShow.value ? !!worstItem.value : true;
+  return pyramidFull && worstFull;
+});
 const selectedInfoIcon = ref<string | null>(null); // Track the selected info icon by item ID
 
 const searchQuery = ref('');
@@ -760,6 +786,56 @@ function addNewItem(newItem: PyramidItem) {
   showAddPopup.value = false;
 }
 
+function removeItemFromSlot(row: number, col: number) {
+  const item = pyramid.value[row][col].image;
+  if (!item) return;
+
+  pyramid.value[row][col].image = null;
+  
+  // Return to pool - check if it's an official item
+  const isOfficial = props.items.some(i => i.id === item.id);
+  if (isOfficial) {
+    if (!officialPool.value.some(i => i.id === item.id)) {
+      officialPool.value.push(item);
+      officialPool.value = officialPool.value.sort(sortFunction);
+    }
+  } else {
+    // If not official, it's community (either from props or newly added)
+    if (!communityPool.value.some(i => i.id === item.id)) {
+      communityPool.value.push(item);
+      communityPool.value = communityPool.value.sort(sortFunction);
+    }
+  }
+
+  selectedItem.value = null;
+  draggedItem.value = null;
+}
+
+function removeWorstItem() {
+  const item = worstItem.value;
+  if (!item) return;
+
+  worstItem.value = null;
+
+  // Return to pool - check if it's an official item
+  const isOfficial = props.items.some(i => i.id === item.id);
+  if (isOfficial) {
+    if (!officialPool.value.some(i => i.id === item.id)) {
+      officialPool.value.push(item);
+      officialPool.value = officialPool.value.sort(sortFunction);
+    }
+  } else {
+    // If not official, it's community
+    if (!communityPool.value.some(i => i.id === item.id)) {
+      communityPool.value.push(item);
+      communityPool.value = communityPool.value.sort(sortFunction);
+    }
+  }
+
+  selectedItem.value = null;
+  draggedItem.value = null;
+}
+
 function findSlotContaining(itemId: string): PyramidSlot | null {
   for (const row of pyramid.value) {
     for (const slot of row) {
@@ -934,33 +1010,38 @@ function closeTab() {
   color: #22b573 !important;
   direction: ltr;
 }
-.animation-container {
+.animation-container, .worst-animation-container {
   position: absolute;
-  right: -70px;
+  right: -75px;
   top: 50%;
   transform: translateY(-50%);
-  width: 60px;
-  height: 100px;
+  width: 70px;
+  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+  z-index: 2000;
 }
 .animated-points {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #22b573 !important;
-  animation: floatAndFade 1s ease-out forwards;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #c4ff00 !important; /* Vibrant Lime */
+  animation: pointsPopFade 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   direction: ltr;
+  white-space: nowrap;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  filter: drop-shadow(0 0 10px rgba(196, 255, 0, 0.5));
 }
-@keyframes floatAndFade {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-30px);
-    opacity: 0;
-  }
+.animated-points.has-text-danger {
+  color: #ff3333 !important;
+  filter: drop-shadow(0 0 10px rgba(255, 51, 51, 0.5));
+}
+@keyframes pointsPopFade {
+  0% { transform: translateY(40px) scale(0) rotate(-10deg); opacity: 0; }
+  30% { transform: translateY(0) scale(1.4) rotate(5deg); opacity: 1; }
+  50% { transform: translateY(-10px) scale(1.1) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-90px) scale(0.8); opacity: 0; }
 }
 .worst-item-container {
   display: flex;
@@ -1011,17 +1092,7 @@ function closeTab() {
   font-weight: bold;
   direction: ltr;
 }
-.worst-animation-container {
-  position: absolute;
-  right: -70px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 60px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+
 .tier-label {
   color: #bbb;
   font-size: 0.9rem;
@@ -1222,6 +1293,7 @@ function closeTab() {
   align-items: center;
   opacity: 0.3;
   transition: transform 0.3s ease;
+  transform: rotate(var(--arrow-rotation, 0deg));
 }
 
 .arrow-icon {
@@ -1230,11 +1302,11 @@ function closeTab() {
 }
 
 /* Step 1 Active */
-.step-guide:not(.step-2-active) .step-1 {
+.step-guide:not(.step-2-active):not(.step-3-active) .step-1 {
   opacity: 1;
   transform: scale(1.05);
 }
-.step-guide:not(.step-2-active) .step-1 .step-number {
+.step-guide:not(.step-2-active):not(.step-3-active) .step-1 .step-number {
   background: #00e8e0;
   box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
 }
@@ -1256,15 +1328,58 @@ function closeTab() {
   box-shadow: 0 0 15px rgba(196, 255, 0, 0.5);
 }
 
-.step-2-active .step-arrow {
+.step-2-active .arrow-1 {
   opacity: 1;
   animation: slideArrow 1s infinite;
 }
 
+/* Step 3 Active */
+.step-3-active {
+  border-color: #c4ff00;
+  background: rgba(196, 255, 0, 0.1);
+}
+
+.step-3-active .step-3 {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.step-3-active .step-3 .step-number {
+  background: #ffaa00;
+  color: #000;
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+}
+
+.step-3-active .arrow-2 {
+  opacity: 1;
+  animation: slideArrow 1s infinite;
+}
+
+/* Vote Pulse */
+.pulse-vote {
+  animation: pulseVote 2s infinite !important;
+  transform: scale(1.05);
+}
+
+@keyframes pulseVote {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 232, 224, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(0, 232, 224, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 232, 224, 0); }
+}
+
 @keyframes slideArrow {
-  0% { transform: translateX(-5px); opacity: 0.3; }
-  50% { transform: translateX(5px); opacity: 1; }
-  100% { transform: translateX(-5px); opacity: 0.3; }
+  0% {
+    transform: translateX(-5px) rotate(var(--arrow-rotation, 0deg));
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateX(5px) rotate(var(--arrow-rotation, 0deg));
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-5px) rotate(var(--arrow-rotation, 0deg));
+    opacity: 0.3;
+  }
 }
 
 /* In RTL, because the container is rotated 180deg, 
@@ -1361,32 +1476,10 @@ function closeTab() {
   .step-guide-container {
     margin-bottom: 20px; /* More space for the guide */
   }
-}
-
-/* Full Slot Swap Indicator */
-.draggable-item.slot-style:hover::after {
-  content: '⇌';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 232, 224, 0.9);
-  color: #000;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  font-weight: bold;
-  box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
-  animation: pulse-swap 1s infinite alternate;
-}
-
-@keyframes pulse-swap {
-  from { transform: translate(-50%, -50%) scale(1); }
-  to { transform: translate(-50%, -50%) scale(1.2); }
+  .step-guide {
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+  }
 }
 
 /* Pool Scroll Hint */
@@ -1672,7 +1765,7 @@ function closeTab() {
     height: 90px;
   }
   .animated-points {
-    font-size: 0.8rem;
+    font-size: 1.4rem;
   }
   .worst-item-container {
     overflow-x: hidden;
@@ -1704,7 +1797,7 @@ function closeTab() {
     font-size: 0.8rem;
   }
   .worst-animation-container {
-    right: -60px;
+    right: -55px;
     width: 50px;
     height: 90px;
   }
@@ -1765,20 +1858,33 @@ function closeTab() {
   position: absolute;
   background-color: #2a2a2a;
   color: white;
-  padding: 0.5rem;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  z-index: 100;
-  width: 250px;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  z-index: 1000;
+  width: 280px;
   text-align: center;
-  top: 100%;
-  left: 0;
+  top: calc(100% + 15px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid #444;
 }
 .confirm-tooltip:before {
   content: "";
   position: absolute;
   top: -10px;
-  left: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid #444;
+}
+.confirm-tooltip:after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
   border-bottom: 10px solid #2a2a2a;
@@ -1789,13 +1895,16 @@ function closeTab() {
 }
 @media screen and (max-width: 767px) {
   .confirm-tooltip {
-    left: auto;
-    right: 0;
-    width: 200px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+    box-shadow: 0 0 0 100vmax rgba(0,0,0,0.7), 0 10px 25px rgba(0,0,0,0.5);
   }
-  .confirm-tooltip:before {
-    left: auto;
-    right: 10px;
+  .confirm-tooltip:before, .confirm-tooltip:after {
+    display: none;
   }
 }
 .empty-community-message {
@@ -1812,7 +1921,80 @@ function closeTab() {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   overflow-y: auto;
+}
 
+/* Remove Item Badge */
+.remove-item-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  color: #ff3860;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  z-index: 60;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid #ff3860;
+}
+
+.remove-item-badge:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  background: #ff3860;
+  color: white;
+}
+
+.remove-item-badge.danger {
+  color: #fff;
+  background: #ff3860;
+  border-color: #fff;
+}
+
+/* Enhanced Vote Button */
+.vote-button {
+  min-width: 180px;
+  height: 48px !important;
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-radius: 50px !important;
+  background: linear-gradient(135deg, #00e8e0 0%, #00b8b1 100%) !important;
+  border: none !important;
+  box-shadow: 0 6px 15px rgba(0, 232, 224, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.vote-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 20px rgba(0, 232, 224, 0.4) !important;
+}
+
+.vote-button :deep(.icon) {
+  font-size: 1.3rem !important;
+  margin-left: 8px;
+}
+
+.vote-button.pulse-vote {
+  background: linear-gradient(135deg, #00e8e0 0%, #c4ff00 100%) !important;
+  animation: pulseVoteAttractive 2s infinite !important;
+}
+
+@keyframes pulseVoteAttractive {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(196, 255, 0, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(196, 255, 0, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(196, 255, 0, 0); }
+}
+
+.is-clickable {
+  cursor: pointer;
 }
 </style>
 
