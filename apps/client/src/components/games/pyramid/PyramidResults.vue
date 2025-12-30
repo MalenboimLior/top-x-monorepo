@@ -43,7 +43,7 @@
     </div>
 
     <div v-if="user" class="has-text-centered mt-4">
-      <p class="has-text-white">{{ t('games.pyramid.cantFindPals') }}</p>
+      <p class="has-text-white mb-4">{{ t('games.pyramid.cantFindPals') }}</p>
       <CustomButton
         type="is-primary"
         :label="t('games.pyramid.findUsers')"

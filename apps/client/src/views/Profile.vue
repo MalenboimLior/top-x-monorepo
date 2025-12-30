@@ -14,7 +14,7 @@
               <img :src="photoURL" alt="Profile picture" />
             </div>
             <div class="profile-card__info">
-              <h1>{{ displayName }}</h1>
+              <h1>@{{ displayName }}</h1>
               <a
                 :href="`https://x.com/${profile?.username || ''}`"
                 target="_blank"
@@ -1168,6 +1168,7 @@ onBeforeUnmount(() => {
   z-index: 1;
   display: flex;
   justify-content: center;
+  direction: ltr !important;
 }
 
 .profile-hero__content {

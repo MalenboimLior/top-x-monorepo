@@ -284,6 +284,7 @@ function toRoman(num: number): string {
   margin-top: 5px;
   text-align: center;
   width: 100%;
+  direction: ltr !important;
 }
 .cta-text {
   font-size: 1rem;

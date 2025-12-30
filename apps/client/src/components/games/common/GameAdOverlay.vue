@@ -13,6 +13,7 @@
           :data-ad-slot="adSlot"
           data-ad-format="auto"
           data-full-width-responsive="true"
+          target="_blank"
         ></ins>
       </div>
 

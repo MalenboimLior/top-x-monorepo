@@ -1,7 +1,92 @@
 <template>
-  <div class="pyramid-stats">
-    <h2 class="subtitle has-text-white">{{ gameTitle || 'Your Pyramid' }}</h2>
-    <div class="table-container" :class="{ 'blurred': !user }">
+  <div class="pyramid-stats" :class="{ 'stats-overlay-mode': statsRevealDate && !canShowStats }">
+    <!-- Stats Reveal Countdown + Blurred Stats Overlay -->
+    <div v-if="statsRevealDate && !canShowStats" class="stats-overlay-section">
+      <!-- Blurred Stats Background -->
+      <div class="blurred-stats-background">
+        <h2 class="subtitle has-text-white" style="display: none;">{{ gameTitle || 'Your Pyramid' }}</h2>
+        <div class="table-container">
+          <table class="table is-fullwidth is-hoverable has-background-dark">
+            <thead>
+              <tr>
+                <th class="has-text-centered">
+                  <a href="#" class="has-text-white" @click.prevent>{{ t('games.pyramid.table.rank') }}</a>
+                </th>
+                <th class="has-text-centered">
+                  <a href="#" class="has-text-white" @click.prevent>{{ t('games.pyramid.table.item') }}</a>
+                </th>
+                <th v-for="row in props.rows" :key="row.id" class="has-text-centered">
+                  <a href="#" class="has-text-white" @click.prevent>{{ row.label }}</a>
+                </th>
+                <th v-if="worstShow" class="has-text-centered">
+                  <a href="#" class="has-text-white" @click.prevent>{{ t('games.pyramid.table.worst') }}</a>
+                </th>
+                <th class="has-text-centered">
+                  <a href="#" class="has-text-white" @click.prevent>{{ t('games.pyramid.table.score') }}</a>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in limitedStats" :key="item.id">
+                <td class="has-text-centered number-cell">
+                  <div class="rank-column">
+                    <span>{{ formatNumber(index + 1) }}</span>
+                  </div>
+                </td>
+                <td class="has-text-centered">
+                  <div class="item-column">
+                    <img
+                      v-if="item.imageSrc"
+                      :src="item.imageSrc"
+                      :alt="item.name"
+                      class="item-image"
+                      crossorigin="anonymous"
+                    />
+                    <span class="has-text-white">{{ item.name }}</span>
+                  </div>
+                </td>
+                <td v-for="row in props.rows" :key="row.id" class="has-text-centered number-cell">
+                  {{ formatNumber(item.ranks[row.id] || 0) }}
+                </td>
+                <td v-if="worstShow" class="has-text-centered number-cell">{{ formatNumber(item.worstCounts || 0) }}</td>
+                <td class="has-text-centered number-cell">{{ formatNumber(item.score) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Countdown Overlay -->
+      <div class="countdown-overlay">
+        <div class="countdown-container">
+          <h3 class="countdown-title">{{ t('games.pyramid.statsRevealCountdown.title') }}</h3>
+          <div class="countdown-display">
+            <div class="countdown-item" v-if="timeRemaining.days > 0">
+              <span class="countdown-value">{{ timeRemaining.days }}</span>
+              <span class="countdown-label">{{ t('games.pyramid.statsRevealCountdown.days') }}</span>
+            </div>
+            <div class="countdown-item">
+              <span class="countdown-value">{{ String(timeRemaining.hours).padStart(2, '0') }}</span>
+              <span class="countdown-label">{{ t('games.pyramid.statsRevealCountdown.hours') }}</span>
+            </div>
+            <div class="countdown-item">
+              <span class="countdown-value">{{ String(timeRemaining.minutes).padStart(2, '0') }}</span>
+              <span class="countdown-label">{{ t('games.pyramid.statsRevealCountdown.minutes') }}</span>
+            </div>
+            <div class="countdown-item">
+              <span class="countdown-value">{{ String(timeRemaining.seconds).padStart(2, '0') }}</span>
+              <span class="countdown-label">{{ t('games.pyramid.statsRevealCountdown.seconds') }}</span>
+            </div>
+          </div>
+          <p class="countdown-message">{{ t('games.pyramid.statsRevealCountdown.message') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Normal Stats Display (when countdown is done or no countdown) -->
+    <template v-else>
+      <h2 class="subtitle has-text-white">{{ gameTitle || 'Your Pyramid' }}</h2>
+      <div class="table-container" :class="{ 'blurred': !user && !hideLoginTab }">
       <table class="table is-fullwidth is-hoverable has-background-dark">
         <thead>
           <tr>
@@ -52,21 +137,21 @@
           <tr v-for="(item, index) in paginatedStats" :key="item.id" @click="showPresidentModal(item)">
             <td class="has-text-centered number-cell">
               <div class="rank-column">
-                <span>{{ formatNumber((currentPage - 1) * itemsPerPage + index + 1) }}</span>
+                <span>{{ formatNumber((currentPage - 1) * itemsPerPage.value + index + 1) }}</span>
                 <font-awesome-icon
-                  v-if="(currentPage - 1) * itemsPerPage + index === 0"
+                  v-if="(currentPage - 1) * itemsPerPage.value + index === 0"
                   :icon="['fas', 'medal']"
                   class="medal gold"
                   :title="t('games.pyramid.place.1st')"
                 />
                 <font-awesome-icon
-                  v-else-if="(currentPage - 1) * itemsPerPage + index === 1"
+                  v-else-if="(currentPage - 1) * itemsPerPage.value + index === 1"
                   :icon="['fas', 'medal']"
                   class="medal silver"
                   :title="t('games.pyramid.place.2nd')"
                 />
                 <font-awesome-icon
-                  v-else-if="(currentPage - 1) * itemsPerPage + index === 2"
+                  v-else-if="(currentPage - 1) * itemsPerPage.value + index === 2"
                   :icon="['fas', 'medal']"
                   class="medal bronze"
                   :title="t('games.pyramid.place.3rd')"
@@ -114,10 +199,12 @@
           {{ t('games.pagination.next') }}
         </button>
       </div>
-    </div>
+      </div>
+    </template>
 
     <!-- Login Tab -->
     <GameLoginPromo
+      v-if="!hideLoginTab"
       mode="fixed"
       :is-visible="showLoginTab"
       :game-id="gameId"
@@ -167,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { getGameStats } from '@/services/game';
 import { useUserStore } from '@/stores/user';
 import { PyramidItem, PyramidRow, PyramidStats } from '@top-x/shared/types/pyramid';
@@ -198,11 +285,57 @@ const props = defineProps<{
   worstPoints: number;
   worstShow?: boolean;
   hideLoginTab?: boolean;
+  limit?: number;
+  statsRevealDate?: string;
 }>();
 
 const worstShow = computed(() => props.worstShow !== false);
 const userStore = useUserStore();
 const user = computed(() => userStore.user);
+
+// Stats reveal date logic
+const canShowStats = computed(() => {
+  if (!props.statsRevealDate) return true; // No date set, show stats immediately
+  const revealDate = new Date(props.statsRevealDate);
+  const now = new Date();
+  return now >= revealDate;
+});
+
+const timeRemaining = ref({
+  days: 0,
+  hours: 0,
+  minutes: 0,
+  seconds: 0,
+});
+
+let countdownInterval: ReturnType<typeof setInterval> | null = null;
+
+function updateCountdown() {
+  if (!props.statsRevealDate) {
+    timeRemaining.value = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return;
+  }
+  
+  const revealDate = new Date(props.statsRevealDate);
+  const now = new Date();
+  const diff = revealDate.getTime() - now.getTime();
+  
+  if (diff <= 0) {
+    timeRemaining.value = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+    return;
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  timeRemaining.value = { days, hours, minutes, seconds };
+}
 
 const sortColumn = ref<string>('score');
 const sortDirection = ref<'asc' | 'desc'>('desc');
@@ -213,18 +346,33 @@ const isImageLoading = ref(true);
 const totalPlayers = ref(0);
 const showLoginTab = ref(false);
 const currentPage = ref(1);
-const itemsPerPage = 10;
+const itemsPerPage = computed(() => props.limit || 10);
 
 onMounted(async () => {
   if (analytics) {
     logEvent(analytics, 'game_view', { game_name: props.gameId, view_type: 'stats' });
   }
   console.log('PyramidStats: onMounted called with gameId:', props.gameId);
+  console.log('PyramidStats: statsRevealDate:', props.statsRevealDate);
+  console.log('PyramidStats: canShowStats:', canShowStats.value);
+  console.log('PyramidStats: user:', user.value);
+  console.log('PyramidStats: hideLoginTab:', props.hideLoginTab);
+  
+  // Start countdown if needed
+  if (props.statsRevealDate && !canShowStats.value) {
+    console.log('PyramidStats: Starting countdown');
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+  }
+  
   if (!user.value && !props.hideLoginTab) {
     showLoginTab.value = true;
   }
+  
   try {
+    console.log('PyramidStats: Fetching stats for gameId:', props.gameId);
     const statsResult = await getGameStats(props.gameId);
+    console.log('PyramidStats: Stats result:', statsResult);
     if (statsResult.stats) {
       const data = statsResult.stats;
       stats.value = {
@@ -235,6 +383,8 @@ onMounted(async () => {
       
       totalPlayers.value = stats.value.totalPlayers;
       console.log('PyramidStats: Stats fetched:', stats.value);
+      console.log('PyramidStats: sortedItemStats length:', sortedItemStats.value.length);
+      console.log('PyramidStats: paginatedStats length:', paginatedStats.value.length);
       isImageLoading.value = false; // Assume images are preloaded
     } else {
       console.warn('PyramidStats: No stats found for gameId:', props.gameId);
@@ -245,6 +395,24 @@ onMounted(async () => {
     isImageLoading.value = false;
   }
 });
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+});
+
+watch(() => props.statsRevealDate, () => {
+  updateCountdown();
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  if (props.statsRevealDate && !canShowStats.value) {
+    countdownInterval = setInterval(updateCountdown, 1000);
+  }
+}, { immediate: true });
 
 const sortedItemStats = computed(() => {
   const allItems = [...props.items, ...props.communityItems];
@@ -282,18 +450,23 @@ const sortedItemStats = computed(() => {
 });
 
 const paginatedStats = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
   return sortedItemStats.value.slice(start, end);
 });
 
+// Limited stats for blurred preview (top 5)
+const limitedStats = computed(() => {
+  return sortedItemStats.value.slice(0, 5);
+});
+
 const totalPages = computed(() => {
-  return Math.ceil(sortedItemStats.value.length / itemsPerPage);
+  return Math.ceil(sortedItemStats.value.length / itemsPerPage.value);
 });
 
 const pageInfo = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage + 1;
-  const end = Math.min(currentPage.value * itemsPerPage, sortedItemStats.value.length);
+  const start = (currentPage.value - 1) * itemsPerPage.value + 1;
+  const end = Math.min(currentPage.value * itemsPerPage.value, sortedItemStats.value.length);
   return { start, end, total: sortedItemStats.value.length };
 });
 
@@ -688,5 +861,154 @@ tbody tr:hover .item-image {
 .pagination-info {
   color: #ccc;
   font-size: 0.9rem;
+}
+
+/* Stats Overlay Styles */
+.stats-overlay-mode {
+  position: relative;
+}
+
+.stats-overlay-section {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  animation: slideUp 0.6s ease-out;
+  box-sizing: border-box;
+  height: 450px;
+  overflow: hidden;
+  background: radial-gradient(circle at top, rgba(18, 18, 18, 0.95) 0%, rgba(12, 12, 12, 0.98) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.blurred-stats-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(4px) brightness(0.75);
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 1;
+  overflow: hidden;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.blurred-stats-background .table-container {
+  max-height: 380px;
+  overflow: hidden;
+  margin-top: 0;
+}
+
+.countdown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.countdown-overlay .countdown-container {
+  pointer-events: auto;
+  position: relative;
+  z-index: 11;
+  background: radial-gradient(circle at top, rgba(30, 30, 30, 0.8) 0%, rgba(18, 18, 18, 0.95) 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.countdown-title {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.countdown-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.countdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 60px;
+}
+
+.countdown-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #00e8e0;
+  text-shadow: 0 0 10px rgba(0, 232, 224, 0.5);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.countdown-message {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media screen and (max-width: 767px) {
+  .stats-overlay-section {
+    height: 350px;
+    border-radius: 0;
+  }
+
+  .blurred-stats-background .table-container {
+    max-height: 300px;
+  }
+
+  .countdown-display {
+    gap: 1rem;
+  }
+  
+  .countdown-item {
+    min-width: 50px;
+  }
+  
+  .countdown-value {
+    font-size: 1.5rem;
+  }
+  
+  .countdown-label {
+    font-size: 0.65rem;
+  }
+  
+  .countdown-overlay .countdown-container {
+    padding: 1.5rem 1rem;
+  }
 }
 </style>
