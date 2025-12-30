@@ -5,6 +5,23 @@
     <div class="container has-text-centered">
       <h1 class="main-game-title" v-html="props.gameHeader"></h1>
       <p class="game-subtitle" v-html="props.gameInstruction"></p>
+      
+      <!-- Step Instruction -->
+      <div class="step-guide-container">
+        <div class="step-guide" :class="{ 'step-2-active': !!selectedItem }">
+          <div class="step-item step-1">
+            <span class="step-number">1</span>
+            <span class="step-text">{{ t('games.pyramid.step1') }}</span>
+          </div>
+          <div class="step-arrow" :style="{ transform: localeStore.direction === 'rtl' ? 'rotate(180deg)' : 'none' }">
+            <font-awesome-icon :icon="['fas', 'arrow-right']" class="arrow-icon" />
+          </div>
+          <div class="step-item step-2">
+            <span class="step-number">2</span>
+            <span class="step-text">{{ t('games.pyramid.step2') }}</span>
+          </div>
+        </div>
+      </div>
 
       <div class="pyramid" ref="pyramidRef">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
@@ -17,6 +34,7 @@
                 :class="[
                   { 'selected': isSelected(slot.image) },
                   { 'highlight-empty': (selectedItem || draggedItem) && !slot.image },
+                  { 'can-swap': (selectedItem || draggedItem) && slot.image && !isSelected(slot.image) },
                   { 'drop-hover': isDroppable(rowIndex, colIndex) },
                   'dark-slot'
                 ]"
@@ -31,6 +49,9 @@
                   <div class="hex-border" :style="{ background: slot.image?.color || '' }"></div>
                   <div class="hex-inner">
                     <div v-if="slot.image" class="draggable-item slot-style">
+                      <div v-if="(selectedItem || draggedItem) && !isSelected(slot.image)" class="swap-badge-mobile">
+                        <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+                      </div>
                       <img :src="slot.image.src" class="draggable-image" crossorigin="anonymous" />
                     </div>
                     <div v-else class="slot-label-container">
@@ -59,6 +80,7 @@
             :class="[
               { 'selected': isSelected(worstItem) },
               { 'highlight-empty': (selectedItem || draggedItem) && !worstItem },
+              { 'can-swap': (selectedItem || draggedItem) && worstItem && !isSelected(worstItem) },
               { 'drop-hover': isDroppable(-1, -1) }
             ]"
             @dragover.prevent
@@ -71,6 +93,9 @@
               <div class="hex-border"></div>
               <div class="hex-inner">
                 <div v-if="worstItem" class="draggable-item slot-style">
+                  <div v-if="(selectedItem || draggedItem) && !isSelected(worstItem)" class="swap-badge-mobile">
+                    <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+                  </div>
                   <img :src="worstItem.src" class="draggable-image" crossorigin="anonymous" />
                 </div>
                 <div v-else class="worst-slot-label-container">
@@ -96,7 +121,13 @@
       />
       </div>
       
-      <div class="pool-controls mb-4">
+      <!-- Pool Scroll Indicator for Mobile -->
+      <div v-if="!selectedItem && isTouchDevice" class="pool-scroll-hint" @click="scrollToPool">
+        <span class="hint-text">{{ t('games.pyramid.scrollToPool') }}</span>
+        <font-awesome-icon :icon="['fas', 'chevron-down']" class="hint-icon" />
+      </div>
+
+      <div class="pool-controls mb-4" id="item-pool-scroll-target">
        
         <div class="field">
           <div class="control has-icons-left">
@@ -136,6 +167,9 @@
           @dragstart="() => onDragStart(image)"
           @click.stop="() => onTapSelect(image)"
         >
+          <div v-if="isSelected(image)" class="selection-badge">
+            {{ t('games.pyramid.selected') }}
+          </div>
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
@@ -152,15 +186,21 @@
        
     
         <CustomButton
-          type="is-success"
+         type="is-primary"
           :label="t('games.pyramid.addNewItem')"
           :icon="['fas', 'plus']"
           @click="showAddItemPopup"
         />
       </div>
-      <h2 v-if="props.communityHeader" class="subtitle has-text-white" style="font-size: 20px;">{{ props.communityHeader }}</h2>
+      <h2 class="subtitle has-text-white" style="font-size: 20px;">{{ props.communityHeader || t('games.pyramid.communityItems') }}</h2>
       
       <div class="image-pool drop-zone" @dragover.prevent @drop="onDropToCommunityPool">
+        <div
+          v-if="filteredCommunityPool.length === 0"
+          class="empty-community-message"
+        >
+          <p class="has-text-centered has-text-grey-light">{{ t('games.pyramid.noCommunityItems') }}</p>
+        </div>
         <div
           v-for="image in filteredCommunityPool"
           :key="image.id"
@@ -170,6 +210,9 @@
           @dragstart="() => onDragStart(image)"
           @click.stop="() => onTapSelect(image)"
         >
+          <div v-if="isSelected(image)" class="selection-badge">
+            {{ t('games.pyramid.selected') }}
+          </div>
           <img :src="image.src" class="draggable-image" />
           <div class="image-label">{{ image.label }}</div>
           <div class="color-indicator" :style="{ backgroundColor: image.color || '#fff' }"></div>
@@ -208,7 +251,7 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCircleInfo, faSearch, faEraser, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.vue';
@@ -217,7 +260,7 @@ import { analytics } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
 import { useUserStore } from '@/stores/user';
 
-library.add(faCircleInfo, faSearch, faEraser, faPlus);
+library.add(faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate);
 
 const localeStore = useLocaleStore();
 const userStore = useUserStore();
@@ -280,6 +323,13 @@ const showConfirm = ref(false);
 const pyramidRef = ref<HTMLElement | null>(null);
 const isTouchDevice = ref(false);
 const isSubmitting = ref(false);
+
+const scrollToPool = () => {
+  const target = document.getElementById('item-pool-scroll-target');
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
 
 onMounted(() => {
   if (analytics) {
@@ -1103,8 +1153,292 @@ function closeTab() {
 }
 .selected {
   border-color: #00e8e0;
+  box-shadow: 0 0 20px rgba(0, 232, 224, 0.8);
+  animation: pulse-selected 2s infinite;
+  transform: scale(1.05);
+  z-index: 50;
+}
+
+@keyframes pulse-selected {
+  0% { box-shadow: 0 0 10px rgba(0, 232, 224, 0.5); }
+  50% { box-shadow: 0 0 25px rgba(0, 232, 224, 0.9), 0 0 40px rgba(0, 232, 224, 0.4); }
+  100% { box-shadow: 0 0 10px rgba(0, 232, 224, 0.5); }
+}
+
+/* Step Guide Styles */
+.step-guide-container {
+  display: flex;
+      margin-bottom: 10px; /* More space for the guide */
+
+  justify-content: center;
+  perspective: 1000px;
+}
+
+.step-guide {
+  display: flex;
+  align-items: center;
+  background: rgba(30, 30, 30, 0.8);
+  padding: 0.8rem 1.5rem;
+  border-radius: 50px;
+  border: 1px solid #333;
+  backdrop-filter: blur(10px);
+  gap: 1.5rem;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+  flex: 1;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.step-text {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.step-arrow {
+  display: flex;
+  align-items: center;
+  opacity: 0.3;
+  transition: transform 0.3s ease;
+}
+
+.arrow-icon {
+  font-size: 1rem;
+  color: #00e8e0;
+}
+
+/* Step 1 Active */
+.step-guide:not(.step-2-active) .step-1 {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.step-guide:not(.step-2-active) .step-1 .step-number {
+  background: #00e8e0;
   box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
 }
+
+/* Step 2 Active */
+.step-2-active {
+  border-color: #00e8e0;
+  background: rgba(0, 232, 224, 0.1);
+}
+
+.step-2-active .step-2 {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.step-2-active .step-2 .step-number {
+  background: #c4ff00;
+  color: #000;
+  box-shadow: 0 0 15px rgba(196, 255, 0, 0.5);
+}
+
+.step-2-active .step-arrow {
+  opacity: 1;
+  animation: slideArrow 1s infinite;
+}
+
+@keyframes slideArrow {
+  0% { transform: translateX(-5px); opacity: 0.3; }
+  50% { transform: translateX(5px); opacity: 1; }
+  100% { transform: translateX(-5px); opacity: 0.3; }
+}
+
+/* In RTL, because the container is rotated 180deg, 
+   translateX(-5px) actually moves it visually to the Right, 
+   and translateX(5px) to the Left. 
+   Since Step 1 is on the Right and Step 2 is on the Left in RTL, 
+   this animation naturally works as a slide from Right to Left. */
+
+.highlight-empty .hex-border {
+  background: linear-gradient(135deg, #00e8e0, #c4ff00);
+  background-size: 200% 200%;
+  animation: flowGradient 2s infinite, pulseHighlight 1s infinite alternate;
+  z-index: 10;
+}
+
+@keyframes flowGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseHighlight {
+  from { opacity: 0.4; filter: brightness(1); }
+  to { opacity: 1; filter: brightness(1.5); box-shadow: 0 0 15px rgba(196, 255, 0, 0.3); }
+}
+
+/* Swap Indicator Logic */
+.swap-badge-mobile {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -15px; /* Half of height to center */
+  margin-left: -15px; /* Half of width to center */
+  background: rgba(0, 0, 0, 0.7);
+  color: #00e8e0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  z-index: 50;
+  box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
+  animation: rotateSwap 3s linear infinite;
+  border: 1px solid #00e8e0;
+  pointer-events: none;
+}
+
+@keyframes rotateSwap {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.selection-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  background: #00e8e0;
+  color: #000;
+  padding: 0.2rem 0.8rem;
+  font-weight: 900;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  border-radius: 4px;
+  z-index: 30;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  pointer-events: none;
+  border: 1px solid #fff;
+}
+
+@media screen and (max-width: 767px) {
+  .step-guide {
+    padding: 0.5rem 1rem;
+    gap: 0.8rem;
+    width: 95%;
+  }
+  .step-text {
+    font-size: 0.8rem;
+    white-space: normal;
+    text-align: inherit;
+    line-height: 1.2;
+  }
+  .step-item {
+    gap: 0.5rem;
+  }
+  .step-number {
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
+    min-width: 22px;
+  }
+  .step-guide-container {
+    margin-bottom: 20px; /* More space for the guide */
+  }
+}
+
+/* Full Slot Swap Indicator */
+.draggable-item.slot-style:hover::after {
+  content: '⇌';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 232, 224, 0.9);
+  color: #000;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: bold;
+  box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
+  animation: pulse-swap 1s infinite alternate;
+}
+
+@keyframes pulse-swap {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* Pool Scroll Hint */
+.pool-scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem auto;
+  padding: 0.8rem;
+  background: rgba(196, 255, 0, 0.1);
+  border: 1px dashed #c4ff00;
+  border-radius: 12px;
+  color: #c4ff00;
+  font-weight: 700;
+  cursor: pointer;
+  animation: bounceHint 2s infinite;
+  width: fit-content;
+}
+
+@keyframes bounceHint {
+  0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+  40% {transform: translateY(-5px);}
+  60% {transform: translateY(-3px);}
+}
+
+.hint-text {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hint-icon {
+  font-size: 1.2rem;
+}
+
+/* Slot Interaction */
+.hex-outer:hover {
+  transform: scale(1.02);
+  filter: brightness(1.2);
+}
+
+.image-pool .pyramid-slot:hover {
+  transform: translateY(-5px);
+  border-color: #555;
+  background: #252525;
+}
+
+.image-pool .pyramid-slot.selected:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
 
 /* Hexagon Styles for Interactive Editor */
 .hex-outer {
@@ -1169,10 +1503,6 @@ function closeTab() {
   display: flex;
   justify-content: center;
   gap: 6px; /* Tighter horizontal gap */
-}
-.highlight-empty .hex-border {
-  background: linear-gradient(135deg, #00e8e0, transparent);
-  animation: pulseHex 1s infinite alternate;
 }
 @keyframes pulseHex {
   from { opacity: 0.3; }
@@ -1239,6 +1569,15 @@ function closeTab() {
   align-items: center;
   justify-content: center;
   z-index: 10;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.info-icon:hover {
+  transform: scale(1.3);
+  background-color: #00e8e0;
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 232, 224, 0.6);
 }
 .description-tab {
   position: fixed;
@@ -1459,11 +1798,21 @@ function closeTab() {
     right: 10px;
   }
 }
+.empty-community-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  width: 100%;
+  min-height: 140px;
+  grid-column: 1 / -1;
+}
+
 .image-pool {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   overflow-y: auto;
-  
+
 }
 </style>
 
