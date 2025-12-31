@@ -20,9 +20,9 @@
         <div class="contact-card__section">
           <h2>{{ content.sections[1].title }}</h2>
           <p>{{ content.sections[1].body }}</p>
-          <a :href="content.sections[1].linkHref" target="_blank" rel="noopener" class="contact-link">
+          <a :href="localeStore.language === 'il' ? 'https://x.com/topxisrael' : 'https://x.com/topxapp'" target="_blank" rel="noopener" class="contact-link" dir="ltr">
             <font-awesome-icon :icon="['fab', 'x-twitter']" class="contact-link__icon" />
-            {{ content.sections[1].linkLabel }}
+            {{ localeStore.language === 'il' ? t('footer.social.israel') : t('footer.social.app') }}
           </a>
         </div>
         <div class="contact-card__cta">

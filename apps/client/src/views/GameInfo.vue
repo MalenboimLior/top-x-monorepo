@@ -263,6 +263,7 @@ const formattedDate = computed(() => {
 
 const gameNameSizeClass = computed(() => {
   const name = game.value.name || '';
+  if (name.length > 40) return 'hero-title--extra-small';
   if (name.length > 30) return 'hero-title--small';
   if (name.length > 20) return 'hero-title--medium';
   return 'hero-title--large';
@@ -671,13 +672,16 @@ function goBack() {
 
 .hero-title--small {
   font-size: clamp(1.2rem, 2.2vw, 2rem);
-  white-space: wrap;
+  white-space: nowrap;
   text-overflow: ellipsis;
-  word-break: break-word;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hero-title--extra-small {
+  font-size: clamp(1rem, 1.8vw, 1.5rem);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .hero-description {

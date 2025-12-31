@@ -68,7 +68,7 @@ const blocks = computed(() => {
       subtitle: t('home.howItWorks.playText') || t('home.playNow'),
       icon: '🎮',
       visualClass: 'visual-play',
-      to: { hash: '#featuredGames' },
+      to: '/games',
     },
   };
 

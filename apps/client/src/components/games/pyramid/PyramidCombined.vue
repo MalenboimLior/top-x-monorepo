@@ -3,6 +3,8 @@
     <!-- Ad Overlay - Show initially while content loads -->
     <GameAdOverlay
       v-if="showAdOverlay"
+      :ad-client="gameData?.adConfig?.adClient"
+      :ad-slot="gameData?.adConfig?.adSlot"
       @continue="handleAdContinue"
     />
 
@@ -39,9 +41,10 @@
         </div>
 
         <div class="buttons-container">
-          <ShareButton 
+          <ShareButton
             :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
             :image-url="imageUrl"
+            :file-name="gameId"
             class="share-btn"
           />
           <a class="edit-btn" @click="editPyramid">
@@ -104,6 +107,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPen } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { useLocaleStore } from '@/stores/locale';
+import { getGame } from '@/services/game';
 
 // Lazy load heavy components to prioritize user-vote-section
 const PyramidStats = defineAsyncComponent(() => import('@/components/games/pyramid/PyramidStats.vue'));
@@ -119,11 +123,34 @@ const pyramidImageRef = ref<any>(null);
 const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
 const showStats = ref(false);
 const showResults = ref(false);
-const showAdOverlay = ref(true); // Show ad initially
+const gameData = ref<any>(null);
+const showAdOverlay = ref(false); // Don't show ad initially - check adConfig first
 
 // Prioritize user-vote-section loading - delay stats and results
 onMounted(async () => {
-  console.log('PyramidCombined: Component mounted, showing ad overlay');
+  console.log('PyramidCombined: Component mounted');
+
+  // Fetch game data to check adConfig
+  try {
+    const gameResult = await getGame(props.gameId);
+    if (gameResult.game) {
+      gameData.value = gameResult.game;
+      console.log('PyramidCombined: Game data loaded:', {
+        gameId: props.gameId,
+        adStrategy: gameData.value?.adConfig?.strategy
+      });
+
+      // Check if we should show ads
+      if (gameData.value?.adConfig?.strategy !== 'no_ads') {
+        showAdOverlay.value = true;
+        console.log('PyramidCombined: Showing ad overlay');
+      } else {
+        console.log('PyramidCombined: Skipping ad overlay due to no_ads strategy');
+      }
+    }
+  } catch (error) {
+    console.error('PyramidCombined: Failed to load game data:', error);
+  }
 
   // Wait for user-vote-section to render first
   await nextTick();

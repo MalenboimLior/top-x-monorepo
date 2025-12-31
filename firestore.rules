@@ -37,6 +37,21 @@ service cloud.firestore {
              request.resource.data.addedBy is list;
     }
     
+    // Helper function to check if user is updating only the communityItems field
+    function canUpdateCommunityItems() {
+      let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      // Check if only 'custom' field is being updated
+      // Ensure custom.communityItems exists and is an array
+      // If custom existed before, ensure only communityItems changed
+      return isAuthenticated() &&
+             affectedKeys.hasOnly(['custom']) &&
+             'custom' in request.resource.data &&
+             'communityItems' in request.resource.data.custom &&
+             request.resource.data.custom.communityItems is list &&
+             (!('custom' in resource.data) || 
+              request.resource.data.custom.diff(resource.data.custom).affectedKeys().hasOnly(['communityItems']));
+    }
+    
     // Games collection
     match /games/{gameId} {
       // Anyone can read games
@@ -47,8 +62,9 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                        request.resource.data.creator.userid == request.auth.uid;
       
-      // Only the game creator or admins can update games
-      allow update: if isGameCreator() || isAdmin();
+      // Game creator or admins can update games fully
+      // OR authenticated users can update only the custom.communityItems field (for community contributions)
+      allow update: if isGameCreator() || isAdmin() || canUpdateCommunityItems();
       
       // Only the game creator or admins can delete games
       allow delete: if isGameCreator() || isAdmin();

@@ -2,14 +2,7 @@
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-grid">
-        <!-- Games Section -->
-        <div class="footer-section">
-          <h3 class="footer-heading">{{ t('footer.games.heading') }}</h3>
-          <ul class="footer-list">
-            <li><router-link to="/games" class="footer-link">{{ t('footer.games.play') }}</router-link></li>
-            <li><router-link to="/games/create" class="footer-link">{{ t('footer.games.create') }}</router-link></li>
-          </ul>
-        </div>
+       
 
         <!-- Top-X Section -->
         <div class="footer-section">
@@ -19,10 +12,17 @@
             <li><router-link to="/what-we-do" class="footer-link">{{ t('footer.topx.what') }}</router-link></li>
             <li><router-link to="/how-it-works" class="footer-link">{{ t('footer.topx.how') }}</router-link></li>
             <li><router-link to="/faq" class="footer-link">{{ t('footer.topx.faq') }}</router-link></li>
-            <li><router-link to="/press" class="footer-link">{{ t('footer.topx.press') }}</router-link></li>
+            <!-- <li><router-link to="/press" class="footer-link">{{ t('footer.topx.press') }}</router-link></li> -->
           </ul>
         </div>
-
+        <!-- Games Section -->
+        <div class="footer-section">
+          <h3 class="footer-heading">{{ t('footer.games.heading') }}</h3>
+          <ul class="footer-list">
+            <li><router-link to="/games" class="footer-link">{{ t('footer.games.play') }}</router-link></li>
+            <li><router-link to="/build" class="footer-link">{{ t('footer.games.create') }}</router-link></li>
+          </ul>
+        </div>
         <!-- Legal Section -->
         <div class="footer-section">
           <h3 class="footer-heading">{{ t('footer.legal.heading') }}</h3>
@@ -31,6 +31,8 @@
             <li><router-link to="/terms" class="footer-link">{{ t('footer.legal.terms') }}</router-link></li>
             <li><router-link to="/cookies" class="footer-link">{{ t('footer.legal.cookies') }}</router-link></li>
             <li><router-link to="/guidelines" class="footer-link">{{ t('footer.legal.guidelines') }}</router-link></li>
+            <li><router-link to="/DMCA" class="footer-link">DMCA</router-link></li>
+            <li><router-link to="/MPS" class="footer-link">Manage Privacy Settings</router-link></li>
           </ul>
         </div>
 
@@ -38,13 +40,13 @@
         <div class="footer-section">
           <h3 class="footer-heading">{{ t('footer.social.heading') }}</h3>
           <ul class="footer-list">
-            <li>
+            <li v-if="localeStore.language === 'il'">
               <a href="https://x.com/topxisrael" target="_blank" rel="noopener noreferrer" class="footer-link social-link">
                 <font-awesome-icon :icon="['fab', 'x-twitter']" class="social-icon" />
                 {{ t('footer.social.israel') }}
               </a>
             </li>
-            <li>
+            <li v-else>
               <a href="https://x.com/topxapp" target="_blank" rel="noopener noreferrer" class="footer-link social-link">
                 <font-awesome-icon :icon="['fab', 'x-twitter']" class="social-icon" />
                 {{ t('footer.social.app') }}
@@ -76,7 +78,7 @@ export default defineComponent({
     const t = (key: string) => localeStore.translate(key);
     const currentYear = computed(() => new Date().getFullYear());
 
-    return { t, currentYear };
+    return { t, currentYear, localeStore };
   },
 });
 </script>
@@ -126,12 +128,21 @@ export default defineComponent({
   gap: 0.875rem;
 }
 
+.footer-list li {
+  display: flex;
+}
+
 .footer-link {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
   text-decoration: none;
   transition: color 0.2s ease;
   display: inline-block;
+  align-self: flex-start;
+}
+
+[dir="rtl"] .footer-link:not(.social-link) {
+  align-self: flex-end;
 }
 
 .footer-link:hover {
@@ -140,8 +151,16 @@ export default defineComponent({
 
 .social-link {
   display: flex;
+
   align-items: center;
   gap: 0.5rem;
+  direction: ltr;
+  width: fit-content;
+  margin-inline-start: auto; /* Default to right alignment */
+}
+
+[dir="ltr"] .social-link {
+  margin-inline-start: 0; /* Align to left in LTR */
 }
 
 .social-icon {
@@ -192,7 +211,21 @@ export default defineComponent({
   }
 
   .footer-section {
-    text-align: left;
+    text-align: start;
+  }
+
+  [dir="rtl"] .footer-section {
+    text-align: right;
+  }
+
+  .footer-section .social-link {
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+  }
+
+  [dir="rtl"] .footer-section .social-link {
+    margin-inline-start: auto;
+    margin-inline-end: 0;
   }
 
   .footer-heading {

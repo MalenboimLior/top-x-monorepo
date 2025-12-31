@@ -1,11 +1,11 @@
 <template>
-  <div class="page-container how-it-works-page" dir="ltr">
+  <div class="page-container how-it-works-page" :dir="localeStore.direction">
     <section class="how-it-works-hero">
       <div class="how-it-works-hero__content">
-        <p class="how-it-works-hero__pill">Platform Guide</p>
-        <h1 class="how-it-works-hero__title">How It Works</h1>
+        <p class="how-it-works-hero__pill">{{ t('howitworks.hero.pill') }}</p>
+        <h1 class="how-it-works-hero__title">{{ t('howitworks.hero.title') }}</h1>
         <p class="how-it-works-hero__subtitle">
-          Everything you need to know about playing, competing, and creating on TOP-X
+          {{ t('howitworks.hero.subtitle') }}
         </p>
       </div>
     </section>
@@ -14,181 +14,181 @@
       <div class="how-it-works-surface">
         <div class="how-it-works-content">
           <p class="how-it-works-intro">
-            TOP-X is a competitive gaming platform where you can play challenges, compete on leaderboards, and create your own games. Whether you're a casual player or a competitive creator, this guide will help you get the most out of the platform.
+            {{ t('howitworks.intro') }}
           </p>
 
           <!-- Playing Games -->
           <div class="how-it-works-section">
-            <h2>1. Playing Games</h2>
-            
-            <h3>1.1 Discovering Games</h3>
-            <p>TOP-X offers several ways to find games that interest you:</p>
+            <h2>{{ t('howitworks.section1.title') }}</h2>
+
+            <h3>{{ t('howitworks.section1.discovering.title') }}</h3>
+            <p>{{ t('howitworks.section1.discovering.content') }}</p>
             <ul>
-              <li><strong>Featured Games:</strong> Curated selections hand-picked by the TOP-X team. These games showcase the best content on the platform and are perfect for new players.</li>
-              <li><strong>Hot Games:</strong> Popular games sorted by player count. These are the most active challenges where competition is fierce.</li>
-              <li><strong>Official Games:</strong> Games created by TOP-X featuring trending topics, viral challenges, and community favorites.</li>
-              <li><strong>Community Games:</strong> User-created games from talented creators. Discover unique challenges and support community creators.</li>
-              <li><strong>Search & Filter:</strong> Use the games page to search by name, filter by game type, language, or creator to find exactly what you're looking for.</li>
+              <li>{{ t('howitworks.section1.discovering.featured') }}</li>
+              <li>{{ t('howitworks.section1.discovering.hot') }}</li>
+              <li>{{ t('howitworks.section1.discovering.official') }}</li>
+              <li>{{ t('howitworks.section1.discovering.community') }}</li>
+              <li>{{ t('howitworks.section1.discovering.search') }}</li>
             </ul>
 
-            <h3>1.2 Game Types Explained</h3>
+            <h3>{{ t('howitworks.section1.types.title') }}</h3>
             <ul>
-              <li><strong>Pyramid Games:</strong> Rank items in tiers from best to worst. Perfect for debates like "Top Football Players" or "Best Movies of All Time." Drag and drop items to build your pyramid, then compare with friends.</li>
-              <li><strong>Trivia Challenges:</strong> Answer questions across various categories to test your knowledge. Earn points for correct answers and compete for high scores on leaderboards.</li>
-              <li><strong>Quiz Games:</strong> Interactive quizzes with multiple choice questions. See how your knowledge compares to other players and share your results.</li>
-              <li><strong>Zone Reveal Games:</strong> Strategic puzzle games where you reveal zones on a grid. Compete for the fastest completion time or highest score.</li>
-              <li><strong>Daily Challenges:</strong> Special game modes that reset every 24 hours, creating fresh competition opportunities with new leaderboards each day.</li>
+              <li>{{ t('howitworks.section1.types.pyramid') }}</li>
+              <li>{{ t('howitworks.section1.types.trivia') }}</li>
+              <li>{{ t('howitworks.section1.types.quiz') }}</li>
+              <li>{{ t('howitworks.section1.types.zone') }}</li>
+              <li>{{ t('howitworks.section1.types.daily') }}</li>
             </ul>
 
-            <h3>1.3 Playing a Game</h3>
-            <p>Playing games on TOP-X is simple:</p>
+            <h3>{{ t('howitworks.section1.playing.title') }}</h3>
+            <p>{{ t('howitworks.section1.playing.content') }}</p>
             <ol>
-              <li><strong>Select a Game:</strong> Browse the homepage or games page and click on any game that interests you.</li>
-              <li><strong>Read Instructions:</strong> Each game includes instructions explaining how to play. Take a moment to understand the rules and objectives.</li>
-              <li><strong>Play:</strong> Complete the game following the on-screen instructions. Most games are quick, taking just a few minutes to complete.</li>
-              <li><strong>View Results:</strong> After completing a game, see your score, ranking, and how you compare to other players.</li>
-              <li><strong>Share:</strong> Share your results on X, WhatsApp, or other platforms to challenge friends and show off your achievements.</li>
+              <li>{{ t('howitworks.section1.playing.step1') }}</li>
+              <li>{{ t('howitworks.section1.playing.step2') }}</li>
+              <li>{{ t('howitworks.section1.playing.step3') }}</li>
+              <li>{{ t('howitworks.section1.playing.step4') }}</li>
+              <li>{{ t('howitworks.section1.playing.step5') }}</li>
             </ol>
           </div>
 
           <!-- Competing & Leaderboards -->
           <div class="how-it-works-section">
-            <h2>2. Competing & Leaderboards</h2>
-            
-            <h3>2.1 Understanding Leaderboards</h3>
-            <p>Leaderboards are the competitive heart of TOP-X, showing who performs best in each game:</p>
+            <h2>{{ t('howitworks.section2.title') }}</h2>
+
+            <h3>{{ t('howitworks.section2.understanding.title') }}</h3>
+            <p>{{ t('howitworks.section2.understanding.content') }}</p>
             <ul>
-              <li><strong>All-Time Leaderboards:</strong> Show the best players ever for each game. These rankings persist over time, giving you long-term goals to work toward.</li>
-              <li><strong>Daily Challenge Leaderboards:</strong> Reset every 24 hours, creating fresh competition. Perfect for players who want regular, new challenges.</li>
-              <li><strong>Friend Leaderboards:</strong> Filter leaderboards to show only players you follow, making competition more personal and engaging.</li>
-              <li><strong>Real-Time Updates:</strong> Leaderboards update instantly as players submit new scores, so you can see your ranking change in real-time.</li>
+              <li>{{ t('howitworks.section2.understanding.alltime') }}</li>
+              <li>{{ t('howitworks.section2.understanding.daily') }}</li>
+              <li>{{ t('howitworks.section2.understanding.friends') }}</li>
+              <li>{{ t('howitworks.section2.understanding.realtime') }}</li>
             </ul>
 
-            <h3>2.2 Climbing the Rankings</h3>
-            <p>To improve your leaderboard position:</p>
+            <h3>{{ t('howitworks.section2.climbing.title') }}</h3>
+            <p>{{ t('howitworks.section2.climbing.content') }}</p>
             <ul>
-              <li><strong>Practice:</strong> Play games multiple times to improve your skills and learn optimal strategies.</li>
-              <li><strong>Study Game Mechanics:</strong> Understand how scoring works in each game type. Some games reward speed, others reward accuracy.</li>
-              <li><strong>Learn from Top Players:</strong> Check top players' profiles to see their game history and learn from their strategies.</li>
-              <li><strong>Focus on Daily Challenges:</strong> Daily challenges offer fresh opportunities to claim top spots, especially if you're new to a game.</li>
+              <li>{{ t('howitworks.section2.climbing.practice') }}</li>
+              <li>{{ t('howitworks.section2.climbing.mechanics') }}</li>
+              <li>{{ t('howitworks.section2.climbing.players') }}</li>
+              <li>{{ t('howitworks.section2.climbing.daily') }}</li>
             </ul>
 
-            <h3>2.3 Following & Competing with Friends</h3>
-            <p>Make competition more personal by following other players:</p>
+            <h3>{{ t('howitworks.section2.friends.title') }}</h3>
+            <p>{{ t('howitworks.section2.friends.content') }}</p>
             <ul>
-              <li><strong>Search for Players:</strong> Use the users page to search for friends by username or display name.</li>
-              <li><strong>Follow Players:</strong> Click follow on any player's profile to track their activity and compare scores.</li>
-              <li><strong>Compare Scores:</strong> View filtered leaderboards showing only players you follow, making it easy to see how you stack up.</li>
-              <li><strong>Challenge Friends:</strong> Share your game results and challenge friends directly to beat your scores.</li>
+              <li>{{ t('howitworks.section2.friends.search') }}</li>
+              <li>{{ t('howitworks.section2.friends.follow') }}</li>
+              <li>{{ t('howitworks.section2.friends.compare') }}</li>
+              <li>{{ t('howitworks.section2.friends.challenge') }}</li>
             </ul>
           </div>
 
           <!-- Creating Games -->
           <div class="how-it-works-section">
-            <h2>3. Creating Your Own Games</h2>
-            
-            <h3>3.1 Getting Started as a Creator</h3>
-            <p>To create games on TOP-X, you need to:</p>
+            <h2>{{ t('howitworks.section3.title') }}</h2>
+
+            <h3>{{ t('howitworks.section3.starting.title') }}</h3>
+            <p>{{ t('howitworks.section3.starting.content') }}</p>
             <ol>
-              <li><strong>Log In:</strong> Sign in with your X account to access the game builder. The builder is only available to logged-in users.</li>
-              <li><strong>Access the Builder:</strong> Click "Build" in the navigation menu or visit the build page directly.</li>
-              <li><strong>Choose a Template:</strong> Select from available game templates including trivia, pyramid, quiz, and zone reveal formats.</li>
-              <li><strong>Customize Your Game:</strong> Use the step-by-step wizard to configure your game's content, settings, and appearance.</li>
-              <li><strong>Publish:</strong> Once satisfied with your game, publish it to make it available to the TOP-X community.</li>
+              <li>{{ t('howitworks.section3.starting.step1') }}</li>
+              <li>{{ t('howitworks.section3.starting.step2') }}</li>
+              <li>{{ t('howitworks.section3.starting.step3') }}</li>
+              <li>{{ t('howitworks.section3.starting.step4') }}</li>
+              <li>{{ t('howitworks.section3.starting.step5') }}</li>
             </ol>
 
-            <h3>3.2 Game Builder Features</h3>
-            <p>The TOP-X game builder offers powerful customization options:</p>
+            <h3>{{ t('howitworks.section3.builder.title') }}</h3>
+            <p>{{ t('howitworks.section3.builder.content') }}</p>
             <ul>
-              <li><strong>Content Creation:</strong> Add questions, answers, items to rank, or game elements depending on your chosen template.</li>
-              <li><strong>Visual Customization:</strong> Customize colors, themes, backgrounds, and branding to match your game's style.</li>
-              <li><strong>Game Mechanics:</strong> Configure difficulty, scoring, timers, power-ups, and other gameplay elements.</li>
-              <li><strong>Settings:</strong> Control who can play, whether login is required, and how often players can attempt your game.</li>
-              <li><strong>Daily Challenges:</strong> Set up daily challenges for your games, creating recurring competitions that reset every 24 hours.</li>
+              <li>{{ t('howitworks.section3.builder.contentCreation') }}</li>
+              <li>{{ t('howitworks.section3.builder.visual') }}</li>
+              <li>{{ t('howitworks.section3.builder.mechanics') }}</li>
+              <li>{{ t('howitworks.section3.builder.settings') }}</li>
+              <li>{{ t('howitworks.section3.builder.daily') }}</li>
             </ul>
 
-            <h3>3.3 Best Practices for Creators</h3>
+            <h3>{{ t('howitworks.section3.practices.title') }}</h3>
             <ul>
-              <li><strong>Original Content:</strong> Create games with original questions, rankings, or challenges. While inspiration is welcome, copying entire games is discouraged.</li>
-              <li><strong>Clear Instructions:</strong> Provide clear, concise instructions so players understand how to play your game.</li>
-              <li><strong>Balanced Difficulty:</strong> Design games that are challenging but achievable. Consider your target audience when setting difficulty.</li>
-              <li><strong>Engaging Content:</strong> Create games around trending topics, popular debates, or interesting questions that players want to share.</li>
-              <li><strong>Regular Updates:</strong> Keep your games fresh by updating content, adding new questions, or adjusting difficulty based on player feedback.</li>
+              <li>{{ t('howitworks.section3.practices.original') }}</li>
+              <li>{{ t('howitworks.section3.practices.instructions') }}</li>
+              <li>{{ t('howitworks.section3.practices.difficulty') }}</li>
+              <li>{{ t('howitworks.section3.practices.engaging') }}</li>
+              <li>{{ t('howitworks.section3.practices.updates') }}</li>
             </ul>
           </div>
 
           <!-- Sharing & Social Features -->
           <div class="how-it-works-section">
-            <h2>4. Sharing & Social Features</h2>
-            
-            <h3>4.1 Sharing Your Results</h3>
-            <p>Sharing is a core part of the TOP-X experience:</p>
+            <h2>{{ t('howitworks.section4.title') }}</h2>
+
+            <h3>{{ t('howitworks.section4.sharing.title') }}</h3>
+            <p>{{ t('howitworks.section4.sharing.content') }}</p>
             <ul>
-              <li><strong>Automatic Sharing:</strong> After completing a game, use the share button to download your results image and copy pre-written share text.</li>
-              <li><strong>Multiple Platforms:</strong> Share on X, WhatsApp, Facebook, Instagram, or any other platform. The share text includes your score and a link to the game.</li>
-              <li><strong>Challenge Friends:</strong> Tag friends in your shares to challenge them directly and invite them to beat your score.</li>
-              <li><strong>Viral Potential:</strong> Well-designed games with shareable results can go viral, bringing more players to your games.</li>
+              <li>{{ t('howitworks.section4.sharing.automatic') }}</li>
+              <li>{{ t('howitworks.section4.sharing.platforms') }}</li>
+              <li>{{ t('howitworks.section4.sharing.challenge') }}</li>
+              <li>{{ t('howitworks.section4.sharing.viral') }}</li>
             </ul>
 
-            <h3>4.2 Building Your Community</h3>
+            <h3>{{ t('howitworks.section4.community.title') }}</h3>
             <ul>
-              <li><strong>Follow Players:</strong> Build your network by following players whose games you enjoy or who compete in similar challenges.</li>
-              <li><strong>Engage with Creators:</strong> Play community-created games and provide feedback to support creators.</li>
-              <li><strong>Create Shareable Content:</strong> Design games that players want to share, increasing visibility and engagement.</li>
-              <li><strong>Respond to Feedback:</strong> Monitor player feedback and improve your games based on community suggestions.</li>
+              <li>{{ t('howitworks.section4.community.follow') }}</li>
+              <li>{{ t('howitworks.section4.community.engage') }}</li>
+              <li>{{ t('howitworks.section4.community.shareable') }}</li>
+              <li>{{ t('howitworks.section4.community.feedback') }}</li>
             </ul>
           </div>
 
           <!-- Account & Profile -->
           <div class="how-it-works-section">
-            <h2>5. Account & Profile Management</h2>
-            
-            <h3>5.1 Logging In</h3>
-            <p>While you can browse and play some games without logging in, creating an account unlocks the full TOP-X experience:</p>
+            <h2>{{ t('howitworks.section5.title') }}</h2>
+
+            <h3>{{ t('howitworks.section5.login.title') }}</h3>
+            <p>{{ t('howitworks.section5.login.content') }}</p>
             <ul>
-              <li><strong>X Authentication:</strong> Log in securely using your X account. We use X's OAuth system, so we never see your password.</li>
-              <li><strong>Minimal Permissions:</strong> We only request access to your public profile information (username and profile picture). We don't access private posts, DMs, or follow lists.</li>
-              <li><strong>Secure Storage:</strong> Your account data is stored securely using Firebase with industry-standard encryption.</li>
+              <li>{{ t('howitworks.section5.login.xauth') }}</li>
+              <li>{{ t('howitworks.section5.login.permissions') }}</li>
+              <li>{{ t('howitworks.section5.login.storage') }}</li>
             </ul>
 
-            <h3>5.2 Profile Features</h3>
-            <p>Your TOP-X profile showcases your gaming achievements:</p>
+            <h3>{{ t('howitworks.section5.profile.title') }}</h3>
+            <p>{{ t('howitworks.section5.profile.content') }}</p>
             <ul>
-              <li><strong>Game History:</strong> View all games you've played, scores achieved, and rankings earned.</li>
-              <li><strong>Statistics:</strong> See your overall statistics including total games played, favorite games, and best performances.</li>
-              <li><strong>Favorites:</strong> Save your favorite games for quick access later.</li>
-              <li><strong>Following:</strong> Manage who you follow and see their activity.</li>
-              <li><strong>Created Games:</strong> If you're a creator, see all games you've created and their performance metrics.</li>
+              <li>{{ t('howitworks.section5.profile.history') }}</li>
+              <li>{{ t('howitworks.section5.profile.statistics') }}</li>
+              <li>{{ t('howitworks.section5.profile.favorites') }}</li>
+              <li>{{ t('howitworks.section5.profile.following') }}</li>
+              <li>{{ t('howitworks.section5.profile.created') }}</li>
             </ul>
           </div>
 
           <!-- Tips & Strategies -->
           <div class="how-it-works-section highlight">
-            <h2>6. Tips & Strategies</h2>
-            
-            <h3>6.1 For Players</h3>
+            <h2>{{ t('howitworks.section6.title') }}</h2>
+
+            <h3>{{ t('howitworks.section6.players.title') }}</h3>
             <ul>
-              <li><strong>Start with Featured Games:</strong> Begin with featured games to understand different game types and mechanics.</li>
-              <li><strong>Practice Regularly:</strong> Consistent play improves your skills and helps you climb leaderboards.</li>
-              <li><strong>Focus on Daily Challenges:</strong> Daily challenges offer fresh opportunities to claim top spots, especially for new players.</li>
-              <li><strong>Follow Top Players:</strong> Learn from the best by following top players and studying their game strategies.</li>
-              <li><strong>Share Your Wins:</strong> Sharing results helps build your reputation and invites friends to compete.</li>
+              <li>{{ t('howitworks.section6.players.featured') }}</li>
+              <li>{{ t('howitworks.section6.players.practice') }}</li>
+              <li>{{ t('howitworks.section6.players.daily') }}</li>
+              <li>{{ t('howitworks.section6.players.follow') }}</li>
+              <li>{{ t('howitworks.section6.players.share') }}</li>
             </ul>
 
-            <h3>6.2 For Creators</h3>
+            <h3>{{ t('howitworks.section6.creators.title') }}</h3>
             <ul>
-              <li><strong>Start Simple:</strong> Begin with simple games to learn the builder, then gradually create more complex challenges.</li>
-              <li><strong>Test Thoroughly:</strong> Play-test your games multiple times before publishing to ensure they work correctly.</li>
-              <li><strong>Engage with Players:</strong> Respond to feedback and update your games based on community suggestions.</li>
-              <li><strong>Promote Your Games:</strong> Share your games on X and other platforms to attract players.</li>
-              <li><strong>Create Daily Challenges:</strong> Daily challenges keep players coming back and increase engagement with your games.</li>
+              <li>{{ t('howitworks.section6.creators.simple') }}</li>
+              <li>{{ t('howitworks.section6.creators.test') }}</li>
+              <li>{{ t('howitworks.section6.creators.engage') }}</li>
+              <li>{{ t('howitworks.section6.creators.promote') }}</li>
+              <li>{{ t('howitworks.section6.creators.daily') }}</li>
             </ul>
           </div>
 
           <!-- Getting Help -->
           <div class="how-it-works-section">
-            <h2>7. Getting Help & Support</h2>
-            <p>If you need assistance or have questions:</p>
+            <h2>{{ t('howitworks.section7.title') }}</h2>
+            <p>{{ t('howitworks.section7.content') }}</p>
             <ul>
               <li><strong>FAQ Page:</strong> Check our <router-link to="/faq" class="has-text-primary">FAQ page</router-link> for answers to common questions.</li>
               <li><strong>Contact Support:</strong> Email us at <a href="mailto:contact@top-x.co" class="has-text-primary">contact@top-x.co</a> for support, questions, or feedback.</li>
@@ -201,7 +201,7 @@
         <div class="how-it-works-footer">
           <CustomButton
             type="is-primary is-large"
-            label="Start Playing"
+            :label="t('howitworks.button')"
             @click="$router.push('/')"
           />
         </div>
@@ -214,18 +214,22 @@
 import { onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
+import { useLocaleStore } from '@/stores/locale';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 const route = useRoute();
 const baseUrl = 'https://top-x.co';
 const canonicalUrl = `${baseUrl}${route.path}`;
 
 useHead(() => ({
-  title: 'How It Works - TOP-X',
+  title: `${t('howitworks.hero.title')} - TOP-X`,
   meta: [
     {
       name: 'description',
-      content: 'Learn how to play games, compete on leaderboards, create your own challenges, and get the most out of the TOP-X gaming platform.',
+      content: t('howitworks.hero.subtitle'),
     },
     {
       name: 'keywords',
@@ -234,11 +238,11 @@ useHead(() => ({
     // Open Graph tags
     {
       property: 'og:title',
-      content: 'How It Works - TOP-X',
+      content: `${t('howitworks.hero.title')} - TOP-X`,
     },
     {
       property: 'og:description',
-      content: 'Learn how to play games, compete on leaderboards, create your own challenges, and get the most out of the TOP-X gaming platform.',
+      content: t('howitworks.hero.subtitle'),
     },
     {
       property: 'og:type',
@@ -259,11 +263,11 @@ useHead(() => ({
     },
     {
       name: 'twitter:title',
-      content: 'How It Works - TOP-X',
+      content: `${t('howitworks.hero.title')} - TOP-X`,
     },
     {
       name: 'twitter:description',
-      content: 'Learn how to play games, compete on leaderboards, create your own challenges, and get the most out of the TOP-X gaming platform.',
+      content: t('howitworks.hero.subtitle'),
     },
   ],
   link: [
@@ -291,7 +295,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4rem;
-  direction: ltr;
+}
+
+/* RTL Support */
+[dir="rtl"] .how-it-works-page {
+  text-align: right;
+}
+
+[dir="ltr"] .how-it-works-page {
   text-align: left;
 }
 
@@ -410,6 +421,14 @@ onMounted(() => {
   gap: 0.75rem;
 }
 
+/* RTL adjustments for lists */
+[dir="rtl"] .how-it-works-section ul,
+[dir="rtl"] .how-it-works-section ol {
+  margin: 0 1.5rem 1rem 0;
+  padding-left: 0;
+  padding-right: 1.5rem;
+}
+
 .how-it-works-section ul li,
 .how-it-works-section ol li {
   line-height: 1.7;
@@ -441,6 +460,11 @@ onMounted(() => {
   justify-content: center;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border-base);
+}
+
+/* RTL adjustments for footer */
+[dir="rtl"] .how-it-works-footer {
+  direction: rtl;
 }
 
 .fade-in {

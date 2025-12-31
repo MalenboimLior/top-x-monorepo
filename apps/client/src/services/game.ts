@@ -117,7 +117,7 @@ function mapGameDocument(docSnap: QueryDocumentSnapshot<DocumentData>): Game {
     gameInstruction: data.gameInstruction,
     shareText: data.shareText,
     image: data.image || '',
-    imageGradient: Array.isArray(data.imageGradient) && data.imageGradient.length === 2 
+    imageGradient: Array.isArray(data.imageGradient) && data.imageGradient.length === 2
       ? data.imageGradient as [string, string]
       : undefined,
     imageGradientTextColor: data.imageGradientTextColor || undefined,
@@ -132,6 +132,7 @@ function mapGameDocument(docSnap: QueryDocumentSnapshot<DocumentData>): Game {
     hideFromHome: data.hideFromHome ?? false,
     dailyChallengeActive: data.dailyChallengeActive,
     dailyChallengeCurrent: data.dailyChallengeCurrent,
+    adConfig: data.adConfig,
     leaderboard: data.leaderboard,
     createdAt,
     updatedAt,

@@ -10,6 +10,8 @@ const About = () => import('@/views/About.vue');
 const TermsOfUse = () => import('@/views/TermsOfUse.vue');
 const PrivacyPolicy = () => import('@/views/PrivacyPolicy.vue');
 const Cookies = () => import('@/views/Cookies.vue');
+const DMCA = () => import('@/views/DMCA.vue');
+const ManagePrivacySettings = () => import('@/views/ManagePrivacySettings.vue');
 const ContactUs = () => import('@/views/ContactUs.vue');
 const FAQ = () => import('@/views/FAQ.vue');
 const Guidelines = () => import('@/views/Guidelines.vue');
@@ -70,6 +72,16 @@ const routes = [
     path: '/cookies',
     name: 'Cookies',
     component: () => import(/* webpackChunkName: "cookies" */ '@/views/Cookies.vue'),
+  },
+  {
+    path: '/DMCA',
+    name: 'DMCA',
+    component: () => import(/* webpackChunkName: "dmca" */ '@/views/DMCA.vue'),
+  },
+  {
+    path: '/MPS',
+    name: 'ManagePrivacySettings',
+    component: () => import(/* webpackChunkName: "mps" */ '@/views/ManagePrivacySettings.vue'),
   },
   {
     path: '/contact',
