@@ -18,7 +18,6 @@
         <GameCard
           :game="game"
           :stats="stats"
-          size="featured"
           show-featured-label
           :featured-label="t('home.labels.featured')"
           :daily-challenge-active="Boolean(game.dailyChallengeActive)"
@@ -685,7 +684,7 @@ function goToBuild(gameTypeId?: string) {
 }
 
 function goToBuildWithType(gameTypeId: string) {
-  goToBuild(gameTypeId);
+  router.push(`/build/new/${gameTypeId}`);
 }
 
 function goToContact() {

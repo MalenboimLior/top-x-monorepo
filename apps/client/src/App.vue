@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
-    <NavBar  />
-    <!-- <CookieBanner v-if="!consentGiven" @consent-given="handleConsent" /> -->
+    <NavBar />
+    <CookieBanner />
     <main class="main-content">
       <router-view />
     </main>
@@ -17,9 +17,7 @@ import Footer from '@/components/Footer.vue';
 import { useHead } from '@vueuse/head';
 import { useThemeStore } from '@/stores/theme';
 
-// import CookieBanner from '@/components/CookieBanner.vue'; // New import
-//import { ref } from 'vue';
-//import { analytics } from '@top-x/shared'; // Assuming this is where analytics is imported
+import CookieBanner from '@/components/CookieBanner.vue';
 useHead({
   title: "TOP-X: Viral Challenges, Rankings & Games on X | Who's on Top?",
   meta: [
@@ -51,15 +49,7 @@ onMounted(() => {
   }
 });
 
-// const consentGiven = ref(!!localStorage.getItem('cookieConsent'));
-// const handleConsent = (level: string) => {
-//   consentGiven.value = true;
-//   if (level === 'all') {
-//     // Enable analytics if accepted all
-//     // Assuming Firebase analytics is opt-in; you may need to init or enable here if not always on
-//     console.log('Analytics enabled');
-//   }
-// };
+
 </script>
 
 <style scoped>

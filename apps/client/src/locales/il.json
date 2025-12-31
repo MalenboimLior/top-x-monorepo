@@ -607,5 +607,8 @@
   "build.pyramid.modal.descriptionLabel": "תיאור",
   "build.pyramid.modal.descriptionPlaceholder": "הזינו תיאור (אופציונלי)",
   "build.pyramid.modal.cancel": "ביטול",
-  "build.pyramid.modal.save": "שמור"
+  "build.pyramid.modal.save": "שמור",
+  "cookies.banner.text": "בשימוש באתר, אתה מסכים לשימוש בעוגיות כפי שמתואר ב {link}.",
+  "cookies.banner.linkText": "מדיניות העוגיות שלנו",
+  "cookies.banner.accept": "הבנתי"
 }

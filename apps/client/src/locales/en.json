@@ -600,5 +600,8 @@
   "build.pyramid.modal.descriptionLabel": "Description",
   "build.pyramid.modal.descriptionPlaceholder": "Enter description (optional)",
   "build.pyramid.modal.cancel": "Cancel",
-  "build.pyramid.modal.save": "Save"
+  "build.pyramid.modal.save": "Save",
+  "cookies.banner.text": "By using our website, you agree to the use of cookies as described in our {link}.",
+  "cookies.banner.linkText": "cookie policy",
+  "cookies.banner.accept": "Accept"
 }

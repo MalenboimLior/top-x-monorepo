@@ -85,6 +85,14 @@
                 @input="updateGradientText"
               />
             </div>
+            <button
+              type="button"
+              class="gradient-shuffle-button"
+              @click="shuffleGradients"
+              title="Randomize Colors"
+            >
+              <font-awesome-icon :icon="['fas', 'random']" />
+            </button>
           </div>
           <p v-if="!game.image" class="field-hint">{{ t('build.game.fields.cover.hint') }}</p>
         </div>
@@ -93,7 +101,7 @@
           <div class="image-uploader-modal-backdrop" @click="showImageUploader = false"></div>
           <div class="image-uploader-modal-content">
             <ImageUploader
-              v-model="game.image"
+              v-model="game.image as string"
               :uploadFolder="`images/games/${validatedGameId}`"
               :cropWidth="512"
               :cropHeight="320"
@@ -304,6 +312,7 @@ import { DEFAULT_ZONE_REVEAL_CONFIG } from '../../components/games/zonereveal/Zo
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { QuizConfig } from '@top-x/shared/types/quiz';
 import { MAX_GAMES_PER_USER } from '@top-x/shared/constants/gameLimits';
+import { getRandomGradientPreset } from '@top-x/shared';
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2300e8e0"/><stop offset="100%" stop-color="%23ff2d92"/></linearGradient></defs><rect width="600" height="400" fill="url(%23g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="36" fill="%23ffffff">TOP-X</text></svg>';
@@ -422,6 +431,8 @@ const validatedGameId = computed(() => {
   return source.replace(/[\\/]/g, '');
 });
 
+const randomPreset = getRandomGradientPreset();
+
 const initialGame = props.existingGame
   ? JSON.parse(JSON.stringify(props.existingGame))
   : {
@@ -432,7 +443,8 @@ const initialGame = props.existingGame
       active: true, // Games are active by default
       language: getDefaultLanguage(),
       image: props.selectedDefaultConfigImage || '',
-      imageGradient: undefined, // Will use CSS defaults if not set
+      imageGradient: [randomPreset.start, randomPreset.end],
+      imageGradientTextColor: randomPreset.text,
       vip: [],
       custom: props.selectedDefaultConfig
         ? JSON.parse(JSON.stringify(props.selectedDefaultConfig))
@@ -564,6 +576,12 @@ function removeImage() {
   showImageUploader.value = false;
 }
 
+function shuffleGradients() {
+  const preset = getRandomGradientPreset();
+  game.value.imageGradient = [preset.start, preset.end];
+  game.value.imageGradientTextColor = preset.text;
+}
+
 const storageKey = computed(() => {
   if (typeof window === 'undefined') {
     return null;
@@ -673,10 +691,10 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
     // This ensures old games get the gradient feature when saved
     // Initialize even if game has an image, so gradient is ready if image is removed later
     if (!game.value.imageGradient || !game.value.imageGradient.length) {
-      const defaults = getDefaultGradientColors();
-      game.value.imageGradient = [defaults.start, defaults.end];
+      const preset = getRandomGradientPreset();
+      game.value.imageGradient = [preset.start, preset.end];
       if (!game.value.imageGradientTextColor) {
-        game.value.imageGradientTextColor = defaults.text;
+        game.value.imageGradientTextColor = preset.text;
       }
     }
     
@@ -852,13 +870,13 @@ function getDefaultCustom(customType: string): PyramidConfig | ZoneRevealConfig 
       enemiesSpeedArray: { ...DEFAULT_ZONE_REVEAL_CONFIG.enemiesSpeedArray },
       finishPercent: DEFAULT_ZONE_REVEAL_CONFIG.finishPercent,
       heartIcon: DEFAULT_ZONE_REVEAL_CONFIG.heartIcon,
+      answer: { solution: '', accepted: [], image: '' },
     });
   }
   if (customType === 'TriviaConfig') {
     return withDefaultTriviaConfig({
       mode: 'classic',
       questions: [],
-      language: '',
       globalTimer: { enabled: false },
       powerUps: [],
       theme: {},
@@ -903,7 +921,6 @@ function withDefaultTriviaConfig(config: TriviaConfig): TriviaConfig {
     clone.mode = 'classic';
   }
   clone.questions = clone.questions ?? [];
-  clone.language = clone.language ?? '';
   clone.globalTimer = clone.globalTimer ?? { enabled: false };
   clone.theme = clone.theme ?? {};
   clone.powerUps = clone.powerUps ?? [];
@@ -1293,6 +1310,27 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-tertiary);
+}
+
+.gradient-shuffle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-base);
+  background: var(--color-bg-input);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.gradient-shuffle-button:hover {
+  background: var(--color-bg-surface-hover);
+  border-color: var(--color-border-primary);
+  transform: translateY(-1px);
 }
 
 .gradient-control-item input[type="color"] {
