@@ -3,8 +3,7 @@
 <template>
   <section class="section">
     <div class="container has-text-centered">
-      <h1 class="main-game-title" v-html="props.gameHeader"></h1>
-      <p class="game-subtitle" v-html="props.gameInstruction"></p>
+      <h1 class="main-game-title" ref="gameTitleRef" :style="titleStyle" v-html="props.gameHeader"></h1>
       
       <!-- Step Instruction -->
       <div class="step-guide-container">
@@ -33,7 +32,11 @@
         </div>
       </div>
 
-      <div class="pyramid" ref="pyramidRef">
+      <div class="pyramid-interactive-wrapper">
+        <button v-if="props.gameInstruction" class="info-floating-button" @click="openInstructionsModal" :title="t('gameInfo.howToPlay')">
+          <font-awesome-icon :icon="['fas', 'circle-info']" />
+        </button>
+        <div class="pyramid" ref="pyramidRef">
         <div v-for="(row, rowIndex) in pyramid" :key="rowIndex" class="pyramid-row-container">
           <div class="pyramid-row-wrapper">
             <div class="pyramid-row">
@@ -81,6 +84,7 @@
               <div class="animated-points has-text-success">{{ animatedPoints }}</div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -258,33 +262,224 @@
         </div>
       </div>
 
-      <!-- Add Item Popup -->
-      <PyramidAddItemPopup
-        :is-active="showAddPopup"
-        :game-id="gameId"
-        :colors-tag="props.colorsTag"
-        @add-item="addNewItem"
-        @close="showAddPopup = false"
-      />
+      <!-- Add Item Modal -->
+      <Teleport to="body">
+        <div class="modal community-item-modal" :class="{ 'is-active': showAddCommunityItemModal }">
+          <div class="modal-background" @click="closeAddCommunityItemModal"></div>
+          <div class="modal-content box has-background-dark has-text-white">
+            <button class="delete is-large" aria-label="close" @click="closeAddCommunityItemModal"></button>
+            
+            <div v-if="!userStore.user" class="p-5">
+              <h2 class="title is-4 has-text-white mb-4">{{ t('games.pyramid.addNewItem') }}</h2>
+              <p class="mb-5">Feeling sneaky? Logged-in users only for adding items. Sign in with X and unleash your picks! ⚡</p>
+              <div class="buttons">
+                <CustomButton
+                  type="is-primary"
+                  label="Log in with X"
+                  @click="handleLogin"
+                />
+              </div>
+            </div>
+
+            <div v-else class="p-2">
+              <h2 class="title is-4 has-text-white mb-5">{{ t('games.pyramid.addNewItem') }}</h2>
+              
+              <div class="field mb-5">
+                <label class="label has-text-white">{{ t('build.pyramid.modal.imageLabel') }}</label>
+                <ImageUploader
+                  v-model="newCommunityItem.src"
+                  :uploadFolder="`pyramid/${validatedGameId}/community`"
+                  :cropWidth="250"
+                  :cropHeight="250"
+                />
+                <p v-if="!newCommunityItem.src" class="help has-text-warning">{{ t('build.pyramid.modal.imageRequired') }}</p>
+              </div>
+
+              <div class="field mb-4">
+                <label class="label has-text-white">{{ t('build.pyramid.items.displayName') }}</label>
+                <input
+                  class="input is-dark"
+                  v-model="newCommunityItem.label"
+                  :placeholder="t('build.pyramid.modal.displayNamePlaceholder')"
+                  :disabled="!newCommunityItem.src"
+                />
+              </div>
+
+              <div class="field mb-4">
+                <label class="label has-text-white">{{ t('build.pyramid.items.searchName') }}</label>
+                <input
+                  class="input is-dark"
+                  v-model="newCommunityItem.name"
+                  :placeholder="t('build.pyramid.modal.searchNamePlaceholder')"
+                  :disabled="!newCommunityItem.src || !newCommunityItem.label"
+                />
+              </div>
+
+              <div class="field mb-5">
+                <label class="label has-text-white">{{ t('build.pyramid.modal.descriptionLabel') }}</label>
+                <textarea
+                  class="textarea is-dark"
+                  v-model="newCommunityItem.description"
+                  :placeholder="t('build.pyramid.modal.descriptionPlaceholder')"
+                  :disabled="!newCommunityItem.src || !newCommunityItem.label"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div class="buttons mt-6">
+                <CustomButton
+                  type="is-primary"
+                  :label="isSaving ? 'Saving...' : t('build.pyramid.modal.save')"
+                  :disabled="!newCommunityItem.src || !newCommunityItem.label || isSaving"
+                  @click="saveNewCommunityItem"
+                />
+                <button class="button is-text has-text-white" @click="closeAddCommunityItemModal">
+                  {{ t('build.pyramid.modal.cancel') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Instructions Modal -->
+      <Teleport to="body">
+        <div v-if="showInstructionsModal" class="instructions-modal-overlay" @click="closeInstructionsModal">
+          <div class="instructions-modal" @click.stop>
+            <button class="instructions-modal-close" @click="closeInstructionsModal" :aria-label="t('common.close')">
+              <font-awesome-icon :icon="['fas', 'xmark']" />
+            </button>
+            <div class="instructions-modal-header">
+              <h3 class="instructions-modal-title">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+                {{ t('gameInfo.howToPlay') }}
+              </h3>
+            </div>
+            <div class="instructions-modal-content">
+              <div class="instructions-modal-text" v-html="parsedInstructions"></div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot, PyramidData, SortOption } from '@top-x/shared/types/pyramid';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate, faCircleXmark, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate, faCircleXmark, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import PyramidAddItemPopup from '@/components/games/pyramid/PyramidAddItemPopup.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
+import { addCommunityItem } from '@/services/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
 import { useUserStore } from '@/stores/user';
 
-library.add(faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate, faCircleXmark, faTrashCan);
+const showInstructionsModal = ref(false);
+
+// Instructions helpers
+function processLineWithTabs(line: string): string {
+  // Count leading tabs
+  const tabMatch = line.match(/^(\t+)/);
+  if (!tabMatch) return line;
+  
+  const tabCount = tabMatch[1].length;
+  const content = line.substring(tabMatch[0].length);
+  
+  // Convert tabs to spaces (4 spaces per tab) which will be preserved
+  // We'll process this before the space-to-nbsp conversion
+  const indentSpaces = ' '.repeat(tabCount * 4);
+  return indentSpaces + content;
+}
+
+function parseMarkdown(text: string): string {
+  if (!text) return '';
+
+  // Split by lines to preserve empty lines
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let currentParagraph: string[] = [];
+  let lastWasEmpty = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isEmpty = line.trim() === '';
+    const isLastLine = i === lines.length - 1;
+    const hasContentAfter = !isLastLine && lines.slice(i + 1).some(l => l.trim() !== '');
+
+    if (isEmpty) {
+      // Empty line - if we have accumulated content, close the paragraph
+      if (currentParagraph.length > 0) {
+        const processed = currentParagraph
+          .map(processLineWithTabs)
+          .join('\n')
+          // Bold text **text** or __text__
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/__(.*?)__/g, '<strong>$1</strong>')
+          // Italic text *text* or _text_
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/_(.*?)_/g, '<em>$1</em>')
+          // Convert single newlines to <br> tags
+          .replace(/\n/g, '<br>')
+          // Preserve multiple spaces
+          .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+        
+        result.push(`<p>${processed}</p>`);
+        currentParagraph = [];
+      }
+      
+      // Add empty line as spacing if there's content after
+      if (hasContentAfter && !lastWasEmpty) {
+        result.push('<p class="empty-line"><br></p>');
+        lastWasEmpty = true;
+      }
+    } else {
+      // Non-empty line - add to current paragraph
+      currentParagraph.push(line);
+      lastWasEmpty = false;
+    }
+  }
+
+  // Process remaining paragraph
+  if (currentParagraph.length > 0) {
+    const processed = currentParagraph
+      .map(processLineWithTabs)
+      .join('\n')
+      // Bold text **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic text *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // Convert single newlines to <br> tags
+      .replace(/\n/g, '<br>')
+      // Preserve multiple spaces
+      .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+    
+    result.push(`<p>${processed}</p>`);
+  }
+
+  return result.join('');
+}
+
+const parsedInstructions = computed(() => {
+  return parseMarkdown(props.gameInstruction || '');
+});
+
+const openInstructionsModal = () => {
+  showInstructionsModal.value = true;
+};
+
+const closeInstructionsModal = () => {
+  showInstructionsModal.value = false;
+};
+
+library.add(faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, faArrowsRotate, faCircleXmark, faTrashCan, faXmark);
 
 const localeStore = useLocaleStore();
 const userStore = useUserStore();
@@ -293,6 +488,8 @@ const t = (key: string, params?: Record<string, unknown>) => localeStore.transla
 const route = useRoute();
 const gameId = ref((route.query.game as string).toLowerCase());
 const gameTitle = ref('');
+const gameTitleRef = ref<HTMLElement | null>(null);
+const titleFontSize = ref<number | null>(null);
 
 const props = defineProps<{
   items: PyramidItem[];
@@ -340,6 +537,13 @@ const isPyramidFull = computed(() => {
 });
 const selectedInfoIcon = ref<string | null>(null); // Track the selected info icon by item ID
 
+const titleStyle = computed(() => {
+  if (titleFontSize.value !== null) {
+    return { fontSize: `${titleFontSize.value}px` };
+  }
+  return {};
+});
+
 const searchQuery = ref('');
 const showAddPopup = ref(false);
 // Description Tab State
@@ -364,8 +568,9 @@ onMounted(() => {
   if (analytics) {
     logEvent(analytics, 'game_view', { game_name: gameId.value || 'unknown', view_type: 'edit' });
   }
-});
   isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  adjustTitleFontSize();
+});
 
   // Load from local storage if available
   const savedPyramid = localStorage.getItem(`pyramid_${gameId.value}`);
@@ -439,6 +644,17 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => props.gameHeader,
+  (newValue) => {
+    console.log('PyramidEdit: gameHeader prop updated:', newValue);
+    nextTick(() => {
+      adjustTitleFontSize();
+    });
+  },
+  { immediate: true }
+);
+
 const sortFunction = (a: PyramidItem, b: PyramidItem) => {
   const field = props.sortItems.orderBy;
   const dir = props.sortItems.order === 'asc' ? 1 : -1;
@@ -508,6 +724,33 @@ watch(
   },
   { immediate: true }
 );
+
+function adjustTitleFontSize() {
+  if (!gameTitleRef.value) return;
+
+  const titleElement = gameTitleRef.value;
+  const container = titleElement.parentElement;
+  if (!container) return;
+
+  const maxWidth = container.offsetWidth - 40; // Account for padding
+  const baseFontSize = window.innerWidth <= 767 ? 40 : 50; // Smaller base sizes since this is 2.5rem (40px) normally
+  let fontSize = baseFontSize;
+
+  titleElement.style.fontSize = `${fontSize}px`;
+  titleElement.style.whiteSpace = 'nowrap';
+
+  // Measure text width
+  const textWidth = titleElement.scrollWidth;
+
+  // If text overflows, reduce font size
+  if (textWidth > maxWidth) {
+    fontSize = (maxWidth / textWidth) * fontSize;
+    fontSize = Math.max(fontSize, 20); // Minimum font size for main title
+    titleFontSize.value = fontSize;
+  } else {
+    titleFontSize.value = null; // Use default
+  }
+}
 
 function clearPyramid() {
   showConfirm.value = true;
@@ -777,16 +1020,99 @@ function onDropToCommunityPool() {
 }
 
 function showAddItemPopup() {
-  showAddPopup.value = true;
-  console.log('PyramidEdit: Showing add item popup');
+  openAddCommunityItemModal();
 }
-function addNewItem(newItem: PyramidItem) {
-  communityPool.value = [newItem, ...communityPool.value];
-  console.log('PyramidEdit: Added new item to community pool:', newItem);
-  if (analytics) {
-    logEvent(analytics, 'user_action', { action: 'add_item', game_id: gameId.value, item_id: newItem.id });
+
+const showAddCommunityItemModal = ref(false);
+const newCommunityItem = ref({
+  id: '',
+  label: '',
+  name: '',
+  src: '',
+  active: true,
+  source: '',
+  color: '#64748B',
+  description: ''
+});
+const isSaving = ref(false);
+
+const validatedGameId = computed(() => {
+  const id = gameId.value || `temp-${Date.now()}`;
+  return id.replace(/[\/\\]/g, '');
+});
+
+function openAddCommunityItemModal() {
+  newCommunityItem.value = {
+    id: '',
+    label: '',
+    name: '',
+    src: '',
+    active: true,
+    source: '',
+    color: '#64748B',
+    description: ''
+  };
+  showAddCommunityItemModal.value = true;
+}
+
+function closeAddCommunityItemModal() {
+  showAddCommunityItemModal.value = false;
+  isSaving.value = false;
+}
+
+async function handleLogin() {
+  try {
+    const success = await userStore.loginWithX();
+    if (success) {
+      if (analytics) {
+        logEvent(analytics, 'user_action', { action: 'login', method: 'x_auth', context: 'add_item_modal' });
+      }
+    }
+  } catch (err) {
+    console.error('PyramidEdit: Login error:', err);
   }
-  showAddPopup.value = false;
+}
+
+async function saveNewCommunityItem() {
+  if (!userStore.user) return;
+  if (!newCommunityItem.value.src || !newCommunityItem.value.label) return;
+
+  isSaving.value = true;
+  try {
+    const result = await addCommunityItem({
+      gameId: gameId.value,
+      itemData: {
+        label: newCommunityItem.value.label.trim(),
+        name: (newCommunityItem.value.name || newCommunityItem.value.label).trim(),
+        description: (newCommunityItem.value.description || '').trim(),
+        color: '#64748B',
+        userId: userStore.user.uid || 'anonymous',
+        userDisplayName: userStore.user.displayName || 'anonymous',
+      },
+      imageFile: newCommunityItem.value.src as any, // ImageUploader provides the URL/File
+    });
+
+    if (result.error || !result.item) {
+      alert(result.error || 'Failed to save item.');
+      return;
+    }
+
+    if (analytics) {
+      logEvent(analytics, 'user_action', {
+        action: 'save_item',
+        game_id: gameId.value,
+        item_id: result.item.id,
+      });
+    }
+
+    communityPool.value = [result.item, ...communityPool.value];
+    closeAddCommunityItemModal();
+  } catch (err) {
+    console.error('PyramidEdit: Error saving item:', err);
+    alert('Failed to save item.');
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 function removeItemFromSlot(row: number, col: number) {
@@ -896,16 +1222,16 @@ function startTypingAnimation(fullDescription: string) {
   }
   // Convert line breaks to <br> tags and preserve existing HTML
   const formattedDescription = fullDescription.replace(/\n/g, '<br>');
-  
+
   // Check if description contains HTML tags
   const hasHTML = /<[^>]+>/.test(formattedDescription);
-  
+
   if (hasHTML) {
-    // If HTML is present, show it immediately to avoid breaking tags
-    displayedDescription.value = formattedDescription;
+    // For HTML content, we need to animate carefully to preserve tag structure
+    animateHTMLContent(formattedDescription);
     return;
   }
-  
+
   // For plain text, use typing animation
   const chars = formattedDescription.split('');
 
@@ -920,6 +1246,51 @@ function startTypingAnimation(fullDescription: string) {
       clearInterval(typingInterval!);
       typingInterval = null;
     }
+  }, 40);
+}
+
+function animateHTMLContent(htmlContent: string) {
+  // Extract visible text content for animation
+  const visibleText = htmlContent.replace(/<[^>]*>/g, '');
+  const chars = visibleText.split('');
+
+  let charIndex = 0;
+  displayedDescription.value = '';
+
+  typingInterval = setInterval(() => {
+    if (charIndex >= chars.length) {
+      // Show complete HTML when animation finishes
+      displayedDescription.value = htmlContent;
+      clearInterval(typingInterval!);
+      typingInterval = null;
+      return;
+    }
+
+    // Build HTML up to current character position
+    let htmlSoFar = '';
+    let visibleCount = 0;
+    let inTag = false;
+
+    for (let i = 0; i < htmlContent.length && visibleCount <= charIndex; i++) {
+      const char = htmlContent[i];
+
+      if (char === '<') {
+        inTag = true;
+        htmlSoFar += char;
+      } else if (char === '>' && inTag) {
+        inTag = false;
+        htmlSoFar += char;
+      } else if (inTag) {
+        htmlSoFar += char;
+      } else {
+        // Visible character
+        htmlSoFar += char;
+        visibleCount++;
+      }
+    }
+
+    displayedDescription.value = htmlSoFar;
+    charIndex++;
   }, 40);
 }
 
@@ -1636,6 +2007,11 @@ function closeTab() {
   color: #fff;
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
   line-height: 1.1;
+  padding-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .main-game-title :deep(span) {
@@ -2050,6 +2426,205 @@ function closeTab() {
 
 .is-clickable {
   cursor: pointer;
+}
+
+
+/* Floating Info Button */
+.pyramid-interactive-wrapper {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.info-floating-button {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(65px);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #00e8e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  font-size: 1.25rem;
+}
+
+[dir="rtl"] .info-floating-button {
+  left: auto;
+  right: 50%;
+  transform: translateX(-65px);
+}
+
+.info-floating-button:hover {
+  /*background: #00e8e0;*/
+ 
+  
+  transform: translateX(65px) scale(2);
+  border-color: #00e8e0;
+}
+
+[dir="rtl"] .info-floating-button:hover {
+  transform: translateX(-65px) scale(1.1);
+}
+
+@media screen and (max-width: 767px) {
+  .info-floating-button {
+    top: 25px;
+    transform: translateX(55px);
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+  }
+  [dir="rtl"] .info-floating-button {
+    transform: translateX(-55px);
+  }
+  .info-floating-button:hover {
+    transform: translateX(55px) scale(1.1);
+  }
+  [dir="rtl"] .info-floating-button:hover {
+    transform: translateX(-55px) scale(1.1);
+  }
+}
+
+/* Instructions Modal */
+.instructions-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.instructions-modal {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.instructions-modal-close {
+  position: absolute;
+  top: 1rem;
+  inset-inline-end: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.instructions-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #00e8e0;
+  color: #00e8e0;
+}
+
+.instructions-modal-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instructions-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.instructions-modal-title :deep(.fa-circle-info) {
+  color: #00e8e0;
+}
+
+.instructions-modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.instructions-modal-text {
+  color: #ccc;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.instructions-modal-text :deep(p) {
+  margin-bottom: 0.75rem;
+}
+
+.instructions-modal-text :deep(p.empty-line) {
+  margin-bottom: 0.5rem;
+  min-height: 1em;
+}
+
+.instructions-modal-text :deep(strong) {
+  font-weight: 700;
+  color: #fff;
+}
+
+@media screen and (max-width: 767px) {
+  .instructions-modal {
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+  .instructions-modal-header {
+    padding: 1rem 1rem 0.75rem;
+  }
+  .instructions-modal-title {
+    font-size: 1.25rem;
+  }
+  .instructions-modal-content {
+    padding: 1rem;
+  }
+}
+
+/* Community Item Modal */
+.community-item-modal .modal-content {
+  text-align: start !important;
+  max-width: 500px;
+}
+
+.community-item-modal .field,
+.community-item-modal .label,
+.community-item-modal .help,
+.community-item-modal .title {
+  text-align: start !important;
+}
+
+.community-item-modal .buttons {
+  justify-content: flex-start !important;
 }
 </style>
 

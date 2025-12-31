@@ -32,14 +32,15 @@ export type { PyramidItem } from '@top-x/shared/types/pyramid';
 export type AddCommunityItemParams = {
   gameId: string;
   itemData: {
+    label: string;
     name: string;
     description?: string;
     color?: string;
     userId: string;
     userDisplayName?: string;
   };
-  imageFile: File;
-  storagePath?: string; // Optional custom storage path, defaults to `presidents/{itemId}.jpg`
+  imageFile: File | string;
+  storagePath?: string; // Optional custom storage path
 };
 
 export type AddCommunityItemResult = {
@@ -100,15 +101,25 @@ export async function addCommunityItem(
     const itemId = generateItemId(itemData.userId);
 
     // Determine storage path
-    const finalStoragePath = storagePath || `presidents/${itemId}.jpg`;
+    // Clean gameId to be safe for path
+    const safeGameId = gameId.replace(/[\/\\]/g, '');
+    const finalStoragePath = storagePath || `pyramid/${safeGameId}/community/${itemId}.jpg`;
 
-    // Upload image to Firebase Storage
-    const imageUrl = await uploadImage(imageFile, finalStoragePath);
+    // Upload image to Firebase Storage if it's a File
+    let imageUrl: string;
+    if (typeof imageFile === 'string' && (imageFile.startsWith('http') || imageFile.startsWith('gs://'))) {
+      imageUrl = imageFile;
+    } else if (imageFile instanceof File) {
+      imageUrl = await uploadImage(imageFile, finalStoragePath);
+    } else {
+      // Fallback for cases where it might be a Blob or something else treated as any
+      imageUrl = await uploadImage(imageFile as any, finalStoragePath);
+    }
 
     // Create PyramidItem
     const newItem: PyramidItem = {
       id: itemId,
-      label: itemData.name,
+      label: itemData.label,
       name: itemData.name,
       src: imageUrl,
       description: itemData.description,

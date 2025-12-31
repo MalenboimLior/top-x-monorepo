@@ -29,7 +29,7 @@
         <!-- Header -->
         <div class="hero-header">
           <span class="hero-eyebrow">{{ t('gameInfo.featuredGame') }}</span>
-          <h1 class="hero-title text-gradient-primary">{{ game.name }}</h1>
+          <h1 :class="['hero-title', 'text-gradient-primary', gameNameSizeClass]">{{ game.name }}</h1>
           <p class="hero-description">{{ game.description }}</p>
         </div>
         
@@ -48,12 +48,23 @@
 
         <!-- Meta/Stats Row -->
         <div class="hero-stats-row" dir="ltr">
+          <!-- Creator Info -->
+          <div v-if="resolvedCreator" class="hero-stat hero-stat--creator" :title="t('gameCard.creator.label')">
+            <div class="hero-creator-avatar">
+               <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
+            </div>
+            <div class="hero-creator-details">
+               <span class="hero-creator-by">{{ t('gameCard.creator.label') }}</span>
+               <a :href="creatorProfileUrl" class="hero-creator-name" @click.stop>@{{ resolvedCreator.username }}</a>
+            </div>
+          </div>
+
           <!-- Created Date -->
            <div class="hero-stat" :title="t('common.created')">
             <span class="hero-stat-icon"><font-awesome-icon :icon="['fas', 'calendar-days']" /></span>
              <span class="hero-stat-value">{{ formattedDate }}</span>
           </div>
-          
+
           <div class="hero-stat" v-if="stats.sessionsPlayed" :title="t('home.stats.sessions')">
             <span class="hero-stat-icon"><font-awesome-icon :icon="['fas', 'eye']" /></span>
             <span class="hero-stat-value">{{ formatNumber(stats.sessionsPlayed) }}</span>
@@ -64,31 +75,24 @@
             <span class="hero-stat-value">{{ formatNumber(totalFavorites) }}</span>
           </div>
         </div>
-        
-         <!-- Creator & Instructions Group -->
-         <div class="hero-info-group">
-            <!-- Creator Info -->
-            <div v-if="resolvedCreator" class="hero-creator" dir="ltr">
-                 <div class="hero-creator-avatar">
-                    <img :src="creatorImage" :alt="creatorAltText" loading="lazy" />
-                 </div>
-                 <div class="hero-creator-details">
-                    <span class="hero-creator-by">{{ t('gameCard.creator.label') }}</span>
-                    <a :href="creatorProfileUrl" class="hero-creator-name" @click.stop>@{{ resolvedCreator.username }}</a>
-                 </div>
-            </div>
-            
-             <!-- Instructions -->
+
+         <!-- Instructions -->
              <div v-if="game.gameInstruction" class="hero-instructions">
                <div class="hero-instructions-content">
                  <span class="hero-instructions-label">
                     <font-awesome-icon :icon="['fas', 'circle-info']" />
                     {{ t('gameInfo.howToPlay') }}:
                  </span>
-                 <span class="hero-instructions-text">{{ game.gameInstruction }}</span>
+                 <div class="hero-instructions-text" v-html="parsedInstructions"></div>
+                 <button
+                   v-if="isInstructionsLong"
+                   @click="openInstructionsModal"
+                   class="hero-instructions-show-more"
+                 >
+                   {{ t('common.showMore') }}
+                 </button>
                </div>
              </div>
-         </div>
 
         <!-- Actions - Centered at bottom -->
         <div class="hero-play-action">
@@ -153,6 +157,27 @@
 
     <GameBuildSection @build="buildGame" />
   </div>
+
+  <!-- Instructions Modal -->
+  <Teleport to="body">
+    <div v-if="showInstructionsModal" class="instructions-modal-overlay" @click="closeInstructionsModal">
+      <div class="instructions-modal" @click.stop>
+        <button class="instructions-modal-close" @click="closeInstructionsModal" :aria-label="t('common.close')">
+          <font-awesome-icon :icon="['fas', 'xmark']" />
+        </button>
+        <div class="instructions-modal-header">
+          <h3 class="instructions-modal-title">
+            <font-awesome-icon :icon="['fas', 'circle-info']" />
+            {{ t('gameInfo.howToPlay') }}
+          </h3>
+        </div>
+        <div class="instructions-modal-content">
+          <div class="instructions-modal-text" v-html="parsedInstructions"></div>
+
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -198,6 +223,7 @@ const game = ref<Game>({
   createdAt: undefined,
 });
 const stats = ref<Partial<GameStats>>({});
+const showInstructionsModal = ref(false);
 
 // Favorite Logic to sync with store
 const favoriteBaseline = ref(0);
@@ -233,6 +259,13 @@ const formattedDate = computed(() => {
   const dateValue = game.value.createdAt || Date.now();
   // Using cast to avoid TS issues with local setup, confirmed works at runtime
   return (DateTime as any).fromMillis(dateValue).toFormat('MMM yyyy');
+});
+
+const gameNameSizeClass = computed(() => {
+  const name = game.value.name || '';
+  if (name.length > 30) return 'hero-title--small';
+  if (name.length > 20) return 'hero-title--medium';
+  return 'hero-title--large';
 });
 
 // Badges Logic
@@ -278,6 +311,116 @@ const creatorProfileUrl = computed(() =>
 const creatorAltText = computed(() =>
   resolvedCreator.value ? `${resolvedCreator.value.username} avatar` : 'Creator avatar',
 );
+
+// Instructions helpers
+function processLineWithTabs(line: string): string {
+  // Count leading tabs
+  const tabMatch = line.match(/^(\t+)/);
+  if (!tabMatch) return line;
+  
+  const tabCount = tabMatch[1].length;
+  const content = line.substring(tabMatch[0].length);
+  
+  // Convert tabs to spaces (4 spaces per tab) which will be preserved
+  // We'll process this before the space-to-nbsp conversion
+  const indentSpaces = ' '.repeat(tabCount * 4);
+  return indentSpaces + content;
+}
+
+function parseMarkdown(text: string): string {
+  if (!text) return '';
+
+  // Split by lines to preserve empty lines
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let currentParagraph: string[] = [];
+  let lastWasEmpty = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isEmpty = line.trim() === '';
+    const isLastLine = i === lines.length - 1;
+    const hasContentAfter = !isLastLine && lines.slice(i + 1).some(l => l.trim() !== '');
+
+    if (isEmpty) {
+      // Empty line - if we have accumulated content, close the paragraph
+      if (currentParagraph.length > 0) {
+        const processed = currentParagraph
+          .map(processLineWithTabs)
+          .join('\n')
+          // Bold text **text** or __text__
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/__(.*?)__/g, '<strong>$1</strong>')
+          // Italic text *text* or _text_
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/_(.*?)_/g, '<em>$1</em>')
+          // Convert single newlines to <br> tags
+          .replace(/\n/g, '<br>')
+          // Preserve multiple spaces
+          .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+        
+        result.push(`<p>${processed}</p>`);
+        currentParagraph = [];
+      }
+      
+      // Add empty line as spacing if there's content after
+      if (hasContentAfter && !lastWasEmpty) {
+        result.push('<p class="empty-line"><br></p>');
+        lastWasEmpty = true;
+      }
+    } else {
+      // Non-empty line - add to current paragraph
+      currentParagraph.push(line);
+      lastWasEmpty = false;
+    }
+  }
+
+  // Process remaining paragraph
+  if (currentParagraph.length > 0) {
+    const processed = currentParagraph
+      .map(processLineWithTabs)
+      .join('\n')
+      // Bold text **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic text *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // Convert single newlines to <br> tags
+      .replace(/\n/g, '<br>')
+      // Preserve multiple spaces
+      .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+    
+    result.push(`<p>${processed}</p>`);
+  }
+
+  return result.join('');
+}
+
+
+const parsedInstructions = computed(() => {
+  return parseMarkdown(game.value.gameInstruction || '');
+});
+
+const parsedInstructionsForModal = computed(() => {
+  // Show raw text like in textarea for modal
+  const text = game.value.gameInstruction || '';
+  return `<pre class="modal-text-content">${text}</pre>`;
+});
+
+const isInstructionsLong = computed(() => {
+  const instruction = game.value.gameInstruction || '';
+  // Simple heuristic: if it contains multiple paragraphs or is very long
+  return instruction.length > 200 || instruction.includes('\n\n') || instruction.split('\n').length > 6;
+});
+
+const openInstructionsModal = () => {
+  showInstructionsModal.value = true;
+};
+
+const closeInstructionsModal = () => {
+  showInstructionsModal.value = false;
+};
 
 
 useHead(() => ({
@@ -507,14 +650,34 @@ function goBack() {
 
 .hero-title {
   margin: 0;
-  font-size: clamp(1.8rem, 3.5vw, 3rem);
   font-weight: 900;
   line-height: 1.1;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
-  white-space: nowrap;
   overflow: hidden;
+}
+
+.hero-title--large {
+  font-size: clamp(1.8rem, 3.5vw, 3rem);
+  white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.hero-title--medium {
+  font-size: clamp(1.5rem, 2.8vw, 2.5rem);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hero-title--small {
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
+  white-space: wrap;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
 }
 
 .hero-description {
@@ -588,6 +751,50 @@ function goBack() {
   font-size: 1rem;
 }
 
+.hero-stat--creator {
+  gap: var(--space-2);
+}
+
+.hero-stat--creator .hero-creator-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--bulma-primary);
+  flex-shrink: 0;
+}
+
+.hero-stat--creator .hero-creator-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-stat--creator .hero-creator-details {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.hero-stat--creator .hero-creator-by {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.hero-stat--creator .hero-creator-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.hero-stat--creator .hero-creator-name:hover {
+  color: var(--bulma-primary);
+}
+
 .hero-stat-icon {
   display: inline-flex;
   align-items: center;
@@ -606,6 +813,11 @@ function goBack() {
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-3);
+}
+
+
+.hero-instructions-header {
+    margin-left: auto;
 }
 
 .hero-creator {
@@ -658,9 +870,53 @@ function goBack() {
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--color-text-secondary);
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
+  position: relative;
+}
+
+.hero-instructions-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.hero-instructions-text p {
+  margin-bottom: var(--space-2);
+}
+
+.hero-instructions-text p.empty-line {
+  margin-bottom: var(--space-1);
+  min-height: 0.5em;
+}
+
+.markdown-content {
+  white-space: pre-wrap;
+  font-family: inherit;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.hero-instructions-show-more {
+  background: none;
+  border: none;
+  color: var(--bulma-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: var(--space-1) 0;
+  margin-top: var(--space-2);
+  transition: all 0.2s ease;
+  text-decoration: underline;
+}
+
+.hero-instructions-show-more:hover {
+  color: #00e8e0;
+  text-decoration: none;
 }
 
 .hero-instructions-label {
@@ -825,12 +1081,26 @@ function goBack() {
       gap: var(--space-4);
       justify-content: center;
   }
+
+  .hero-stat--creator .hero-creator-avatar {
+      width: 20px;
+      height: 20px;
+  }
+
+  .hero-stat--creator .hero-creator-by {
+      font-size: 0.7rem;
+  }
+
+  .hero-stat--creator .hero-creator-name {
+      font-size: 0.8rem;
+  }
   
   .hero-info-group {
       flex-direction: column;
       align-items: stretch;
       gap: var(--space-3);
   }
+
   
   .hero-creator {
     justify-content: center;
@@ -840,6 +1110,38 @@ function goBack() {
       flex-direction: column;
       align-items: center;
       text-align: center;
+  }
+
+  .instructions-modal-overlay {
+      padding: var(--space-2);
+  }
+
+  .instructions-modal {
+      max-height: 90vh;
+      border-radius: 16px;
+  }
+
+  .instructions-modal-close {
+      top: var(--space-3);
+      inset-inline-end: var(--space-3);
+      width: 36px;
+      height: 36px;
+  }
+
+  .instructions-modal-header {
+      padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+
+  .instructions-modal-title {
+      font-size: 1.25rem;
+  }
+
+  .instructions-modal-content {
+      padding: var(--space-4);
+  }
+
+  .instructions-modal-text {
+      font-size: 0.95rem;
   }
   
   .game-hero-media {
@@ -873,5 +1175,147 @@ function goBack() {
 .section-subtitle {
   color: var(--color-text-muted);
   font-size: 1rem;
+}
+
+/* Instructions Modal */
+.instructions-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.instructions-modal {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.instructions-modal-close {
+  position: absolute;
+  top: var(--space-4);
+  inset-inline-end: var(--space-4);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.instructions-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--bulma-primary);
+  color: var(--bulma-primary);
+}
+
+.instructions-modal-header {
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instructions-modal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.instructions-modal-title .icon {
+  color: var(--bulma-primary);
+}
+
+.instructions-modal-content {
+  padding: var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.instructions-modal-text {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.instructions-modal-text .markdown-content {
+  white-space: pre-wrap;
+  font-family: inherit;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.modal-text-content {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: rgba(0, 0, 0, 0.1);
+  padding: var(--space-4);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.instructions-modal-text h1,
+.instructions-modal-text h2,
+.instructions-modal-text h3,
+.instructions-modal-text h4,
+.instructions-modal-text h5,
+.instructions-modal-text h6 {
+  color: var(--color-text-primary);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.instructions-modal-text p {
+  margin-bottom: var(--space-3);
+}
+
+.instructions-modal-text p.empty-line {
+  margin-bottom: var(--space-2);
+  min-height: 1em;
+}
+
+.instructions-modal-text strong,
+.instructions-modal-text b {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.instructions-modal-text ul,
+.instructions-modal-text ol {
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-4);
+}
+
+.instructions-modal-text li {
+  margin-bottom: var(--space-1);
 }
 </style>

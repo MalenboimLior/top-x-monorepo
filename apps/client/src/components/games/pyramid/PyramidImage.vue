@@ -274,6 +274,10 @@ async function renderPyramidImage() {
         margin: 10px 0 5px;
         color: #fff;
         text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
       }
       .game-subtitle {
         font-size: 24px; /* Slightly smaller for name */
@@ -366,6 +370,46 @@ async function renderPyramidImage() {
     const profileImage = props.userProfile?.photoURL || userStore.profile?.photoURL || defaultProfile;
     const highResProfile = getHighResProfileUrl(profileImage);
 
+    // Calculate font size for game title to fit on one line
+    const gameTitleText = props.shareImageTitle || props.gameHeader || 'Top Ranking';
+    const calculateTitleFontSize = (text: string): number => {
+      // Create a temporary element to measure actual text width
+      const tempTitle = document.createElement('h1');
+      tempTitle.textContent = text;
+      tempTitle.style.cssText = `
+        font-family: 'Outfit', 'Inter', sans-serif;
+        font-size: 72px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0;
+        padding: 0;
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+        white-space: nowrap;
+        visibility: hidden;
+      `;
+      document.body.appendChild(tempTitle);
+
+      const containerWidth = 1000; // 1080px - 40px padding on each side
+      const baseFontSize = 72;
+      let fontSize = baseFontSize;
+
+      tempTitle.style.fontSize = `${fontSize}px`;
+      const textWidth = tempTitle.scrollWidth;
+
+      // If text overflows, reduce font size
+      if (textWidth > containerWidth) {
+        fontSize = (containerWidth / textWidth) * fontSize;
+        fontSize = Math.max(fontSize, 36); // Minimum 36px (more reasonable minimum)
+      }
+
+      document.body.removeChild(tempTitle);
+      return Math.floor(fontSize);
+    };
+    const titleFontSize = calculateTitleFontSize(gameTitleText);
+
     // SVG Hexagon Scale for 220px
     const generateHexSvg = (imageSrc: string | null, borderColor: string, id: string) => {
       const dataUrl = imageSrc ? (preprocessedImages.value.get(imageSrc) || imageSrc) : '';
@@ -393,7 +437,7 @@ async function renderPyramidImage() {
           <img src="${preprocessedImages.value.get(highResProfile) || defaultProfile}" class="user-image" />
           <img src="${preprocessedImages.value.get(logoSrc) || logoSrc}" class="logo" />
         </div>
-        <h1 class="game-title">${props.shareImageTitle || props.gameHeader || 'Top Ranking'}</h1>
+        <h1 class="game-title" style="font-size: ${titleFontSize}px;">${gameTitleText}</h1>
         ${props.userName ? `<p class="game-subtitle">BY ${props.userName.startsWith('@') ? props.userName.toUpperCase() : '@' + props.userName.toUpperCase()}</p>` : ''}
       </div>
 

@@ -163,11 +163,12 @@
             <label :for="ids.instructions">{{ t('build.game.fields.instructions.label') }}</label>
             <textarea
               :id="ids.instructions"
-              rows="3"
+              rows="10"
               v-model="game.gameInstruction"
               :placeholder="t('build.game.fields.instructions.placeholder')"
-            />
-            <p class="field-hint">{{ t('build.game.fields.instructions.hint') }}</p>
+            >
+            </textarea>
+            <p class="field-hint">{{ t('build.game.fields.instructions.hint') }} Markdown formatting is supported (e.g., **bold**, line breaks for paragraphs).</p>
           </div>
         </div>
       </div>

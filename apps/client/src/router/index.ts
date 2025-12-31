@@ -154,6 +154,13 @@ const routes = [
     },
   },
   {
+    path: '/XUsers2025',
+    redirect: {
+      path: '/games/PyramidTier',
+      query: { game: 'xusers2025' },
+    },
+  },
+  {
     path: '/build',
     name: 'Build',
     component: () => import(/* webpackChunkName: "build" */ '@/views/Build.vue'),

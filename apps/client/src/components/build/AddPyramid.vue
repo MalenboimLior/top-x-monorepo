@@ -44,6 +44,14 @@
               </div>
             </div>
           </div>
+
+          <div class="add-item-top">
+            <CustomButton
+              type="is-primary"
+              :label="t('build.pyramid.items.addItem')"
+              @click="openAddItemModal"
+            />
+          </div>
         </div>
 
         <!-- Items Grid -->
@@ -79,14 +87,24 @@
                 <span class="item-card__color-label">{{ getColorTagLabel(item.color) }}</span>
               </div>
             </div>
-            <button
-              type="button"
-              class="item-card__remove"
-              @click="removeItem(index)"
-              :title="t('build.pyramid.items.removeItem')"
-            >
-              ×
-            </button>
+            <div class="item-card__actions">
+              <button
+                type="button"
+                class="item-card__edit"
+                @click="openEditItemModal(index)"
+                :title="t('build.pyramid.items.editItem')"
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                class="item-card__remove"
+                @click="removeItem(index)"
+                :title="t('build.pyramid.items.removeItem')"
+              >
+                ×
+              </button>
+            </div>
           </div>
         </div>
         
@@ -276,92 +294,6 @@
       </div>
     </section>
 
-    <!-- Community Items Section -->
-    <section ref="communitySection" class="config-section">
-      <button
-        type="button"
-        class="section-toggle"
-        @click="toggleSection('community')"
-      >
-        <span class="section-toggle__title">{{ t('build.pyramid.community.title', { count: config.communityItems.length }) }}</span>
-        <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showCommunity }">
-          ▼
-        </span>
-      </button>
-      
-      <div v-if="showCommunity" class="section-content">
-        <!-- Community Header at top -->
-        <div class="field">
-          <label class="field-label">{{ t('build.pyramid.community.header') }}</label>
-          <input 
-            class="field-input" 
-            v-model="config.communityHeader" 
-            :placeholder="t('build.pyramid.community.header')" 
-          />
-        </div>
-
-        <!-- Community Items Grid -->
-        <div v-if="config.communityItems.length > 0" class="items-grid">
-          <div
-            v-for="(item, index) in config.communityItems"
-            :key="index"
-            class="item-card"
-          >
-            <div class="item-card__image-wrapper">
-              <ImageUploader
-                v-model="item.src"
-                :uploadFolder="`pyramid/${validatedGameId}`"
-                :cropWidth="200"
-                :cropHeight="200"
-              />
-            </div>
-            <div class="item-card__fields">
-              <input
-                v-model="item.label"
-                :placeholder="t('build.pyramid.items.displayName')"
-                class="field-input field-input--compact"
-                @input="updateCommunityItemId(index)"
-              />
-              <input
-                v-model="item.name"
-                :placeholder="t('build.pyramid.items.searchName')"
-                class="field-input field-input--compact"
-                @input="updateCommunityItemId(index)"
-              />
-              <div v-if="item.color" class="item-card__color-tag">
-                <span class="item-card__color-preview" :style="{ backgroundColor: item.color }"></span>
-                <span class="item-card__color-label">{{ getColorTagLabel(item.color) }}</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="item-card__remove"
-              @click="removeCommunityItem(index)"
-              :title="t('build.pyramid.items.removeItem')"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-        
-        <div v-else class="empty-state">
-          <p>{{ t('build.pyramid.community.empty') }}</p>
-          <CustomButton
-            type="is-primary"
-            :label="t('build.pyramid.community.addFirstItem')"
-            @click="openAddCommunityItemModal"
-          />
-        </div>
-
-        <div class="section-footer">
-          <CustomButton
-            type="is-light"
-            :label="t('build.pyramid.community.addItem')"
-            @click="openAddCommunityItemModal"
-          />
-        </div>
-      </div>
-    </section>
 
     <!-- Add Item Modal -->
     <div class="modal" :class="{ 'is-active': showAddItemModal }">
@@ -399,6 +331,17 @@
             :placeholder="t('build.pyramid.modal.searchNamePlaceholder')"
             :disabled="!newItem.src || !newItem.label"
           />
+        </div>
+
+        <div class="field">
+          <label class="label has-text-white">{{ t('build.pyramid.modal.descriptionLabel') }}</label>
+          <textarea
+            class="textarea is-dark"
+            v-model="newItem.description"
+            :placeholder="t('build.pyramid.modal.descriptionPlaceholder')"
+            :disabled="!newItem.src || !newItem.label"
+            rows="3"
+          ></textarea>
         </div>
 
         <!-- Color Tag Selection -->
@@ -510,31 +453,31 @@
       </div>
     </div>
 
-    <!-- Add Community Item Modal -->
-    <div class="modal" :class="{ 'is-active': showAddCommunityItemModal }">
-      <div class="modal-background" @click="closeAddCommunityItemModal"></div>
+    <!-- Edit Item Modal -->
+    <div class="modal" :class="{ 'is-active': showEditItemModal }">
+      <div class="modal-background" @click="closeEditItemModal"></div>
       <div class="modal-content box has-background-dark has-text-white">
-        <button class="delete is-large" aria-label="close" @click="closeAddCommunityItemModal"></button>
-        <h2 class="title has-text-white">{{ t('build.pyramid.modal.title') }}</h2>
-        
+        <button class="delete is-large" aria-label="close" @click="closeEditItemModal"></button>
+        <h2 class="title has-text-white">{{ t('build.pyramid.modal.editTitle') }}</h2>
+
         <div class="field">
           <label class="label has-text-white">{{ t('build.pyramid.modal.imageLabel') }}</label>
           <ImageUploader
-            v-model="newCommunityItem.src"
+            v-model="editItem.src"
             :uploadFolder="`pyramid/${validatedGameId}`"
-            :cropWidth="200"
-            :cropHeight="200"
+            :cropWidth="250"
+            :cropHeight="250"
           />
-          <p v-if="!newCommunityItem.src" class="help has-text-warning">{{ t('build.pyramid.modal.imageRequired') }}</p>
+          <p v-if="!editItem.src" class="help has-text-warning">{{ t('build.pyramid.modal.imageRequired') }}</p>
         </div>
 
         <div class="field">
           <label class="label has-text-white">{{ t('build.pyramid.items.displayName') }}</label>
           <input
             class="input is-dark"
-            v-model="newCommunityItem.label"
+            v-model="editItem.label"
             :placeholder="t('build.pyramid.modal.displayNamePlaceholder')"
-            :disabled="!newCommunityItem.src"
+            :disabled="!editItem.src"
           />
         </div>
 
@@ -542,10 +485,21 @@
           <label class="label has-text-white">{{ t('build.pyramid.items.searchName') }}</label>
           <input
             class="input is-dark"
-            v-model="newCommunityItem.name"
+            v-model="editItem.name"
             :placeholder="t('build.pyramid.modal.searchNamePlaceholder')"
-            :disabled="!newCommunityItem.src || !newCommunityItem.label"
+            :disabled="!editItem.src || !editItem.label"
           />
+        </div>
+
+        <div class="field">
+          <label class="label has-text-white">{{ t('build.pyramid.modal.descriptionLabel') }}</label>
+          <textarea
+            class="textarea is-dark"
+            v-model="editItem.description"
+            :placeholder="t('build.pyramid.modal.descriptionPlaceholder')"
+            :disabled="!editItem.src || !editItem.label"
+            rows="3"
+          ></textarea>
         </div>
 
         <!-- Color Tag Selection -->
@@ -555,8 +509,8 @@
             <button
               type="button"
               class="button is-small is-light"
-              @click="showAddColorTagPanelCommunity = true"
-              :disabled="!newCommunityItem.src || !newCommunityItem.label"
+              @click="showAddColorTagPanel = true"
+              :disabled="!editItem.src || !editItem.label"
             >
               Add Color Tag
             </button>
@@ -569,8 +523,8 @@
             <button
               type="button"
               class="button is-small is-text has-text-white"
-              @click="showAddColorTagPanelCommunity = true"
-              :disabled="!newCommunityItem.src || !newCommunityItem.label"
+              @click="showAddColorTagPanel = true"
+              :disabled="!editItem.src || !editItem.label"
             >
               Add New Color Tag
             </button>
@@ -581,8 +535,8 @@
                 v-for="(color, label) in config.colorsTag"
                 :key="label"
                 class="color-tag-chip"
-                :class="{ selected: newCommunityItem.color === color }"
-                @click="newCommunityItem.color = color"
+                :class="{ selected: editItem.color === color }"
+                @click="editItem.color = color"
               >
                 <span class="color-tag-chip__preview" :style="{ backgroundColor: color }"></span>
                 <span class="color-tag-chip__label">{{ label }}</span>
@@ -591,15 +545,15 @@
             <button
               type="button"
               class="button is-small is-text has-text-white"
-              @click="showAddColorTagPanelCommunity = true"
-              :disabled="!newCommunityItem.src || !newCommunityItem.label"
+              @click="showAddColorTagPanel = true"
+              :disabled="!editItem.src || !editItem.label"
             >
               Add New Color Tag
             </button>
           </div>
-          
+
           <!-- Add Color Tag Panel -->
-          <div v-if="showAddColorTagPanelCommunity" class="add-color-tag-panel">
+          <div v-if="showAddColorTagPanel" class="add-color-tag-panel">
             <div class="field">
               <label class="label has-text-white">Tag Label</label>
               <input
@@ -627,14 +581,14 @@
             <div class="buttons">
               <button
                 class="button is-success is-small"
-                @click="addColorTagAndAssignToCommunityItem"
+                @click="addColorTagAndAssignToEditItem"
                 :disabled="!newColorTagLabel.trim()"
               >
                 Add & Assign
               </button>
               <button
                 class="button is-text has-text-white is-small"
-                @click="cancelAddColorTagCommunity"
+                @click="cancelAddColorTag()"
               >
                 Cancel
               </button>
@@ -645,17 +599,18 @@
         <div class="buttons">
           <button
             class="button is-success"
-            @click="saveNewCommunityItem"
-            :disabled="!newCommunityItem.src || !newCommunityItem.label"
+            @click="saveEditedItem"
+            :disabled="!editItem.src || !editItem.label"
           >
             {{ t('build.pyramid.modal.save') }}
           </button>
-          <button class="button is-text has-text-white" @click="closeAddCommunityItemModal">
+          <button class="button is-text has-text-white" @click="closeEditItemModal">
             {{ t('build.pyramid.modal.cancel') }}
           </button>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -701,7 +656,6 @@ const t = (key: string, params?: Record<string, unknown>) => localeStore.transla
 const activeSection = ref<string | null>(null);
 const showItems = computed(() => activeSection.value === 'items');
 const showRows = computed(() => activeSection.value === 'rows');
-const showCommunity = computed(() => activeSection.value === 'community');
 const showColorTags = computed(() => activeSection.value === 'colorTags');
 
 // Section refs for scrolling
@@ -712,13 +666,13 @@ const colorTagsSection = ref<HTMLElement | null>(null);
 
 // Modal state
 const showAddItemModal = ref(false);
-const showAddCommunityItemModal = ref(false);
-const newItem = ref<Partial<PyramidItem>>({ id: '', label: '', name: '', src: '', active: true, source: '', color: '' });
-const newCommunityItem = ref<Partial<PyramidItem>>({ id: '', label: '', name: '', src: '', active: true, source: '', color: '' });
+const showEditItemModal = ref(false);
+const newItem = ref({ id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' });
+const editItem = ref({ id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' });
+const editingItemIndex = ref(-1);
 
 // Color tag management state
 const showAddColorTagPanel = ref(false);
-const showAddColorTagPanelCommunity = ref(false);
 const newColorTagLabel = ref('');
 const newColorTagColor = ref('#9900ff');
 const editingColorTag = ref<string | null>(null);
@@ -919,13 +873,6 @@ function updateItemId(index: number) {
 }
 
 // Update community item ID when label/name changes
-function updateCommunityItemId(index: number) {
-  const item = config.value.communityItems[index];
-  if (item) {
-    const slug = generateSlug(item.label || item.name);
-    item.id = slug || createItemId();
-  }
-}
 
 // Computed for color tags count
 const colorTagsCount = computed(() => {
@@ -940,12 +887,6 @@ watch(() => [config.value.colorsTag, newItem.value.src, newItem.value.label], ()
   }
 }, { deep: true });
 
-watch(() => [config.value.colorsTag, newCommunityItem.value.src, newCommunityItem.value.label], () => {
-  if (colorTagsCount.value === 1 && newCommunityItem.value.src && newCommunityItem.value.label && !newCommunityItem.value.color) {
-    const firstColor = Object.values(config.value.colorsTag || {})[0] as string;
-    newCommunityItem.value.color = firstColor;
-  }
-}, { deep: true });
 
 // Color tag management functions
 function addColorTag(label: string, color: string) {
@@ -979,12 +920,6 @@ function addColorTagAndAssignToItem() {
   cancelAddColorTag();
 }
 
-function addColorTagAndAssignToCommunityItem() {
-  if (!newColorTagLabel.value.trim()) return;
-  addColorTag(newColorTagLabel.value.trim(), newColorTagColor.value);
-  newCommunityItem.value.color = newColorTagColor.value;
-  cancelAddColorTagCommunity();
-}
 
 function cancelAddColorTag() {
   showAddColorTagPanel.value = false;
@@ -992,15 +927,10 @@ function cancelAddColorTag() {
   newColorTagColor.value = '#9900ff';
 }
 
-function cancelAddColorTagCommunity() {
-  showAddColorTagPanelCommunity.value = false;
-  newColorTagLabel.value = '';
-  newColorTagColor.value = '#9900ff';
-}
 
 // Modal functions
 function openAddItemModal() {
-  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
+  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' };
   showAddItemModal.value = true;
   // Auto-assign if only one tag exists
   if (colorTagsCount.value === 1) {
@@ -1011,63 +941,72 @@ function openAddItemModal() {
 
 function closeAddItemModal() {
   showAddItemModal.value = false;
-  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
+  newItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' };
   showAddColorTagPanel.value = false;
   cancelAddColorTag();
 }
 
 function saveNewItem() {
   if (!newItem.value.src || !newItem.value.label) return;
-  
+
   const slug = generateSlug(newItem.value.label || newItem.value.name);
   const item: PyramidItem = {
     id: slug || createItemId(),
     label: newItem.value.label || '',
     name: newItem.value.name || '',
     src: newItem.value.src || '',
+    description: newItem.value.description || undefined,
     active: true,
     source: '',
     color: newItem.value.color || undefined,
   };
-  
+
   config.value.items.push(item);
   closeAddItemModal();
 }
 
-function openAddCommunityItemModal() {
-  newCommunityItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
-  showAddCommunityItemModal.value = true;
-  // Auto-assign if only one tag exists
-  if (colorTagsCount.value === 1) {
-    const firstColor = Object.values(config.value.colorsTag || {})[0] as string;
-    newCommunityItem.value.color = firstColor;
-  }
+function openEditItemModal(index: number) {
+  const item = config.value.items[index];
+  editItem.value = { ...item };
+  editingItemIndex.value = index;
+  showEditItemModal.value = true;
 }
 
-function closeAddCommunityItemModal() {
-  showAddCommunityItemModal.value = false;
-  newCommunityItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '' };
-  showAddColorTagPanelCommunity.value = false;
-  cancelAddColorTagCommunity();
+function closeEditItemModal() {
+  showEditItemModal.value = false;
+  editItem.value = { id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' };
+  editingItemIndex.value = -1;
+  showAddColorTagPanel.value = false;
+  cancelAddColorTag();
 }
 
-function saveNewCommunityItem() {
-  if (!newCommunityItem.value.src || !newCommunityItem.value.label) return;
-  
-  const slug = generateSlug(newCommunityItem.value.label || newCommunityItem.value.name);
+function saveEditedItem() {
+  if (!editItem.value.src || !editItem.value.label || editingItemIndex.value === -1) return;
+
+  const slug = generateSlug(editItem.value.label || editItem.value.name);
   const item: PyramidItem = {
     id: slug || createItemId(),
-    label: newCommunityItem.value.label || '',
-    name: newCommunityItem.value.name || '',
-    src: newCommunityItem.value.src || '',
+    label: editItem.value.label || '',
+    name: editItem.value.name || '',
+    src: editItem.value.src || '',
+    description: editItem.value.description || undefined,
     active: true,
     source: '',
-    color: newCommunityItem.value.color || undefined,
+    color: editItem.value.color || undefined,
   };
-  
-  config.value.communityItems.push(item);
-  closeAddCommunityItemModal();
+
+  config.value.items[editingItemIndex.value] = item;
+  closeEditItemModal();
 }
+
+function addColorTagAndAssignToEditItem() {
+  if (!newColorTagLabel.value.trim()) return;
+  addColorTag(newColorTagLabel.value.trim(), newColorTagColor.value);
+  editItem.value.color = newColorTagColor.value;
+  cancelAddColorTag();
+}
+
+
 
 // Item management
 function removeItem(index: number) {
@@ -1084,9 +1023,6 @@ function removeRow(index: number) {
 }
 
 // Community item management
-function removeCommunityItem(index: number) {
-  config.value.communityItems.splice(index, 1);
-}
 </script>
 
 <style scoped>
@@ -1168,6 +1104,11 @@ function removeCommunityItem(index: number) {
   gap: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.add-item-top {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .sort-options {
@@ -1273,10 +1214,36 @@ function removeCommunityItem(index: number) {
   font-weight: 500;
 }
 
-.item-card__remove {
+.item-card__actions {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  z-index: 2;
+}
+
+.item-card__edit {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.item-card__edit:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+.item-card__remove {
   width: 28px;
   height: 28px;
   border-radius: 50%;

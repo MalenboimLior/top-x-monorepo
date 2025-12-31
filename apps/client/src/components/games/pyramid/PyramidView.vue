@@ -8,7 +8,7 @@
             <img :src="props.userProfile?.photoURL || defaultProfile" class="user-image" />
             <img :src="topxLogo" class="logo" />
           </div>
-          <h1 class="game-title" v-html="props.shareImageTitle || props.gameHeader || 'Top Ranking'"></h1>
+          <h1 class="game-title" ref="gameTitleRef" :style="titleStyle" v-html="props.shareImageTitle || props.gameHeader || 'Top Ranking'"></h1>
           <p v-if="props.userName" class="game-subtitle">By {{ props.userName.startsWith('@') ? props.userName : '@' + props.userName }}</p>
         </div>
 
@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import { PyramidItem, PyramidRow, PyramidSlot } from '@top-x/shared/types/pyramid';
 import topxLogo from '@/assets/topx-logo.png';
 
@@ -96,10 +96,56 @@ import defaultProfile from '@/assets/profile.png';
 const pyramidImages = ref<HTMLImageElement[]>([]);
 const worstImage = ref<HTMLImageElement | null>(null);
 const isImageLoading = ref(true);
+const gameTitleRef = ref<HTMLElement | null>(null);
+const titleFontSize = ref<number | null>(null);
+
+const titleStyle = computed(() => {
+  if (titleFontSize.value !== null) {
+    return { fontSize: `${titleFontSize.value}px` };
+  }
+  return {};
+});
+
+function adjustTitleFontSize() {
+  if (!gameTitleRef.value) return;
+  
+  const titleElement = gameTitleRef.value;
+  const container = titleElement.parentElement;
+  if (!container) return;
+  
+  const maxWidth = container.offsetWidth - 40; // Account for padding
+  const baseFontSize = window.innerWidth <= 767 ? 22.4 : 28.8; // 1.4rem or 1.8rem
+  let fontSize = baseFontSize;
+  
+  titleElement.style.fontSize = `${fontSize}px`;
+  titleElement.style.whiteSpace = 'nowrap';
+  
+  // Measure text width
+  const textWidth = titleElement.scrollWidth;
+  
+  // If text overflows, reduce font size
+  if (textWidth > maxWidth) {
+    fontSize = (maxWidth / textWidth) * fontSize;
+    fontSize = Math.max(fontSize, 12); // Minimum font size
+    titleFontSize.value = fontSize;
+  } else {
+    titleFontSize.value = null; // Use default
+  }
+}
 
 onMounted(async () => {
   await nextTick();
+  adjustTitleFontSize();
 });
+
+watch(
+  [() => props.shareImageTitle, () => props.gameHeader],
+  () => {
+    nextTick(() => {
+      adjustTitleFontSize();
+    });
+  }
+);
 
 function toRoman(num: number): string {
   const numerals = ['I', 'II', 'III', 'IV'];
@@ -171,6 +217,10 @@ function toRoman(num: number): string {
   color: #fff;
   text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 .game-subtitle {
   font-size: 0.9rem;

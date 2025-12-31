@@ -78,7 +78,10 @@
               <span class="countdown-label">{{ t('games.pyramid.statsRevealCountdown.seconds') }}</span>
             </div>
           </div>
-          <p class="countdown-message">{{ t('games.pyramid.statsRevealCountdown.message') }}</p>
+          <p class="countdown-message">
+            {{ t('games.pyramid.statsRevealCountdown.message') }}
+            <span v-if="formattedRevealDate" class="reveal-date">{{ formattedRevealDate }}</span>
+          </p>
         </div>
       </div>
     </div>
@@ -308,6 +311,19 @@ const timeRemaining = ref({
   seconds: 0,
 });
 
+const formattedRevealDate = computed(() => {
+  if (!props.statsRevealDate) return '';
+  const date = new Date(props.statsRevealDate);
+  return date.toLocaleString(localeStore.locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+});
+
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
 function updateCountdown() {
@@ -416,11 +432,18 @@ watch(() => props.statsRevealDate, () => {
 
 const sortedItemStats = computed(() => {
   const allItems = [...props.items, ...props.communityItems];
-  const statsArray = Object.entries(stats.value.itemRanks).map(([itemId, ranks]) => {
+  const allItemIds = new Set([
+    ...Object.keys(stats.value.itemRanks),
+    ...Object.keys(stats.value.worstItemCounts)
+  ]);
+  
+  const statsArray = Array.from(allItemIds).map((itemId) => {
     const item = allItems.find((i: PyramidItem) => i.id === itemId);
+    const ranks = stats.value.itemRanks[itemId] || {};
     const score = props.rows.reduce((total: number, row: PyramidRow) => {
       return total + (ranks[row.id] || 0) * row.points;
     }, 0) + ((stats.value.worstItemCounts[itemId] || 0) * (props.worstPoints || 0));
+    
     return {
       id: itemId,
       name: item?.label || itemId,
@@ -974,6 +997,14 @@ tbody tr:hover .item-image {
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
   margin-top: 1rem;
+}
+
+.reveal-date {
+  display: block;
+  color: #00e8e0;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
 }
 
 @keyframes slideUp {
