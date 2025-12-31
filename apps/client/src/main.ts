@@ -59,8 +59,10 @@ import {
   faPlus,
   faCheck,
   faCrosshairs,
+  faCubes,
   faRightFromBracket,
   faHandPointer,
+  faBrain,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -90,6 +92,7 @@ library.add(
   faGamepad,
   faTrophy,
   faBolt,
+  faBrain,
   faFire,
   faSkull,
   faVenus,
@@ -119,6 +122,7 @@ library.add(
   faPlus,
   faCheck,
   faCrosshairs,
+  faCubes,
   faRightFromBracket,
   faHandPointer,
 );

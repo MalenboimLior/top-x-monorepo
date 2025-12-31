@@ -5,7 +5,7 @@
 /* Page Container */
 .page-container {
   min-height: 100vh;
-  padding: clamp(var(--space-6), 8vh, var(--space-9)) var(--space-6) var(--space-13);
+  padding: clamp(var(--space-2), 2vh, var(--space-7)) var(--space-6) var(--space-13);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   width: 100%;

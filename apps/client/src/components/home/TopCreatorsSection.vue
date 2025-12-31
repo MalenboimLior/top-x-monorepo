@@ -8,29 +8,32 @@
     </header>
     <ul class="top-creators__list">
       <li
-        v-for="(creator, index) in creators"
+        v-for="(creator, index) in visibleCreators"
         :key="creator.uid"
         class="top-creators__item"
+        :class="{ 'top-creators__item--placeholder': creator.isPlaceholder }"
       >
-        <button class="top-creators__avatar" type="button" @click="$emit('open-profile', creator.uid)">
-          <img :src="creator.photoURL" :alt="creator.displayName" />
-          <span class="top-creators__badge">
-            <span class="top-creators__medal">🏅</span>
-            <span class="top-creators__rank">#{{ index + 1 }}</span>
-          </span>
-        </button>
-        <div class="top-creators__meta">
-          <span class="top-creators__name">{{ creator.displayName }}</span>
-          <span class="top-creators__username" v-if="creator.username">{{ creator.username }}</span>
-        </div>
-      </li>
-      <li class="top-creators__item top-creators__item--placeholder">
-        <div class="top-creators__avatar top-creators__avatar--placeholder" aria-hidden="true">
-          <span class="top-creators__placeholder-text">?</span>
-        </div>
-        <div class="top-creators__meta">
-          <span class="top-creators__name">This spot can be yours!</span>
-        </div>
+        <template v-if="!creator.isPlaceholder">
+          <button class="top-creators__avatar" type="button" @click="$emit('open-profile', creator.uid)">
+            <img :src="creator.photoURL" :alt="creator.displayName" />
+            <span class="top-creators__badge">
+              <span class="top-creators__medal">🏅</span>
+              <span class="top-creators__rank">#{{ index + 1 }}</span>
+            </span>
+          </button>
+          <div class="top-creators__meta">
+            <span class="top-creators__name">{{ creator.displayName }}</span>
+            <span class="top-creators__username" v-if="creator.username">{{ creator.username }}</span>
+          </div>
+        </template>
+        <template v-else>
+          <div class="top-creators__avatar top-creators__avatar--placeholder" aria-hidden="true">
+            <span class="top-creators__placeholder-text">?</span>
+          </div>
+          <div class="top-creators__meta">
+            <span class="top-creators__name">{{ creator.displayName }}</span>
+          </div>
+        </template>
       </li>
     </ul>
   </section>
@@ -45,9 +48,10 @@ interface CreatorEntry {
   displayName: string;
   username?: string;
   photoURL: string;
+  isPlaceholder?: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
   title: string;
   subtitle: string;
   creators: CreatorEntry[];
@@ -58,7 +62,21 @@ defineEmits<{
 }>();
 
 const localeStore = useLocaleStore();
+const t = (key: string) => localeStore.translate(key);
 const isRTL = computed(() => localeStore.direction === 'rtl');
+
+const visibleCreators = computed(() => {
+  const result = [...props.creators].slice(0, 8);
+  while (result.length < 8) {
+    result.push({
+      uid: `placeholder-${result.length}`,
+      displayName: t('home.topCreators.placeholder'),
+      photoURL: '',
+      isPlaceholder: true
+    });
+  }
+  return result;
+});
 </script>
 
 <style scoped>
@@ -183,6 +201,7 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
 .top-creators__username {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
+  direction: ltr;
 }
 
 .top-creators__item--placeholder .top-creators__name {

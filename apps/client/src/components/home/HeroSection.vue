@@ -12,7 +12,7 @@
           <span class="hero-badge-text">{{ t('home.heroPlatform') }}</span>
         </div>
 
-        <h1 class="hero-title fade-in-up" :style="{ animationDelay: '0.2s' }">
+        <h1 class="hero-title fade-in-up" dir="ltr" :style="{ animationDelay: '0.2s' }">
           <span class="text-gradient-primary">Play.</span>
           <span class="text-gradient-secondary">Compete.</span>
           <br class="mobile-break" />
@@ -56,22 +56,33 @@
         </div>
       </div>
 
-      <!-- Visual Element (Optional 3D or Illustration placeholder) -->
+      <!-- Visual Element -->
       <div class="hero-visual fade-in-up" :style="{ animationDelay: '0.6s' }">
+        <!-- Decorative Elements -->
+        <div class="visual-decor decor-1">✨</div>
+        <div class="visual-decor decor-2">⚡</div>
+        <div class="visual-decor decor-3">🔥</div>
+        <div class="visual-decor decor-4">🎯</div>
+
         <div class="floating-card card-1">
           <div class="card-icon">🏆</div>
           <div class="card-content">
-            <div class="card-line short"></div>
-            <div class="card-line long"></div>
+            <div class="card-text">{{ t('home.heroCard.trophy') }}</div>
           </div>
         </div>
         <div class="floating-card card-2">
           <div class="card-icon">🎮</div>
           <div class="card-content">
-            <div class="card-line medium"></div>
-            <div class="card-line short"></div>
+            <div class="card-text">{{ t('home.heroCard.creator') }}</div>
           </div>
         </div>
+        <div class="floating-card card-3">
+          <div class="card-icon">⚔️</div>
+          <div class="card-content">
+            <div class="card-text">{{ t('home.heroCard.stats') }}</div>
+          </div>
+        </div>
+
         <div class="hero-logo-container">
            <img 
             :src="logo" 
