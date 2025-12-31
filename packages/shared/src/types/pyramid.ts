@@ -28,6 +28,7 @@ export interface PyramidConfig {
   hideInfoButton?: boolean;
   statsRevealDate?: string; // ISO date string - stats will only be shown after this date
   colorsTag?: { [label: string]: string }; // Key-value object where key is tag label and value is hex color
+  type?: 'basic' | 'Xusers';
 }
 export interface PyramidRow {
   id: number;
@@ -47,4 +48,5 @@ export interface PyramidData {
 export interface PyramidStats {
   itemRanks: { [itemId: string]: { [tierId: string]: number } };
   totalPlayers: number;
-  worstItemCounts: { [itemId: string]: number };}
+  worstItemCounts: { [itemId: string]: number };
+}

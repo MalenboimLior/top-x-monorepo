@@ -10,12 +10,9 @@ export const useThemeStore = defineStore('theme', () => {
   const userPreference = ref<Theme | null>(null);
   const isGameMode = ref(false);
 
-  // Detect system preference
+  // Default to dark theme
   const getSystemPreference = (): Theme => {
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return 'dark'; // Default to dark if can't detect
+    return 'dark'; // Always default to dark theme
   };
 
   // Load theme from localStorage or use system preference

@@ -51,7 +51,9 @@
                 <font-awesome-icon :icon="['fab', 'x-twitter']" class="social-icon" />
                 {{ t('footer.social.app') }}
               </a>
+          
             </li>
+            
             <li><router-link to="/contact" class="footer-link">{{ t('footer.legal.contact') }}</router-link></li>
             <li><router-link to="/contact?type=developer" class="footer-link">{{ t('footer.legal.developer') }}</router-link></li>
             <li><router-link to="/contact?type=advertiser" class="footer-link">{{ t('footer.legal.advertiser') }}</router-link></li>
