@@ -1069,9 +1069,9 @@ function goBack() {
   }
 
   .hero-description {
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     line-clamp: 3;
-    text-align: center;
+    
   }
   
   .close-button {
@@ -1082,7 +1082,7 @@ function goBack() {
   
   .hero-stats-row {
       flex-wrap: wrap;
-      gap: var(--space-4);
+      gap: var(--space-2);
       justify-content: center;
   }
 
@@ -1112,8 +1112,7 @@ function goBack() {
   
   .hero-instructions-content {
       flex-direction: column;
-      align-items: center;
-      text-align: center;
+     
   }
 
   .instructions-modal-overlay {

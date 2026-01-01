@@ -213,12 +213,15 @@
        <div class="pool-controls mb-4">
        
     
-        <CustomButton
-         type="is-primary"
-          :label="t('games.pyramid.addNewItem')"
-          :icon="['fas', 'plus']"
-          @click="showAddItemPopup"
-        />
+        <div class="buttons gap-2">
+        
+          <CustomButton
+           type="is-primary"
+            :label="t('games.pyramid.addNewItem')"
+            :icon="['fas', 'plus']"
+            @click="showAddItemPopup"
+          />
+        </div>
       </div>
       <h2 class="subtitle has-text-white" style="font-size: 20px;">{{ props.communityHeader || t('games.pyramid.communityItems') }}</h2>
       
@@ -251,8 +254,28 @@
             :class="{ 'selected': selectedInfoIcon === image.id }"
             @click.stop="showDescription(image)"
           />
+          <!-- Delete button for owned community items -->
+          <font-awesome-icon
+            v-if="userStore.user && image.source === userStore.user.uid"
+            :icon="['fas', 'trash-can']"
+            class="delete-icon"
+            @click.stop="showDeleteConfirmation(image)"
+          />
         </div>
       </div>
+
+      <!-- Delete Confirmation Dialog -->
+      <div v-if="showDeleteConfirm && itemToDelete" class="delete-confirm-overlay" @click="confirmDelete(false)">
+        <div class="delete-confirm-dialog" @click.stop>
+          <p class="delete-confirm-message">Are you sure you want to delete "{{ itemToDelete.label }}"?</p>
+          <p class="delete-confirm-warning">This action cannot be undone.</p>
+          <div class="delete-confirm-buttons">
+            <button class="button is-small is-danger" @click="confirmDelete(true)">Delete</button>
+            <button class="button is-small is-text" @click="confirmDelete(false)">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Description Tab -->
       <div v-show="showTab" :class="['description-tab', { show: showTab }]">
         <div class="tab-content" @click.stop>
@@ -271,7 +294,7 @@
             
             <div v-if="!userStore.user" class="p-5">
               <h2 class="title is-4 has-text-white mb-4">{{ t('games.pyramid.addNewItem') }}</h2>
-              <p class="mb-5">Feeling sneaky? Logged-in users only for adding items. Sign in with X and unleash your picks! ⚡</p>
+              <p class="mb-5">{{ t('games.pyramid.loginPrompt') }}</p>
               <div class="buttons">
                 <CustomButton
                   type="is-primary"
@@ -282,8 +305,52 @@
             </div>
 
             <div v-else class="p-2">
-              <h2 class="title is-4 has-text-white mb-5">{{ t('games.pyramid.addNewItem') }}</h2>
+              <div class="modal-header-with-button">
+                <h2 class="title is-4 has-text-white mb-5">{{ isEditMode ? t('build.pyramid.modal.editTitle') : t('games.pyramid.addNewItem') }}</h2>
+                <!-- Temporarily hidden - Add Me button not working
+                <CustomButton
+                  v-if="userStore.user && props.type === 'Xusers'"
+                  type="is-info"
+                  size="is-small"
+                  :label="t('games.pyramid.addMe')"
+                  :icon="['fas', 'user-plus']"
+                  @click="() => { fillWithMyData(); openAddCommunityItemModal(); }"
+                />
+                -->
+              </div>
               
+              <!-- For Xusers: Username first -->
+              <div v-if="props.type === 'Xusers'" class="field mb-4">
+                <label class="label has-text-white">{{ t('build.pyramid.modal.xusersUsernameLabel') }}</label>
+                <div class="control has-icons-left">
+                  <span class="icon is-left" style="color: #ccc;">@</span>
+                  <input
+                    class="input is-dark"
+                    v-model="newCommunityItem.name"
+                    placeholder="e.g. amit_segal"
+                    :class="{ 'is-danger': usernameExists(newCommunityItem.name) }"
+                    @input="onUsernameInput(newCommunityItem)"
+                  />
+                </div>
+                <p v-if="usernameExists(newCommunityItem.name)" class="help is-danger">This username already exists</p>
+                <p v-if="newCommunityItem.name" class="help">
+                  <a :href="'https://x.com/' + newCommunityItem.name" target="_blank" class="has-text-info">
+                    View X Profile: https://x.com/{{ newCommunityItem.name }}
+                  </a>
+                </p>
+              </div>
+
+              <!-- Display Name (for both types, but label changes) -->
+              <div class="field mb-4">
+                <label class="label has-text-white">{{ props.type === 'Xusers' ? t('build.pyramid.modal.xusersDisplayNameLabel') : t('build.pyramid.items.displayName') }}</label>
+                <input
+                  class="input is-dark"
+                  v-model="newCommunityItem.label"
+                  :placeholder="props.type === 'Xusers' ? 'e.g. Amit Segal' : t('build.pyramid.modal.displayNamePlaceholder')"
+                />
+              </div>
+
+              <!-- Image uploader -->
               <div class="field mb-5">
                 <label class="label has-text-white">{{ t('build.pyramid.modal.imageLabel') }}</label>
                 <ImageUploader
@@ -295,17 +362,8 @@
                 <p v-if="!newCommunityItem.src" class="help has-text-warning">{{ t('build.pyramid.modal.imageRequired') }}</p>
               </div>
 
-              <div class="field mb-4">
-                <label class="label has-text-white">{{ t('build.pyramid.items.displayName') }}</label>
-                <input
-                  class="input is-dark"
-                  v-model="newCommunityItem.label"
-                  :placeholder="t('build.pyramid.modal.displayNamePlaceholder')"
-                  :disabled="!newCommunityItem.src"
-                />
-              </div>
-
-              <div class="field mb-4">
+              <!-- For basic type: Search Name -->
+              <div v-if="props.type !== 'Xusers'" class="field mb-4">
                 <label class="label has-text-white">{{ t('build.pyramid.items.searchName') }}</label>
                 <input
                   class="input is-dark"
@@ -315,13 +373,13 @@
                 />
               </div>
 
+              <!-- Description (last for both types) -->
               <div class="field mb-5">
                 <label class="label has-text-white">{{ t('build.pyramid.modal.descriptionLabel') }}</label>
                 <textarea
                   class="textarea is-dark"
                   v-model="newCommunityItem.description"
-                  :placeholder="t('build.pyramid.modal.descriptionPlaceholder')"
-                  :disabled="!newCommunityItem.src || !newCommunityItem.label"
+                  :placeholder="props.type === 'Xusers' ? t('build.pyramid.modal.xusersDescriptionPlaceholder') : t('build.pyramid.modal.descriptionPlaceholder')"
                   rows="3"
                 ></textarea>
               </div>
@@ -329,8 +387,8 @@
               <div class="buttons mt-6">
                 <CustomButton
                   type="is-primary"
-                  :label="isSaving ? 'Saving...' : t('build.pyramid.modal.save')"
-                  :disabled="!newCommunityItem.src || !newCommunityItem.label || isSaving"
+                  :label="isSaving ? 'Saving...' : (isEditMode ? 'Update' : t('build.pyramid.modal.save'))"
+                  :disabled="!newCommunityItem.src || !newCommunityItem.label || isSaving || (props.type === 'Xusers' && (!newCommunityItem.name || usernameExists(newCommunityItem.name)))"
                   @click="saveNewCommunityItem"
                 />
                 <button class="button is-text has-text-white" @click="closeAddCommunityItemModal">
@@ -374,7 +432,7 @@ import { faCircleInfo, faSearch, faEraser, faPlus, faArrowRight, faChevronDown, 
 import { useRoute } from 'vue-router';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
-import { addCommunityItem } from '@/services/pyramid';
+import { addCommunityItem, deleteCommunityItem as deleteCommunityItemService } from '@/services/pyramid';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '@top-x/shared';
 import { useLocaleStore } from '@/stores/locale';
@@ -509,6 +567,7 @@ const props = defineProps<{
   hideInfoButton?: boolean;
   colorsTag?: { [label: string]: string };
   userName?: string;
+  type?: 'basic' | 'Xusers';
 }>();
 
 const emit = defineEmits<{
@@ -553,6 +612,8 @@ const displayedDescription = ref('');
 let typingInterval: ReturnType<typeof setInterval> | null = null;
 
 const showConfirm = ref(false);
+const showDeleteConfirm = ref(false);
+const itemToDelete = ref<PyramidItem | null>(null);
 const pyramidRef = ref<HTMLElement | null>(null);
 const isTouchDevice = ref(false);
 const isSubmitting = ref(false);
@@ -1041,12 +1102,201 @@ const validatedGameId = computed(() => {
   return id.replace(/[\/\\]/g, '');
 });
 
+// Xusers helpers
+function usernameExists(username: string): boolean {
+  if (!username) return false;
+  const lowerUsername = username.toLowerCase().trim().replace(/^@/, '');
+  
+  // Check in official items
+  const inOfficial = props.items.some((item) => 
+    item.name?.toLowerCase().trim().replace(/^@/, '') === lowerUsername
+  );
+  if (inOfficial) return true;
+  
+  // Check in community items (both from props and local pool)
+  const inCommunity = communityPool.value.some((item) => 
+    item.name?.toLowerCase().trim().replace(/^@/, '') === lowerUsername
+  );
+  return inCommunity;
+}
+
+function onUsernameInput(item: any) {
+  if (props.type === 'Xusers' && item.name) {
+    // Remove @ from the beginning of the input field
+    item.name = item.name.replace(/^@/, '');
+    item.id = item.name.toLowerCase().trim();
+  }
+}
+
+// Computed property to check if "Add me!" button should be disabled
+const isAddMeDisabled = computed(() => {
+  if (!userStore.user) return true;
+  const userId = userStore.user.uid;
+  return [...officialPool.value, ...communityPool.value].some(
+    (item) => item.source === userId
+  );
+});
+
+// Computed property to check if current user is already in pools (for modal button)
+const isCurrentUserInPools = computed(() => {
+  if (!userStore.user) return false;
+  const userId = userStore.user.uid;
+  return [...officialPool.value, ...communityPool.value].some(
+    (item) => item.source === userId
+  );
+});
+
+// Computed property to check if we're in edit mode
+const isEditMode = computed(() => {
+  return newCommunityItem.value.id && communityPool.value.some(item => item.id === newCommunityItem.value.id);
+});
+
+// Function to check if current user owns a community item
+function isCurrentUserOwner(item: PyramidItem): boolean {
+  return userStore.user && item.source === userStore.user.uid;
+}
+
+// Function to pre-fill modal with user's data
+function fillWithMyData() {
+  if (!userStore.user) return;
+  
+  if (props.type === 'Xusers') {
+    // Try to get X handle from user profile
+    let xHandle = '';
+    
+    // Try to get from profile username first (this is the X handle)
+    if (userStore.profile?.username) {
+      xHandle = userStore.profile.username;
+    } else if (userStore.user.displayName) {
+      // If we don't have it stored, try to extract from displayName or use it as fallback
+      // For X auth, sometimes the displayName is the handle
+      xHandle = userStore.user.displayName.replace(/^@/, '').toLowerCase();
+    }
+    
+    // If still no handle, prompt the user
+    if (!xHandle) {
+      const handle = prompt('Enter your X handle (without @):');
+      if (!handle) return;
+      xHandle = handle.replace(/^@/, '').toLowerCase().trim();
+    } else {
+      xHandle = xHandle.replace(/^@/, '').toLowerCase().trim();
+    }
+    
+    // Pre-fill the form
+    newCommunityItem.value.name = xHandle;
+    newCommunityItem.value.label = userStore.user.displayName || xHandle;
+    // Resize profile photo to smaller size for pyramid display
+    const photoURL = userStore.user.photoURL || '';
+    newCommunityItem.value.src = photoURL ? `${photoURL}=s100` : '';
+    newCommunityItem.value.description = ''; // Will auto-generate on save
+    
+    // Trigger ID generation
+    onUsernameInput(newCommunityItem.value);
+  } else {
+    // Basic type
+    newCommunityItem.value.label = userStore.user.displayName || 'Me';
+    newCommunityItem.value.name = userStore.user.displayName || 'Me';
+    // Resize profile photo to smaller size for pyramid display
+    const photoURL = userStore.user.photoURL || '';
+    newCommunityItem.value.src = photoURL ? `${photoURL}=s100` : '';
+    newCommunityItem.value.description = '';
+  }
+}
+
+async function addMe() {
+  if (!userStore.user) {
+    await handleLogin();
+    if (!userStore.user) return;
+  }
+
+  // Check if user already exists in any pool
+  const userId = userStore.user.uid;
+  const userExists = [...officialPool.value, ...communityPool.value].some(
+    (item) => item.source === 'community' && (item as any).userId === userId
+  );
+  
+  if (userExists) {
+    alert('You have already added yourself to this pyramid!');
+    return;
+  }
+  
+  // For Xusers type, add user directly without showing modal
+  if (props.type === 'Xusers') {
+    // We need to get the X handle from the user profile
+    // For now, we'll prompt them to enter it if we don't have it
+    // In a real implementation, you'd get this from the X auth provider data
+    const handle = prompt('Enter your X handle (without @):');
+    if (!handle) return;
+    
+    const cleanHandle = handle.replace(/^@/, '').toLowerCase().trim();
+    
+    // Check if handle already exists
+    if (usernameExists(cleanHandle)) {
+      alert('This username already exists in the pyramid!');
+      return;
+    }
+    
+    isSaving.value = true;
+    try {
+      const result = await addCommunityItem({
+        gameId: gameId.value,
+        itemData: {
+          label: userStore.user.displayName || cleanHandle,
+          name: cleanHandle,
+          description: `<a target="_blank" href="https://x.com/${cleanHandle}">https://x.com/${cleanHandle}</a>`,
+          color: '#64748B',
+          userId: userStore.user.uid,
+          userDisplayName: userStore.user.displayName || cleanHandle,
+        },
+        imageFile: userStore.user.photoURL as any,
+      });
+      
+      if (result.item) {
+        communityPool.value = [result.item, ...communityPool.value];
+      } else if (result.error) {
+        alert(result.error || 'Failed to add yourself.');
+      }
+    } catch (err) {
+      console.error('PyramidEdit: Error in addMe:', err);
+      alert('Failed to add yourself. Please try again.');
+    } finally {
+      isSaving.value = false;
+    }
+  } else {
+    // Basic Add Me logic
+    isSaving.value = true;
+    try {
+      const result = await addCommunityItem({
+        gameId: gameId.value,
+        itemData: {
+          label: userStore.user.displayName || 'Me',
+          name: userStore.user.displayName || 'Me',
+          description: '',
+          color: '#64748B',
+          userId: userStore.user.uid,
+          userDisplayName: userStore.user.displayName || 'Me',
+        },
+        imageFile: userStore.user.photoURL as any,
+      });
+      if (result.item) {
+        communityPool.value = [result.item, ...communityPool.value];
+      }
+    } catch (err) {
+      console.error('PyramidEdit: Error in addMe:', err);
+    } finally {
+      isSaving.value = false;
+    }
+  }
+}
+
 function openAddCommunityItemModal() {
+  // Preserve the src if it was set by fillWithMyData
+  const currentSrc = newCommunityItem.value.src;
   newCommunityItem.value = {
     id: '',
     label: '',
     name: '',
-    src: '',
+    src: currentSrc, // Keep the src if it was already set
     active: true,
     source: '',
     color: '#64748B',
@@ -1079,12 +1329,27 @@ async function saveNewCommunityItem() {
 
   isSaving.value = true;
   try {
+    let description = (newCommunityItem.value.description || '').trim();
+    let name = (newCommunityItem.value.name || newCommunityItem.value.label).trim();
+    let label = newCommunityItem.value.label.trim();
+
+    if (props.type === 'Xusers') {
+      const handle = name //.replace(/^@/, '').toLowerCase();
+      const profileLink = `<a target="_blank" href="https://x.com/${handle}">https://x.com/${handle}</a>`;
+
+      if (!description) {
+        description = profileLink;
+      } else {
+        description = `${description}<br><br>${profileLink}`;
+      }
+    }
+
     const result = await addCommunityItem({
       gameId: gameId.value,
       itemData: {
-        label: newCommunityItem.value.label.trim(),
-        name: (newCommunityItem.value.name || newCommunityItem.value.label).trim(),
-        description: (newCommunityItem.value.description || '').trim(),
+        label,
+        name,
+        description,
         color: '#64748B',
         userId: userStore.user.uid || 'anonymous',
         userDisplayName: userStore.user.displayName || 'anonymous',
@@ -1099,19 +1364,82 @@ async function saveNewCommunityItem() {
 
     if (analytics) {
       logEvent(analytics, 'user_action', {
-        action: 'save_item',
+        action: isEditMode.value ? 'update_item' : 'save_item',
         game_id: gameId.value,
         item_id: result.item.id,
       });
     }
 
-    communityPool.value = [result.item, ...communityPool.value];
+    if (isEditMode.value) {
+      // Update existing item in the community pool
+      const index = communityPool.value.findIndex(item => item.id === result.item.id);
+      if (index !== -1) {
+        communityPool.value[index] = result.item;
+      }
+    } else {
+      // Add new item to the community pool
+      communityPool.value = [result.item, ...communityPool.value];
+    }
+
     closeAddCommunityItemModal();
   } catch (err) {
     console.error('PyramidEdit: Error saving item:', err);
     alert('Failed to save item.');
   } finally {
     isSaving.value = false;
+  }
+}
+
+// Function to show delete confirmation for a community item
+function showDeleteConfirmation(item: PyramidItem) {
+  itemToDelete.value = item;
+  showDeleteConfirm.value = true;
+}
+
+// Function to confirm delete
+function confirmDelete(yes: boolean) {
+  showDeleteConfirm.value = false;
+  if (yes && itemToDelete.value) {
+    deleteCommunityItem(itemToDelete.value);
+  }
+  itemToDelete.value = null;
+}
+
+// Function to delete a community item
+async function deleteCommunityItem(item: PyramidItem) {
+  try {
+    // Call backend API to delete the item from the database
+    const result = await deleteCommunityItemService({
+      gameId: gameId.value,
+      item: item
+    });
+
+    if (result.error || !result.success) {
+      alert(result.error || 'Failed to delete item.');
+      return;
+    }
+
+    // Remove from community pool
+    communityPool.value = communityPool.value.filter(i => i.id !== item.id);
+
+    // If the item is currently in the pyramid, remove it
+    for (let row = 0; row < pyramid.value.length; row++) {
+      for (let col = 0; col < pyramid.value[row].length; col++) {
+        if (pyramid.value[row][col].image?.id === item.id) {
+          pyramid.value[row][col].image = null;
+        }
+      }
+    }
+
+    // If the item is in the worst slot, remove it
+    if (worstItem.value?.id === item.id) {
+      worstItem.value = null;
+    }
+
+    console.log('PyramidEdit: Deleted community item:', item.label);
+  } catch (err) {
+    console.error('PyramidEdit: Error deleting item:', err);
+    alert('Failed to delete item.');
   }
 }
 
@@ -1307,6 +1635,18 @@ function closeTab() {
 </script>
 
 <style scoped>
+.modal-header-with-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-header-with-button h2 {
+  margin-bottom: 0 !important;
+}
+
 .box {
   padding: 0 !important;
 }
@@ -2112,6 +2452,32 @@ function closeTab() {
   color: #c4ff00;
   border: none !important;
 }
+
+.delete-icon {
+  position: absolute;
+  top: 2px;
+  right: 26px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #fff;
+  background-color: #dc3545;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.delete-icon:hover {
+  transform: scale(1.3);
+  background-color: #c82333;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.6);
+}
 @media screen and (max-width: 767px) {
   .section {
     padding: 0.1rem 0;
@@ -2625,6 +2991,55 @@ function closeTab() {
 
 .community-item-modal .buttons {
   justify-content: flex-start !important;
+}
+
+/* Delete Confirmation Dialog */
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.delete-confirm-dialog {
+  background: #2a2a2a;
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  border: 1px solid #444;
+}
+
+.delete-confirm-message {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.delete-confirm-warning {
+  font-size: 0.9rem;
+  color: #ff6b6b;
+  margin-bottom: 1.5rem;
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.delete-confirm-buttons .button {
+  min-width: 80px;
 }
 </style>
 

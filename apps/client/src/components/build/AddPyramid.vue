@@ -1,5 +1,44 @@
 <template>
   <div class="pyramid-builder">
+    <!-- Type Selector -->
+    <section class="mode-section">
+      <h2 class="section-title">Pyramid Type</h2>
+      <div class="mode-options">
+        <label
+          class="mode-option"
+          :class="{ 'mode-option--selected': config.type === 'basic' || !config.type }"
+        >
+          <input
+            type="radio"
+            v-model="config.type"
+            value="basic"
+            class="mode-radio"
+          />
+          <div class="mode-content">
+            <span class="mode-icon">📐</span>
+            <span class="mode-label">Basic Pyramid</span>
+            <span class="mode-description">Standard items with custom labels and descriptions</span>
+          </div>
+        </label>
+        <label
+          class="mode-option"
+          :class="{ 'mode-option--selected': config.type === 'Xusers' }"
+        >
+          <input
+            type="radio"
+            v-model="config.type"
+            value="Xusers"
+            class="mode-radio"
+          />
+          <div class="mode-content">
+            <span class="mode-icon">𝕏</span>
+            <span class="mode-label">X Users Syndicate</span>
+            <span class="mode-description">Tailored for X users with profile links and handle-based IDs</span>
+          </div>
+        </label>
+      </div>
+    </section>
+
     <!-- Items Section -->
     <section ref="itemsSection" class="config-section">
       <button
@@ -302,7 +341,37 @@
         <button class="delete is-large" aria-label="close" @click="closeAddItemModal"></button>
         <h2 class="title has-text-white">{{ t('build.pyramid.modal.title') }}</h2>
         
-        <div class="field">
+        <div v-if="config.type === 'Xusers'" class="field">
+          <label class="label has-text-white">Username (X Handle)</label>
+          <div class="control has-icons-left">
+            <span class="icon is-left" style="color: #888;">@</span>
+            <input
+              class="input is-dark"
+              v-model="newItem.name"
+              placeholder="e.g. amit_segal"
+              :class="{ 'is-danger': usernameExists(newItem.name) }"
+              @input="onUsernameInput(newItem)"
+            />
+          </div>
+          <p v-if="usernameExists(newItem.name)" class="help is-danger">This username already exists in the pyramid</p>
+          <p v-if="newItem.name" class="help">
+            <a :href="'https://x.com/' + newItem.name" target="_blank" class="has-text-info">
+              View X Profile: https://x.com/{{ newItem.name }}
+            </a>
+          </p>
+          <p class="help has-text-grey">Pro tip: We'll fetch the display name and image from this link</p>
+        </div>
+
+        <div v-if="config.type === 'Xusers'" class="field">
+          <label class="label has-text-white">Display Name</label>
+          <input
+            class="input is-dark"
+            v-model="newItem.label"
+            placeholder="e.g. Amit Segal"
+          />
+        </div>
+
+        <div class="field" :style="config.type === 'Xusers' ? 'order: 3' : ''">
           <label class="label has-text-white">{{ t('build.pyramid.modal.imageLabel') }}</label>
           <ImageUploader
             v-model="newItem.src"
@@ -313,7 +382,7 @@
           <p v-if="!newItem.src" class="help has-text-warning">{{ t('build.pyramid.modal.imageRequired') }}</p>
         </div>
 
-        <div class="field">
+        <div v-if="config.type !== 'Xusers'" class="field">
           <label class="label has-text-white">{{ t('build.pyramid.items.displayName') }}</label>
           <input
             class="input is-dark"
@@ -323,7 +392,7 @@
           />
         </div>
 
-        <div class="field">
+        <div v-if="config.type !== 'Xusers'" class="field">
           <label class="label has-text-white">{{ t('build.pyramid.items.searchName') }}</label>
           <input
             class="input is-dark"
@@ -333,13 +402,12 @@
           />
         </div>
 
-        <div class="field">
+        <div class="field" :style="config.type === 'Xusers' ? 'order: 4' : ''">
           <label class="label has-text-white">{{ t('build.pyramid.modal.descriptionLabel') }}</label>
           <textarea
             class="textarea is-dark"
             v-model="newItem.description"
-            :placeholder="t('build.pyramid.modal.descriptionPlaceholder')"
-            :disabled="!newItem.src || !newItem.label"
+            :placeholder="config.type === 'Xusers' ? 'Leave empty to link to X profile' : t('build.pyramid.modal.descriptionPlaceholder')"
             rows="3"
           ></textarea>
         </div>
@@ -442,7 +510,7 @@
           <button
             class="button is-success"
             @click="saveNewItem"
-            :disabled="!newItem.src || !newItem.label"
+            :disabled="!newItem.src || !newItem.label || (config.type === 'Xusers' && (!newItem.name || usernameExists(newItem.name)))"
           >
             {{ t('build.pyramid.modal.save') }}
           </button>
@@ -460,7 +528,37 @@
         <button class="delete is-large" aria-label="close" @click="closeEditItemModal"></button>
         <h2 class="title has-text-white">{{ t('build.pyramid.modal.editTitle') }}</h2>
 
-        <div class="field">
+        <div v-if="config.type === 'Xusers'" class="field">
+          <label class="label has-text-white">Username (X Handle)</label>
+          <div class="control has-icons-left">
+            <span class="icon is-left" style="color: #888;">@</span>
+            <input
+              class="input is-dark"
+              v-model="editItem.name"
+              placeholder="e.g. amit_segal"
+              :class="{ 'is-danger': usernameExists(editItem.name, editingItemIndex) }"
+              @input="onUsernameInput(editItem)"
+            />
+          </div>
+          <p v-if="usernameExists(editItem.name, editingItemIndex)" class="help is-danger">This username already exists in the pyramid</p>
+          <p v-if="editItem.name" class="help">
+            <a :href="'https://x.com/' + editItem.name" target="_blank" class="has-text-info">
+              View X Profile: https://x.com/{{ editItem.name }}
+            </a>
+          </p>
+          <p class="help has-text-grey">Pro tip: We'll fetch the display name and image from this link</p>
+        </div>
+
+        <div v-if="config.type === 'Xusers'" class="field">
+          <label class="label has-text-white">Display Name</label>
+          <input
+            class="input is-dark"
+            v-model="editItem.label"
+            placeholder="e.g. Amit Segal"
+          />
+        </div>
+
+        <div class="field" :style="config.type === 'Xusers' ? 'order: 3' : ''">
           <label class="label has-text-white">{{ t('build.pyramid.modal.imageLabel') }}</label>
           <ImageUploader
             v-model="editItem.src"
@@ -471,7 +569,7 @@
           <p v-if="!editItem.src" class="help has-text-warning">{{ t('build.pyramid.modal.imageRequired') }}</p>
         </div>
 
-        <div class="field">
+        <div v-if="config.type !== 'Xusers'" class="field">
           <label class="label has-text-white">{{ t('build.pyramid.items.displayName') }}</label>
           <input
             class="input is-dark"
@@ -481,7 +579,7 @@
           />
         </div>
 
-        <div class="field">
+        <div v-if="config.type !== 'Xusers'" class="field">
           <label class="label has-text-white">{{ t('build.pyramid.items.searchName') }}</label>
           <input
             class="input is-dark"
@@ -491,13 +589,12 @@
           />
         </div>
 
-        <div class="field">
+        <div class="field" :style="config.type === 'Xusers' ? 'order: 4' : ''">
           <label class="label has-text-white">{{ t('build.pyramid.modal.descriptionLabel') }}</label>
           <textarea
             class="textarea is-dark"
             v-model="editItem.description"
-            :placeholder="t('build.pyramid.modal.descriptionPlaceholder')"
-            :disabled="!editItem.src || !editItem.label"
+            :placeholder="config.type === 'Xusers' ? 'Leave empty to link to X profile' : t('build.pyramid.modal.descriptionPlaceholder')"
             rows="3"
           ></textarea>
         </div>
@@ -600,7 +697,7 @@
           <button
             class="button is-success"
             @click="saveEditedItem"
-            :disabled="!editItem.src || !editItem.label"
+            :disabled="!editItem.src || !editItem.label || (config.type === 'Xusers' && (!editItem.name || usernameExists(editItem.name, editingItemIndex)))"
           >
             {{ t('build.pyramid.modal.save') }}
           </button>
@@ -643,6 +740,30 @@ function createItemId(): string {
   return `item_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// Xusers helpers
+function usernameExists(username: string, excludeIndex: number = -1): boolean {
+  if (!username) return false;
+  const lowerUsername = username.toLowerCase().trim().replace(/^@/, '');
+  
+  // Check in items
+  const inItems = config.value.items.some((item, idx) => 
+    idx !== excludeIndex && item.name?.toLowerCase().trim().replace(/^@/, '') === lowerUsername
+  );
+  if (inItems) return true;
+  
+  // Check in community items
+  const inCommunity = config.value.communityItems.some((item) => 
+    item.name?.toLowerCase().trim().replace(/^@/, '') === lowerUsername
+  );
+  return inCommunity;
+}
+
+function onUsernameInput(item: any) {
+  if (config.value.type === 'Xusers' && item.name) {
+    item.id = item.name.toLowerCase().trim().replace(/^@/, '');
+  }
+}
+
 const props = defineProps<{
   modelValue: PyramidConfig;
   gameId?: string;
@@ -667,8 +788,8 @@ const colorTagsSection = ref<HTMLElement | null>(null);
 // Modal state
 const showAddItemModal = ref(false);
 const showEditItemModal = ref(false);
-const newItem = ref({ id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' });
-const editItem = ref({ id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' });
+const newItem = ref<PyramidItem>({ id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' });
+const editItem = ref<PyramidItem>({ id: '', label: '', name: '', src: '', active: true, source: '', color: '', description: '' });
 const editingItemIndex = ref(-1);
 
 // Color tag management state
@@ -693,6 +814,7 @@ const config = ref<PyramidConfig>(JSON.parse(JSON.stringify(props.modelValue || 
   hideInfoButton: true,
   statsRevealDate: undefined,
   colorsTag: {},
+  type: 'basic',
 })));
 
 // Stats reveal date management
@@ -949,9 +1071,14 @@ function closeAddItemModal() {
 function saveNewItem() {
   if (!newItem.value.src || !newItem.value.label) return;
 
+  if (config.value.type === 'Xusers' && (!newItem.value.description || newItem.value.description.trim() === '')) {
+    const handle = newItem.value.id || newItem.value.name.replace(/^@/, '');
+    newItem.value.description = `<a target="_blank" href="https://x.com/${handle}">https://x.com/${handle}</a>`;
+  }
+
   const slug = generateSlug(newItem.value.label || newItem.value.name);
   const item: PyramidItem = {
-    id: slug || createItemId(),
+    id: config.value.type === 'Xusers' ? (newItem.value.id || newItem.value.name.replace(/^@/, '')) : (slug || createItemId()),
     label: newItem.value.label || '',
     name: newItem.value.name || '',
     src: newItem.value.src || '',
@@ -983,9 +1110,14 @@ function closeEditItemModal() {
 function saveEditedItem() {
   if (!editItem.value.src || !editItem.value.label || editingItemIndex.value === -1) return;
 
+  if (config.value.type === 'Xusers' && (!editItem.value.description || editItem.value.description.trim() === '')) {
+    const handle = editItem.value.id || editItem.value.name.replace(/^@/, '');
+    editItem.value.description = `<a target="_blank" href="https://x.com/${handle}">https://x.com/${handle}</a>`;
+  }
+
   const slug = generateSlug(editItem.value.label || editItem.value.name);
   const item: PyramidItem = {
-    id: slug || createItemId(),
+    id: config.value.type === 'Xusers' ? (editItem.value.id || editItem.value.name.replace(/^@/, '')) : (slug || createItemId()),
     label: editItem.value.label || '',
     name: editItem.value.name || '',
     src: editItem.value.src || '',
@@ -1026,6 +1158,64 @@ function removeRow(index: number) {
 </script>
 
 <style scoped>
+
+/* Mode Section */
+.mode-section {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 2rem;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.mode-option {
+  display: block;
+  cursor: pointer;
+  padding: 1.25rem;
+  border: 2px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  transition: all 0.2s ease;
+}
+
+.mode-option:hover {
+  border-color: var(--color-border-medium);
+}
+
+.mode-option--selected {
+  border-color: var(--bulma-primary);
+  background: var(--color-primary-bg);
+}
+
+.mode-radio {
+  display: none;
+}
+
+.mode-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mode-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.mode-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mode-description {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
 .pyramid-builder {
   display: flex;
   flex-direction: column;

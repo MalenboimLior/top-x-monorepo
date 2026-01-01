@@ -38,6 +38,9 @@
             :user-profile="{ photoURL: userStore.user?.photoURL || '' }"
             :user-name="userStore.profile?.username"
           />
+          <button class="floating-edit-btn" @click="editPyramid" :title="t('games.pyramid.edit')">
+            <font-awesome-icon :icon="['fas', 'pen']" />
+          </button>
         </div>
 
         <div class="buttons-container">
@@ -47,9 +50,13 @@
             :file-name="gameId"
             class="share-btn"
           />
-          <a class="edit-btn" @click="editPyramid">
-            <font-awesome-icon :icon="['fas', 'pen']" class="mr-1" /> {{ t('games.pyramid.edit') }}
-          </a>
+          <button class="advanced-share-btn pulse-glow" @click="openAdvancedShare">
+            <span class="btn-content">
+              <font-awesome-icon :icon="['fas', 'share-nodes']" class="mr-1" />
+              {{ t('games.pyramid.advancedShare') }}
+            </span>
+            <div class="btn-glow"></div>
+          </button>
         </div>
       </div>
     </div>
@@ -87,7 +94,20 @@
         :share-link="shareLink"
       />
     </div>
-    
+
+    <!-- Advanced Share Popup -->
+    <AdvancedSharePopup
+      :show="showAdvancedSharePopup"
+      :pyramid="pyramid"
+      :game-type="gameData?.custom?.type"
+      :share-text="shareText || 'Check out my TOP-X Pyramid ranking! #TOPX'"
+      :share-link="shareLink || ''"
+      :image-url="imageUrl"
+      :worst-item="worstItem"
+      :game-id="gameId"
+      @close="showAdvancedSharePopup = false"
+    />
+
   </div>
 </template>
 
@@ -97,6 +117,7 @@ import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/games/pyramid/PyramidImage.vue';
 import ShareButton from '@/components/ShareButton.vue';
+import AdvancedSharePopup from '@/components/games/pyramid/AdvancedSharePopup.vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import GameLoginPromo from '@/components/games/shared/GameLoginPromo.vue';
 import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
@@ -125,6 +146,7 @@ const showStats = ref(false);
 const showResults = ref(false);
 const gameData = ref<any>(null);
 const showAdOverlay = ref(false); // Don't show ad initially - check adConfig first
+const showAdvancedSharePopup = ref(false);
 
 // Prioritize user-vote-section loading - delay stats and results
 onMounted(async () => {
@@ -205,6 +227,13 @@ function handleAdContinue() {
   }
 }
 
+function openAdvancedShare() {
+  showAdvancedSharePopup.value = true;
+  if (analytics) {
+    logEvent(analytics, 'user_action', { action: 'advanced_share_open', game_id: props.gameId });
+  }
+}
+
 async function handleLogin() {
   await userStore.loginWithX();
   if (analytics) {
@@ -278,11 +307,37 @@ async function handleLogin() {
   max-width: 300px; /* Desktop size */
   pointer-events: none;
   transition: transform 0.3s ease;
+  position: relative;
 }
 
 /* Hover effect for the thumbnail section */
 .user-vote-section:hover .thumbnail-wrapper {
   transform: scale(1.02);
+}
+
+.floating-edit-btn {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  background: rgba(0, 232, 224, 0.9);
+  border: 2px solid #00e8e0;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 232, 224, 0.3);
+}
+
+.floating-edit-btn:hover {
+  background: rgba(0, 232, 224, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 232, 224, 0.5);
 }
 
 /* Override/Deep select to ensure PyramidImage scales nicely */
@@ -304,23 +359,6 @@ async function handleLogin() {
   width: 100%;
 }
 
-.edit-btn {
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375em;
-  /*background: rgba(0, 232, 224, 0.2);*/
-  border: 1px solid #00e8e0;
-  box-shadow: 0 0 10px rgba(0, 232, 224, 0.3);
-  min-height: 2.25em;
-  white-space: nowrap;
-}
 .share-btn {
   min-height: 2.5em;
   padding: 0.75rem 1.5rem;
@@ -328,12 +366,68 @@ async function handleLogin() {
   font-weight: 600;
 }
 
-.edit-btn:hover {
-  color: #fff;
-  background: rgba(0, 232, 224, 0.3);
-  border-color: #00e8e0;
-  box-shadow: 0 0 15px rgba(0, 232, 224, 0.5);
-  transform: translateY(-2px);
+.advanced-share-btn {
+  position: relative;
+  background: linear-gradient(135deg, #00e8e0 0%, #c4ff00 100%);
+  color: #000;
+  font-weight: 800;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  padding: 0.8rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 232, 224, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.advanced-share-btn .btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.advanced-share-btn .btn-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+  transform: scale(0);
+  transition: transform 0.5s ease;
+  z-index: 1;
+}
+
+.advanced-share-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 25px rgba(196, 255, 0, 0.4);
+}
+
+.advanced-share-btn:hover .btn-glow {
+  transform: scale(1);
+}
+
+.advanced-share-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.pulse-glow {
+  animation: pulseVoteAttractive 2s infinite;
+}
+
+@keyframes pulseVoteAttractive {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(196, 255, 0, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(196, 255, 0, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(196, 255, 0, 0); }
 }
 
 /* .login-promo-container removed - replaced by GameLoginPromo component */
@@ -400,9 +494,10 @@ async function handleLogin() {
     align-items: center;
   }
 
-  .edit-btn {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
+  .advanced-share-btn {
+    font-size: 0.9rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 10px;
   }
 
   .share-btn {

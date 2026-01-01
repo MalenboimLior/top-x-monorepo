@@ -16,6 +16,7 @@ const ContactUs = () => import('@/views/ContactUs.vue');
 const FAQ = () => import('@/views/FAQ.vue');
 const Guidelines = () => import('@/views/Guidelines.vue');
 const HowItWorks = () => import('@/views/HowItWorks.vue');
+const WhyConnect = () => import('@/views/WhyConnect.vue');
 const Trivia = () => import('@/views/games/Trivia.vue');
 const PyramidTier = () => import('@/views/games/PyramidTier.vue');
 const Users = () =>
@@ -102,6 +103,11 @@ const routes = [
     path: '/how-it-works',
     name: 'HowItWorks',
     component: () => import(/* webpackChunkName: "how-it-works" */ '@/views/HowItWorks.vue'),
+  },
+  {
+    path: '/why-connect',
+    name: 'WhyConnect',
+    component: () => import(/* webpackChunkName: "why-connect" */ '@/views/WhyConnect.vue'),
   },
 
   {

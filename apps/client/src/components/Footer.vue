@@ -11,6 +11,7 @@
             <li><router-link to="/about" class="footer-link">{{ t('footer.topx.about') }}</router-link></li>
             <li><router-link to="/what-we-do" class="footer-link">{{ t('footer.topx.what') }}</router-link></li>
             <li><router-link to="/how-it-works" class="footer-link">{{ t('footer.topx.how') }}</router-link></li>
+            <li><router-link to="/why-connect" class="footer-link">{{ t('footer.topx.whyConnect') }}</router-link></li>
             <li><router-link to="/faq" class="footer-link">{{ t('footer.topx.faq') }}</router-link></li>
             <!-- <li><router-link to="/press" class="footer-link">{{ t('footer.topx.press') }}</router-link></li> -->
           </ul>

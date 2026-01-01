@@ -13,6 +13,7 @@ import {
   doc,
   updateDoc,
   arrayUnion,
+  arrayRemove,
   type Firestore,
 } from 'firebase/firestore';
 import {
@@ -45,6 +46,16 @@ export type AddCommunityItemParams = {
 
 export type AddCommunityItemResult = {
   item: PyramidItem | null;
+  error?: string;
+};
+
+export type DeleteCommunityItemParams = {
+  gameId: string;
+  item: PyramidItem;
+};
+
+export type DeleteCommunityItemResult = {
+  success: boolean;
   error?: string;
 };
 
@@ -125,7 +136,7 @@ export async function addCommunityItem(
       description: itemData.description,
       color: itemData.color || '#9900ff',
       active: true,
-      source: itemData.userDisplayName || 'anonymous',
+      source: itemData.userId, // Store userId in source field for ownership tracking
     };
 
     // Update game document with new community item
@@ -140,6 +151,40 @@ export async function addCommunityItem(
     return {
       item: null,
       error: e?.message || 'Failed to add community item',
+    };
+  }
+}
+
+/**
+ * Deletes a community item from a pyramid game
+ * Removes the item from the custom.communityItems array in Firestore
+ */
+export async function deleteCommunityItem(
+  params: DeleteCommunityItemParams
+): Promise<DeleteCommunityItemResult> {
+  const { gameId, item } = params;
+
+  try {
+    if (!gameId) {
+      return { success: false, error: 'Game ID is required' };
+    }
+
+    if (!item || !item.id) {
+      return { success: false, error: 'Item is required' };
+    }
+
+    // Update game document by removing the item from the communityItems array
+    const gameRef = doc(db, 'games', gameId);
+    await updateDoc(gameRef, {
+      'custom.communityItems': arrayRemove(item),
+    });
+
+    return { success: true };
+  } catch (e: any) {
+    console.error('PyramidService: Error deleting community item:', e);
+    return {
+      success: false,
+      error: e?.message || 'Failed to delete community item',
     };
   }
 }

@@ -18,6 +18,7 @@
       :worst-show="worstShow"
       :hide-info-button="hideInfoButton"
       :colors-tag="colorsTag"
+      :type="pyramidType"
       @submit="handleSubmit"
     />
     <PyramidCombined
@@ -67,13 +68,9 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
-useHead({
-  title: "TOP-X: Viral Challenges, Rankings & Games on X | Who's on Top?",
-  meta: [
-    { name: 'description', content: "Join TOP-X for exciting viral challenges, pyramid rankings, trivia games, and competitions on X. Build your top lists, challenge friends, and rise to the challenge! 99% Grok-powered. Who's on top? 🎯" },
-  ],
-});
-const gameId = ref((route.query.game as string));const gameTitle = ref('');
+// Initial declarations moved to top to avoid ReferenceErrors in computed properties
+const gameId = ref((route.query.game as string));
+const gameTitle = ref('');
 const gameDescription = ref('');
 const items = ref<PyramidItem[]>([]);
 const communityItems = ref<PyramidItem[]>([]);
@@ -94,10 +91,12 @@ const shareLink = ref('');
 const communityHeader = ref('');
 const statsRevealDate = ref<string | undefined>(undefined);
 const colorsTag = ref<{ [label: string]: string } | undefined>(undefined);
+const pyramidType = ref<'basic' | 'Xusers'>('basic');
 const hasSubmitted = ref(false);
 const showAd = ref(false);
 const gameData = ref<any>(null);
 const pendingSubmission = ref<PyramidData | null>(null);
+
 const pyramid = ref<PyramidSlot[][]>([
   [{ image: null }],
   [{ image: null }, { image: null }],
@@ -106,16 +105,42 @@ const pyramid = ref<PyramidSlot[][]>([
 ]);
 const worstItem = ref<PyramidItem | null>(null);
 
+// Dynamic SEO tags
+const seoTitle = computed(() => gameTitle.value ? `${gameTitle.value} | TOP-X Pyramid Challenge` : "TOP-X: Viral Challenges, Rankings & Games");
+const seoDescription = computed(() => gameDescription.value || "Join TOP-X for exciting viral challenges, pyramid rankings, trivia games, and competitions on X.");
+const seoImage = computed(() => {
+  // If we have a specific game header image or default
+  return "https://firebasestorage.googleapis.com/v0/b/top-x-co.appspot.com/o/site-assets%2Flogo-card.png?alt=media";
+});
+
+useHead({
+  title: seoTitle,
+  meta: [
+    { name: 'description', content: seoDescription },
+    // Open Graph
+    { property: 'og:title', content: seoTitle },
+    { property: 'og:description', content: seoDescription },
+    { property: 'og:image', content: seoImage },
+    { property: 'og:type', content: 'website' },
+    // Twitter
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: seoTitle },
+    { name: 'twitter:description', content: seoDescription },
+    { name: 'twitter:image', content: seoImage },
+  ],
+});
+
 function updateShareText() {
   let text = baseShareText.value || '';
-  const firstLabel = pyramid.value[0]?.find(s => s.image)?.image?.label || '';
-  const worstLabel = worstItem.value?.label || '';
-  if (firstLabel) {
-    text = text.replace('*first*', firstLabel);
-  }
-  if (worstLabel) {
-    text = text.replace('*last*', worstLabel);
-  }
+  const isXusersType = gameData.value?.custom?.type === 'Xusers';
+  const firstItem = pyramid.value[0]?.find(s => s.image)?.image;
+  const firstValue = isXusersType ? (firstItem?.name || firstItem?.label || '') : (firstItem?.label || '');
+  const worstValue = isXusersType ? (worstItem.value?.name || worstItem.value?.label || '') : (worstItem.value?.label || '');
+
+  // Always replace placeholders if we have the base text, even with empty strings to clean up
+  text = text.replaceAll('*first*', firstValue);
+  text = text.replaceAll('*last*', worstValue);
+  
   shareText.value = text;
 }
 
@@ -133,6 +158,7 @@ onMounted(async () => {
     console.error('PyramidTier: No gameId provided');
     return;
   }
+
 
   try {
     const gameResult = await getGame(gameId.value);
@@ -173,6 +199,7 @@ onMounted(async () => {
       hideInfoButton.value = pyramidConfig?.hideInfoButton ?? false;
       statsRevealDate.value = pyramidConfig?.statsRevealDate;
       colorsTag.value = pyramidConfig?.colorsTag;
+      pyramidType.value = pyramidConfig.type || 'basic';
 
       console.log('PyramidTier: Game data fetched:', {
         gameTitle: gameTitle.value,
@@ -192,7 +219,8 @@ onMounted(async () => {
         hideRowLabel: hideRowLabel.value,
         worstPoints: worstPoints.value,
         worstShow: worstShow.value,
-        hideInfoButton: hideInfoButton.value
+        hideInfoButton: hideInfoButton.value ,
+
       });
 
     // Load pyramid state based on user login status
@@ -328,17 +356,8 @@ function calculateScore(pyramid: PyramidSlot[][], worstItem: PyramidItem | null)
 <style scoped>
 .pyramid-tier {
   width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-@media screen and (max-width: 767px) {
-  .pyramid-tier {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 0;
-  }
+  min-height: 100vh;
+  background-color: #000;
+  color: white;
 }
 </style>

@@ -478,9 +478,9 @@ const paginatedStats = computed(() => {
   return sortedItemStats.value.slice(start, end);
 });
 
-// Limited stats for blurred preview (top 5)
+// Limited stats for blurred preview (top 10)
 const limitedStats = computed(() => {
-  return sortedItemStats.value.slice(0, 5);
+  return sortedItemStats.value.slice(0, 10);
 });
 
 const totalPages = computed(() => {
@@ -911,7 +911,7 @@ tbody tr:hover .item-image {
   right: 0;
   width: 100%;
   height: 100%;
-  filter: blur(4px) brightness(0.75);
+  filter: blur(2px) brightness(0.8);
   pointer-events: none;
   opacity: 0.85;
   z-index: 1;

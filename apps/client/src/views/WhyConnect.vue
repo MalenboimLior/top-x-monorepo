@@ -1,5 +1,5 @@
 <template>
-  <div class="about-page" :class="{ 'is-rtl': isRTL }">
+  <div class="why-connect-page" :class="{ 'is-rtl': isRTL }">
     <!-- Background Effects -->
     <div class="bg-glow bg-glow--1" aria-hidden="true"></div>
     <div class="bg-glow bg-glow--2" aria-hidden="true"></div>
@@ -7,133 +7,113 @@
 
     <div class="page-content layout-container">
       <!-- Hero Section -->
-      <section class="about-hero">
+      <section class="hero-section">
         <div class="hero-badge fade-in-up" :style="{ animationDelay: '0.1s' }">
-          <span class="badge-icon">🤖</span>
-          <span class="badge-text">97% Grok Built</span>
+          <span class="badge-icon">🔌</span>
+          <span class="badge-text">Connection Benefits</span>
         </div>
 
         <h1 class="hero-main-title fade-in-up" :style="{ animationDelay: '0.2s' }">
-          <span class="brand-name">top-x</span>
-          <span class="hero-subtitle">Play. Compete. Top Them All.</span>
+          <span class="brand-name">{{ t('why-connect.hero.title') }}</span>
         </h1>
 
         <div class="hero-tagline-container fade-in-up" :style="{ animationDelay: '0.3s' }">
-          <p class="hero-tagline">{{ t('about.heroTagline') }}</p>
+          <p class="hero-tagline">{{ t('why-connect.hero.subtitle') }}</p>
         </div>
 
         <div class="hero-visual fade-in-up" :style="{ animationDelay: '0.4s' }">
-          <!-- Decorative Floating Elements -->
-          <div class="floating-bubble bubble-1">🏆</div>
-          <div class="floating-bubble bubble-2">🚀</div>
-          <div class="floating-bubble bubble-3">🔥</div>
-          <div class="floating-bubble bubble-4">✨</div>
-          
           <div class="main-visual-card">
             <div class="card-glow"></div>
             <div class="card-content">
-              <span class="card-emoji">🎮</span>
-              <span class="card-label">The Ultimate Arena</span>
+              <span class="card-emoji">🤝</span>
+              <span class="card-label">Fair Play Connection</span>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Main Content Sections -->
-      <div class="about-sections-grid">
-        <!-- Who Are We -->
+      <div class="content-sections-grid">
+        <!-- Main Reason -->
         <section class="info-card fade-in-up" :style="{ animationDelay: '0.5s' }">
-          <h2 class="section-heading">
-            <span class="heading-icon">🤔</span>
-            {{ t('about.who.title') }}
-          </h2>
           <div class="info-body">
-            <p>{{ t('about.who.p1') }}</p>
-            <p>{{ t('about.who.p2') }}</p>
-            <p>{{ t('about.who.p3') }}</p>
-            <p class="highlight-p">{{ t('about.who.p4') }}</p>
+            <p>{{ t('why-connect.main.p1') }}</p>
+            <p>{{ t('why-connect.main.p2') }}</p>
           </div>
         </section>
 
-        <!-- What Do We Do -->
+        <!-- Skeptics Section -->
         <section class="info-card fade-in-up" :style="{ animationDelay: '0.6s' }">
           <h2 class="section-heading">
-            <span class="heading-icon">🎯</span>
-            {{ t('about.what.title') }}
+            <span class="heading-icon">🕵️‍♂️</span>
+            {{ t('why-connect.skeptics.title') }}
           </h2>
           <div class="info-body">
-            <p class="subtitle-p">{{ t('about.what.subtitle') }}</p>
-            <ul class="feature-checklist">
-              <li v-for="i in 7" :key="i">
-                <span class="check-bullet">✔</span>
-                {{ t(`about.what.list.${i}`) }}
-              </li>
-            </ul>
-            <p class="footer-p">{{ t('about.what.footer') }}</p>
+            <p class="subtitle-p">{{ t('why-connect.skeptics.subtitle') }}</p>
+            <p>{{ t('why-connect.skeptics.body') }}</p>
           </div>
         </section>
 
-        <!-- How To -->
+        <!-- Truth Section -->
         <section class="info-card fade-in-up" :style="{ animationDelay: '0.7s' }">
           <h2 class="section-heading">
-            <span class="heading-icon">⚙️</span>
-            {{ t('about.how.title') }}
+            <span class="heading-icon">📜</span>
+            {{ t('why-connect.truth.title') }}
           </h2>
           <div class="info-body">
-            <p>{{ t('about.how.p1') }}</p>
+            <div class="truth-bullets">
+              <p v-for="i in 4" :key="i" class="truth-bullet">
+                {{ t(`why-connect.truth.bullet${i}`) }}
+              </p>
+            </div>
           </div>
         </section>
 
-        <!-- Why Connect -->
+        <!-- Purpose Section -->
         <section class="info-card fade-in-up" :style="{ animationDelay: '0.8s' }">
           <h2 class="section-heading">
-            <span class="heading-icon">🔌</span>
-            {{ t('about.why.title') }}
+            <span class="heading-icon">🎯</span>
+            {{ t('why-connect.purpose.title') }}
           </h2>
           <div class="info-body">
-            <p class="subtitle-p">{{ t('about.why.subtitle') }}</p>
-            <div class="features-grid">
-              <div v-for="i in 9" :key="i" class="grid-feature">
-                <span class="star-bullet">⭐</span>
-                {{ t(`about.why.list.${i}`) }}
-              </div>
-            </div>
-            <p class="footer-p highlight-p">{{ t('about.why.footer') }}</p>
+            <p class="highlight-p">{{ t('why-connect.purpose.body') }}</p>
           </div>
         </section>
 
-        <!-- FAQ -->
-        <section class="faq-section fade-in-up" :style="{ animationDelay: '0.9s' }">
-          <h2 class="section-heading centered">{{ t('about.faq.title') }}</h2>
-          <div class="faq-grid">
-            <div v-for="i in 4" :key="i" class="faq-item">
-              <h3 class="faq-q">{{ t(`about.faq.q${i}`) }}</h3>
-              <p class="faq-a" v-html="t(`about.faq.a${i}`)"></p>
+        <!-- Benefits Section -->
+        <section class="info-card fade-in-up" :style="{ animationDelay: '0.9s' }">
+          <h2 class="section-heading">
+            <span class="heading-icon">✨</span>
+            {{ t('why-connect.benefits.title') }}
+          </h2>
+          <div class="info-body">
+            <p class="subtitle-p">{{ t('why-connect.benefits.subtitle') }}</p>
+            <div class="benefits-grid">
+              <div v-for="i in 9" :key="i" class="benefit-item">
+                <span class="benefit-text">{{ t(`why-connect.benefits.list.${i}`) }}</span>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- Closing CTA -->
-        <section class="closing-card fade-in-up" :style="{ animationDelay: '1s' }">
-          <div class="closing-content">
-            <div class="questions">
-              <div class="q-group">
-                <h4 class="q-title">{{ t('about.closing.title') }}</h4>
-                <p class="a-text">{{ t('about.closing.titleAns') }}</p>
-              </div>
-              <div class="q-group">
-                <h4 class="q-title">{{ t('about.closing.addictive') }}</h4>
-                <p class="a-text">{{ t('about.closing.addictiveAns') }}</p>
-              </div>
-            </div>
-            
-            <p class="final-call">{{ t('about.closing.footer') }}</p>
-            
-            <button class="cta-button" @click="$router.push('/challenges')">
-              <span class="cta-text">{{ t('about.closing.cta') }}</span>
-              <div class="cta-glow"></div>
-            </button>
+        <!-- Summary Section -->
+        <section class="info-card summary-card fade-in-up" :style="{ animationDelay: '1s' }">
+          <h2 class="section-heading centered">
+            <span class="heading-icon">💡</span>
+            {{ t('why-connect.summary.title') }}
+          </h2>
+          <div class="info-body">
+            <p class="summary-text">{{ t('why-connect.summary.body') }}</p>
+            <p class="summary-text highlight-p">{{ t('why-connect.summary.body2') }}</p>
           </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section fade-in-up" :style="{ animationDelay: '1.1s' }">
+          <button class="cta-button" @click="handleConnect">
+            <span class="cta-text">{{ t('why-connect.hero.cta') }}</span>
+            <div class="cta-glow"></div>
+          </button>
         </section>
       </div>
     </div>
@@ -145,8 +125,10 @@ import { computed, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { useLocaleStore } from '@/stores/locale';
+import { useUserStore } from '@/stores/user';
 
 const localeStore = useLocaleStore();
+const userStore = useUserStore();
 const route = useRoute();
 const t = (key: string) => localeStore.translate(key);
 const isRTL = computed(() => localeStore.direction === 'rtl');
@@ -154,12 +136,17 @@ const isRTL = computed(() => localeStore.direction === 'rtl');
 const baseUrl = 'https://top-x.co';
 const canonicalUrl = `${baseUrl}${route.path}`;
 
+const handleConnect = () => {
+  // Handle X login
+  userStore.login();
+};
+
 useHead(() => ({
-  title: t('about.metaTitle'),
+  title: t('why-connect.metaTitle'),
   meta: [
-    { name: 'description', content: t('about.metaDescription') },
-    { property: 'og:title', content: t('about.metaTitle') },
-    { property: 'og:description', content: t('about.metaDescription') },
+    { name: 'description', content: t('why-connect.metaDescription') },
+    { property: 'og:title', content: t('why-connect.metaTitle') },
+    { property: 'og:description', content: t('why-connect.metaDescription') },
     { property: 'og:type', content: 'website' },
     { property: 'og:url', content: canonicalUrl },
     { property: 'og:site_name', content: 'TOP-X' },
@@ -180,12 +167,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.about-page {
+.why-connect-page {
   position: relative;
   min-height: 100vh;
   background-color: #050505;
   color: #fff;
-  padding-bottom: 6rem;
+  padding-bottom: 2rem;
   overflow-x: hidden;
 }
 
@@ -229,23 +216,27 @@ onMounted(() => {
 }
 
 /* Hero Section */
-.about-hero {
-  padding: 8rem 0 6rem;
+.hero-section {
+  padding: 4rem 0 3rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
 
+.is-rtl .hero-section {
+  text-align: right;
+}
+
 .hero-badge {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 100px;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   backdrop-filter: blur(10px);
 }
 
@@ -255,8 +246,8 @@ onMounted(() => {
 .hero-main-title {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .brand-name {
@@ -269,15 +260,8 @@ onMounted(() => {
   line-height: 0.9;
 }
 
-.hero-subtitle {
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
-  font-weight: 800;
-  color: #fff;
-  opacity: 0.9;
-}
-
 .hero-tagline-container {
-  margin-bottom: 4rem;
+  margin-bottom: 2rem;
 }
 
 .hero-tagline {
@@ -287,21 +271,26 @@ onMounted(() => {
   letter-spacing: 0.05em;
 }
 
+.is-rtl .hero-tagline {
+  text-align: right;
+}
+
 .hero-visual {
   position: relative;
   width: 100%;
-  max-width: 600px;
-  height: 200px;
+  max-width: 500px;
+  height: 150px;
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 1rem;
 }
 
 .main-visual-card {
   position: relative;
   background: rgba(255, 255, 255, 0.05);
-  padding: 2rem 4rem;
-  border-radius: 24px;
+  padding: 1.5rem 2rem;
+  border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   z-index: 2;
@@ -327,38 +316,18 @@ onMounted(() => {
 .card-emoji { font-size: 3rem; }
 .card-label { font-size: 1.5rem; font-weight: 800; }
 
-.floating-bubble {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  backdrop-filter: blur(10px);
-  z-index: 1;
-}
-
-.bubble-1 { top: -20%; left: 0; animation: float 5s ease-in-out infinite; }
-.bubble-2 { top: 40%; right: -10%; animation: float 7s ease-in-out infinite 1s; }
-.bubble-3 { bottom: -20%; left: 15%; animation: float 6s ease-in-out infinite 0.5s; }
-.bubble-4 { top: 10%; right: 10%; animation: float 8s ease-in-out infinite 1.5s; }
-
 /* Content Sections */
-.about-sections-grid {
+.content-sections-grid {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
+  gap: 2rem;
 }
 
 .info-card {
   background: rgba(25, 25, 25, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 32px;
-  padding: 4rem;
+  padding: 2rem;
   transition: all 0.4s ease;
 }
 
@@ -367,17 +336,18 @@ onMounted(() => {
   background: rgba(30, 30, 30, 0.6);
 }
 
-.section-heading {
-  font-size: 2.5rem;
-  font-weight: 900;
-  margin-bottom: 2.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
+.summary-card {
+  background: linear-gradient(135deg, rgba(0, 232, 224, 0.1) 0%, rgba(255, 0, 255, 0.1) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.is-rtl .section-heading {
-  flex-direction: row-reverse;
+.section-heading {
+  font-size: 2rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .section-heading.centered {
@@ -388,12 +358,12 @@ onMounted(() => {
 .heading-icon { font-size: 3rem; }
 
 .info-body {
-  font-size: 1.2rem;
-  line-height: 1.8;
+  font-size: 1.1rem;
+  line-height: 1.6;
   color: #ccc;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .is-rtl .info-body {
@@ -406,123 +376,88 @@ onMounted(() => {
   font-size: 1.4rem;
 }
 
+
 .subtitle-p {
   font-weight: 700;
   color: #fff;
   font-size: 1.4rem;
 }
 
-.feature-checklist {
-  list-style: none;
-  padding: 0;
+.is-rtl .subtitle-p {
+  text-align: right;
+}
+
+.truth-bullets {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 0.8rem;
 }
 
-.feature-checklist li {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.2rem;
-}
-
-.is-rtl .feature-checklist li {
-  flex-direction: row-reverse;
-}
-
-.check-bullet {
-  color: #00e8e0;
-  font-weight: 900;
-  font-size: 1.2rem;
-}
-
-.footer-p {
-  padding: 1.5rem;
+.truth-bullet {
   background: rgba(255, 255, 255, 0.03);
-  border-inline-start: 4px solid #00e8e0;
-  border-radius: 8px;
-  font-style: italic;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
-.features-grid {
+.is-rtl .truth-bullet {
+  text-align: right;
+}
+
+.benefits-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin: 1rem 0;
+  gap: 1rem;
+  margin: 0.5rem 0;
 }
 
-.grid-feature {
+.is-rtl .benefits-grid {
+  direction: rtl;
+}
+
+.benefit-item {
   background: rgba(255, 255, 255, 0.03);
-  padding: 1.5rem;
-  border-radius: 16px;
+  padding: 1rem;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.is-rtl .grid-feature {
-  flex-direction: row-reverse;
+.is-rtl .benefit-item {
+  text-align: right;
 }
 
-.star-bullet { color: #facc15; }
-
-/* FAQ Styling */
-.faq-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
+.benefit-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
 }
 
-.faq-item {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 24px;
-  padding: 2.5rem;
-  transition: all 0.3s ease;
-}
-
-.faq-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: #00e8e0;
-}
-
-.faq-q { font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem; color: #fff; }
-.faq-a { color: #aaa; line-height: 1.6; font-size: 1.1rem; }
-
-.is-rtl .faq-item { text-align: right; }
-
-/* Closing Card */
-.closing-card {
-  background: linear-gradient(135deg, rgba(0, 232, 224, 0.1) 0%, rgba(255, 0, 255, 0.1) 100%);
-  border-radius: 40px;
-  padding: 5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.summary-text {
+  font-size: 1.3rem;
+  font-weight: 700;
   text-align: center;
+  color: #fff;
 }
 
-.closing-content {
-  max-width: 800px;
-  margin: 0 auto;
+.summary-text.highlight-p {
+  color: #00e8e0;
+  font-size: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* CTA Section */
+.cta-section {
   display: flex;
-  flex-direction: column;
-  gap: 3rem;
+  justify-content: center;
+  padding: 2rem 0;
 }
-
-.questions {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.q-title { font-size: 1.8rem; font-weight: 900; margin-bottom: 0.5rem; }
-.a-text { font-size: 1.5rem; font-weight: 700; color: #00e8e0; }
-
-.final-call { font-size: 1.5rem; font-weight: 600; color: #fff; }
 
 .cta-button {
   position: relative;
-  align-self: center;
   padding: 1.5rem 4rem;
   background: #00e8e0;
   border: none;
@@ -554,11 +489,6 @@ onMounted(() => {
 }
 
 /* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-15px) rotate(5deg); }
-}
-
 @keyframes float-main {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
@@ -581,13 +511,15 @@ onMounted(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .about-hero { padding: 6rem 0 4rem; }
-  .brand-name { font-size: 4rem; }
-  .info-card { padding: 2.5rem; }
-  .section-heading { font-size: 1.8rem; flex-direction: column; text-align: center; }
-  .heading-icon { font-size: 2.5rem; }
-  .faq-grid { grid-template-columns: 1fr; }
-  .closing-card { padding: 3rem 1.5rem; }
-  .main-visual-card { padding: 1.5rem 2rem; }
+  .hero-section { padding: 3rem 0 2rem; }
+  .brand-name { font-size: 3rem; }
+  .info-card { padding: 1.5rem; }
+  .section-heading { font-size: 1.5rem; flex-direction: column; text-align: center; }
+  .heading-icon { font-size: 2rem; }
+  .benefits-grid { grid-template-columns: 1fr; }
+  .truth-bullets { gap: 0.6rem; }
+  .truth-bullet { padding: 0.8rem; font-size: 0.9rem; }
+  .summary-text { font-size: 1.1rem; }
+  .summary-text.highlight-p { font-size: 1.3rem; }
 }
 </style>
