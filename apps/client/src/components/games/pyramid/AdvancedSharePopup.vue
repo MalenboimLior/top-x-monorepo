@@ -143,6 +143,7 @@ import { faXmark, faShare, faFileImage, faCheck, faDownload, faCopy, faCircleInf
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { useLocaleStore } from '@/stores/locale';
+import { analytics, trackEvent } from '@top-x/shared';
 
 library.add(faXmark, faShare, faFileImage, faCheck, faDownload, faCopy, faCircleInfo, faLink, faXTwitter);
 
@@ -216,6 +217,7 @@ const downloadImage = async () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    trackEvent(analytics, 'game_share_download', { game_id: props.gameId });
   } catch (error) {
     console.error('Download failed:', error);
   }
@@ -235,7 +237,9 @@ const copyToClipboard = async (text: string, type: 'shareText' | 'xusers' | 'lin
     } else if (type === 'link') {
       shareLinkCopied.value = true;
       setTimeout(() => shareLinkCopied.value = false, 2000);
+      trackEvent(analytics, 'game_share_copy_link', { game_id: props.gameId });
     }
+    trackEvent(analytics, 'game_share_copy_text', { game_id: props.gameId, type });
   } catch (error) {
     console.error('Copy failed:', error);
   }
@@ -244,6 +248,7 @@ const copyToClipboard = async (text: string, type: 'shareText' | 'xusers' | 'lin
 const shareOnX = (text: string) => {
   const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
+  trackEvent(analytics, 'game_share_x', { game_id: props.gameId });
 };
 
 const handleNativeShare = async () => {
@@ -261,6 +266,7 @@ const handleNativeShare = async () => {
         text: editableShareText.value,
         title: 'TOP-X Pyramid Share'
       });
+      trackEvent(analytics, 'game_share_native', { game_id: props.gameId });
     } else {
       // Fallback to regular X share if native share fails
       shareOnX(editableShareText.value);

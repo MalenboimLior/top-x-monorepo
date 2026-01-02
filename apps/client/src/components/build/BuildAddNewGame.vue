@@ -312,7 +312,7 @@ import { DEFAULT_ZONE_REVEAL_CONFIG } from '../../components/games/zonereveal/Zo
 import type { TriviaConfig } from '@top-x/shared/types/trivia';
 import type { QuizConfig } from '@top-x/shared/types/quiz';
 import { MAX_GAMES_PER_USER } from '@top-x/shared/constants/gameLimits';
-import { getRandomGradientPreset } from '@top-x/shared';
+import { getRandomGradientPreset, analytics, trackEvent } from '@top-x/shared';
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2300e8e0"/><stop offset="100%" stop-color="%23ff2d92"/></linearGradient></defs><rect width="600" height="400" fill="url(%23g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="36" fill="%23ffffff">TOP-X</text></svg>';
@@ -709,6 +709,7 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
         alert(result.error || 'Failed to update game');
         return;
       }
+      trackEvent(analytics, 'game_update_success', { game_id: targetId, game_name: payload.name });
     } else {
       // Check game limit before creating
       const userId = userStore.user?.uid;
@@ -728,6 +729,7 @@ async function saveGame(options: { stayOnWizard?: boolean } = {}) {
       }
       game.value.id = result.gameId;
       persistedGameId.value = result.gameId;
+      trackEvent(analytics, 'game_create_success', { game_id: result.gameId, game_name: payload.name });
     }
 
     // Update lastSavedState after successful save
@@ -802,6 +804,11 @@ async function handleTogglePublish() {
     
     // Update lastSavedState after successful save
     lastSavedState.value = JSON.parse(JSON.stringify(game.value)) as Game;
+
+    trackEvent(analytics, newUnlistedValue ? 'game_unpublish_success' : 'game_publish_success', { 
+      game_id: persistedGameId.value,
+      game_name: game.value.name 
+    });
   } catch (error) {
     console.error('Error toggling publish status:', error);
     alert('Failed to update publish status');
@@ -826,6 +833,7 @@ async function performDelete() {
     
     showDeleteModal.value = false;
     clearDraftFromCache();
+    trackEvent(analytics, 'game_delete_success', { game_id: persistedGameId.value, game_name: game.value.name });
     router.push('/build'); // Navigate away after deletion
   } catch (error) {
     console.error('Error deleting game:', error);

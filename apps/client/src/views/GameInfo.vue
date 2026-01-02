@@ -487,6 +487,7 @@ function playGame() {
   const trackGameId = gameId.value || 'unknown';
   if (analytics) {
     logEvent(analytics, 'select_game', { game_id: trackGameId });
+    logEvent(analytics, 'game_start', { game_id: trackGameId });
   }
   router.push(`/games/${game.value.gameTypeId}?game=${gameId.value}`);
 }

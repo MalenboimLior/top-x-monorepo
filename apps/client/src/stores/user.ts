@@ -62,7 +62,7 @@ export const useUserStore = defineStore('user', () => {
     try {
       const userDoc = doc(db, 'users', user.value.uid);
       const snapshot = await getDoc(userDoc);
-      
+
       if (snapshot.exists()) {
         const newProfile = snapshot.data() as User;
         const oldProfile = profile.value;
@@ -80,16 +80,16 @@ export const useUserStore = defineStore('user', () => {
               : [],
           });
         }
-        
+
         // Log quiz-related changes
         if (oldProfile) {
           const oldQuizGames = oldProfile.games?.quiz || {};
           const newQuizGames = newProfile.games?.quiz || {};
-          
+
           Object.keys(newQuizGames).forEach((gameId) => {
             const oldGameData = oldQuizGames[gameId];
             const newGameData = newQuizGames[gameId];
-            
+
             if (oldGameData?.custom !== newGameData?.custom) {
               console.log('[UserStore] Profile updated - quiz game data changed:', {
                 gameId,
@@ -104,7 +104,7 @@ export const useUserStore = defineStore('user', () => {
             }
           });
         }
-        
+
         profile.value = newProfile;
 
         // Log when profile is updated from Firestore
@@ -149,7 +149,7 @@ export const useUserStore = defineStore('user', () => {
       const rewardsRef = collection(db, 'users', user.value.uid, 'dailyChallengeRewards');
       const rewardsQuery = query(rewardsRef, orderBy('updatedAt', 'desc'));
       const snapshot = await getDocs(rewardsQuery);
-      
+
       dailyChallengeRewards.value = snapshot.docs.map((docSnapshot) => ({
         id: docSnapshot.id,
         ...(docSnapshot.data() as DailyChallengeRewardRecord),
@@ -177,9 +177,9 @@ export const useUserStore = defineStore('user', () => {
         uid: currentUser.uid,
         displayName: currentUser.displayName,
         photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal', '_400x400')
-            : '/assets/profile.png',
+          : '/assets/profile.png',
       };
-      
+
       // Load profile and rewards on login
       await refreshProfile();
       await refreshDailyChallengeRewards();
@@ -207,7 +207,7 @@ export const useUserStore = defineStore('user', () => {
         uid: result.user.uid,
         displayName: result.user.displayName,
         photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal', '_400x400')
-            : '/assets/profile.png',
+          : '/assets/profile.png',
       };
       console.log('Login result.user.photoURL:', result.user.photoURL);
 
@@ -244,6 +244,8 @@ export const useUserStore = defineStore('user', () => {
 
       // Refresh profile after sync
       await refreshProfile();
+
+      trackEvent(analytics, 'user_login', { method: 'x_twitter', context: 'user_store' });
 
       return true;
     } catch (err: any) {
@@ -287,6 +289,7 @@ export const useUserStore = defineStore('user', () => {
       console.log('Attempting to create profile:', userProfile);
       await setDoc(doc(db, 'users', user.uid), userProfile);
       console.log('Profile created:', userProfile);
+      trackEvent(analytics, 'user_sign_up', { method: 'x_twitter' });
     } catch (err: any) {
       console.error('Profile creation error:', {
         message: err.message,
@@ -458,10 +461,10 @@ export const useUserStore = defineStore('user', () => {
       }
 
       console.log(`[UserStore] Submitted game progress for ${gameTypeId}/${gameId}`, data);
-      
+
       // Refresh profile once after successful submission
       await refreshProfile();
-      
+
       // Log profile state after update
       console.log('[UserStore] Profile state after update:', {
         hasProfile: !!profile.value,
@@ -532,10 +535,10 @@ export const useUserStore = defineStore('user', () => {
         'claimDailyChallengeRewards',
       );
       const { data } = await callable(options ?? {});
-      
+
       // Refresh rewards after claiming
       await refreshDailyChallengeRewards();
-      
+
       return data;
     } catch (err: any) {
       console.error('Error claiming daily challenge rewards:', err);
@@ -569,6 +572,6 @@ export const useUserStore = defineStore('user', () => {
   persist: {
     // Only persist user auth data and other non-Firestore data
     // Profile comes from Firestore, so don't persist it
-    paths: ['user', 'dailyChallengeRewards', 'readyDailyChallengeRewards']
+    pick: ['user', 'dailyChallengeRewards', 'readyDailyChallengeRewards']
   }
 });

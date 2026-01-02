@@ -907,13 +907,16 @@ function closeLoginTab() {
 
 function setActiveTab(tab: string) {
   activeTab.value = tab;
+  trackEvent(analytics, 'profile_tab_click', { tab });
 }
 
 function searchMoreFrenemies() {
+  trackEvent(analytics, 'profile_find_users_click');
   router.push('/users');
 }
 
 function createNewGame() {
+  trackEvent(analytics, 'profile_create_game_click');
   router.push('/build');
 }
 
