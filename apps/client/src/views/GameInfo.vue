@@ -8,15 +8,17 @@
 
       <!-- Media/Image Side -->
       <div class="game-hero-media">
-        <GameMediaSection
-          :game="game"
-          :show-featured-label="true"
-          :featured-label="t('home.labels.featured')"
-          :daily-challenge-active="Boolean(game.dailyChallengeActive)"
-          :daily-challenge-label="t('home.labels.dailyChallenge')"
-          class="hero-media-component"
-        />
-        
+        <button class="game-image-button" @click="playGame" :aria-label="t('home.playNow')">
+          <GameMediaSection
+            :game="game"
+            :show-featured-label="true"
+            :featured-label="t('home.labels.featured')"
+            :daily-challenge-active="Boolean(game.dailyChallengeActive)"
+            :daily-challenge-label="t('home.labels.dailyChallenge')"
+            class="hero-media-component"
+          />
+        </button>
+
       </div>
 
       <!-- Details/Content Side -->
@@ -55,7 +57,7 @@
             </div>
             <div class="hero-creator-details">
                <span class="hero-creator-by">{{ t('gameCard.creator.label') }}</span>
-               <a :href="creatorProfileUrl" class="hero-creator-name" @click.stop>@{{ resolvedCreator.username }}</a>
+               <RouterLink :to="{ path: '/profile', query: { userid: resolvedCreator?.userid } }" class="hero-creator-name" @click.stop>@{{ resolvedCreator.username }}</RouterLink>
             </div>
           </div>
 
@@ -102,14 +104,17 @@
             :label="t('home.playNow')"
             @click="playGame"
           />
-           <ShareButton
-            v-if="shareText"
-            :share-text="shareText"
-            :image-url="game.image || null"
-            :file-name="game.name"
-            :label="t('common.share')"
-            button-type="is-secondary share-button-premium"
-          />
+           <a
+            v-if="twitterShareUrl"
+            :href="twitterShareUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="twitter-share-button"
+            @click="handleTwitterShare"
+          >
+            <font-awesome-icon :icon="['fab', 'x-twitter']" />
+            {{ t('common.share') }}
+          </a>
         </div>
 
       </div>
@@ -121,7 +126,7 @@
       </div>
     </section>
 
-    <section class="layout-container section-stack leaderboard-section">
+    <section v-if="!isPyramidGame" class="layout-container section-stack leaderboard-section">
       <header class="section-header">
         <div class="section-header__content">
            <h2 class="section-title">
@@ -133,6 +138,32 @@
       </header>
       <div class="surface">
         <Leaderboard :game-id="gameId" />
+      </div>
+    </section>
+
+    <section v-else class="layout-container section-stack pyramid-results-section">
+      <header class="section-header">
+        <div class="section-header__content">
+           <h2 class="section-title">
+             <font-awesome-icon :icon="['fas', 'users']" class="header-icon" />
+             {{ t('games.pyramid.communityVotes') }}
+           </h2>
+           <p class="section-subtitle">{{ t('games.pyramid.communityVotesSubtitle') }}</p>
+        </div>
+      </header>
+      <div class="surface">
+        <PyramidResults
+          :game-id="gameId"
+          :items="[]"
+          :community-items="[]"
+          :rows="[]"
+          :game-header="game.name"
+          :worst-header="t('games.pyramid.worstItem')"
+          :game-title="game.name"
+          :hide-row-label="false"
+          :worst-show="true"
+          :share-link="window.location.href"
+        />
       </div>
     </section>
 
@@ -173,7 +204,13 @@
         </div>
         <div class="instructions-modal-content">
           <div class="instructions-modal-text" v-html="parsedInstructions"></div>
-
+          <div class="instructions-modal-actions">
+            <CustomButton
+              type="is-primary is-large"
+              :label="t('home.playNow')"
+              @click="playGameFromModal"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -182,7 +219,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { DateTime } from 'luxon';
 import { getGame, getGameStats } from '@/services/game';
@@ -194,6 +231,7 @@ import GameTypeInfo from '@/components/GameTypeInfo.vue';
 import GameMediaSection from '@/components/GameMediaSection.vue';
 import SimilarGamesSection from '@/components/SimilarGamesSection.vue';
 import GameBuildSection from '@/components/GameBuildSection.vue';
+import PyramidResults from '@/components/games/pyramid/PyramidResults.vue';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
 import { Game, GameCreator, GameBadgeKey } from '@top-x/shared/types/game';
@@ -255,6 +293,34 @@ const shareText = computed(() => {
   return `${baseText}\n${url}`;
 });
 
+const twitterShareUrl = computed(() => {
+  if (!game.value.name || !game.value.description) return null;
+
+  const text = `${game.value.name} - ${game.value.description}`;
+  const hashtags = 'TOPX';
+  const via = 'TOPX';
+  const url = window.location.href;
+
+  const params = new URLSearchParams({
+    text,
+    hashtags,
+    via,
+    url
+  });
+
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
+});
+
+function handleTwitterShare() {
+  if (analytics) {
+    logEvent(analytics, 'share', {
+      method: 'twitter',
+      content_type: 'game',
+      item_id: gameId.value
+    });
+  }
+}
+
 const formattedDate = computed(() => {
   const dateValue = game.value.createdAt || Date.now();
   // Using cast to avoid TS issues with local setup, confirmed works at runtime
@@ -306,9 +372,6 @@ const resolvedCreator = computed<GameCreator | undefined>(() => {
 });
 
 const creatorImage = computed(() => resolvedCreator.value?.image || DEFAULT_TOPX_CREATOR.image);
-const creatorProfileUrl = computed(() =>
-  resolvedCreator.value ? `https://top-x.co/profile?userid=${resolvedCreator.value.userid}` : '',
-);
 const creatorAltText = computed(() =>
   resolvedCreator.value ? `${resolvedCreator.value.username} avatar` : 'Creator avatar',
 );
@@ -415,12 +478,21 @@ const isInstructionsLong = computed(() => {
   return instruction.length > 200 || instruction.includes('\n\n') || instruction.split('\n').length > 6;
 });
 
+const isPyramidGame = computed(() => {
+  return game.value.gameTypeId === 'pyramid';
+});
+
 const openInstructionsModal = () => {
   showInstructionsModal.value = true;
 };
 
 const closeInstructionsModal = () => {
   showInstructionsModal.value = false;
+};
+
+const playGameFromModal = () => {
+  closeInstructionsModal();
+  playGame();
 };
 
 
@@ -581,6 +653,27 @@ function goBack() {
   flex-direction: column;
   gap: var(--space-4);
   height: 100%;
+}
+
+.game-image-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.game-image-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 232, 224, 0.3);
+}
+
+.game-image-button:active {
+  transform: scale(0.98);
 }
 
 /* Force GameMediaSection to fill available height but respect aspect ratio */
@@ -976,6 +1069,32 @@ function goBack() {
   height: 1.2em;
 }
 
+.twitter-share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.75rem 1.5rem;
+  background: rgba(29, 161, 242, 0.1);
+  border: 1px solid rgba(29, 161, 242, 0.3);
+  color: #1da1f2;
+  text-decoration: none;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(29, 161, 242, 0.2);
+}
+
+.twitter-share-button:hover {
+  background: rgba(29, 161, 242, 0.2);
+  border-color: #1da1f2;
+  color: #1da1f2;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(29, 161, 242, 0.4);
+}
+
 :deep(.share-button-premium span) {
   font-weight: 700;
   text-transform: uppercase;
@@ -1024,13 +1143,15 @@ function goBack() {
   .game-hero-card {
     grid-template-columns: 1fr;
     gap: var(--space-5);
+    padding: var(--space-1); /* Reduced padding for mobile */
+    border-radius: 24px; /* Smaller border radius */
   }
-  
+
   .hero-play-action {
     padding-top: var(--space-4);
     gap: var(--space-3);
   }
-  
+
   :deep(.share-button-premium) {
     height: 60px;
     width: auto;
@@ -1039,32 +1160,32 @@ function goBack() {
     padding-inline: var(--space-3);
     gap: 6px;
   }
-  
+
   :deep(.share-button-premium span) {
     font-size: 0.7rem;
     letter-spacing: 0.01em;
   }
-  
+
   :deep(.share-button-premium .icon) {
     font-size: 0.9rem;
   }
-  
+
   .play-button :deep(.button) {
     height: 60px;
     border-radius: 16px;
     font-size: 1.1rem;
     letter-spacing: 0.05em;
   }
-  
+
   .hero-media-component :deep(.game-media-section__image-wrapper) {
       min-height: 250px;
   }
-  
+
   .hero-header {
       margin-inline-end: 0;
       text-align: center;
   }
-  
+
   .hero-badges {
       justify-content: center;
   }
@@ -1072,19 +1193,26 @@ function goBack() {
   .hero-description {
     -webkit-line-clamp: 2;
     line-clamp: 3;
-    
+
   }
-  
+
   .close-button {
-      top: -15px;
-      inset-inline-end: 0;
+      top: -10px; /* Reduced from -15px */
+      inset-inline-end: -10px; /* Position inside card bounds */
       background: var(--color-bg-secondary);
+      width: 28px; /* Smaller size */
+      height: 28px;
   }
-  
+
   .hero-stats-row {
       flex-wrap: wrap;
       gap: var(--space-2);
       justify-content: center;
+      padding-inline: 0; /* Remove horizontal padding that might cause overflow */
+  }
+
+  .hero-stat {
+    font-size: 0.9rem; /* Smaller font size */
   }
 
   .hero-stat--creator .hero-creator-avatar {
@@ -1099,21 +1227,21 @@ function goBack() {
   .hero-stat--creator .hero-creator-name {
       font-size: 0.8rem;
   }
-  
+
   .hero-info-group {
       flex-direction: column;
       align-items: stretch;
       gap: var(--space-3);
   }
 
-  
+
   .hero-creator {
     justify-content: center;
   }
-  
+
   .hero-instructions-content {
       flex-direction: column;
-     
+
   }
 
   .instructions-modal-overlay {
@@ -1147,9 +1275,38 @@ function goBack() {
   .instructions-modal-text {
       font-size: 0.95rem;
   }
-  
+
   .game-hero-media {
     order: -1;
+  }
+}
+
+/* Extra small mobile devices (Pixel 7 and similar) */
+@media (max-width: 430px) {
+  .game-info-page {
+    padding-inline: var(--space-3); /* Reduce horizontal padding */
+  }
+
+  .game-hero-card {
+    padding: var(--space-3); /* Further reduce padding */
+    gap: var(--space-4);
+    min-height: 480px; /* Slightly reduce min height */
+  }
+
+  .hero-stats-row {
+    gap: var(--space-1); /* Tighter gap */
+  }
+
+  .hero-stat {
+    gap: var(--space-1); /* Tighter gap between icon and text */
+  }
+
+  .hero-badges {
+    gap: var(--space-1); /* Tighter gap between badges */
+  }
+
+  .hero-play-action {
+    gap: var(--space-2); /* Tighter gap between buttons */
   }
 }
 
@@ -1264,6 +1421,14 @@ function goBack() {
   color: var(--color-text-secondary);
   font-size: 1rem;
   line-height: 1.6;
+}
+
+.instructions-modal-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: var(--space-4);
 }
 
 .instructions-modal-text .markdown-content {

@@ -115,7 +115,7 @@ export default defineComponent({
 .footer-heading {
   font-size: 0.875rem;
   font-weight: 700;
-  text-transform: lowercase;
+  /* text-transform: lowercase;*/
   letter-spacing: 0.05em;
   color: var(--color-text-primary);
   margin: 0 0 1.25rem 0;

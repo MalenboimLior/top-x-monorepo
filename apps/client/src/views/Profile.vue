@@ -362,7 +362,7 @@ const username = computed(() => (profile.value?.username ? `${profile.value.user
 const photoURL = computed(() => profile.value?.photoURL || '/assets/profile.png');
 const isLoggedIn = computed(() => !!userStore.user);
 const isOwnProfile = computed(() => {
-  const uidParam = route.query.user as string | undefined;
+  const uidParam = (route.query.user || route.query.userid) as string | undefined;
   return !uidParam || uidParam === userStore.user?.uid;
 });
 const isFrenemy = computed(() => {
@@ -818,7 +818,7 @@ async function handleClaimReward(reward: ChallengeReward) {
 }
 
 async function loadProfile() {
-  const uidParam = route.query.user as string | undefined;
+  const uidParam = (route.query.user || route.query.userid) as string | undefined;
   if (uidParam && uidParam !== userStore.user?.uid) {
     const snap = await getDoc(doc(db, 'users', uidParam));
     profile.value = snap.exists() ? (snap.data() as User) : null;
@@ -866,10 +866,8 @@ async function fetchAddedBy() {
 async function addFrenemy(uid: string) {
   try {
     await userStore.addFrenemy(uid);
-    // Refresh profile if viewing other user's profile
-    if (!isOwnProfile.value && profile.value?.uid === uid) {
-      await loadProfile();
-    }
+    // Refresh profile to update local state
+    await userStore.refreshProfile();
     if (activeTab.value === 'frenemies') await fetchFrenemies();
     if (activeTab.value === 'whoadded') await fetchAddedBy();
   } catch (err) {
@@ -880,10 +878,8 @@ async function addFrenemy(uid: string) {
 async function removeFrenemy(uid: string) {
   try {
     await userStore.removeFrenemy(uid);
-    // Refresh profile if viewing other user's profile
-    if (!isOwnProfile.value && profile.value?.uid === uid) {
-      await loadProfile();
-    }
+    // Refresh profile to update local state
+    await userStore.refreshProfile();
     if (activeTab.value === 'frenemies') await fetchFrenemies();
     if (activeTab.value === 'whoadded') await fetchAddedBy();
   } catch (err) {
@@ -1011,7 +1007,7 @@ async function loadAvailableGames() {
 }
 
 watch(
-  [() => route.query.user, () => userStore.user?.uid],
+  [() => route.query.user, () => route.query.userid, () => userStore.user?.uid],
   async () => {
     await loadProfile();
     // Don't load grouped games immediately - wait for tab activation
@@ -1040,6 +1036,13 @@ watch(
         await loadGroupedGames();
       }
     }
+  },
+);
+
+watch(
+  () => userStore.profile?.frenemies,
+  (newFrenemies) => {
+    console.log('[Profile] frenemies changed:', newFrenemies);
   },
 );
 
@@ -1520,6 +1523,27 @@ onMounted(() => {
 .challenge-reward-card:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--bulma-primary);
+}
+
+/* Following Badge */
+.following-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.badge-icon {
+  color: var(--bulma-primary);
+  font-size: 1rem;
+}
+
+.badge-text {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.unfollow-button {
+  margin-left: 0.5rem;
 }
 
 /* Login Banner */

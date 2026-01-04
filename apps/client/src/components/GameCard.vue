@@ -78,7 +78,7 @@
           </div>
           <div class="game-card__creator-meta">
             <span class="game-card__creator-label">{{ creatorLabel }}</span>
-            <a :href="creatorProfileUrl" @click.stop>{{ resolvedCreator.username }}</a>
+            <RouterLink :to="{ path: '/profile', query: { userid: resolvedCreator?.userid } }" @click.stop>{{ resolvedCreator.username }}</RouterLink>
           </div>
         </div>
       </div>
@@ -89,6 +89,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { PropType } from 'vue';
+import { RouterLink } from 'vue-router';
 import type { Game, GameBadgeKey, GameCreator } from '@top-x/shared/types/game';
 import type { GameStats } from '@top-x/shared/types/stats';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
@@ -401,9 +402,6 @@ const resolvedCreator = computed<GameCreator | undefined>(() => {
 });
 
 const creatorImage = computed(() => resolvedCreator.value?.image || DEFAULT_TOPX_CREATOR.image);
-const creatorProfileUrl = computed(() =>
-  resolvedCreator.value ? `https://top-x.co/profile?userid=${resolvedCreator.value.userid}` : '',
-);
 const creatorLabel = computed(() => t('gameCard.creator.label'));
 const creatorAltText = computed(() =>
   resolvedCreator.value ? `${resolvedCreator.value.username} avatar` : t('gameCard.creator.fallbackAlt'),
