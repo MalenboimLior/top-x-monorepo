@@ -176,7 +176,7 @@
               :placeholder="t('build.game.fields.instructions.placeholder')"
             >
             </textarea>
-            <p class="field-hint">{{ t('build.game.fields.instructions.hint') }} Markdown formatting is supported (e.g., **bold**, line breaks for paragraphs).</p>
+            <p class="field-hint">{{ t('build.game.fields.instructions.hint') }} Markdown formatting is supported (e.g., **bold**, *italic*, ~~strikethrough~~, `code`, # headers, > quotes, - lists, [links](url), tables with |).</p>
           </div>
         </div>
       </div>
@@ -184,6 +184,16 @@
 
     <!-- Footer Actions -->
     <footer class="builder-footer">
+      <div v-if="userStore.profile?.isAnonymous" class="builder-footer__anonymous-warning">
+        <font-awesome-icon :icon="['fas', 'lock']" class="mr-2" />
+        <span>Login to save and publish your game. Guests can only preview.</span>
+        <CustomButton
+          type="is-primary is-small ml-4"
+          label="Login with X"
+          :icon="['fab', 'x-twitter']"
+          @click="userStore.loginWithX()"
+        />
+      </div>
       <div class="builder-footer__spacer"></div>
       <div class="builder-footer__actions">
         <CustomButton
@@ -191,7 +201,7 @@
           :label="t('build.wizard.save')"
           :icon="['fas', 'save']"
           :loading="isSaving"
-          :disabled="isSaving"
+          :disabled="isSaving || userStore.profile?.isAnonymous"
           @click="handleSave"
         />
         <CustomButton
@@ -219,7 +229,7 @@
           :label="isPublished ? t('build.wizard.unpublish') : t('build.wizard.publish')"
           :icon="isPublished ? ['fas', 'eye-slash'] : ['fas', 'globe']"
           :loading="isSaving"
-          :disabled="isSaving"
+          :disabled="isSaving || userStore.profile?.isAnonymous"
           @click="handleTogglePublish"
         />
         <CustomButton
@@ -228,7 +238,7 @@
           :label="t('build.wizard.delete')"
           :icon="['fas', 'trash']"
           :loading="isDeleting"
-          :disabled="isDeleting"
+          :disabled="isDeleting || userStore.profile?.isAnonymous"
           @click="showDeleteModal = true"
         />
       </div>
@@ -1458,11 +1468,24 @@ onBeforeUnmount(() => {
 
 .builder-footer {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 1.5rem;
   padding-top: 1.5rem;
   margin-top: 1rem;
   border-top: 1px solid var(--color-border-subtle);
+}
+
+.builder-footer__anonymous-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 179, 0, 0.1);
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  color: #ffb300;
+  padding: 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .builder-footer__spacer {

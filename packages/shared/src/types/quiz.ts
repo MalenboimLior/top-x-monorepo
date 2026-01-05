@@ -156,10 +156,10 @@ export interface QuizThemeConfig {
 export interface QuizConfig {
   /** Quiz mode - determines scoring and result logic */
   mode: 'personality' | 'archetype';
-  
+
   /** Array of questions for the quiz */
   questions: QuizQuestion[];
-  
+
   /** Visual theme configuration */
   theme?: QuizThemeConfig;
   

@@ -8,10 +8,11 @@
       @continue="handleAdContinue"
     />
 
-    <!-- Login Promo (Above user-vote-section) if not logged in -->
+    <!-- Login Promo (Above user-vote-section) if not logged in or anonymous -->
     <GameLoginPromo 
-      v-if="!userStore.user"
-      mode="inline"
+      v-if="!userStore.user || userStore.user?.isAnonymous"
+      :mode="nudgeMode"
+      :is-visible="nudgeVisible"
       :game-id="gameId"
       context="combined_view"
     />
@@ -113,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, defineAsyncComponent } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import PyramidImage from '@/components/games/pyramid/PyramidImage.vue';
 import ShareButton from '@/components/ShareButton.vue';
@@ -137,9 +138,13 @@ const PyramidResults = defineAsyncComponent(() => import('@/components/games/pyr
 library.add(faPen);
 
 const router = useRouter();
+const route = useRoute();
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 const userStore = useUserStore();
+
+const nudgeVisible = ref(false);
+const nudgeMode = computed(() => route.query.nudge === 'true' ? 'fixed' : 'inline');
 const pyramidImageRef = ref<any>(null);
 const imageUrl = computed(() => pyramidImageRef.value?.getImageDataUrl() || null);
 const showStats = ref(false);
@@ -185,6 +190,13 @@ onMounted(async () => {
       setTimeout(() => {
         showResults.value = true;
       }, 100);
+    }
+
+    // Handle login nudge for guests
+    if (route.query.nudge === 'true' && userStore.user?.isAnonymous) {
+      setTimeout(() => {
+        nudgeVisible.value = true;
+      }, 500);
     }
   }, 200);
 });

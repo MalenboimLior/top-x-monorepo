@@ -94,25 +94,33 @@
             </div>
 
             <div class="navbar-item profile-div">
-              <div class="buttons">
+              <div class="buttons login-group" style="gap:0;">
                 <CustomButton
-                  v-if="!user"
+                  v-if="!user || userStore.profile?.isAnonymous"
                   type="is-primary"
                   :label="t('nav.loginWith')"
                   :icon="['fab', 'x-twitter']"
                   @click="handleLogin"
                 />
                 <router-link
-                  v-else
+                  v-if="user && !userStore.profile?.isAnonymous"
                   to="/profile"
                   @click="closeMenu"
                   class="navbar-item profile-link"
                   :title="hasRewardNotification ? 'Daily challenge results ready' : undefined"
                 >
-                  <figure class="image is-40x40">
+                  <figure class="image is-44x44">
                     <img :src="user.photoURL || '/assets/profile.png'" alt="Profile" class="is-rounded" />
                   </figure>
                   <span v-if="hasRewardNotification" class="challenge-reward-indicator" aria-hidden="true"></span>
+                </router-link>
+                <router-link
+                  v-else-if="user && userStore.profile?.isAnonymous"
+                  to="/profile"
+                  @click="closeMenu"
+                  class="navbar-item guest-link"
+                  title="Guest Profile"
+                >
                 </router-link>
               </div>
             </div>
@@ -514,6 +522,43 @@ onUnmounted(() => {
   height: 100% !important;
   max-height: none !important;
   object-fit: cover;
+}
+
+.guest-link {
+  padding: 0 var(--space-2);
+}
+
+.guest-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
+  border-radius: 999px;
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  transition: all var(--transition-fast);
+}
+
+.guest-indicator:hover {
+  border-color: var(--color-border-primary);
+  background: var(--color-primary-bg);
+}
+
+.guest-indicator img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.guest-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.guest-indicator:hover .guest-label {
+  color: var(--bulma-primary);
 }
 
 .navbar-burger {

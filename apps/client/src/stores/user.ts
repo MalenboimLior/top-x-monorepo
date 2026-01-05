@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, watch, computed } from 'vue';
 import { auth, db, functions, analytics, trackEvent } from '@top-x/shared';
 
-import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { signInWithPopup, TwitterAuthProvider, onAuthStateChanged, signInAnonymously, linkWithCredential, signInWithCredential, User as FirebaseUser } from 'firebase/auth';
 import {
   doc,
   updateDoc,
@@ -32,12 +32,34 @@ interface SanitizedUser {
   uid: string;
   displayName: string | null;
   photoURL: string | null;
+  isAnonymous: boolean;
 }
 
 export const useUserStore = defineStore('user', () => {
   const user = ref<SanitizedUser | null>(null);
   const profile = ref<User | null>(null);
   const error = ref<string | null>(null);
+  const showConflictModal = ref(false);
+  const pendingXResult = ref<any>(null);
+
+  // Helper for anonymous avatars
+  function generateAnonymousAvatar(): string {
+    const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
+    const backgrounds = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const bg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+    const svg = `
+      <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" fill="${bg}"/>
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="60">${emoji}</text>
+      </svg>
+    `.trim();
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }
+
+  function generateAnonymousUsername(): string {
+    return `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+  }
   const dailyChallengeRewards = ref<Array<DailyChallengeRewardRecord & { id: string }>>([]);
   const rewardClock = ref(Date.now());
   const readyDailyChallengeRewards = computed(() => {
@@ -178,6 +200,7 @@ export const useUserStore = defineStore('user', () => {
         displayName: currentUser.displayName,
         photoURL: currentUser.photoURL ? currentUser.photoURL.replace('_normal', '_400x400')
           : '/assets/profile.png',
+        isAnonymous: currentUser.isAnonymous,
       };
 
       // Load profile and rewards on login
@@ -192,66 +215,125 @@ export const useUserStore = defineStore('user', () => {
     } else {
       user.value = null;
       profile.value = null;
-      console.log('No user logged in');
+      console.log('No user logged in, signing in anonymously...');
+      try {
+        await signInAnonymously(auth);
+      } catch (err: any) {
+        console.error('Anonymous sign-in error:', err);
+        error.value = err.message;
+      }
     }
   });
 
   const loginWithX = async () => {
     const provider = new TwitterAuthProvider();
-    console.log("Using provider ID:", provider.providerId); // should be 'twitter.com'
+    console.log("Using provider ID:", provider.providerId);
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      console.log('Login successful:', result.user.uid);
-      user.value = {
-        uid: result.user.uid,
-        displayName: result.user.displayName,
-        photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal', '_400x400')
-          : '/assets/profile.png',
-      };
-      console.log('Login result.user.photoURL:', result.user.photoURL);
+      if (!user.value || !auth.currentUser) {
+        throw new Error('Auth not initialized');
+      }
 
+      const result = await signInWithPopup(auth, provider);
       const credential = TwitterAuthProvider.credentialFromResult(result);
-      if (!credential || !credential.accessToken || !credential.secret) {
+
+      if (!credential) {
         throw new Error('Failed to get X credentials');
       }
-      const xAccessToken = credential.accessToken;
-      const xAccessSecret = credential.secret;
 
-      const userDocRef = doc(db, 'users', result.user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        await updateDoc(userDocRef, {
-          xAccessToken,
-          xAccessSecret,
-          displayName: result.user.displayName || 'Anonymous',
-          photoURL: result.user.photoURL
-            ? result.user.photoURL.replace('_normal', '_400x400')
-            : '/assets/profile.png',
-        });
-        console.log('Updated user profile with X credentials');
-      } else {
-        await createUserProfile(result.user, { xAccessToken, xAccessSecret });
+      if (auth.currentUser.isAnonymous) {
+        try {
+          // Attempt to link anonymous account with X
+          await linkWithCredential(auth.currentUser, credential);
+          console.log('Successfully linked anonymous account with X');
+        } catch (linkError: any) {
+          if (linkError.code === 'auth/credential-already-in-use') {
+            console.warn('X account already linked to another user. Showing conflict modal.');
+            pendingXResult.value = result;
+            showConflictModal.value = true;
+            return false;
+          }
+          throw linkError;
+        }
       }
-      console.log('before syncXUserData:');
 
-      const syncXUserData: HttpsCallable<unknown, unknown> = httpsCallable(functions, 'syncXUserData');
-      await syncXUserData().catch((err) => {
-        console.error('Error calling syncXUserData:', err);
-        throw new Error(`Failed to sync X data: ${err.message}`);
-      });
-      console.log('Triggered syncXUserData');
-
-      // Refresh profile after sync
-      await refreshProfile();
-
-      trackEvent(analytics, 'user_login', { method: 'x_twitter', context: 'user_store' });
-
+      // Proceed with normal login/update logic if not anonymous or successfully linked
+      await handleXLoginSuccess(result, credential);
       return true;
     } catch (err: any) {
       console.error('Login error:', err);
       error.value = err.message;
       return false;
+    }
+  };
+
+  async function handleXLoginSuccess(result: any, credential: any) {
+    const xAccessToken = credential.accessToken;
+    const xAccessSecret = credential.secret;
+
+    user.value = {
+      uid: result.user.uid,
+      displayName: result.user.displayName,
+      photoURL: result.user.photoURL ? result.user.photoURL.replace('_normal', '_400x400')
+        : '/assets/profile.png',
+      isAnonymous: false,
+    };
+
+    const userDocRef = doc(db, 'users', result.user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) {
+      await updateDoc(userDocRef, {
+        xAccessToken,
+        xAccessSecret,
+        isAnonymous: false,
+        displayName: result.user.displayName || 'Guest',
+        photoURL: result.user.photoURL
+          ? result.user.photoURL.replace('_normal', '_400x400')
+          : '/assets/profile.png',
+      });
+      console.log('Updated user profile with X credentials');
+    } else {
+      await createUserProfile(result.user, { xAccessToken, xAccessSecret });
+    }
+
+    const syncXUserData: HttpsCallable<unknown, unknown> = httpsCallable(functions, 'syncXUserData');
+    await syncXUserData().catch((err) => {
+      console.error('Error calling syncXUserData:', err);
+      // We don't throw here to not block the login process
+    });
+
+    await refreshProfile();
+    trackEvent(analytics, 'user_login', { method: 'x_twitter', context: 'user_store' });
+  }
+
+  const resolveConflict = async (proceed: boolean) => {
+    if (!proceed) {
+      showConflictModal.value = false;
+      pendingXResult.value = null;
+      return;
+    }
+
+    try {
+      if (!pendingXResult.value) return;
+
+      const result = pendingXResult.value;
+      const credential = TwitterAuthProvider.credentialFromResult(result);
+
+      if (!credential) {
+        throw new Error('Failed to get X credentials for conflict resolution');
+      }
+
+      // Sign in with the existing X account (this will discard the anonymous session)
+      await signInWithCredential(auth, credential);
+      console.log('Resolved conflict by signing into existing X account');
+
+      showConflictModal.value = false;
+      pendingXResult.value = null;
+
+      // refreshProfile will be called by onAuthStateChanged
+    } catch (err: any) {
+      console.error('Conflict resolution error:', err);
+      error.value = err.message;
     }
   };
 
@@ -265,16 +347,29 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
+  async function updateProfile(updates: Partial<User>) {
+    if (!user.value) return;
+    try {
+      await updateDoc(doc(db, 'users', user.value.uid), updates);
+      await refreshProfile();
+    } catch (err: any) {
+      console.error('Update profile error:', err);
+      error.value = err.message;
+    }
+  }
+
   async function createUserProfile(user: FirebaseUser, xCredentials?: { xAccessToken: string; xAccessSecret: string }) {
+    const isAnonymous = user.isAnonymous;
     const userProfile: User = {
       uid: user.uid,
-      username: '@Unknown',
-      displayName: user.displayName || 'Anonymous',
+      username: isAnonymous ? generateAnonymousUsername() : (user.displayName ? `@${user.displayName.replace(/\s+/g, '')}` : '@Unknown'),
+      displayName: user.displayName || 'Guest',
       email: user.email || '',
       photoURL: user.photoURL
         ? user.photoURL.replace('_normal', '_400x400')
-        : '/assets/profile.png',
+        : (isAnonymous ? generateAnonymousAvatar() : '/assets/profile.png'),
       isAdmin: false,
+      isAnonymous: isAnonymous,
       followersCount: 0,
       followingCount: 0,
       xAccessToken: xCredentials?.xAccessToken || '',
@@ -289,7 +384,9 @@ export const useUserStore = defineStore('user', () => {
       console.log('Attempting to create profile:', userProfile);
       await setDoc(doc(db, 'users', user.uid), userProfile);
       console.log('Profile created:', userProfile);
-      trackEvent(analytics, 'user_sign_up', { method: 'x_twitter' });
+      if (!isAnonymous) {
+        trackEvent(analytics, 'user_sign_up', { method: xCredentials ? 'x_twitter' : 'unknown' });
+      }
     } catch (err: any) {
       console.error('Profile creation error:', {
         message: err.message,
@@ -423,6 +520,7 @@ export const useUserStore = defineStore('user', () => {
         gameTypeId,
         gameId,
         gameData,
+        isAnonymous: profile.value?.isAnonymous || false,
       };
 
       if (options?.dailyChallengeId) {
@@ -554,9 +652,11 @@ export const useUserStore = defineStore('user', () => {
     user,
     profile,
     error,
+    showConflictModal,
     dailyChallengeRewards,
     readyDailyChallengeRewards,
     loginWithX,
+    resolveConflict,
     logout,
     addFrenemy,
     removeFrenemy,
@@ -567,6 +667,9 @@ export const useUserStore = defineStore('user', () => {
     refreshProfile,
     refreshDailyChallengeRewards,
     clearError,
+    updateProfile,
+    generateAnonymousAvatar,
+    generateAnonymousUsername,
   };
 }, {
   persist: {

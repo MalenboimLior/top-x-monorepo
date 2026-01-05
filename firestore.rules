@@ -18,6 +18,11 @@ service cloud.firestore {
       return isAuthenticated() && 
              resource.data.creator.userid == request.auth.uid;
     }
+
+    // Helper function to check if user is anonymous
+    function isAnonymous() {
+      return isAuthenticated() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
     
     // Helper function to check if user is updating only allowed fields on their own document
     function canUpdateOwnDocument() {
@@ -57,14 +62,14 @@ service cloud.firestore {
       // Anyone can read games
       allow read: if true;
       
-      // Only authenticated users can create games
+      // Only non-anonymous authenticated users can create games
       // Creator must match authenticated user
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() && !isAnonymous() &&
                        request.resource.data.creator.userid == request.auth.uid;
       
       // Game creator or admins can update games fully
-      // OR authenticated users can update only the custom.communityItems field (for community contributions)
-      allow update: if isGameCreator() || isAdmin() || canUpdateCommunityItems();
+      // OR non-anonymous authenticated users can update only the custom.communityItems field
+      allow update: if isGameCreator() || isAdmin() || (!isAnonymous() && canUpdateCommunityItems());
       
       // Only the game creator or admins can delete games
       allow delete: if isGameCreator() || isAdmin();

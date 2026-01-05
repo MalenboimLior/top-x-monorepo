@@ -296,15 +296,7 @@ async function finishSubmit(data: PyramidData) {
   console.log('PyramidTier: Calculated score:', score);
 
   if (!userStore.user) {
-    console.log('PyramidTier: User not logged in, storing vote in localStorage');
-    localStorage.setItem(`pyramid_${gameId.value}`, JSON.stringify({
-      pyramid: data.pyramid,
-      worstItem: data.worstItem,
-    }));
-    localStorage.setItem(`showLoginPopup_${gameId.value}`, 'true');
-    hasSubmitted.value = true;
-    console.log('PyramidTier: Set hasSubmitted to true (guest), navigating...');
-    router.push({ name: 'PyramidTier', query: { game: gameId.value } });
+    console.error('PyramidTier: No user (even anonymous), cannot submit');
     return;
   }
 
@@ -321,8 +313,16 @@ async function finishSubmit(data: PyramidData) {
     await userStore.updateGameProgress(gameTypeId, gameId.value, { score, streak: 0, custom });
     console.log('PyramidTier: User progress updated successfully');
     hasSubmitted.value = true;
-    console.log('PyramidTier: Set hasSubmitted to true (logged in), navigating...');
-    router.push({ name: 'PyramidTier', query: { game: gameId.value } });
+    
+    // Nudge guest users to login after voting
+    const isAnonymous = userStore.user?.isAnonymous;
+    const query: Record<string, string> = { game: gameId.value };
+    if (isAnonymous) {
+      query.nudge = 'true';
+    }
+
+    console.log('PyramidTier: Navigating to results...', query);
+    router.push({ name: 'PyramidTier', query });
   } catch (err: any) {
     console.error('PyramidTier: Error in finishSubmit:', err.message, err);
     alert('Failed to submit game data. Please try again.');

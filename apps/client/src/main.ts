@@ -8,6 +8,7 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faShare,
+  faShareNodes,
   faSave,
   faUserPlus,
   faRedo,
@@ -63,6 +64,18 @@ import {
   faRightFromBracket,
   faHandPointer,
   faBrain,
+  faAt,
+  faSync,
+  faRandom,
+  faLock,
+  faArrowsRotate,
+  faTrashCan,
+  faCircleXmark,
+  faPen,
+  faLink,
+  faTriangleExclamation,
+  faChevronDown,
+  faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -70,6 +83,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(
   faXTwitter,
   faShare,
+  faShareNodes,
   faSave,
   faUserPlus,
   faRedo,
@@ -125,6 +139,18 @@ library.add(
   faCubes,
   faRightFromBracket,
   faHandPointer,
+  faAt,
+  faSync,
+  faRandom,
+  faLock,
+  faArrowsRotate,
+  faTrashCan,
+  faCircleXmark,
+  faPen,
+  faLink,
+  faTriangleExclamation,
+  faChevronDown,
+  faUsers,
 );
 
 import 'bulma/css/bulma.min.css';

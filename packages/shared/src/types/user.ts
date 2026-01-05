@@ -94,6 +94,7 @@ export interface User {
   email: string;
   photoURL?: string;
   isAdmin?: boolean;
+  isAnonymous?: boolean;
   followersCount: number;
   followingCount: number;
   xAccessToken?: string;
@@ -115,6 +116,8 @@ export interface SubmitGameScoreRequest {
   dailyChallengeDate?: string;
   /** Additional metadata captured for audit/analytics around the challenge. */
   challengeMetadata?: Record<string, unknown>;
+  /** Whether the submitting user is anonymous. */
+  isAnonymous?: boolean;
 }
 
 export interface SubmitGameScoreResponse {

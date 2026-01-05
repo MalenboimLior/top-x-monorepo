@@ -110,7 +110,7 @@ import { storage } from '@top-x/shared/';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface Props {
-  modelValue: string;
+  modelValue: string | null;
   uploadFolder: string;
   cropWidth: number;
   cropHeight: number;

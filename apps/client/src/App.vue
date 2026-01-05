@@ -2,6 +2,7 @@
   <div class="app-container">
     <NavBar />
     <CookieBanner />
+    <AccountConflictModal />
     <main class="main-content">
       <router-view />
     </main>
@@ -14,6 +15,7 @@ import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import NavBar from '@/components/NavBar.vue';
 import Footer from '@/components/Footer.vue';
+import AccountConflictModal from '@/components/AccountConflictModal.vue';
 import { useHead } from '@vueuse/head';
 import { useThemeStore } from '@/stores/theme';
 

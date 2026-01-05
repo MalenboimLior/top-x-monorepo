@@ -80,6 +80,191 @@ import type { QuizThemeConfig } from '@top-x/shared/types/quiz';
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
+// Enhanced Markdown parsing function
+function parseMarkdown(text: string): string {
+  if (!text) return '';
+
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let inCodeBlock = false;
+  let codeBlockContent: string[] = [];
+  let codeBlockLanguage = '';
+  let tableRows: string[][] = [];
+  let isInTable = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Handle code blocks (```)
+    if (line.trim().startsWith('```')) {
+      if (inCodeBlock) {
+        // End of code block
+        const codeHtml = codeBlockContent.join('\n');
+        const langClass = codeBlockLanguage ? ` class="language-${codeBlockLanguage}"` : '';
+        result.push(`<pre${langClass}><code>${codeHtml}</code></pre>`);
+        inCodeBlock = false;
+        codeBlockContent = [];
+        codeBlockLanguage = '';
+      } else {
+        // Start of code block
+        inCodeBlock = true;
+        codeBlockLanguage = line.trim().substring(3).trim();
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      continue;
+    }
+
+    // Handle tables
+    if (isTableRow(line)) {
+      if (!isInTable) {
+        // Start of table
+        isInTable = true;
+        tableRows = [];
+      }
+      tableRows.push(parseTableRow(line));
+
+      // Check if next line is table separator or end of table
+      const nextLine = lines[i + 1];
+      if (!nextLine || !isTableRow(nextLine) || isTableSeparator(nextLine)) {
+        if (isTableSeparator(nextLine)) {
+          i++; // Skip separator line
+        }
+        // End of table, generate HTML
+        result.push(generateTableHtml(tableRows));
+        tableRows = [];
+        isInTable = false;
+      }
+      continue;
+    } else if (isInTable) {
+      // End of table
+      result.push(generateTableHtml(tableRows));
+      tableRows = [];
+      isInTable = false;
+    }
+
+    // Handle headers (# ## ###)
+    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+      result.push(`<h${level}>${parseInlineMarkdown(content)}</h${level}>`);
+      continue;
+    }
+
+    // Handle blockquotes (>)
+    if (line.trim().startsWith('>')) {
+      const content = line.trim().substring(1).trim();
+      result.push(`<blockquote>${parseInlineMarkdown(content)}</blockquote>`);
+      continue;
+    }
+
+    // Handle lists (- or * or numbered)
+    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
+    if (listMatch) {
+      const indent = listMatch[1].length;
+      const marker = listMatch[2];
+      const content = listMatch[3];
+
+      // Check if this starts a new list or continues existing
+      const isOrdered = /^\d+\./.test(marker);
+      const listType = isOrdered ? 'ol' : 'ul';
+
+      // For now, simple list handling - can be enhanced for nested lists
+      result.push(`<${listType}><li>${parseInlineMarkdown(content)}</li></${listType}>`);
+      continue;
+    }
+
+    // Handle empty lines
+    if (line.trim() === '') {
+      if (result.length > 0 && !result[result.length - 1].startsWith('<p class="empty-line">')) {
+        result.push('<p class="empty-line"><br></p>');
+      }
+      continue;
+    }
+
+    // Regular paragraphs
+    result.push(`<p>${parseInlineMarkdown(line)}</p>`);
+  }
+
+  // Handle unclosed code block
+  if (inCodeBlock && codeBlockContent.length > 0) {
+    const codeHtml = codeBlockContent.join('\n');
+    const langClass = codeBlockLanguage ? ` class="language-${codeBlockLanguage}"` : '';
+    result.push(`<pre${langClass}><code>${codeHtml}</code></pre>`);
+  }
+
+  // Handle unclosed table
+  if (isInTable && tableRows.length > 0) {
+    result.push(generateTableHtml(tableRows));
+  }
+
+  return result.join('');
+
+  // Helper functions for table parsing
+  function isTableRow(line: string): boolean {
+    return line.trim().startsWith('|') && line.trim().endsWith('|');
+  }
+
+  function isTableSeparator(line: string): boolean {
+    if (!isTableRow(line)) return false;
+    const cells = parseTableRow(line);
+    return cells.every(cell => /^:?-+:?$/.test(cell.trim()));
+  }
+
+  function parseTableRow(line: string): string[] {
+    return line
+      .split('|')
+      .slice(1, -1) // Remove first and last empty elements
+      .map(cell => cell.trim());
+  }
+
+  function generateTableHtml(rows: string[][]): string {
+    if (rows.length === 0) return '';
+
+    let html = '<table><tbody>';
+
+    for (let i = 0; i < rows.length; i++) {
+      const isHeaderRow = i === 0;
+      const tag = isHeaderRow ? 'th' : 'td';
+      const rowTag = isHeaderRow ? '<thead><tr>' : '<tr>';
+
+      html += rowTag;
+      for (const cell of rows[i]) {
+        html += `<${tag}>${parseInlineMarkdown(cell)}</${tag}>`;
+      }
+      html += isHeaderRow ? '</tr></thead><tbody>' : '</tr>';
+    }
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  // Helper function for inline markdown parsing
+  function parseInlineMarkdown(text: string): string {
+    return text
+      // Strikethrough ~~text~~
+      .replace(/~~(.*?)~~/g, '<del>$1</del>')
+      // Bold **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // Inline code `code`
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Links [text](url)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Images ![alt](url)
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">')
+      // Preserve multiple spaces
+      .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+  }
+}
+
 interface InviterDetails {
   displayName: string;
   photoURL: string;

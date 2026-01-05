@@ -377,14 +377,18 @@ export const submitGameScore = functions.https.onCall(async (
         console.log('[submitGameScore] Data to save:', JSON.stringify(leaderboardUpdate, null, 2));
         console.log('[submitGameScore] ==================================');
 
-        tx.set(leaderboardRef, leaderboardUpdate);
-        console.log('[submitGameScore] ✓ Leaderboard updated');
+        if (!(userData.isAnonymous || false)) {
+          tx.set(leaderboardRef, leaderboardUpdate);
+          console.log('[submitGameScore] ✓ Leaderboard updated');
 
-        // Update game counters (sessions played, total players for first-time players)
-        increaseSessionCounter({ tx, statsRef });
+          // Update game counters (sessions played, total players for first-time players)
+          increaseSessionCounter({ tx, statsRef });
 
-        if (!previousGameData) {
-          incrementTotalPlayersCounter({ tx, statsRef });
+          if (!previousGameData) {
+            incrementTotalPlayersCounter({ tx, statsRef });
+          }
+        } else {
+          console.log('[submitGameScore] Skipping leaderboard/stats update for anonymous user (quiz)');
         }
 
         console.log('[submitGameScore] ===== QUIZ SUBMISSION COMPLETE =====');
@@ -771,23 +775,32 @@ export const submitGameScore = functions.https.onCall(async (
         };
       }
 
+      const isUserAnonymous = userData.isAnonymous || false;
+
       if (!activeLeaderboardRef || !leaderboardUpdate) {
         throw new functions.https.HttpsError('internal', 'Failed to resolve leaderboard destination');
       }
 
-
-      if (leaderboardSetOptions) {
-        tx.set(activeLeaderboardRef, leaderboardUpdate, leaderboardSetOptions);
-      } else {
-        tx.set(activeLeaderboardRef, leaderboardUpdate);
-      }
-
-      if (activeStatsRef && statsUpdate) {
-        if (statsSetOptions) {
-          tx.set(activeStatsRef, statsUpdate, statsSetOptions);
+      // ONLY update leaderboard and stats if user is NOT anonymous
+      // This ensures guest votes are saved in the User profile but don't affect public results
+      if (!isUserAnonymous) {
+        console.log(`[submitGameScore] Updating leaderboard for non-anonymous user ${uid}`);
+        if (leaderboardSetOptions) {
+          tx.set(activeLeaderboardRef, leaderboardUpdate, leaderboardSetOptions);
         } else {
-          tx.set(activeStatsRef, statsUpdate);
+          tx.set(activeLeaderboardRef, leaderboardUpdate);
         }
+
+        if (activeStatsRef && statsUpdate) {
+          console.log(`[submitGameScore] Updating stats for non-anonymous user ${uid}`);
+          if (statsSetOptions) {
+            tx.set(activeStatsRef, statsUpdate, statsSetOptions);
+          } else {
+            tx.set(activeStatsRef, statsUpdate);
+          }
+        }
+      } else {
+        console.log(`[submitGameScore] Skipping leaderboard/stats update for anonymous user ${uid}`);
       }
 
       // Add user to VIP list if this is their first time playing and they have valid followers count

@@ -14,29 +14,96 @@
               <img :src="photoURL" alt="Profile picture" />
             </div>
             <div class="profile-card__info">
-              <h1>{{ displayName }}</h1>
-              <a
-                :href="`https://x.com/${profile?.username || ''}`"
-                target="_blank"
-                rel="noopener"
-                class="profile-card__username"
-              >
-                @{{ username }}
-              </a>
+              <template v-if="isEditing">
+                <div class="profile-edit-fields">
+                  <div class="field">
+                    <label class="label">Display Name</label>
+                    <input v-model="editDisplayName" class="input is-primary" type="text" placeholder="Display Name" />
+                  </div>
+                  <div class="field">
+                    <label class="label">Username</label>
+                    <div class="control has-icons-left">
+                      <input 
+                        v-model="editUsername" 
+                        class="input is-primary" 
+                        type="text" 
+                        placeholder="Username" 
+                        :disabled="userStore.profile?.isAnonymous"
+                      />
+                      <span class="icon is-small is-left">
+                        <font-awesome-icon :icon="['fas', 'at']" />
+                      </span>
+                    </div>
+                  </div>
+                  <div v-if="userStore.profile?.isAnonymous" class="field profile-edit-uploader">
+                    <label class="label">Profile Picture</label>
+                    <ImageUploader
+                      v-model="tempPhotoURL"
+                      uploadFolder="profile_pics"
+                      :cropWidth="200"
+                      :cropHeight="200"
+                    />
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <h1>{{ displayName }}</h1>
+                <a
+                  :href="`https://x.com/${profile?.username || ''}`"
+                  target="_blank"
+                  rel="noopener"
+                  class="profile-card__username"
+                >
+                  @{{ username }}
+                </a>
+              </template>
               <p class="profile-card__meta">
                 {{ profile?.followersCount || 0 }} followers · {{ profile?.followingCount || 0 }} following
               </p>
+              <div v-if="profile?.uid" class="profile-card__uid">
+                ID: <span>{{ profile.uid }}</span>
+              </div>
             </div>
           </div>
           <div class="profile-card__actions">
-            <CustomButton
-              v-if="isOwnProfile"
-              type="is-light is-small"
-              label="Logout"
-              :icon="['fas', 'right-from-bracket']"
-              @click="logout"
-              class="logout-button"
-            />
+            <template v-if="isOwnProfile">
+              <template v-if="isEditing">
+                <CustomButton
+                  type="is-success is-small"
+                  label="Save"
+                  :icon="['fas', 'check']"
+                  @click="saveProfile"
+                />
+                <CustomButton
+                  type="is-light is-small"
+                  label="Cancel"
+                  @click="cancelEditing"
+                />
+                <CustomButton
+                  v-if="userStore.profile?.isAnonymous"
+                  type="is-info is-small"
+                  label="New Avatar"
+                  :icon="['fas', 'sync']"
+                  @click="regenerateAvatar"
+                />
+              </template>
+              <template v-else>
+                <CustomButton
+                  v-if="userStore.profile?.isAnonymous"
+                  type="is-primary is-small"
+                  label="Edit Profile"
+                  :icon="['fas', 'edit']"
+                  @click="startEditing"
+                />
+                <CustomButton
+                  type="is-light is-small"
+                  label="Logout"
+                  :icon="['fas', 'right-from-bracket']"
+                  @click="logout"
+                  class="logout-button"
+                />
+              </template>
+            </template>
             <div v-else-if="isLoggedIn" class="follow-controls">
               <CustomButton
                 v-if="!isFrenemy"
@@ -57,6 +124,15 @@
               </div>
             </div>
             <p v-else class="profile-card__hint">Log in to follow users</p>
+            <div v-if="isOwnProfile && userStore.profile?.isAnonymous" class="profile-card__login-promo">
+              <CustomButton
+                type="is-primary is-fullwidth"
+                label="Login with X"
+                :icon="['fab', 'x-twitter']"
+                @click="handleLogin"
+              />
+              <p class="help">Connect to X to save progress forever!</p>
+            </div>
           </div>
         </div>
       </div>
@@ -323,26 +399,36 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useLocaleStore } from '@/stores/locale';
-import { computed, ref, onMounted, watch } from 'vue';
+import CustomButton from '@top-x/shared/components/CustomButton.vue';
+import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
+import {
+  getDoc,
+  doc,
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  deleteDoc
+} from 'firebase/firestore';
+import { db, analytics, trackEvent } from '@top-x/shared';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import type { User, DailyChallengeRewardRecord } from '@top-x/shared/types/user';
+import type { Game } from '@top-x/shared/types/game';
+import { getGames, getGamesBatch } from '@/services/game';
+import { RouterLink } from 'vue-router';
+import GameTypeSection from '@/components/GameTypeSection.vue';
+import { GAME_TYPE_ICON_MAP, DEFAULT_GAME_TYPE_ICON } from '@top-x/shared/constants/gameTypes';
+import type { UserGameCustomDataUnion } from '@top-x/shared/types/userGameCustom';
 import { useHead } from '@vueuse/head';
-import { useRouter, useRoute } from 'vue-router';
+
 
 const localeStore = useLocaleStore();
 const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
-import { RouterLink } from 'vue-router';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@top-x/shared';
-import { getGame, getGames, getGamesBatch } from '@/services/game';
-
-import CustomButton from '@top-x/shared/components/CustomButton.vue';
-import GameTypeSection from '@/components/GameTypeSection.vue';
-import type { User, DailyChallengeRewardRecord } from '@top-x/shared/types/user';
-import type { Game } from '@top-x/shared/types/game';
-import { analytics, trackEvent } from '@top-x/shared';
-import { GAME_TYPE_ICON_MAP, DEFAULT_GAME_TYPE_ICON } from '@top-x/shared/constants/gameTypes';
-import type { UserGameCustomDataUnion } from '@top-x/shared/types/userGameCustom';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -358,8 +444,11 @@ useHead({
 const profile = ref<User | null>(null);
 
 const displayName = computed(() => profile.value?.displayName || 'Anonymous');
-const username = computed(() => (profile.value?.username ? `${profile.value.username}` : '@Anonymous'));
-const photoURL = computed(() => profile.value?.photoURL || '/assets/profile.png');
+const username = computed(() => {
+  if (!profile.value?.username) return 'Anonymous';
+  return profile.value.username.startsWith('@') ? profile.value.username.slice(1) : profile.value.username;
+});
+const photoURL = computed(() => tempPhotoURL.value || profile.value?.photoURL || '/assets/profile.png');
 const isLoggedIn = computed(() => !!userStore.user);
 const isOwnProfile = computed(() => {
   const uidParam = (route.query.user || route.query.userid) as string | undefined;
@@ -386,6 +475,47 @@ const myCreatedGames = ref<Game[]>([]);
 const loadingMyGames = ref(false);
 const loadingGroupedGames = ref(false);
 const groupedGamesLoaded = ref(false);
+
+// Profile editing
+const isEditing = ref(false);
+const editDisplayName = ref('');
+const editUsername = ref('');
+const tempPhotoURL = ref<string | null>(null);
+
+function startEditing() {
+  if (!profile.value) return;
+  editDisplayName.value = profile.value.displayName || '';
+  editUsername.value = profile.value.username?.replace('@', '') || '';
+  tempPhotoURL.value = null;
+  isEditing.value = true;
+}
+
+function cancelEditing() {
+  isEditing.value = false;
+  tempPhotoURL.value = null;
+}
+
+async function saveProfile() {
+  try {
+    const updates: Partial<User> = {
+      displayName: editDisplayName.value,
+      username: editUsername.value.startsWith('@') ? editUsername.value : `@${editUsername.value}`,
+    };
+    if (tempPhotoURL.value) {
+      updates.photoURL = tempPhotoURL.value;
+    }
+    await userStore.updateProfile(updates);
+    isEditing.value = false;
+    tempPhotoURL.value = null;
+  } catch (err) {
+    console.error('Save profile error:', err);
+  }
+}
+
+function regenerateAvatar() {
+  const newAvatar = userStore.generateAnonymousAvatar();
+  tempPhotoURL.value = newAvatar;
+}
 
 type ChallengeReward = DailyChallengeRewardRecord & { id: string };
 
@@ -888,6 +1018,7 @@ async function removeFrenemy(uid: string) {
 }
 
 async function handleLogin() {
+  trackEvent(analytics, 'user_action', { action: 'login_click', context: 'profile_promo' });
   await userStore.loginWithX();
   closeLoginTab();
 }
@@ -1213,6 +1344,44 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
+.profile-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.profile-edit-fields .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-edit-fields .label {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.profile-edit-fields .input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.profile-edit-fields .input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--bulma-primary);
+  box-shadow: 0 0 0 4px rgba(var(--bulma-primary-rgb), 0.15);
+  outline: none;
+}
+
 .profile-card__info h1 {
   margin: 0;
   font-size: clamp(2.2rem, 4vw, 3.8rem);
@@ -1251,6 +1420,7 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+  align-items: flex-start;
 }
 
 .profile-body {
@@ -1606,5 +1776,57 @@ onMounted(() => {
     flex-direction: column;
     text-align: center;
   }
+}
+
+.profile-card__uid {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+.profile-card__uid span {
+  color: var(--bulma-primary);
+  opacity: 0.8;
+}
+
+.profile-edit-uploader {
+  margin-top: 1.5rem;
+}
+
+.profile-edit-uploader :deep(.uploader-button) {
+  width: 100%;
+  background: var(--bulma-primary);
+  color: #000;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.profile-edit-uploader :deep(.uploader-button):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(var(--bulma-primary-rgb), 0.3);
+}
+
+.profile-card__login-promo {
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  background: rgba(var(--bulma-primary-rgb), 0.05);
+  border: 2px dashed rgba(var(--bulma-primary-rgb), 0.3);
+  border-radius: 24px;
+  text-align: center;
+  flex: 1;
+  min-width: 280px;
+}
+
+.profile-card__login-promo .help {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  font-weight: 500;
 }
 </style>

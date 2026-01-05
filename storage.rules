@@ -42,6 +42,12 @@ service firebase.storage {
       allow write: if isAuthenticated(); // Only authenticated users can upload
     }
 
+    // Allow authenticated users to upload profile pictures
+    match /profile_pics/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
     // Default: deny all other paths
     match /{allPaths=**} {
       allow read, write: if false;

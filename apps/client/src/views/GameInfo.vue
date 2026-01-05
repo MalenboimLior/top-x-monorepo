@@ -126,7 +126,7 @@
       </div>
     </section>
 
-    <section v-if="!isPyramidGame" class="layout-container section-stack leaderboard-section">
+    <section v-if="!isPyramidGame" :key="'leaderboard-' + gameId" class="layout-container section-stack leaderboard-section">
       <header class="section-header">
         <div class="section-header__content">
            <h2 class="section-title">
@@ -141,7 +141,7 @@
       </div>
     </section>
 
-    <section v-else class="layout-container section-stack pyramid-results-section">
+    <section v-if="isPyramidGame" :key="'pyramid-' + gameId" class="layout-container section-stack pyramid-results-section">
       <header class="section-header">
         <div class="section-header__content">
            <h2 class="section-title">
@@ -154,15 +154,15 @@
       <div class="surface">
         <PyramidResults
           :game-id="gameId"
-          :items="[]"
-          :community-items="[]"
-          :rows="[]"
+          :items="game.custom?.items || []"
+          :community-items="game.custom?.communityItems || []"
+          :rows="game.custom?.rows || []"
           :game-header="game.name"
           :worst-header="t('games.pyramid.worstItem')"
           :game-title="game.name"
           :hide-row-label="false"
           :worst-show="true"
-          :share-link="window.location.href"
+          :share-link="shareUrl"
         />
       </div>
     </section>
@@ -287,9 +287,16 @@ const totalFavorites = computed(() => {
 });
 
 
+const shareUrl = computed(() => {
+  if (typeof window !== 'undefined') {
+    return window.location.href;
+  }
+  return '';
+});
+
 const shareText = computed(() => {
   const baseText = game.value.shareText || `Check out ${game.value.name} on TOP-X! 🎮`;
-  const url = window.location.href; // Add current URL
+  const url = shareUrl.value; // Use the computed property
   return `${baseText}\n${url}`;
 });
 
@@ -299,7 +306,7 @@ const twitterShareUrl = computed(() => {
   const text = `${game.value.name} - ${game.value.description}`;
   const hashtags = 'TOPX';
   const via = 'TOPX';
-  const url = window.location.href;
+  const url = shareUrl.value;
 
   const params = new URLSearchParams({
     text,
@@ -394,71 +401,185 @@ function processLineWithTabs(line: string): string {
 function parseMarkdown(text: string): string {
   if (!text) return '';
 
-  // Split by lines to preserve empty lines
   const lines = text.split('\n');
   const result: string[] = [];
-  let currentParagraph: string[] = [];
-  let lastWasEmpty = false;
+  let inCodeBlock = false;
+  let codeBlockContent: string[] = [];
+  let codeBlockLanguage = '';
+  let tableRows: string[][] = [];
+  let isInTable = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const isEmpty = line.trim() === '';
-    const isLastLine = i === lines.length - 1;
-    const hasContentAfter = !isLastLine && lines.slice(i + 1).some(l => l.trim() !== '');
 
-    if (isEmpty) {
-      // Empty line - if we have accumulated content, close the paragraph
-      if (currentParagraph.length > 0) {
-        const processed = currentParagraph
-          .map(processLineWithTabs)
-          .join('\n')
-          // Bold text **text** or __text__
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/__(.*?)__/g, '<strong>$1</strong>')
-          // Italic text *text* or _text_
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(/_(.*?)_/g, '<em>$1</em>')
-          // Convert single newlines to <br> tags
-          .replace(/\n/g, '<br>')
-          // Preserve multiple spaces
-          .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
-        
-        result.push(`<p>${processed}</p>`);
-        currentParagraph = [];
+    // Handle code blocks (```)
+    if (line.trim().startsWith('```')) {
+      if (inCodeBlock) {
+        // End of code block
+        const codeHtml = codeBlockContent.join('\n');
+        const langClass = codeBlockLanguage ? ` class="language-${codeBlockLanguage}"` : '';
+        result.push(`<pre${langClass}><code>${codeHtml}</code></pre>`);
+        inCodeBlock = false;
+        codeBlockContent = [];
+        codeBlockLanguage = '';
+      } else {
+        // Start of code block
+        inCodeBlock = true;
+        codeBlockLanguage = line.trim().substring(3).trim();
       }
-      
-      // Add empty line as spacing if there's content after
-      if (hasContentAfter && !lastWasEmpty) {
-        result.push('<p class="empty-line"><br></p>');
-        lastWasEmpty = true;
-      }
-    } else {
-      // Non-empty line - add to current paragraph
-      currentParagraph.push(line);
-      lastWasEmpty = false;
+      continue;
     }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      continue;
+    }
+
+    // Handle tables
+    if (isTableRow(line)) {
+      if (!isInTable) {
+        // Start of table
+        isInTable = true;
+        tableRows = [];
+      }
+      tableRows.push(parseTableRow(line));
+
+      // Check if next line is table separator or end of table
+      const nextLine = lines[i + 1];
+      if (!nextLine || !isTableRow(nextLine) || isTableSeparator(nextLine)) {
+        if (isTableSeparator(nextLine)) {
+          i++; // Skip separator line
+        }
+        // End of table, generate HTML
+        result.push(generateTableHtml(tableRows));
+        tableRows = [];
+        isInTable = false;
+      }
+      continue;
+    } else if (isInTable) {
+      // End of table
+      result.push(generateTableHtml(tableRows));
+      tableRows = [];
+      isInTable = false;
+    }
+
+    // Handle headers (# ## ###)
+    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+      result.push(`<h${level}>${parseInlineMarkdown(content)}</h${level}>`);
+      continue;
+    }
+
+    // Handle blockquotes (>)
+    if (line.trim().startsWith('>')) {
+      const content = line.trim().substring(1).trim();
+      result.push(`<blockquote>${parseInlineMarkdown(content)}</blockquote>`);
+      continue;
+    }
+
+    // Handle lists (- or * or numbered)
+    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
+    if (listMatch) {
+      const indent = listMatch[1].length;
+      const marker = listMatch[2];
+      const content = listMatch[3];
+
+      // Check if this starts a new list or continues existing
+      const isOrdered = /^\d+\./.test(marker);
+      const listType = isOrdered ? 'ol' : 'ul';
+
+      // For now, simple list handling - can be enhanced for nested lists
+      result.push(`<${listType}><li>${parseInlineMarkdown(content)}</li></${listType}>`);
+      continue;
+    }
+
+    // Handle empty lines
+    if (line.trim() === '') {
+      if (result.length > 0 && !result[result.length - 1].startsWith('<p class="empty-line">')) {
+        result.push('<p class="empty-line"><br></p>');
+      }
+      continue;
+    }
+
+    // Regular paragraphs with tab processing
+    result.push(`<p>${parseInlineMarkdown(processLineWithTabs(line))}</p>`);
   }
 
-  // Process remaining paragraph
-  if (currentParagraph.length > 0) {
-    const processed = currentParagraph
-      .map(processLineWithTabs)
-      .join('\n')
-      // Bold text **text** or __text__
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.*?)__/g, '<strong>$1</strong>')
-      // Italic text *text* or _text_
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-      // Convert single newlines to <br> tags
-      .replace(/\n/g, '<br>')
-      // Preserve multiple spaces
-      .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
-    
-    result.push(`<p>${processed}</p>`);
+  // Handle unclosed code block
+  if (inCodeBlock && codeBlockContent.length > 0) {
+    const codeHtml = codeBlockContent.join('\n');
+    const langClass = codeBlockLanguage ? ` class="language-${codeBlockLanguage}"` : '';
+    result.push(`<pre${langClass}><code>${codeHtml}</code></pre>`);
+  }
+
+  // Handle unclosed table
+  if (isInTable && tableRows.length > 0) {
+    result.push(generateTableHtml(tableRows));
   }
 
   return result.join('');
+
+  // Helper functions for table parsing
+  function isTableRow(line: string): boolean {
+    return line.trim().startsWith('|') && line.trim().endsWith('|');
+  }
+
+  function isTableSeparator(line: string): boolean {
+    if (!isTableRow(line)) return false;
+    const cells = parseTableRow(line);
+    return cells.every(cell => /^:?-+:?$/.test(cell.trim()));
+  }
+
+  function parseTableRow(line: string): string[] {
+    return line
+      .split('|')
+      .slice(1, -1) // Remove first and last empty elements
+      .map(cell => cell.trim());
+  }
+
+  function generateTableHtml(rows: string[][]): string {
+    if (rows.length === 0) return '';
+
+    let html = '<table><tbody>';
+
+    for (let i = 0; i < rows.length; i++) {
+      const isHeaderRow = i === 0;
+      const tag = isHeaderRow ? 'th' : 'td';
+      const rowTag = isHeaderRow ? '<thead><tr>' : '<tr>';
+
+      html += rowTag;
+      for (const cell of rows[i]) {
+        html += `<${tag}>${parseInlineMarkdown(cell)}</${tag}>`;
+      }
+      html += isHeaderRow ? '</tr></thead><tbody>' : '</tr>';
+    }
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  // Helper function for inline markdown parsing
+  function parseInlineMarkdown(text: string): string {
+    return text
+      // Strikethrough ~~text~~
+      .replace(/~~(.*?)~~/g, '<del>$1</del>')
+      // Bold **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // Inline code `code`
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Links [text](url)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Images ![alt](url)
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">')
+      // Preserve multiple spaces
+      .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+  }
 }
 
 
@@ -479,7 +600,7 @@ const isInstructionsLong = computed(() => {
 });
 
 const isPyramidGame = computed(() => {
-  return game.value.gameTypeId === 'pyramid';
+  return game.value.gameTypeId === 'PyramidTier';
 });
 
 const openInstructionsModal = () => {
@@ -496,15 +617,55 @@ const playGameFromModal = () => {
 };
 
 
-useHead(() => ({
-  title: game.value.name ? `TOP-X: ${game.value.name}` : 'TOP-X: Game Info',
-  meta: [
-    {
-      name: 'description',
-      content: game.value.description || `Play ${game.value.name || 'this game'} on TOP-X. Compete with friends, climb leaderboards, and challenge yourself!`,
-    },
-  ],
-}));
+useHead(() => {
+  const gameName = game.value.name || 'Game';
+  const gameDescription = game.value.description || `Play ${gameName} on TOP-X. Compete with friends, climb leaderboards, and challenge yourself!`;
+  const gameImage = game.value.image || 'https://firebasestorage.googleapis.com/v0/b/top-x-co.appspot.com/o/site-assets%2Flogo-card.png?alt=media';
+
+  return {
+    title: game.value.name ? `TOP-X: ${game.value.name}` : 'TOP-X: Game Info',
+    meta: [
+      {
+        name: 'description',
+        content: gameDescription,
+      },
+      // Open Graph
+      {
+        property: 'og:title',
+        content: game.value.name ? `TOP-X: ${game.value.name}` : 'TOP-X: Game Info',
+      },
+      {
+        property: 'og:description',
+        content: gameDescription,
+      },
+      {
+        property: 'og:image',
+        content: gameImage,
+      },
+      {
+        property: 'og:type',
+        content: 'website',
+      },
+      // Twitter Card
+      {
+        name: 'twitter:card',
+        content: 'summary_large_image',
+      },
+      {
+        name: 'twitter:title',
+        content: game.value.name ? `TOP-X: ${game.value.name}` : 'TOP-X: Game Info',
+      },
+      {
+        name: 'twitter:description',
+        content: gameDescription,
+      },
+      {
+        name: 'twitter:image',
+        content: gameImage,
+      },
+    ],
+  };
+});
 
 onMounted(async () => {
   if (!gameId.value) {
@@ -988,6 +1149,118 @@ function goBack() {
 .hero-instructions-text p.empty-line {
   margin-bottom: var(--space-1);
   min-height: 0.5em;
+}
+
+/* Enhanced markdown styles for instructions */
+.hero-instructions-text h1,
+.hero-instructions-text h2,
+.hero-instructions-text h3,
+.hero-instructions-text h4,
+.hero-instructions-text h5,
+.hero-instructions-text h6 {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  margin: 1rem 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.hero-instructions-text h1 { font-size: 1.5rem; }
+.hero-instructions-text h2 { font-size: 1.4rem; }
+.hero-instructions-text h3 { font-size: 1.3rem; }
+.hero-instructions-text h4 { font-size: 1.2rem; }
+.hero-instructions-text h5 { font-size: 1.1rem; }
+.hero-instructions-text h6 { font-size: 1rem; }
+
+.hero-instructions-text blockquote {
+  border-left: 3px solid var(--bulma-primary);
+  padding-left: 0.75rem;
+  margin: 0.75rem 0;
+  font-style: italic;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
+.hero-instructions-text ul,
+.hero-instructions-text ol {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.hero-instructions-text li {
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.hero-instructions-text pre {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.hero-instructions-text code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+}
+
+.hero-instructions-text a {
+  color: var(--bulma-primary);
+  text-decoration: underline;
+}
+
+.hero-instructions-text img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+
+.hero-instructions-text del {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Tables in instructions */
+.hero-instructions-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.hero-instructions-text thead {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-instructions-text th,
+.hero-instructions-text td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-instructions-text th {
+  font-weight: 600;
+  color: #fff;
+}
+
+.hero-instructions-text td {
+  color: var(--color-text-secondary);
+}
+
+.hero-instructions-text tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .markdown-content {
