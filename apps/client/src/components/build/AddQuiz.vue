@@ -2,7 +2,12 @@
   <div class="quiz-builder">
     <!-- Mode Selector -->
     <section class="mode-section">
-      <h2 class="section-title">Quiz Type</h2>
+      <h2 class="section-title">
+        {{ t('build.quiz.settings.title') || 'Quiz Type' }}
+        <button type="button" class="info-btn" @click="openModeInfo('general')">
+          <font-awesome-icon :icon="['fas', 'circle-info']" />
+        </button>
+      </h2>
       <div class="mode-options">
         <label
           class="mode-option"
@@ -16,8 +21,13 @@
           />
           <div class="mode-content">
             <span class="mode-icon">🦁</span>
-            <span class="mode-label">Personality Quiz</span>
-            <span class="mode-description">What type are you? Single result based on bucket scores</span>
+            <div class="mode-label-wrapper">
+              <span class="mode-label">{{ t('build.quiz.type.personality.label') || 'Personality Quiz' }}</span>
+              <button type="button" class="info-btn info-btn--small" @click.stop.prevent="openModeInfo('personality')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </button>
+            </div>
+            <span class="mode-description">{{ t('build.quiz.type.personality.description') || 'What type are you? Single result based on bucket scores' }}</span>
           </div>
         </label>
         <label
@@ -32,8 +42,13 @@
           />
           <div class="mode-content">
             <span class="mode-icon">🧭</span>
-            <span class="mode-label">Archetype Quiz</span>
-            <span class="mode-description">Multi-axis analysis with radar chart (like MBTI)</span>
+            <div class="mode-label-wrapper">
+              <span class="mode-label">{{ t('build.quiz.type.archetype.label') || 'Archetype Quiz' }}</span>
+              <button type="button" class="info-btn info-btn--small" @click.stop.prevent="openModeInfo('archetype')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </button>
+            </div>
+            <span class="mode-description">{{ t('build.quiz.type.archetype.description') || 'Multi-axis analysis with radar chart (like MBTI)' }}</span>
           </div>
         </label>
       </div>
@@ -46,7 +61,10 @@
         class="section-toggle"
         @click="toggleSection('personalityBuckets')"
       >
-        <span class="section-toggle__title">Personality Buckets</span>
+        <span class="section-toggle__title">{{ t('build.quiz.buckets.title') || 'Result Buckets' }}</span>
+        <button type="button" class="info-btn ml-2" @click="openModeInfo('general')">
+          <font-awesome-icon :icon="['fas', 'circle-info']" />
+        </button>
         <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showPersonalityBuckets }">
           ▼
         </span>
@@ -70,22 +88,24 @@
             :key="`bucket-${bIndex}`"
             class="bucket-card"
           >
-          <div class="bucket-card__header">
-            <div class="bucket-fields">
-              <div class="field">
-                <label>Label</label>
-                <input v-model="bucket.label" placeholder="e.g., The Lion" class="field-input" />
-              </div>
+            <div class="bucket-header">
+              <input 
+                v-model="bucket.label" 
+                class="bucket-header-input" 
+                :placeholder="t('build.quiz.buckets.label.placeholder') || 'Result Name (e.g. The Lion)'"
+              />
+              <button
+                type="button"
+                class="bucket-remove"
+                @click="removeBucket(bIndex)"
+                title="Remove bucket"
+              >
+                <font-awesome-icon :icon="['fas', 'times']" />
+              </button>
             </div>
-            <button
-              type="button"
-              class="bucket-remove"
-              @click="removeBucket(bIndex)"
-              title="Remove bucket"
-            >
-              ×
-            </button>
-          </div>
+            <div class="bucket-fields" style="display: none;">
+              <input v-model="bucket.id" />
+            </div>
 
           <!-- Results within this bucket -->
           <div class="bucket-results">
@@ -104,7 +124,7 @@
                     <th>Min Score</th>
                     <th>Max Score</th>
                     <th>Result Title</th>
-                    <th>Description</th>
+                     <th>{{ t('build.quiz.buckets.resultDescription.label') || 'Result Text' }}</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -141,7 +161,8 @@
                         />
                         <div class="result-image-upload-inline">
                           <ImageUploader
-                            v-model="result.imageUrl"
+                            :modelValue="result.imageUrl || null"
+                            @update:modelValue="result.imageUrl = $event || ''"
                             :uploadFolder="`images/quiz/${gameId}/results`"
                             :cropWidth="200"
                             :cropHeight="200"
@@ -156,16 +177,26 @@
                         class="field-input field-input--compact"
                       />
                     </td>
-                    <td>
-                      <button
-                        type="button"
-                        class="result-variant__remove"
-                        @click="removeResultVariant(bIndex, rIndex)"
-                        :disabled="bucket.results.length <= 1"
-                        title="Remove result"
-                      >
-                        ×
-                      </button>
+                     <td>
+                      <div class="table-actions">
+                        <button
+                          type="button"
+                          class="preview-btn"
+                          @click="openResultPreview(bIndex, rIndex)"
+                          :title="t('build.quiz.buckets.preview') || 'Preview Result'"
+                        >
+                          <font-awesome-icon :icon="['fas', 'eye']" />
+                        </button>
+                        <button
+                          type="button"
+                          class="result-variant__remove"
+                          @click="removeResultVariant(bIndex, rIndex)"
+                          :disabled="bucket.results.length <= 1"
+                          title="Remove result"
+                        >
+                          <font-awesome-icon :icon="['fas', 'trash']" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -183,19 +214,25 @@
 
             <!-- Single result view (default) -->
             <template v-else>
-              <div
+               <div
                 v-for="(result, rIndex) in bucket.results"
                 :key="rIndex"
                 class="result-variant"
               >
                 <div class="result-variant__fields">
-                  <div class="field">
-                    <label>Result Title</label>
+                  <div class="field field--title">
+                    <label>
+                      {{ t('build.quiz.buckets.resultTitle.label') || 'Result Title' }}
+                      <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.buckets.resultTitle.hint') || 'Title shown when this result is hit'">
+                        <font-awesome-icon :icon="['fas', 'circle-info']" />
+                      </span>
+                    </label>
                     <div class="result-title-wrapper">
-                      <input v-model="result.title" placeholder="You are a Lion!" class="field-input" />
+                      <input v-model="result.title" :placeholder="t('build.quiz.buckets.resultTitle.placeholder') || 'You are a Lion!'" class="field-input" />
                       <div class="result-image-upload-inline">
                         <ImageUploader
-                          v-model="result.imageUrl"
+                          :modelValue="result.imageUrl || null"
+                          @update:modelValue="result.imageUrl = $event || ''"
                           :uploadFolder="`images/quiz/${gameId}/results`"
                           :cropWidth="200"
                           :cropHeight="200"
@@ -204,9 +241,24 @@
                     </div>
                   </div>
                   <div class="field field--full">
-                    <label>Description</label>
-                    <textarea v-model="result.description" rows="2" class="field-textarea"></textarea>
+                    <label>
+                      {{ t('build.quiz.buckets.resultDescription.label') || 'Result Text' }}
+                      <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.buckets.resultDescription.hint') || 'The detailed description of the result'">
+                        <font-awesome-icon :icon="['fas', 'circle-info']" />
+                      </span>
+                    </label>
+                    <textarea v-model="result.description" rows="3" class="field-textarea"></textarea>
                   </div>
+                </div>
+                <div class="result-variant__footer">
+                  <button
+                    type="button"
+                    class="preview-btn"
+                    @click="openResultPreview(bIndex, rIndex)"
+                  >
+                    <font-awesome-icon :icon="['fas', 'eye']" />
+                    {{ t('build.quiz.buckets.preview') || 'Preview Result' }}
+                  </button>
                 </div>
               </div>
             </template>
@@ -223,15 +275,15 @@
         
           <CustomButton
             type="is-light"
-            label="+ Add Bucket"
+            :label="t('build.quiz.buckets.add') || '+ Add Bucket'"
             @click="addBucket"
           />
         </div>
         <div v-else class="empty-state">
-          <p>No buckets defined yet. Add at least one bucket to define personality types.</p>
+          <p>{{ t('build.quiz.buckets.empty') || 'No buckets defined yet.' }}</p>
           <CustomButton
             type="is-primary"
-            label="+ Add First Bucket"
+            :label="t('build.quiz.buckets.addFirst') || '+ Add First Bucket'"
             @click="addBucket"
           />
         </div>
@@ -245,7 +297,7 @@
         class="section-toggle"
         @click="toggleSection('archetypeAxes')"
       >
-        <span class="section-toggle__title">Archetype Axes</span>
+        <span class="section-toggle__title">{{ t('build.quiz.archetype.axes.title') || 'Archetype Axes' }}</span>
         <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showArchetypeAxes }">
           ▼
         </span>
@@ -261,12 +313,22 @@
           >
           <div class="axis-fields">
             <div class="field">
-              <label>Low Label (negative)</label>
-              <input v-model="axis.lowLabel" placeholder="e.g., Introvert" class="field-input" />
+              <label>
+                {{ t('build.quiz.archetype.axes.lowLabel') || 'Low Label (negative)' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.archetype.axes.lowLabel.hint') || 'Label for the low/negative end of the spectrum'">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+              </label>
+              <input v-model="axis.lowLabel" :placeholder="t('build.quiz.archetype.axes.lowLabel.placeholder') || 'e.g., Introvert'" class="field-input" />
             </div>
             <div class="field">
-              <label>High Label (positive)</label>
-              <input v-model="axis.highLabel" placeholder="e.g., Extrovert" class="field-input" />
+              <label>
+                {{ t('build.quiz.archetype.axes.highLabel') || 'High Label (positive)' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.archetype.axes.highLabel.hint') || 'Label for the high/positive end of the spectrum'">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+              </label>
+              <input v-model="axis.highLabel" :placeholder="t('build.quiz.archetype.axes.highLabel.placeholder') || 'e.g., Extrovert'" class="field-input" />
             </div>
           </div>
           <button
@@ -279,15 +341,15 @@
         </div>
           <CustomButton
             type="is-light"
-            label="+ Add Axis"
+            :label="t('build.quiz.archetype.axes.add') || '+ Add Axis'"
             @click="addAxis"
           />
         </div>
         <div v-else class="empty-state">
-          <p>No axes defined yet. Add at least one axis to define the spectrums (e.g., Introvert ↔ Extrovert).</p>
+          <p>{{ t('build.quiz.archetype.axes.empty') || 'No axes defined yet.' }}</p>
           <CustomButton
             type="is-primary"
-            label="+ Add First Axis"
+            :label="t('build.quiz.archetype.axes.addFirst') || '+ Add First Axis'"
             @click="addAxis"
           />
         </div>
@@ -299,7 +361,7 @@
         class="section-toggle section-toggle--sub"
         @click="toggleSection('archetypeResults')"
       >
-        <span class="section-toggle__title">Archetype Results</span>
+        <span class="section-toggle__title">{{ t('build.quiz.archetype.results.title') || 'Archetype Results' }}</span>
         <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showArchetypeResults }">
           ▼
         </span>
@@ -319,12 +381,18 @@
           </div>
           <div class="result-fields">
             <div class="field">
-              <label>Result Title</label>
+              <label>
+                {{ t('build.quiz.buckets.resultTitle.label') || 'Result Title' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.buckets.resultTitle.hint') || 'Title shown when this result is hit'">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+              </label>
               <div class="result-title-wrapper">
                 <input v-model="result.title" placeholder="The Campaigner" class="field-input" />
                 <div class="result-image-upload-inline">
                   <ImageUploader
-                    v-model="result.imageUrl"
+                    :modelValue="result.imageUrl || null"
+                    @update:modelValue="result.imageUrl = $event || ''"
                     :uploadFolder="`images/quiz/${gameId}/results`"
                     :cropWidth="200"
                     :cropHeight="200"
@@ -367,8 +435,13 @@
               <textarea v-model="result.description" rows="3" class="field-textarea"></textarea>
             </div>
             <div class="field">
-              <label>Share Text (optional)</label>
-              <input v-model="result.shareText" placeholder="I'm ENFP! What's your type?" class="field-input" />
+              <label>
+                {{ t('build.quiz.buckets.shareText.label') || 'Share Text (optional)' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.buckets.shareText.hint') || 'Custom text used when someone shares this specific result'">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+              </label>
+              <input v-model="result.shareText" :placeholder="t('build.quiz.buckets.shareText.placeholder') || 'I\'m ENFP! What\'s your type?'" class="field-input" />
             </div>
           </div>
           <button
@@ -381,15 +454,15 @@
           </div>
           <CustomButton
             type="is-light"
-            label="+ Add Result"
+            :label="t('build.quiz.archetype.results.add') || '+ Add Result'"
             @click="addArchetypeResult"
           />
         </div>
         <div v-else class="empty-state">
-          <p>No archetype results defined yet. Add results for specific axis patterns (e.g., ENFP = E+N+F+P).</p>
+          <p>{{ t('build.quiz.archetype.results.empty') || 'No archetype results defined yet.' }}</p>
           <CustomButton
             type="is-primary"
-            label="+ Add First Result"
+            :label="t('build.quiz.archetype.results.addFirst') || '+ Add First Result'"
             @click="addArchetypeResult"
           />
         </div>
@@ -438,9 +511,13 @@
                     :placeholder="t('build.trivia.questions.promptPlaceholder')"
                     class="question-input"
                   />
+                  <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.questions.prompt.hint') || 'The main question text'">
+                    <font-awesome-icon :icon="['fas', 'circle-info']" />
+                  </span>
                   <div class="question-image-upload-inline">
                     <ImageUploader
-                      v-model="question.imageUrl"
+                      :modelValue="question.imageUrl || null"
+                      @update:modelValue="question.imageUrl = $event || ''"
                       :uploadFolder="`images/quiz/${gameId}/questions`"
                       :cropWidth="800"
                       :cropHeight="450"
@@ -465,7 +542,8 @@
                       />
                       <div class="answer-image-upload-inline">
                         <ImageUploader
-                          v-model="answer.imageUrl"
+                          :modelValue="answer.imageUrl || null"
+                          @update:modelValue="answer.imageUrl = $event || ''"
                           :uploadFolder="`images/quiz/${gameId}/answers`"
                           :cropWidth="200"
                           :cropHeight="200"
@@ -609,48 +687,226 @@
 
       <div v-if="showAdvancedSettings" class="settings-content">
         <div class="settings-grid">
-          <label class="toggle">
-            <input type="checkbox" v-model="config.showProgress" />
-            <span>{{ t('build.trivia.settings.showProgress') || 'Show progress bar' }}</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" v-model="config.shuffleQuestions" />
-            <span>{{ t('build.trivia.settings.shuffleQuestions') || 'Shuffle questions' }}</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" v-model="config.shuffleAnswers" />
-            <span>{{ t('build.trivia.settings.shuffleAnswers') || 'Shuffle answers' }}</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" v-model="config.mustLogin" />
-            <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" v-model="config.allowRepeats" :disabled="!config.mustLogin" />
-            <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
-          </label>
+          <div class="field">
+            <label class="toggle">
+              <input type="checkbox" v-model="config.showProgress" />
+              <span>{{ t('build.trivia.settings.showProgress') || 'Show progress bar' }}</span>
+              <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.showProgress.hint')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </span>
+            </label>
+          </div>
+          <div class="field">
+            <label class="toggle">
+              <input type="checkbox" v-model="config.shuffleQuestions" />
+              <span>{{ t('build.trivia.settings.shuffleQuestions') || 'Shuffle questions' }}</span>
+              <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.shuffleQuestions.hint')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </span>
+            </label>
+          </div>
+          <div class="field">
+            <label class="toggle">
+              <input type="checkbox" v-model="config.shuffleAnswers" />
+              <span>{{ t('build.trivia.settings.shuffleAnswers') || 'Shuffle answers' }}</span>
+              <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.shuffleAnswers.hint')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </span>
+            </label>
+          </div>
+          <div class="field">
+            <label class="toggle">
+              <input type="checkbox" v-model="config.mustLogin" />
+              <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
+              <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.mustLogin.hint')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </span>
+            </label>
+          </div>
+          <div class="field">
+            <label class="toggle">
+              <input type="checkbox" v-model="config.allowRepeats" :disabled="!config.mustLogin" />
+              <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
+              <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.allowRepeats.hint')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </span>
+            </label>
+          </div>
         </div>
 
         <!-- Theme Settings -->
         <div class="theme-settings">
-          <h3>{{ t('build.trivia.theme.title') }}</h3>
+          <div class="theme-settings__header">
+            <h3>{{ t('build.quiz.theme.title') || t('build.trivia.theme.title') }}</h3>
+            <button type="button" class="random-all-btn" @click="randomizeAllTheme">
+               <font-awesome-icon :icon="['fas', 'dice']" />
+               {{ t('build.quiz.theme.random') || 'Random All' }}
+            </button>
+          </div>
+
           <div class="theme-grid">
             <div class="field">
-              <label>{{ t('build.trivia.theme.primaryLabel') }}</label>
+              <label>
+                {{ t('build.quiz.theme.primaryLabel') || 'Question Background' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.theme.primaryLabel.hint')">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+                <button type="button" class="random-field-btn" @click="config.theme.primaryColor = randomColor()">
+                  <font-awesome-icon :icon="['fas', 'random']" />
+                </button>
+              </label>
               <input type="color" v-model="config.theme.primaryColor" />
             </div>
             <div class="field">
-              <label>{{ t('build.trivia.theme.secondaryLabel') }}</label>
+              <label>
+                {{ t('build.quiz.theme.secondaryLabel') || 'Answer Background' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.theme.secondaryLabel.hint')">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+                <button type="button" class="random-field-btn" @click="config.theme.secondaryColor = randomColor()">
+                  <font-awesome-icon :icon="['fas', 'random']" />
+                </button>
+              </label>
               <input type="color" v-model="config.theme.secondaryColor" />
             </div>
+          </div>
+
+          <div class="theme-advanced">
             <div class="field">
-              <label>{{ t('build.trivia.theme.backgroundColorLabel') }}</label>
+              <label>{{ t('build.quiz.theme.backgroundType') || 'Background Style' }}</label>
+              <div class="select is-fullwidth">
+                <select v-model="config.theme.backgroundType">
+                  <option value="color">Solid Color</option>
+                  <option value="gradient">Gradient</option>
+                  <option value="emoji">Emoji Pattern</option>
+                  <option value="image">Background Image</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'color'" class="field">
+              <label>
+                {{ t('build.quiz.theme.backgroundColorLabel') || 'Background Color' }}
+                <button type="button" class="random-field-btn" @click="config.theme.backgroundColor = randomColor()">
+                  <font-awesome-icon :icon="['fas', 'random']" />
+                </button>
+              </label>
               <input type="color" v-model="config.theme.backgroundColor" />
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'gradient'" class="theme-grid">
+              <div class="field">
+                <label>
+                  {{ t('build.quiz.theme.backgroundColorStart') || 'Start Color' }}
+                  <button type="button" class="random-field-btn" @click="setRandomGradient()">
+                    <font-awesome-icon :icon="['fas', 'random']" />
+                  </button>
+                </label>
+                <input type="color" :value="gradientStart" @input="updateGradient($event, 'start')" />
+              </div>
+              <div class="field">
+                <label>
+                  {{ t('build.quiz.theme.backgroundColorEnd') || 'End Color' }}
+                </label>
+                <input type="color" :value="gradientEnd" @input="updateGradient($event, 'end')" />
+              </div>
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'emoji'" class="field">
+              <label>{{ t('build.quiz.theme.emojiLabel') || 'Background Emoji' }}</label>
+              <input v-model="config.theme.backgroundEmoji" placeholder="✨" class="input" maxlength="2" />
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'image'" class="field">
+              <label>{{ t('build.quiz.theme.backgroundImageLabel') || 'Background Image' }}</label>
+              <ImageUploader
+                :modelValue="config.theme.backgroundImageUrl || null"
+                @update:modelValue="config.theme.backgroundImageUrl = $event || ''"
+                :uploadFolder="`images/quiz/${gameId}/theme`"
+                :cropWidth="1920"
+                :cropHeight="1080"
+              />
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Result Preview Modal -->
+    <div v-if="showResultPreview" class="preview-modal">
+      <div class="preview-modal__backdrop" @click="closeResultPreview"></div>
+      <div 
+        class="preview-modal__content" 
+        :class="{ 'has-emoji-bg': config.theme.backgroundType === 'emoji' }"
+        :style="previewBackgroundStyle"
+      >
+        <div v-if="config.theme.backgroundType === 'emoji'" class="emoji-background-pattern">
+          <span v-for="i in 60" :key="i">{{ config.theme.backgroundEmoji || '✨' }}</span>
+        </div>
+        <button type="button" class="preview-modal__close" @click="closeResultPreview">
+          <font-awesome-icon :icon="['fas', 'times']" />
+        </button>
+        <div class="preview-modal__body">
+          <PersonalityResult
+            v-if="previewProps"
+            :result="previewProps.result"
+            :theme="previewProps.theme"
+            :showBreakdown="false"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode Info Modal -->
+    <div v-if="showModeInfo" class="info-modal">
+      <div class="info-modal__backdrop" @click="closeModeInfo"></div>
+      <div class="info-modal__content">
+        <button type="button" class="info-modal__close" @click="closeModeInfo">
+          <font-awesome-icon :icon="['fas', 'times']" />
+        </button>
+        <div class="info-modal__body">
+          <h2 class="info-modal__title">
+            {{ 
+              showModeInfo === 'general' ? t('build.quiz.intro.title') :
+              showModeInfo === 'personality' ? t('build.quiz.type.personality.label') : 
+              t('build.quiz.type.archetype.label') 
+            }}
+          </h2>
+          <div class="info-modal__description">
+             <template v-if="showModeInfo === 'general'">
+               <p>{{ t('build.quiz.intro.description') }}</p>
+               <div class="info-modal__modes">
+                 <div class="info-modal__mode-item">
+                   <h4>{{ t('build.quiz.type.personality.label') }}</h4>
+                   <p>{{ t('build.quiz.type.personality.info') }}</p>
+                 </div>
+                 <div class="info-modal__mode-item">
+                   <h4>{{ t('build.quiz.type.archetype.label') }}</h4>
+                   <p>{{ t('build.quiz.type.archetype.info') }}</p>
+                 </div>
+               </div>
+             </template>
+             <template v-else-if="showModeInfo === 'personality'">
+               <p>{{ t('build.quiz.type.personality.info') }}</p>
+               <ul>
+                 <li><strong>{{ t('build.quiz.buckets.title') }}:</strong> {{ t('build.quiz.buckets.hint') }}</li>
+                 <li><strong>Scoring:</strong> Answers add points to specific buckets.</li>
+                 <li><strong>Result:</strong> Individual with the most points wins.</li>
+               </ul>
+             </template>
+             <template v-else-if="showModeInfo === 'archetype'">
+               <p>{{ t('build.quiz.type.archetype.info') }}</p>
+               <ul>
+                 <li><strong>Axes:</strong> Introvert vs Extrovert, Logic vs Emotion.</li>
+                 <li><strong>Scoring:</strong> Answers move the user along the axes.</li>
+                 <li><strong>Result:</strong> Final position defines the personality archetype.</li>
+               </ul>
+             </template>
+          </div>
+          <button type="button" class="info-modal__ok" @click="closeModeInfo">{{ t('common.close') || 'Got it!' }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -658,6 +914,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
+import PersonalityResult from '@/components/games/quiz/PersonalityResult.vue';
 import { useLocaleStore } from '@/stores/locale';
 import type {
   QuizConfig,
@@ -798,14 +1055,14 @@ function toggleSection(section: string) {
   }
 }
 
-const config = ref<EditableQuizConfig>(hydrateConfig(props.modelValue));
+const config = ref<EditableQuizConfig>(hydrateConfig(props.modelValue as QuizConfig));
 
 watch(
   () => props.modelValue,
   (value) => {
     if (isSyncing.value) return;
     isSyncing.value = true;
-    config.value = hydrateConfig(value);
+    config.value = hydrateConfig(value as QuizConfig);
     nextTick(() => {
       isSyncing.value = false;
     });
@@ -836,7 +1093,129 @@ watch(
   { immediate: true }
 );
 
-function hydrateConfig(value: QuizConfig): EditableQuizConfig {
+// Preview and Info state
+const showResultPreview = ref(false);
+const activePreviewBucket = ref<number | null>(null);
+const activePreviewResult = ref<number | null>(null);
+const showModeInfo = ref<'personality' | 'archetype' | 'general' | null>(null);
+
+function openResultPreview(bIndex: number, rIndex: number) {
+  activePreviewBucket.value = bIndex;
+  activePreviewResult.value = rIndex;
+  showResultPreview.value = true;
+}
+
+function closeResultPreview() {
+  showResultPreview.value = false;
+  activePreviewBucket.value = null;
+  activePreviewResult.value = null;
+}
+
+function openModeInfo(mode: 'personality' | 'archetype' | 'general') {
+  showModeInfo.value = mode;
+}
+
+function closeModeInfo() {
+  showModeInfo.value = null;
+}
+
+const previewProps = computed(() => {
+  if (activePreviewBucket.value === null || activePreviewResult.value === null) return null;
+  const bucket = config.value.personalityBuckets?.[activePreviewBucket.value];
+  const result = bucket?.results?.[activePreviewResult.value];
+  if (!result) return null;
+
+  const bScore = 100;
+  
+  return {
+    result: {
+      bucketScores: { [bucket.id]: bScore },
+      winningBucket: bucket,
+      result: {
+        title: result.title,
+        description: result.description,
+        imageUrl: result.imageUrl,
+        shareText: result.shareText
+      },
+      sortedBuckets: [{ id: bucket.id, label: bucket.label, score: bScore }],
+      selectedAnswers: {},
+      bucketId: bucket.id,
+      title: result.title,
+      points: bScore,
+      rank: 1,
+      score: bScore
+    },
+    theme: config.value.theme,
+    showBreakdown: false
+  };
+});
+
+const previewBackgroundStyle = computed(() => {
+  const theme = config.value.theme;
+  if (theme.backgroundType === 'color') {
+    return { backgroundColor: theme.backgroundColor };
+  } else if (theme.backgroundType === 'gradient') {
+    return { background: theme.backgroundGradient };
+  } else if (theme.backgroundType === 'image') {
+    return { 
+      backgroundImage: `url(${theme.backgroundImageUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    };
+  } else if (theme.backgroundType === 'emoji') {
+    return { backgroundColor: theme.backgroundColor };
+  }
+  return {};
+});
+
+function randomColor(): string {
+  return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+}
+
+function randomizeAllTheme() {
+  config.value.theme.primaryColor = randomColor();
+  config.value.theme.secondaryColor = randomColor();
+  if (config.value.theme.backgroundType === 'color') {
+    config.value.theme.backgroundColor = randomColor();
+  } else if (config.value.theme.backgroundType === 'gradient') {
+    setRandomGradient();
+  }
+}
+
+const gradientStart = computed(() => {
+  const grad = config.value.theme.backgroundGradient;
+  if (grad && grad.includes('linear-gradient')) {
+    const match = grad.match(/#([0-9a-f]{6})/gi);
+    if (match && match.length >= 2) return match[0];
+  }
+  return '#6366f1';
+});
+
+const gradientEnd = computed(() => {
+  const grad = config.value.theme.backgroundGradient;
+  if (grad && grad.includes('linear-gradient')) {
+    const match = grad.match(/#([0-9a-f]{6})/gi);
+    if (match && match.length >= 2) return match[1];
+  }
+  return '#ec4899';
+});
+
+function updateGradient(e: Event, part: 'start' | 'end') {
+  const val = (e.target as HTMLInputElement).value;
+  const start = part === 'start' ? val : gradientStart.value;
+  const end = part === 'end' ? val : gradientEnd.value;
+  config.value.theme.backgroundGradient = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+}
+
+function setRandomGradient() {
+  const start = randomColor();
+  const end = randomColor();
+  config.value.theme.backgroundGradient = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+}
+
+
+
+function hydrateConfig(value: QuizConfig | undefined): EditableQuizConfig {
   const base = value ? JSON.parse(JSON.stringify(value)) : {};
   
   // Hydrate personality buckets with results array
@@ -854,6 +1233,10 @@ function hydrateConfig(value: QuizConfig): EditableQuizConfig {
       primaryColor: base.theme?.primaryColor ?? '#6366f1',
       secondaryColor: base.theme?.secondaryColor ?? '#ec4899',
       backgroundColor: base.theme?.backgroundColor ?? '#0f0f23',
+      backgroundType: base.theme?.backgroundType ?? 'color',
+      backgroundGradient: base.theme?.backgroundGradient ?? '',
+      backgroundEmoji: base.theme?.backgroundEmoji ?? '✨',
+      backgroundImageUrl: base.theme?.backgroundImageUrl ?? '',
     },
     personalityBuckets,
     archetypeAxes: (base.archetypeAxes ?? []).map(hydrateArchetypeAxis),
@@ -1574,6 +1957,393 @@ function getAxisId(axis: ArchetypeAxis): string {
   border-top: 1px solid var(--color-border-subtle);
 }
 
+/* Bucket Card & Header */
+.bucket-card {
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bucket-header {
+  background: var(--color-bg-secondary);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.bucket-header-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  outline: none;
+  padding: 0.25rem;
+}
+
+.bucket-header-input:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+.bucket-header-input::placeholder {
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+.bucket-remove {
+  background: transparent;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.bucket-remove:hover {
+  background: var(--color-danger-bg);
+  color: var(--bulma-danger);
+}
+
+.bucket-results {
+  padding: 1.5rem;
+}
+
+/* Emoji Pattern */
+.has-emoji-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.emoji-background-pattern {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  opacity: 0.08;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(4rem, 1fr));
+  gap: 2rem;
+  font-size: 3rem;
+  user-select: none;
+  transform: rotate(-15deg);
+  justify-items: center;
+  align-items: center;
+  z-index: 0;
+}
+
+.preview-modal__body {
+  position: relative;
+  z-index: 1;
+}
+
+/* UI Enhancements */
+.info-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9em;
+  transition: color 0.2s;
+  vertical-align: middle;
+}
+
+.info-btn:hover {
+  color: var(--color-primary);
+}
+
+.info-btn--small {
+  font-size: 0.8em;
+  padding: 2px;
+}
+
+.mode-label-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Tooltips */
+.info-tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+  margin-left: 4px;
+  color: var(--color-text-tertiary);
+  cursor: help;
+  font-size: 0.9em;
+}
+
+.info-tooltip-trigger::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: #111;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: normal;
+  text-transform: none;
+  white-space: normal;
+  width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.info-tooltip-trigger:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
+}
+
+/* Modals */
+.preview-modal, .info-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.preview-modal__backdrop, .info-modal__backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(4px);
+}
+
+.preview-modal__content, .info-modal__content {
+  position: relative;
+  z-index: 2001;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  background: var(--color-bg-elevated);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.info-modal__content {
+  max-width: 450px;
+  padding: 2rem;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.preview-modal__close, .info-modal__close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.preview-modal__close:hover, .info-modal__close:hover {
+  background: rgba(255, 30, 30, 0.8);
+}
+
+.preview-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.info-modal__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.info-modal__description {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.info-modal__description ul {
+  padding-left: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.info-modal__description li {
+  margin-bottom: 0.5rem;
+}
+
+.info-modal__ok {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Personality Bucket Refactor */
+.bucket-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.bucket-fields {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.field--id {
+  flex: 0 0 100px;
+}
+
+.field--title {
+  flex: 1;
+}
+
+.field-input--id {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+}
+
+.field-input--title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.result-variant {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.result-variant__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(var(--color-primary-rgb), 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preview-btn:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+/* Theme Randomizers */
+.theme-settings__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.random-all-btn {
+  background: none;
+  border: 1px solid var(--color-border-medium);
+  color: var(--color-text-secondary);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.random-all-btn:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.random-field-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 0.9em;
+  padding: 0 4px;
+}
+
+.random-field-btn:hover {
+  color: var(--color-primary);
+}
 .questions-header {
   display: flex;
   justify-content: space-between;

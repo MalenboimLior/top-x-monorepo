@@ -143,6 +143,14 @@ export interface QuizThemeConfig {
   secondaryColor?: string;
   /** Background color */
   backgroundColor?: string;
+  /** Type of background */
+  backgroundType?: 'color' | 'gradient' | 'emoji' | 'image';
+  /** CSS gradient string if type is 'gradient' */
+  backgroundGradient?: string;
+  /** Emoji character if type is 'emoji' */
+  backgroundEmoji?: string;
+  /** Background image URL if type is 'image' */
+  backgroundImageUrl?: string;
 }
 
 // =============================================================================
@@ -162,43 +170,43 @@ export interface QuizConfig {
 
   /** Visual theme configuration */
   theme?: QuizThemeConfig;
-  
+
   // -------------------------------------------------------------------------
   // Personality Mode Fields
   // -------------------------------------------------------------------------
-  
+
   /** 
    * Available buckets for personality mode.
    * Each bucket contains its own results (single or score-ranged).
    */
   personalityBuckets?: PersonalityBucket[];
-  
+
   // -------------------------------------------------------------------------
   // Archetype Mode Fields
   // -------------------------------------------------------------------------
-  
+
   /** Axis definitions for archetype mode */
   archetypeAxes?: ArchetypeAxis[];
-  
+
   /** Result definitions for archetype mode (one per pattern combination) */
   archetypeResults?: ArchetypeResult[];
-  
+
   // -------------------------------------------------------------------------
   // Optional Features
   // -------------------------------------------------------------------------
-  
+
   /** Whether to show progress indicator (e.g., "Question 3 of 10") */
   showProgress?: boolean;
-  
+
   /** Whether to randomize question order */
   shuffleQuestions?: boolean;
-  
+
   /** Whether to randomize answer order within each question */
   shuffleAnswers?: boolean;
-  
+
   /** Whether user must login to take the quiz */
   mustLogin?: boolean;
-  
+
   /** Whether user can retake the quiz */
   allowRepeats?: boolean;
 }

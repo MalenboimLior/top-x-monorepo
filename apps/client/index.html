@@ -52,6 +52,11 @@
 
 <body>
   <div id="app"></div>
+  <script>
+    // Fix for esbuild helpers missing in some contexts (like workers)
+    window.__name = (fn, name) => Object.defineProperty(fn, 'name', { value: name, configurable: true });
+  </script>
+  <script src="/js/gifshot.min.js"></script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 

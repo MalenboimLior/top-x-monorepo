@@ -2,7 +2,7 @@
   <div class="game-ad-overlay">
     <div class="ad-container">
       <div class="ad-header">
-        <h3>{{ t('games.ad.title') }}</h3>
+        <h3>{{ t(titleKey) }}</h3>
       </div>
       
       <div class="ad-content">
@@ -23,8 +23,8 @@
           :disabled="countdown > 0"
           @click="handleContinue"
         >
-          <span v-if="countdown > 0">{{ t('games.ad.continue') }} ({{ countdown }})</span>
-          <span v-else>{{ t('games.ad.continue') }}</span>
+          <span v-if="countdown > 0">{{ t(waitingKey) }} ({{ countdown }})</span>
+          <span v-else>{{ t(continueKey) }}</span>
         </button>
       </div>
     </div>
@@ -40,12 +40,18 @@ interface Props {
   adClient?: string;
   adSlot?: string;
   autoCloseDelay?: number; // in seconds, 0 = no auto-close
+  titleKey?: string;
+  waitingKey?: string;
+  continueKey?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   adClient: import.meta.env.VITE_GOOGLE_ADS_CLIENT_ID || 'ca-pub-1234567890',
   adSlot: import.meta.env.VITE_GOOGLE_ADS_SLOT_ID || '1234567890',
   autoCloseDelay: 5,
+  titleKey: 'games.ad.title',
+  waitingKey: 'games.ad.continue',
+  continueKey: 'games.ad.continue',
 });
 
 const emit = defineEmits<{

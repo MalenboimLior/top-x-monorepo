@@ -1,28 +1,12 @@
 <template>
   <div class="game-builder">
-    <!-- Section 1: Game Name -->
+    <!-- Section 1: Hero Card Builder (Game Info) -->
     <section class="builder-section">
-      <div class="builder-section__header">
-        <h2 class="builder-section__title">{{ t('build.game.fields.name.label') }}</h2>
-        <p class="builder-section__hint">{{ t('build.game.fields.name.hint') }}</p>
-      </div>
-      <div class="builder-section__content">
-        <div class="game-name-wrapper">
-          <input
-            :id="ids.name"
-            type="text"
-            v-model="game.name"
-            :placeholder="t('build.game.fields.name.placeholder')"
-            class="game-name-input"
-          />
-          <span v-if="persistedGameId" class="game-status-badge" :class="gameStatusClass">
-            {{ gameStatusText }}
-          </span>
-        </div>
-        <!-- Image Preview with Gradient -->
-        <div class="image-preview-section">
-          <label class="image-preview-label">{{ t('build.game.fields.cover.label') || 'Game Cover' }}</label>
-          <div class="image-preview-wrapper">
+      <div class="hero-card-builder">
+        <!-- Media Side -->
+        <div class="hero-card-builder__media">
+          <label class="field-label">{{ t('build.game.fields.cover.label') || 'Game Cover' }}</label>
+          <div class="image-preview-wrapper" :class="{ 'has-image': game.image }">
             <img 
               v-if="game.image"
               :src="game.image" 
@@ -36,6 +20,7 @@
             >
               <span>{{ game.name || 'Game Name' }}</span>
             </div>
+            
             <div class="image-preview-controls">
               <button
                 type="button"
@@ -43,7 +28,8 @@
                 @click="showImageUploader = true"
                 :title="t('build.game.fields.cover.upload') || 'Upload Image'"
               >
-                <font-awesome-icon :icon="['fas', 'upload']" />
+                <font-awesome-icon :icon="['fas', 'camera']" />
+                <span>{{ t('build.game.fields.cover.upload') || 'Upload Cover' }}</span>
               </button>
               <button
                 v-if="game.image"
@@ -56,10 +42,11 @@
               </button>
             </div>
           </div>
+
           <!-- Gradient Color Pickers -->
           <div v-if="!game.image" class="gradient-controls">
             <div class="gradient-control-item">
-              <label :for="ids.gradientStart">Start Color</label>
+              <label :for="ids.gradientStart">Start</label>
               <input
                 :id="ids.gradientStart"
                 type="color"
@@ -68,7 +55,7 @@
               />
             </div>
             <div class="gradient-control-item">
-              <label :for="ids.gradientEnd">End Color</label>
+              <label :for="ids.gradientEnd">End</label>
               <input
                 :id="ids.gradientEnd"
                 type="color"
@@ -77,7 +64,7 @@
               />
             </div>
             <div class="gradient-control-item">
-              <label :for="ids.gradientText">Text Color</label>
+              <label :for="ids.gradientText">Text</label>
               <input
                 :id="ids.gradientText"
                 type="color"
@@ -89,31 +76,77 @@
               type="button"
               class="gradient-shuffle-button"
               @click="shuffleGradients"
-              title="Randomize Colors"
+              :title="t('build.game.fields.cover.random') || 'Randomize Colors'"
             >
-              <font-awesome-icon :icon="['fas', 'random']" />
+              <font-awesome-icon :icon="['fas', 'dice']" />
             </button>
           </div>
           <p v-if="!game.image" class="field-hint">{{ t('build.game.fields.cover.hint') }}</p>
         </div>
-        <!-- Image Uploader (Hidden Modal) -->
-        <div v-if="showImageUploader" class="image-uploader-modal">
-          <div class="image-uploader-modal-backdrop" @click="showImageUploader = false"></div>
-          <div class="image-uploader-modal-content">
-            <ImageUploader
-              v-model="game.image as string"
-              :uploadFolder="`images/games/${validatedGameId}`"
-              :cropWidth="512"
-              :cropHeight="320"
+
+        <!-- Content Side -->
+        <div class="hero-card-builder__content">
+          <div class="field-block">
+            <div class="name-header">
+              <label :for="ids.name" class="field-label">{{ t('build.game.fields.name.label') }}</label>
+              <span v-if="persistedGameId" class="game-status-badge" :class="gameStatusClass">
+                {{ gameStatusText }}
+              </span>
+            </div>
+            <input
+              :id="ids.name"
+              type="text"
+              v-model="game.name"
+              :placeholder="t('build.game.fields.name.placeholder')"
+              class="game-name-input"
             />
-            <button
-              type="button"
-              class="image-uploader-close"
-              @click="showImageUploader = false"
-            >
-              <font-awesome-icon :icon="['fas', 'times']" />
-            </button>
           </div>
+
+          <div class="field-block">
+            <label :for="ids.description" class="field-label">{{ t('build.game.fields.description.label') }}</label>
+            <textarea
+              :id="ids.description"
+              rows="2"
+              v-model="game.description"
+              :placeholder="t('build.game.fields.description.placeholder')"
+              class="game-description-textarea"
+            />
+          </div>
+
+          <div class="field-block">
+            <label :for="ids.instructions" class="field-label">{{ t('build.game.fields.instructions.label') }}</label>
+            <textarea
+              :id="ids.instructions"
+              rows="6"
+              v-model="game.gameInstruction"
+              :placeholder="t('build.game.fields.instructions.placeholder')"
+              class="game-instructions-textarea"
+            />
+            <p class="field-hint instruction-hint">
+              {{ t('build.game.fields.instructions.markdownHint') || 'Markdown formatting is supported.' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Uploader (Hidden Modal) -->
+      <div v-if="showImageUploader" class="image-uploader-modal">
+        <div class="image-uploader-modal-backdrop" @click="showImageUploader = false"></div>
+        <div class="image-uploader-modal-content">
+          <ImageUploader
+            :modelValue="game.image || null"
+            @update:modelValue="game.image = $event || ''"
+            :uploadFolder="`images/games/${validatedGameId}`"
+            :cropWidth="600"
+            :cropHeight="375"
+          />
+          <button
+            type="button"
+            class="image-uploader-close"
+            @click="showImageUploader = false"
+          >
+            <font-awesome-icon :icon="['fas', 'times']" />
+          </button>
         </div>
       </div>
     </section>
@@ -141,46 +174,7 @@
       />
     </section>
 
-    <!-- Section 3: Other Game Settings (Collapsible) -->
-    <section class="builder-section">
-      <button
-        type="button"
-        class="builder-section__toggle"
-        @click="showGameSettings = !showGameSettings"
-      >
-        <span class="builder-section__toggle-title">{{ t('build.game.settings.title') || 'Game Settings' }}</span>
-        <span class="builder-section__toggle-icon" :class="{ 'builder-section__toggle-icon--open': showGameSettings }">
-          ▼
-        </span>
-      </button>
 
-      <div v-if="showGameSettings" class="builder-section__content">
-        <div class="settings-grid">
-          <div class="field-block field-block--wide">
-            <label :for="ids.description">{{ t('build.game.fields.description.label') }}</label>
-            <textarea
-              :id="ids.description"
-              rows="3"
-              v-model="game.description"
-              :placeholder="t('build.game.fields.description.placeholder')"
-            />
-            <p class="field-hint">{{ t('build.game.fields.description.hint') }}</p>
-          </div>
-
-          <div class="field-block field-block--wide">
-            <label :for="ids.instructions">{{ t('build.game.fields.instructions.label') }}</label>
-            <textarea
-              :id="ids.instructions"
-              rows="10"
-              v-model="game.gameInstruction"
-              :placeholder="t('build.game.fields.instructions.placeholder')"
-            >
-            </textarea>
-            <p class="field-hint">{{ t('build.game.fields.instructions.hint') }} Markdown formatting is supported (e.g., **bold**, *italic*, ~~strikethrough~~, `code`, # headers, > quotes, - lists, [links](url), tables with |).</p>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- Footer Actions -->
     <footer class="builder-footer">
@@ -548,8 +542,15 @@ const placeholderStyle = computed(() => {
   const end = gradientEndColor.value;
   const textColor = gradientTextColor.value;
   
-  style.background = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+  // Create a more vibrant mesh-like gradient
+  style.background = `linear-gradient(135deg, ${start}, ${end})`;
+  style.backgroundImage = `
+    radial-gradient(at 0% 0%, ${start}33 0px, transparent 50%),
+    radial-gradient(at 100% 0%, ${end}33 0px, transparent 50%),
+    linear-gradient(135deg, ${start} 0%, ${end} 100%)
+  `;
   style.color = textColor;
+  style.textShadow = `0 2px 10px rgba(0,0,0,0.3)`;
   
   return style;
 });
@@ -763,10 +764,15 @@ async function handleSave() {
 }
 
 async function handleSaveAndPreview() {
-  await saveGame({ stayOnWizard: true });
+  if (hasUnsavedChanges()) {
+    await saveGame({ stayOnWizard: true });
+  }
+  
   if (persistedGameId.value) {
     const gameUrl = `/games/info?game=${persistedGameId.value}`;
     window.open(gameUrl, '_blank', 'noopener');
+  } else {
+    alert(t('build.wizard.saveFirst') || 'Please save the game first');
   }
 }
 
@@ -1140,59 +1146,108 @@ onBeforeUnmount(() => {
   gap: 1rem;
 }
 
-.builder-section__toggle {
-  width: 100%;
+/* Hero Card Builder Layout */
+.hero-card-builder {
+  display: grid;
+  grid-template-columns: 460px 1fr;
+  gap: 2rem;
+  background: var(--color-bg-surface-elevated, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.hero-card-builder__media {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hero-card-builder__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.name-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--color-border-subtle);
-  color: var(--color-text-primary);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.builder-section__toggle:hover {
-  border-bottom-color: var(--color-border-medium);
-}
-
-.builder-section__toggle-title {
-  color: var(--color-text-primary);
-}
-
-.builder-section__toggle-icon {
-  transition: transform 0.2s ease;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-.builder-section__toggle-icon--open {
-  transform: rotate(180deg);
+  margin-bottom: 0.5rem;
 }
 
 .game-name-input {
   width: 100%;
   background: var(--color-bg-input);
   border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   padding: 0.75rem 1rem;
   color: var(--color-text-primary);
-  font-size: 1rem;
-  font-weight: 600;
-  transition: border-color 0.2s ease;
+  font-size: 1.25rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .game-name-input:focus {
   outline: none;
-  border-color: var(--color-border-primary);
+  border-color: var(--color-primary);
+  background: var(--color-bg-input-focus);
+  box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.1);
 }
 
-.game-name-input::placeholder {
-  color: var(--color-text-tertiary);
+.game-description-textarea {
+  width: 100%;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: none;
+  transition: all 0.2s ease;
+}
+
+.game-description-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.game-instructions-textarea {
+  width: 100%;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-base);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.2s ease;
+  min-height: 160px;
+}
+
+.game-instructions-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.instruction-hint {
+  font-size: 0.7rem;
+  line-height: 1.4;
+  font-style: italic;
 }
 
 .game-name-wrapper {
@@ -1414,51 +1469,7 @@ onBeforeUnmount(() => {
   background: rgba(220, 38, 38, 1);
 }
 
-.settings-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
 
-.field-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.field-block--wide {
-  grid-column: 1 / -1;
-}
-
-.field-block label {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-tertiary);
-}
-
-.field-block input,
-.field-block textarea,
-.field-block select {
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-sm);
-  padding: 0.625rem 0.875rem;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  transition: border-color 0.2s ease;
-}
-
-.field-block input:focus,
-.field-block textarea:focus,
-.field-block select:focus {
-  outline: none;
-  border-color: var(--color-border-primary);
-}
-
-.field-block textarea {
-  resize: vertical;
-}
 
 .field-hint {
   margin: 0;
@@ -1495,8 +1506,26 @@ onBeforeUnmount(() => {
 .builder-footer__actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   flex-wrap: wrap;
+}
+
+.builder-footer__actions :deep(.button) {
+  border-radius: 14px;
+  height: 50px;
+  padding: 0 1.75rem;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid transparent;
+}
+
+.builder-footer__actions :deep(.button):not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+}
+
+.builder-footer__actions :deep(.button:active) {
+  transform: translateY(0);
 }
 
 .builder-footer__action-wrapper {
@@ -1581,8 +1610,18 @@ onBeforeUnmount(() => {
     align-items: flex-start;
   }
 
-  .settings-grid {
+  .hero-card-builder {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .image-preview-wrapper {
+    max-width: 100%;
+  }
+
+  .game-name-input {
+    font-size: 1.1rem;
   }
 }
 </style>

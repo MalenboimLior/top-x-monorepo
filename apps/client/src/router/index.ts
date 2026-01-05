@@ -194,9 +194,14 @@ const routes = [
     component: () => import(/* webpackChunkName: "build-edit" */ '@/views/BuildEdit.vue'),
   },
   {
-    path: '/share-test',
-    name: 'ShareTest',
-    component: () => import('@/views/ShareTest.vue'),
+    path: '/meme-generator',
+    name: 'MemeGenerator',
+    component: () => import(/* webpackChunkName: "meme-generator" */ '@/views/MemeGenerator.vue'),
+  },
+  {
+    path: '/tools',
+    name: 'Tools',
+    component: () => import(/* webpackChunkName: "meme-generator" */ '@/views/MemeGenerator.vue'),
   },
   {
     path: '/:pathMatch(.*)*',

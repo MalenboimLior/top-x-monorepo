@@ -32,39 +32,38 @@ export default defineConfig({
 
     // Enable prerender only when explicitly requested
     ...(process.env.PRERENDER === '1'
-      ? [        prerender({
-          routes: [
-            // Static pages
-            '/',
-            '/about',
-            '/faq',
-            '/contact',
-            '/profile',
-            '/build',
-            '/terms',
-            '/privacy',
-            '/cookies',
-            '/guidelines',
-            '/how-it-works',
-            // Game routes
-            '/games/info',
-            '/games/trivia',
-            '/games/ZoneReveal',
-            '/games/PyramidTier',
-            '/games/Pacman',
-            '/games/FisherGame',
-            // Redirect routes (prerender for SEO)
-            '/PrezPyramid',
-            '/FootballStarsIL',
-          ],
-          staticDir: path.resolve(__dirname, 'dist'),
-          waitUntil: 'domcontentloaded',
-          timeout: 90_000,
-          settleDelay: 800,
-          renderAfterDocumentEvent: 'prerender-ready',
-          concurrency: 4, // Process 4 routes in parallel (adjust based on your needs)
-          debug: process.env.PRERENDER_DEBUG === '1',
-        })]
+      ? [prerender({
+        routes: [
+          // Static pages
+          '/',
+          '/about',
+          '/faq',
+          '/contact',
+          '/profile',
+          '/build',
+          '/terms',
+          '/privacy',
+          '/cookies',
+          '/guidelines',
+          '/how-it-works',
+          // Game routes
+          '/games/info',
+          '/games/trivia',
+          '/games/ZoneReveal',
+          '/games/PyramidTier',
+          '/games/Pacman',
+          '/games/FisherGame',
+          // Redirect routes (prerender for SEO)
+          '/PrezPyramid',
+          '/FootballStarsIL',
+        ],
+        staticDir: path.resolve(__dirname, 'dist'),
+        waitUntil: 'domcontentloaded',
+        timeout: 90_000,
+        settleDelay: 800,
+        renderAfterDocumentEvent: 'prerender-ready',
+        debug: process.env.PRERENDER_DEBUG === '1',
+      })]
       : [])
   ],
 
@@ -103,10 +102,20 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/analytics'],
+    include: [
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/functions',
+      'firebase/analytics',
+      'html2canvas'
+    ],
     esbuildOptions: {
-      // Ensure a single optimized instance of Firebase
+      // Ensure a single optimized instance of Firebase and others
       keepNames: true,
+      define: {
+        global: 'globalThis'
+      }
     },
   },
 

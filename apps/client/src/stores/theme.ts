@@ -10,9 +10,9 @@ export const useThemeStore = defineStore('theme', () => {
   const userPreference = ref<Theme | null>(null);
   const isGameMode = ref(false);
 
-  // Default to dark theme
+  // Always default to dark theme
   const getSystemPreference = (): Theme => {
-    return 'dark'; // Always default to dark theme
+    return 'dark';
   };
 
   // Load theme from localStorage or use system preference
@@ -88,33 +88,11 @@ export const useThemeStore = defineStore('theme', () => {
     applyTheme(themeToRestore);
   };
 
-  // Watch for system preference changes (optional)
-  const watchSystemPreference = () => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      // Only auto-switch if user hasn't manually set a preference
-      const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      if (!stored) {
-        applyTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-    } else {
-      // Fallback for older browsers
-      mediaQuery.addListener(handleChange);
-    }
-  };
+  // System preference watching disabled - always default to dark theme
 
   // Initialize on store creation
   if (typeof window !== 'undefined') {
     initializeTheme();
-    watchSystemPreference();
   }
 
   return {

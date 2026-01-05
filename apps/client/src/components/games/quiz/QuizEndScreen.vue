@@ -383,8 +383,9 @@ async function saveQuizResult() {
       console.log('[QuizEndScreen] Waiting for profile update...');
       
       // Wait a bit for the profile to update
+      const gId = props.gameId;
       setTimeout(() => {
-        const updatedGameData = userStore.profile?.games?.['quiz']?.[props.gameId];
+        const updatedGameData = userStore.profile?.games?.['quiz']?.[gId];
         console.log('[QuizEndScreen] Profile after save:', {
           hasGameData: !!updatedGameData,
           hasCustom: !!updatedGameData?.custom,

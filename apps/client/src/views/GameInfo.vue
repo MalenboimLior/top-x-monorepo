@@ -154,9 +154,9 @@
       <div class="surface">
         <PyramidResults
           :game-id="gameId"
-          :items="game.custom?.items || []"
-          :community-items="game.custom?.communityItems || []"
-          :rows="game.custom?.rows || []"
+          :items="(game.custom as any).items || []"
+          :community-items="(game.custom as any).communityItems || []"
+          :rows="(game.custom as any).rows || []"
           :game-header="game.name"
           :worst-header="t('games.pyramid.worstItem')"
           :game-title="game.name"
