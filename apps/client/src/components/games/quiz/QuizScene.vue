@@ -250,15 +250,31 @@ const sceneBackgroundStyle = computed(() => {
 
 /* Start Card */
 .start-card {
-  background: rgba(10, 12, 25, 0.85);
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
+  background: linear-gradient(135deg, rgba(10, 12, 25, 0.9), rgba(20, 25, 45, 0.85));
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
   text-align: center;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.start-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899));
+  opacity: 0.8;
 }
 
 .scene-title {
@@ -377,9 +393,34 @@ const sceneBackgroundStyle = computed(() => {
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899));
+  background: linear-gradient(90deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899), var(--quiz-primary, #6366f1));
+  background-size: 200% 100%;
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: progressShimmer 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes progressGlow {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
 }
 
 /* Loading State */
@@ -455,29 +496,47 @@ const sceneBackgroundStyle = computed(() => {
   }
 
   .start-card {
-    padding: 2rem 1.5rem;
-    gap: 1.5rem;
+    padding: 2.5rem 2rem;
+    gap: 2rem;
+    border-radius: 20px;
   }
 
   .scene-title {
-    font-size: 1.75rem;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    line-height: 1.2;
   }
 
   .scene-subtitle {
-    font-size: 1rem;
+    font-size: 1.05rem;
+    line-height: 1.4;
   }
 
   .quiz-progress {
-    padding: 0.85rem 1.25rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
   }
 
   .progress-bar {
-    height: 6px;
+    height: 8px;
+    border-radius: 8px;
+  }
+
+  .progress-bar-fill {
+    border-radius: 8px;
   }
 
   .saved-result-section {
-    padding: 1.25rem;
-    margin-top: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 0.75rem;
+    border-radius: 16px;
+  }
+
+  /* Better touch targets */
+  .scene-button,
+  .action-button {
+    min-height: 48px;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
   }
 }
 </style>

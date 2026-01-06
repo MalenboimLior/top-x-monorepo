@@ -438,14 +438,36 @@ const login = () => emit('login');
 }
 
 .result-card {
-  background: rgba(10, 12, 25, 0.9);
-  border-radius: 24px;
-  padding: 2rem;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(10, 12, 25, 0.95), rgba(20, 25, 45, 0.9));
+  border-radius: 28px;
+  padding: 2.5rem;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899), var(--quiz-primary, #6366f1));
+  background-size: 200% 100%;
+  animation: resultGlow 3s ease-in-out infinite;
+}
+
+@keyframes resultGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 /* Share Section */
@@ -472,34 +494,44 @@ const login = () => emit('login');
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  border-radius: 14px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .share-btn--twitter {
-  background: #000;
+  background: linear-gradient(135deg, #000, #1a1a1a);
   color: #fff;
 }
 
 .share-btn--twitter:hover {
-  background: #1a1a1a;
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, #1a1a1a, #333);
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .share-btn--copy {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
   color: var(--color-text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .share-btn--copy:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .share-icon {
@@ -544,17 +576,43 @@ const login = () => emit('login');
 
 @media (max-width: 768px) {
   .result-card {
-    padding: 1.5rem;
-    gap: 1.5rem;
+    padding: 2rem 1.5rem;
+    gap: 2rem;
+    border-radius: 24px;
+    margin: 0 1rem;
   }
 
   .share-buttons {
     flex-direction: column;
     align-items: stretch;
+    gap: 1rem;
   }
 
   .share-btn {
     justify-content: center;
+    padding: 1.25rem 2rem;
+    font-size: 1rem;
+    border-radius: 16px;
+    min-height: 56px;
+  }
+
+  .share-title {
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .inviter-section {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+
+  .inviter-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .inviter-text {
+    font-size: 1rem;
   }
 }
 </style>

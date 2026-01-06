@@ -740,33 +740,35 @@
         <div class="theme-settings">
           <div class="theme-settings__header">
             <h3>{{ t('build.quiz.theme.title') || t('build.trivia.theme.title') }}</h3>
-            <button type="button" class="random-all-btn" @click="randomizeAllTheme">
-               <font-awesome-icon :icon="['fas', 'dice']" />
-               {{ t('build.quiz.theme.random') || 'Random All' }}
-            </button>
+            <div class="header-actions">
+              <button type="button" class="random-all-btn" @click="randomizeAllTheme">
+                 <font-awesome-icon :icon="['fas', 'palette']" />
+                 {{ t('build.quiz.theme.random') || 'Shuffle All' }}
+              </button>
+            </div>
           </div>
 
           <div class="theme-grid">
             <div class="field">
               <label>
-                {{ t('build.quiz.theme.primaryLabel') || 'Question Background' }}
+                {{ t('build.quiz.theme.primaryLabel') || 'Question Card Background' }}
                 <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.theme.primaryLabel.hint')">
                   <font-awesome-icon :icon="['fas', 'circle-info']" />
                 </span>
-                <button type="button" class="random-field-btn" @click="config.theme.primaryColor = randomColor()">
-                  <font-awesome-icon :icon="['fas', 'random']" />
+                <button type="button" class="random-field-btn" @click="shufflePrimaryColor()">
+                  <font-awesome-icon :icon="['fas', 'shuffle']" />
                 </button>
               </label>
               <input type="color" v-model="config.theme.primaryColor" />
             </div>
             <div class="field">
               <label>
-                {{ t('build.quiz.theme.secondaryLabel') || 'Answer Background' }}
+                {{ t('build.quiz.theme.secondaryLabel') || 'Answer Card Background' }}
                 <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.theme.secondaryLabel.hint')">
                   <font-awesome-icon :icon="['fas', 'circle-info']" />
                 </span>
-                <button type="button" class="random-field-btn" @click="config.theme.secondaryColor = randomColor()">
-                  <font-awesome-icon :icon="['fas', 'random']" />
+                <button type="button" class="random-field-btn" @click="shuffleSecondaryColor()">
+                  <font-awesome-icon :icon="['fas', 'shuffle']" />
                 </button>
               </label>
               <input type="color" v-model="config.theme.secondaryColor" />
@@ -788,8 +790,8 @@
             <div v-if="config.theme.backgroundType === 'color'" class="field">
               <label>
                 {{ t('build.quiz.theme.backgroundColorLabel') || 'Background Color' }}
-                <button type="button" class="random-field-btn" @click="config.theme.backgroundColor = randomColor()">
-                  <font-awesome-icon :icon="['fas', 'random']" />
+                <button type="button" class="random-field-btn" @click="shuffleBackgroundColor()">
+                  <font-awesome-icon :icon="['fas', 'shuffle']" />
                 </button>
               </label>
               <input type="color" v-model="config.theme.backgroundColor" />
@@ -799,8 +801,8 @@
               <div class="field">
                 <label>
                   {{ t('build.quiz.theme.backgroundColorStart') || 'Start Color' }}
-                  <button type="button" class="random-field-btn" @click="setRandomGradient()">
-                    <font-awesome-icon :icon="['fas', 'random']" />
+                  <button type="button" class="random-field-btn" @click="shuffleGradientStart()">
+                    <font-awesome-icon :icon="['fas', 'shuffle']" />
                   </button>
                 </label>
                 <input type="color" :value="gradientStart" @input="updateGradient($event, 'start')" />
@@ -808,6 +810,9 @@
               <div class="field">
                 <label>
                   {{ t('build.quiz.theme.backgroundColorEnd') || 'End Color' }}
+                  <button type="button" class="random-field-btn" @click="shuffleGradientEnd()">
+                    <font-awesome-icon :icon="['fas', 'shuffle']" />
+                  </button>
                 </label>
                 <input type="color" :value="gradientEnd" @input="updateGradient($event, 'end')" />
               </div>
@@ -918,6 +923,7 @@ import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import PersonalityResult from '@/components/games/quiz/PersonalityResult.vue';
 import { useLocaleStore } from '@/stores/locale';
+import { getRandomGradientPreset } from '@top-x/shared';
 import type {
   QuizConfig,
   QuizQuestion,
@@ -1173,12 +1179,13 @@ function randomColor(): string {
 }
 
 function randomizeAllTheme() {
-  config.value.theme.primaryColor = randomColor();
-  config.value.theme.secondaryColor = randomColor();
+  const preset = getRandomGradientPreset();
+  config.value.theme.primaryColor = preset.start;
+  config.value.theme.secondaryColor = preset.end;
   if (config.value.theme.backgroundType === 'color') {
-    config.value.theme.backgroundColor = randomColor();
+    config.value.theme.backgroundColor = preset.start;
   } else if (config.value.theme.backgroundType === 'gradient') {
-    setRandomGradient();
+    setRandomGradientPreset();
   }
 }
 
@@ -1211,6 +1218,36 @@ function setRandomGradient() {
   const start = randomColor();
   const end = randomColor();
   config.value.theme.backgroundGradient = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+}
+
+function setRandomGradientPreset() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.backgroundGradient = `linear-gradient(135deg, ${preset.start} 0%, ${preset.end} 100%)`;
+}
+
+function shufflePrimaryColor() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.primaryColor = preset.start;
+}
+
+function shuffleSecondaryColor() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.secondaryColor = preset.end;
+}
+
+function shuffleGradientStart() {
+  const preset = getRandomGradientPreset();
+  updateGradient({ target: { value: preset.start } } as any, 'start');
+}
+
+function shuffleGradientEnd() {
+  const preset = getRandomGradientPreset();
+  updateGradient({ target: { value: preset.end } } as any, 'end');
+}
+
+function shuffleBackgroundColor() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.backgroundColor = preset.start;
 }
 
 
@@ -2323,43 +2360,84 @@ function getAxisId(axis: ArchetypeAxis): string {
 }
 
 /* Theme Randomizers */
+.theme-settings {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-settings::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--quiz-primary, #6366f1), var(--quiz-secondary, #ec4899));
+  opacity: 0.6;
+}
+
 .theme-settings__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .random-all-btn {
-  background: none;
-  border: 1px solid var(--color-border-medium);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--color-text-secondary);
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
 
 .random-all-btn:hover {
-  background: var(--color-bg-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
   border-color: var(--color-primary);
   color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .random-field-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--color-text-tertiary);
   cursor: pointer;
-  font-size: 0.9em;
-  padding: 0 4px;
+  font-size: 0.8em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
 }
 
 .random-field-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-primary);
   color: var(--color-primary);
+  transform: scale(1.05);
 }
 .questions-header {
   display: flex;

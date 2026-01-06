@@ -247,24 +247,39 @@ const goBack = () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.25rem;
-  background: var(--quiz-secondary-color, rgba(255, 255, 255, 0.04));
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
 }
 
 .answer-option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
   border-color: var(--quiz-primary, #6366f1);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(var(--quiz-primary-rgb, 99, 102, 241), 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.answer-option:hover .answer-letter {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(var(--quiz-primary-rgb, 99, 102, 241), 0.3);
 }
 
 .answer-option:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
+  transition: all 0.1s ease;
 }
 
 .answer-letter {
@@ -361,23 +376,35 @@ const goBack = () => {
   }
 
   .answer-option {
-    padding: 0.875rem 1rem;
-    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+    border-radius: 14px;
+    min-height: 56px;
+  }
+
+  .answer-option:hover {
+    transform: translateY(-2px);
   }
 
   .answer-letter {
-    width: 32px;
-    height: 32px;
-    font-size: 0.85rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
   }
 
   .answer-image {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
   }
 
   .answer-text {
-    font-size: 0.95rem;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .answer-options {
+    gap: 1rem;
   }
 }
 </style>

@@ -303,13 +303,14 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(var(--space-6), 4vw, var(--space-10));
+  padding: clamp(var(--space-6), 5vw, var(--space-12));
   color: var(--color-text-primary);
   background-color: var(--quiz-background, var(--color-bg-primary));
   background-image: var(--quiz-background-image, none);
   background-size: cover;
   background-position: center;
   overflow: hidden;
+  background-attachment: fixed;
 }
 
 /* Emoji Background Pattern */
@@ -320,22 +321,30 @@ onMounted(async () => {
 
 .emoji-background-pattern {
   position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 120%;
-  height: 120%;
-  opacity: 0.12;
+  top: -15%;
+  left: -15%;
+  width: 130%;
+  height: 130%;
+  opacity: 0.08;
   pointer-events: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
-  grid-template-rows: repeat(auto-fill, minmax(2.5rem, 1fr));
-  gap: 1rem;
-  font-size: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 1.5rem;
+  font-size: 2.5rem;
   user-select: none;
-  transform: rotate(-8deg);
+  transform: rotate(-12deg);
   justify-items: center;
   align-items: center;
   z-index: 0;
+  animation: emojiFloat 20s ease-in-out infinite;
+}
+
+@keyframes emojiFloat {
+  0%, 100% { transform: rotate(-12deg) translate(0, 0); }
+  25% { transform: rotate(-10deg) translate(10px, -10px); }
+  50% { transform: rotate(-14deg) translate(-5px, 5px); }
+  75% { transform: rotate(-11deg) translate(-10px, -5px); }
 }
 
 .quiz-container.is-rtl {
@@ -387,11 +396,22 @@ onMounted(async () => {
   .quiz-container {
     padding: 0;
     align-items: stretch;
+    background-attachment: scroll; /* Better performance on mobile */
   }
 
   .quiz-content {
     width: 100%;
-    gap: var(--space-5);
+    gap: var(--space-6);
+    padding: var(--space-4);
+  }
+
+  .emoji-background-pattern {
+    opacity: 0.05;
+    font-size: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+    grid-template-rows: repeat(auto-fill, minmax(2.5rem, 1fr));
+    gap: 1.25rem;
+    animation-duration: 30s; /* Slower animation on mobile for better performance */
   }
 }
 </style>
