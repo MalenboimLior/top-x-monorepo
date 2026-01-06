@@ -2,7 +2,12 @@
   <div class="trivia-builder">
     <!-- Mode Selector -->
     <section class="mode-section">
-      <h2 class="section-title">Trivia Mode</h2>
+      <h2 class="section-title">
+        {{ t('build.trivia.settings.title') || 'Trivia Mode' }}
+        <button type="button" class="info-btn" @click="openModeInfo('general')">
+          <font-awesome-icon :icon="['fas', 'circle-info']" />
+        </button>
+      </h2>
       <div class="mode-options">
         <label
           class="mode-option"
@@ -16,8 +21,13 @@
           />
           <div class="mode-content">
             <span class="mode-icon">🎯</span>
-            <span class="mode-label">Classic</span>
-            <span class="mode-description">Unlimited lives, show correct answers after each question</span>
+            <div class="mode-label-wrapper">
+              <span class="mode-label">{{ t('build.trivia.type.classic.label') || 'Classic' }}</span>
+              <button type="button" class="info-btn info-btn--small" @click.stop.prevent="openModeInfo('classic')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </button>
+            </div>
+            <span class="mode-description">{{ t('build.trivia.type.classic.description') || 'Unlimited lives, show correct answers after each question' }}</span>
           </div>
         </label>
         <label
@@ -32,8 +42,13 @@
           />
           <div class="mode-content">
             <span class="mode-icon">⚡</span>
-            <span class="mode-label">Speed</span>
-            <span class="mode-description">Limited lives, configurable lives count</span>
+            <div class="mode-label-wrapper">
+              <span class="mode-label">{{ t('build.trivia.type.speed.label') || 'Speed' }}</span>
+              <button type="button" class="info-btn info-btn--small" @click.stop.prevent="openModeInfo('speed')">
+                <font-awesome-icon :icon="['fas', 'circle-info']" />
+              </button>
+            </div>
+            <span class="mode-description">{{ t('build.trivia.type.speed.description') || 'Limited lives, configurable lives count' }}</span>
           </div>
         </label>
       </div>
@@ -41,16 +56,21 @@
 
     <!-- Questions Section -->
     <section ref="questionsSection" class="questions-section">
-      <button
-        type="button"
-        class="section-toggle"
-        @click="toggleSection('questions')"
-      >
-        <span class="section-toggle__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</span>
-        <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showQuestions }">
-          ▼
-        </span>
-      </button>
+      <div class="section-header">
+        <button
+          type="button"
+          class="section-toggle"
+          @click="toggleSection('questions')"
+        >
+          <span class="section-toggle__title">{{ t('build.trivia.questions.title', { count: config.questions.length }) }}</span>
+          <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showQuestions }">
+            ▼
+          </span>
+        </button>
+        <button type="button" class="info-btn" @click="openModeInfo('general')">
+          <font-awesome-icon :icon="['fas', 'circle-info']" />
+        </button>
+      </div>
       
       <div v-if="showQuestions" class="questions-section__content">
         <p class="section-hint">{{ t('build.trivia.questions.subtitle') }}</p>
