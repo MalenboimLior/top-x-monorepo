@@ -1,5 +1,9 @@
 <template>
-  <div class="quiz-scene" :class="{ 'is-rtl': direction === 'rtl' }" :lang="language">
+  <div class="quiz-scene" :class="{ 'is-rtl': direction === 'rtl', 'has-emoji-bg': !!theme?.backgroundEmoji }" :lang="language" :style="sceneBackgroundStyle">
+    <!-- Emoji Background Pattern -->
+    <div v-if="theme?.backgroundEmoji" class="emoji-background-pattern">
+      <span v-for="i in 80" :key="i">{{ theme.backgroundEmoji || '✨' }}</span>
+    </div>
     <transition name="fade-slide" mode="out-in">
       <!-- Start Screen -->
       <section v-if="screen === 'start'" key="start" class="scene-section">
@@ -94,6 +98,7 @@
             :key="currentQuestion.id"
             :question="currentQuestion"
             :direction="direction"
+            :theme="theme"
             :can-go-back="questionNumber > 1"
             @select-answer="onSelectAnswer"
             @go-back="onGoBack"
@@ -171,6 +176,25 @@ const onGoBack = () => emit('go-back');
 const loginButtonLabel = computed(() => t('games.loginButton'));
 const loginRequiredMessage = computed(() => t('games.loginRequired'));
 const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
+
+const sceneBackgroundStyle = computed(() => {
+  if (!props.theme) return {};
+
+  const styles: Record<string, string> = {};
+
+  // Set background based on theme
+  if (props.theme.backgroundType === 'color') {
+    styles.backgroundColor = props.theme.backgroundColor;
+  } else if (props.theme.backgroundType === 'gradient' && props.theme.backgroundGradient) {
+    styles.background = props.theme.backgroundGradient;
+  } else if (props.theme.backgroundType === 'image' && props.theme.backgroundImageUrl) {
+    styles.backgroundImage = `url(${props.theme.backgroundImageUrl})`;
+    styles.backgroundSize = 'cover';
+    styles.backgroundPosition = 'center';
+  }
+
+  return styles;
+});
 </script>
 
 <style scoped>
@@ -180,6 +204,33 @@ const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
+  min-height: 100vh;
+}
+
+/* Emoji Background Pattern */
+.has-emoji-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.emoji-background-pattern {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  opacity: 0.12;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 1.5rem;
+  font-size: 2.5rem;
+  user-select: none;
+  transform: rotate(-10deg);
+  justify-items: center;
+  align-items: center;
+  z-index: 0;
 }
 
 .scene-section {
@@ -187,6 +238,8 @@ const alreadySubmittedMessage = computed(() => t('games.alreadySubmitted'));
   flex-direction: column;
   gap: 1.5rem;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .scene-section > * {

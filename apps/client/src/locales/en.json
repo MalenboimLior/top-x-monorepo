@@ -518,7 +518,7 @@
   "build.quiz.theme.random": "Randomize",
   "build.quiz.theme.backgroundType": "Background Style",
   "build.quiz.theme.gradientLabel": "Gradient CSS",
-  "build.quiz.theme.emojiLabel": "Background Emoji",
+  "build.quiz.theme.emojiLabel": "Background Emoji (optional)",
   "build.quiz.theme.backgroundImageLabel": "Background Image",
   "build.quiz.theme.gradient": "Gradient Background",
   "build.quiz.theme.emoji": "Emoji Pattern",

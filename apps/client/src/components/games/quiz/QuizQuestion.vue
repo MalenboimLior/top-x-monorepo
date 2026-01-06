@@ -1,5 +1,9 @@
 <template>
-  <div class="quiz-question" :class="{ 'is-rtl': direction === 'rtl' }">
+  <div class="quiz-question" :class="{ 'is-rtl': direction === 'rtl', 'has-emoji-bg': !!theme?.backgroundEmoji }" :style="themeStyles">
+    <!-- Emoji Background Pattern -->
+    <div v-if="theme?.backgroundEmoji" class="emoji-background-pattern">
+      <span v-for="i in 60" :key="i">{{ theme.backgroundEmoji || '✨' }}</span>
+    </div>
     <Card class="question-card">
       <!-- Question Header -->
       <div v-if="hasQuestionText || canGoBack" class="question-header">
@@ -56,11 +60,12 @@
 import { computed } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
 import type { QuizQuestionViewModel } from '@/stores/quiz';
-import type { QuizAnswer } from '@top-x/shared/types/quiz';
+import type { QuizAnswer, QuizThemeConfig } from '@top-x/shared/types/quiz';
 
 interface Props {
   question: QuizQuestionViewModel;
   direction: 'ltr' | 'rtl';
+  theme?: QuizThemeConfig;
   canGoBack?: boolean;
 }
 
@@ -81,6 +86,35 @@ const getLetterForIndex = (index: number): string => {
   return String.fromCharCode(65 + index); // A, B, C, D...
 };
 
+const themeStyles = computed(() => {
+  if (!props.theme) return {};
+
+  const styles: Record<string, string> = {};
+
+  // Set CSS custom properties for theme colors
+  if (props.theme.primaryColor) {
+    styles['--quiz-primary-color'] = props.theme.primaryColor;
+  }
+  if (props.theme.secondaryColor) {
+    styles['--quiz-secondary-color'] = props.theme.secondaryColor;
+  }
+  if (props.theme.backgroundColor) {
+    styles['--quiz-background-color'] = props.theme.backgroundColor;
+  }
+
+  // Handle background styles (for question card)
+  if (props.theme.backgroundType === 'gradient' && props.theme.backgroundGradient) {
+    styles['--quiz-background'] = props.theme.backgroundGradient;
+  } else if (props.theme.backgroundType === 'image' && props.theme.backgroundImageUrl) {
+    styles['--quiz-background'] = `url(${props.theme.backgroundImageUrl})`;
+    styles['--quiz-background-image'] = 'cover';
+  } else {
+    styles['--quiz-background'] = 'var(--quiz-background-color)';
+  }
+
+  return styles;
+});
+
 const selectAnswer = (index: number) => {
   emit('select-answer', index);
 };
@@ -96,10 +130,43 @@ const goBack = () => {
   max-width: 600px;
   margin: 0 auto;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Emoji Background Pattern */
+.has-emoji-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.emoji-background-pattern {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  opacity: 0.12;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(4rem, 1fr));
+  gap: 2rem;
+  font-size: 3rem;
+  user-select: none;
+  transform: rotate(-15deg);
+  justify-items: center;
+  align-items: center;
+  z-index: 0;
 }
 
 .question-card {
-  background: rgba(10, 12, 25, 0.85);
+  position: relative;
+  z-index: 1;
+}
+
+.question-card {
+  background: var(--quiz-primary-color, rgba(10, 12, 25, 0.85));
   border-radius: 20px;
   padding: 2rem;
   backdrop-filter: blur(12px);
@@ -181,7 +248,7 @@ const goBack = () => {
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--quiz-secondary-color, rgba(255, 255, 255, 0.04));
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   color: var(--color-text-primary);
@@ -270,9 +337,9 @@ const goBack = () => {
 
 @media (max-width: 768px) {
   .quiz-question {
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
   }
 
   .question-card {

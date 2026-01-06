@@ -523,7 +523,7 @@
   "build.quiz.theme.random": "הגרלה",
   "build.quiz.theme.backgroundType": "סגנון רקע",
   "build.quiz.theme.gradientLabel": "Gradient CSS",
-  "build.quiz.theme.emojiLabel": "אימוג'י לרקע",
+  "build.quiz.theme.emojiLabel": "אימוג'י לרקע (אופציונלי)",
   "build.quiz.theme.backgroundImageLabel": "תמונת רקע",
   "build.quiz.theme.gradient": "רקע גרדיאנט",
   "build.quiz.theme.emoji": "תבנית אימוג'י",

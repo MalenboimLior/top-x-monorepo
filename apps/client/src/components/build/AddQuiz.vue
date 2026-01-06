@@ -56,19 +56,21 @@
 
     <!-- Personality Mode: Buckets with Embedded Results -->
     <section v-if="config.mode === 'personality'" ref="personalityBucketsSection" class="config-section">
-      <button
-        type="button"
-        class="section-toggle"
-        @click="toggleSection('personalityBuckets')"
-      >
-        <span class="section-toggle__title">{{ t('build.quiz.buckets.title') || 'Result Buckets' }}</span>
-        <button type="button" class="info-btn ml-2" @click="openModeInfo('general')">
+      <div class="section-header">
+        <button
+          type="button"
+          class="section-toggle"
+          @click="toggleSection('personalityBuckets')"
+        >
+          <span class="section-toggle__title">{{ t('build.quiz.buckets.title') || 'Result Buckets' }}</span>
+          <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showPersonalityBuckets }">
+            ▼
+          </span>
+        </button>
+        <button type="button" class="info-btn" @click="openModeInfo('general')">
           <font-awesome-icon :icon="['fas', 'circle-info']" />
         </button>
-        <span class="section-toggle__icon" :class="{ 'section-toggle__icon--open': showPersonalityBuckets }">
-          ▼
-        </span>
-      </button>
+      </div>
       <p v-if="showPersonalityBuckets" class="section-hint">
         <template v-if="personalityQuizType === 'scoreRange'">
           {{ t('build.quiz.buckets.hint.singleBucket') || 'Single bucket with score ranges: Users get different results based on their score range.' }}
@@ -778,7 +780,6 @@
                 <select v-model="config.theme.backgroundType">
                   <option value="color">Solid Color</option>
                   <option value="gradient">Gradient</option>
-                  <option value="emoji">Emoji Pattern</option>
                   <option value="image">Background Image</option>
                 </select>
               </div>
@@ -812,11 +813,6 @@
               </div>
             </div>
 
-            <div v-if="config.theme.backgroundType === 'emoji'" class="field">
-              <label>{{ t('build.quiz.theme.emojiLabel') || 'Background Emoji' }}</label>
-              <input v-model="config.theme.backgroundEmoji" placeholder="✨" class="input" maxlength="2" />
-            </div>
-
             <div v-if="config.theme.backgroundType === 'image'" class="field">
               <label>{{ t('build.quiz.theme.backgroundImageLabel') || 'Background Image' }}</label>
               <ImageUploader
@@ -826,6 +822,12 @@
                 :cropWidth="1920"
                 :cropHeight="1080"
               />
+            </div>
+
+            <div class="field">
+              <label>{{ t('build.quiz.theme.emojiLabel') || 'Background Emoji (optional)' }}</label>
+              <input v-model="config.theme.backgroundEmoji" placeholder="✨" class="input" maxlength="2" />
+              <small class="help-text">Add emoji pattern overlay to any background type</small>
             </div>
           </div>
         </div>
@@ -837,10 +839,10 @@
       <div class="preview-modal__backdrop" @click="closeResultPreview"></div>
       <div 
         class="preview-modal__content" 
-        :class="{ 'has-emoji-bg': config.theme.backgroundType === 'emoji' }"
+        :class="{ 'has-emoji-bg': !!config.theme.backgroundEmoji }"
         :style="previewBackgroundStyle"
       >
-        <div v-if="config.theme.backgroundType === 'emoji'" class="emoji-background-pattern">
+        <div v-if="config.theme.backgroundEmoji" class="emoji-background-pattern">
           <span v-for="i in 60" :key="i">{{ config.theme.backgroundEmoji || '✨' }}</span>
         </div>
         <button type="button" class="preview-modal__close" @click="closeResultPreview">
@@ -1157,13 +1159,11 @@ const previewBackgroundStyle = computed(() => {
   } else if (theme.backgroundType === 'gradient') {
     return { background: theme.backgroundGradient };
   } else if (theme.backgroundType === 'image') {
-    return { 
+    return {
       backgroundImage: `url(${theme.backgroundImageUrl})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     };
-  } else if (theme.backgroundType === 'emoji') {
-    return { backgroundColor: theme.backgroundColor };
   }
   return {};
 });
@@ -1599,10 +1599,20 @@ function createBucketId(): string {
 
 function addBucket() {
   if (!config.value.personalityBuckets) config.value.personalityBuckets = [];
+  const newBucketIndex = config.value.personalityBuckets.length;
   config.value.personalityBuckets.push({
     id: createBucketId(), // Always start with a valid ID
     label: '',
     results: [{ title: '', description: '', imageUrl: '', shareText: '' }],
+  });
+
+  // Focus the new bucket's input field
+  nextTick(() => {
+    const bucketInputs = document.querySelectorAll('.bucket-header-input');
+    const newBucketInput = bucketInputs[newBucketIndex] as HTMLInputElement;
+    if (newBucketInput) {
+      newBucketInput.focus();
+    }
   });
 }
 
@@ -1829,9 +1839,17 @@ function getAxisId(axis: ArchetypeAxis): string {
   margin: 0 0 1rem;
 }
 
+/* Section Header */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 /* Section Toggle (Collapsible) */
 .section-toggle {
-  width: 100%;
+  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1845,7 +1863,6 @@ function getAxisId(axis: ArchetypeAxis): string {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 0.5rem;
 }
 
 .section-toggle:hover {

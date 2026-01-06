@@ -6,8 +6,8 @@
       <p class="build-subtitle">{{ content.hero.subtitle }}</p>
     </section>
 
-    <!-- Locked State (when not logged in) -->
-    <section v-if="!user" class="build-locked">
+    <!-- Locked State (when not logged in or anonymous) -->
+    <section v-if="!user || user.isAnonymous" class="build-locked">
       <div class="build-card">
         <h2>{{ content.locked.title }}</h2>
         <p>{{ content.locked.body }}</p>

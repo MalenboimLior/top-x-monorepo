@@ -2,10 +2,14 @@
 <template>
   <div
     class="quiz-container"
-    :class="{ 'is-rtl': isRtl }"
+    :class="{ 'is-rtl': isRtl, 'has-emoji-bg': !!theme.backgroundEmoji }"
     :dir="direction"
     :style="themeStyles"
   >
+    <!-- Emoji Background Pattern -->
+    <div v-if="theme.backgroundEmoji" class="emoji-background-pattern">
+      <span v-for="i in 120" :key="i">{{ theme.backgroundEmoji || '✨' }}</span>
+    </div>
 
     <div class="quiz-content">
       <div v-if="error" class="notification is-danger">
@@ -205,7 +209,19 @@ const themeStyles = computed(() => {
     '--quiz-secondary': theme.value.secondaryColor ?? '#ec4899',
     '--quiz-background': theme.value.backgroundColor ?? '#0f0f23',
   };
-  styles.backgroundColor = theme.value.backgroundColor ?? '#0f0f23';
+
+  // Handle different background types
+  if (theme.value.backgroundType === 'gradient' && theme.value.backgroundGradient) {
+    styles.background = theme.value.backgroundGradient;
+  } else if (theme.value.backgroundType === 'image' && theme.value.backgroundImageUrl) {
+    styles.backgroundImage = `url(${theme.value.backgroundImageUrl})`;
+    styles.backgroundSize = 'cover';
+    styles.backgroundPosition = 'center';
+  } else {
+    // Default color background
+    styles.backgroundColor = theme.value.backgroundColor ?? '#0f0f23';
+  }
+
   return styles;
 });
 
@@ -296,6 +312,32 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+/* Emoji Background Pattern */
+.has-emoji-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.emoji-background-pattern {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  opacity: 0.12;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(2.5rem, 1fr));
+  gap: 1rem;
+  font-size: 2rem;
+  user-select: none;
+  transform: rotate(-8deg);
+  justify-items: center;
+  align-items: center;
+  z-index: 0;
+}
+
 .quiz-container.is-rtl {
   direction: rtl;
 }
@@ -343,10 +385,12 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .quiz-container {
-    padding: var(--space-5);
+    padding: 0;
+    align-items: stretch;
   }
 
   .quiz-content {
+    width: 100%;
     gap: var(--space-5);
   }
 }
