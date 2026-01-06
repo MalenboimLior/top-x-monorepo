@@ -6,7 +6,7 @@
         <span v-if="question.difficulty" class="question-difficulty">{{ question.difficulty }}</span>
       </div>
       <div v-if="hasQuestionImage" class="question-media" :class="{ 'image-only': !hasQuestionText }">
-        <img :src="question.media?.imageUrl" :alt="hasQuestionText ? 'Question illustration' : 'Question'" />
+        <img :src="question.media?.imageUrl" :alt="hasQuestionText ? t('games.trivia.questionIllustration') : t('games.trivia.questionAlt')" />
       </div>
     </div>
 
@@ -22,7 +22,7 @@
       >
         <div class="option-content" :class="{ 'image-only': !hasOptionText(option) && option.imageUrl }">
           <div v-if="option.imageUrl" class="option-image" :class="{ 'full-width': !hasOptionText(option) }">
-            <img :src="option.imageUrl" :alt="hasOptionText(option) ? `Option ${index + 1}` : option.label || `Option ${index + 1}`" />
+            <img :src="option.imageUrl" :alt="hasOptionText(option) ? `${t('games.trivia.optionAlt')} ${index + 1}` : option.label || `${t('games.trivia.optionAlt')} ${index + 1}`" />
             <!-- Show feedback overlay on image when there's no text -->
             <span v-if="getOptionFeedbackIcon(index) && !hasOptionText(option)" class="option-feedback option-feedback--overlay">
               <span class="feedback-icon">{{ getOptionFeedbackIcon(index) }}</span>
@@ -40,13 +40,17 @@
       </button>
     </div>
   </Card>
-  <div v-else class="question-empty">No question available.</div>
+  <div v-else class="question-empty">{{ t('games.trivia.noQuestionAvailable') }}</div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import Card from '@top-x/shared/components/Card.vue';
+import { useLocaleStore } from '@/stores/locale';
 import type { TriviaQuestionViewModel } from '@/stores/trivia/types';
+
+const localeStore = useLocaleStore();
+const t = (key: string, params?: Record<string, unknown>) => localeStore.translate(key, params);
 
 interface OptionItem {
   label: string;
@@ -102,13 +106,13 @@ const optionItems = computed<OptionItem[]>(() => {
         (record.image_url as string | undefined) ??
         (record.image as string | undefined);
       return {
-        label: label || (image ? '' : `Option ${index + 1}`),
+        label: label || (image ? '' : `${t('games.trivia.optionAlt')} ${index + 1}`),
         imageUrl: image,
         key: `${props.question?.id ?? 'q'}-${index}`,
       };
     }
     return {
-      label: `Option ${index + 1}`,
+      label: `${t('games.trivia.optionAlt')} ${index + 1}`,
       key: `${props.question?.id ?? 'q'}-${index}`,
     };
   });
@@ -190,7 +194,7 @@ const hasOptionText = (option: OptionItem): boolean => {
   }
   // If it's a default "Option N" label and there's an image, consider it as no text
   const index = optionItems.value.findIndex(opt => opt.key === option.key);
-  if (index >= 0 && option.label === `Option ${index + 1}` && option.imageUrl) {
+  if (index >= 0 && option.label === `${t('games.trivia.optionAlt')} ${index + 1}` && option.imageUrl) {
     return false;
   }
   return true;

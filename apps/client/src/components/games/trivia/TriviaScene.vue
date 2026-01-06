@@ -108,7 +108,7 @@
               class="hud-group hud-group--compact bonus-anchor"
               :class="{ 'streak-glow': streakPulse }"
             >
-              <span class="hud-label">Streak</span>
+              <span class="hud-label">{{ t('games.trivia.streak') }}</span>
               <span class="hud-value">{{ streak }}</span>
               <small class="hud-sub">Best {{ sessionBestStreak }}</small>
               <transition name="bonus-pop">
@@ -171,7 +171,7 @@
                 :style="{ '--progress-start-color': progressAccentColor }"
               >
                 <div class="progress-label">
-                  <span>Progress</span>
+                  <span>{{ t('games.trivia.progress') }}</span>
                   <span>{{ progressDisplayNumber }}/{{ totalQuestions }}</span>
                 </div>
                 <div class="progress-bar">
@@ -182,7 +182,7 @@
 
             <div v-if="globalTimeLeft !== null" class="global-timer">
               <div class="progress-label">
-                <span>Session Timer</span>
+                <span>{{ t('games.trivia.sessionTimer') }}</span>
                 <span>{{ formattedGlobalTimer }}</span>
               </div>
               <div class="progress-bar">
@@ -194,7 +194,7 @@
 
         <div v-if="isLoading" class="loading-state">
           <img src="/assets/loading.gif" alt="Loading" loading="lazy" />
-          <p>Fetching questions...</p>
+          <p>{{ t('games.trivia.fetchingQuestions') }}</p>
         </div>
 
         <div class="question-wrapper" v-else>

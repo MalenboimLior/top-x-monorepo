@@ -17,7 +17,7 @@
 
             <div class="field">
               <div class="control">
-                <input class="input" type="text" v-model="text2" :placeholder="t('meme.studiedAtS')">
+                <input class="input" type="text" v-model="text2" :placeholder="t('meme.input2')">
               </div>
             </div>
 
@@ -111,9 +111,9 @@
               <a v-if="gifUrl && false" :href="gifUrl" download="meme-generator.gif" class="button is-success is-large">
                 {{ t('meme.download') }} GIF
               </a>
-              <a v-if="videoUrl" :href="videoUrl" :download="`meme-generator.${videoExtension}`" class="button is-info is-large">
+              <button v-if="videoUrl" @click="downloadVideo" class="button is-info is-large">
                 {{ t('meme.download') }} {{ videoExtension.toUpperCase() }}
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -137,6 +137,7 @@ import { ref, reactive, computed } from 'vue';
 import html2canvas from 'html2canvas';
 import { useLocaleStore } from '@/stores/locale';
 import GameAdOverlay from '@/components/games/common/GameAdOverlay.vue';
+import { analytics, trackEvent } from '@top-x/shared';
 
 const localeStore = useLocaleStore();
 const t = (key: string) => localeStore.translate(key);
@@ -360,29 +361,29 @@ const generateMeme = async () => {
   await captureFrame();
   await adaptiveSleep(1000);
 
-  // 7. Mouse turn on text 3 - automaticly text 2 is off
-  await animateAndCapture(toggleCenterX.value, toggleCenterY[2]);
-  cards[2].isOn = true;
-  await captureFrame();
-  cards[1].isOn = false;
-  await captureFrame();
-  await adaptiveSleep(1000);
+  // // 7. Mouse turn on text 3 - automaticly text 2 is off
+  // await animateAndCapture(toggleCenterX.value, toggleCenterY[2]);
+  // cards[2].isOn = true;
+  // await captureFrame();
+  // cards[1].isOn = false;
+  // await captureFrame();
+  // await adaptiveSleep(1000);
 
-  // 8. Mouse turn on text 2 again - automaticly text 1 is now off
-  await animateAndCapture(toggleCenterX.value, toggleCenterY[1]);
-  cards[1].isOn = true;
-  await captureFrame();
-  cards[0].isOn = false;
-  await captureFrame();
-  await adaptiveSleep(1000);
+  // // 8. Mouse turn on text 2 again - automaticly text 1 is now off
+  // await animateAndCapture(toggleCenterX.value, toggleCenterY[1]);
+  // cards[1].isOn = true;
+  // await captureFrame();
+  // cards[0].isOn = false;
+  // await captureFrame();
+  // await adaptiveSleep(1000);
 
-  // 9. Mouse turn on text 1 again - automaticly text 3 is now off
-  await animateAndCapture(toggleCenterX.value, toggleCenterY[0]);
-  cards[0].isOn = true;
-  await captureFrame();
-  cards[2].isOn = false;
-  await captureFrame();
-  await adaptiveSleep(1000);
+  // // 9. Mouse turn on text 1 again - automaticly text 3 is now off
+  // await animateAndCapture(toggleCenterX.value, toggleCenterY[0]);
+  // cards[0].isOn = true;
+  // await captureFrame();
+  // cards[2].isOn = false;
+  // await captureFrame();
+  // await adaptiveSleep(1000);
 
   // Move cursor away
   await animateAndCapture(idleX, idleY);
@@ -483,6 +484,12 @@ const generateVideo = async () => {
       videoUrl.value = URL.createObjectURL(blob);
       generationStatusKey.value = 'meme.status.ready';
       generationProgress.value = 100;
+
+      // Track video creation analytics
+      trackEvent(analytics, 'meme_video_created', {
+        format: videoExtension.value,
+        frame_count: frames.value.length
+      });
     };
 
     recorder.start();
@@ -548,6 +555,9 @@ const generateVideo = async () => {
 };
 
 const resetGenerator = () => {
+  // Track reset analytics (re-create action)
+  trackEvent(analytics, 'meme_reset');
+
   isSuccess.value = false;
   gifUrl.value = '';
   videoUrl.value = '';
@@ -557,6 +567,23 @@ const resetGenerator = () => {
 
 const handleAdContinue = () => {
   showAdOverlay.value = false;
+};
+
+const downloadVideo = () => {
+  if (!videoUrl.value) return;
+
+  // Track download analytics
+  trackEvent(analytics, 'meme_video_downloaded', {
+    format: videoExtension.value
+  });
+
+  // Create download link and trigger download
+  const link = document.createElement('a');
+  link.href = videoUrl.value;
+  link.download = `meme-generator.${videoExtension.value}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 

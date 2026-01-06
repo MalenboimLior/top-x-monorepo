@@ -234,81 +234,249 @@
 
     <!-- Advanced Settings -->
     <section ref="advancedSection" class="settings-section">
-      <button
-        type="button"
-        class="settings-toggle"
-        @click="toggleSection('advanced')"
-      >
-        <span>{{ t('build.trivia.settings.title') || 'Advanced Settings' }}</span>
-        <span class="settings-toggle__icon" :class="{ 'settings-toggle__icon--open': showAdvancedSettings }">
-          ▼
-        </span>
-      </button>
+      <div class="section-header">
+        <button
+          type="button"
+          class="settings-toggle"
+          @click="toggleSection('advanced')"
+        >
+          <span>{{ t('build.trivia.settings.title') || 'Advanced Settings' }}</span>
+          <span class="settings-toggle__icon" :class="{ 'settings-toggle__icon--open': showAdvancedSettings }">
+            ▼
+          </span>
+        </button>
+        <button type="button" class="info-btn" @click="openModeInfo('general')">
+          <font-awesome-icon :icon="['fas', 'circle-info']" />
+        </button>
+      </div>
 
       <div v-if="showAdvancedSettings" class="settings-content">
         <div class="settings-grid">
           <label class="toggle">
             <input type="checkbox" v-model="config.showProgress" />
             <span>{{ t('build.trivia.settings.showProgress') || 'Show progress bar' }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.trivia.settings.showProgress.hint')">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.shuffleQuestions" />
             <span>{{ t('build.trivia.settings.shuffleQuestions') || 'Shuffle questions' }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.shuffleQuestions.hint')">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.shuffleAnswers" />
             <span>{{ t('build.trivia.settings.shuffleAnswers') || 'Shuffle answers' }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.shuffleAnswers.hint')">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.mustLogin" />
             <span>{{ t('build.trivia.session.access.mustLogin') }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.mustLogin.hint')">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label class="toggle">
             <input type="checkbox" v-model="config.allowRepeats" :disabled="!config.mustLogin" />
             <span>{{ t('build.trivia.session.access.allowRepeats') }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.settings.allowRepeats.hint')">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label v-if="config.mode === 'classic'" class="toggle">
             <input type="checkbox" v-model="config.showCorrectAnswers" />
             <span>{{ t('build.trivia.session.correctAnswers.perQuestion') }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.trivia.settings.showCorrectAnswers.hint') || 'Show correct answers after each question'">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label v-if="config.mode === 'classic'" class="toggle">
             <input type="checkbox" v-model="config.showCorrectAnswersOnEnd" />
             <span>{{ t('build.trivia.session.correctAnswers.onSummary') }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.trivia.settings.showCorrectAnswersOnEnd.hint') || 'Show correct answers on final summary'">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label v-if="config.mode === 'speed'" class="toggle">
             <span>{{ t('build.trivia.session.lives.count') }}</span>
             <input :id="ids.lives" type="number" min="1" v-model.number="config.lives" />
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.trivia.session.lives.hint') || 'Number of lives players have in speed mode'">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label v-if="config.mode === 'speed'" class="toggle">
             <input type="checkbox" v-model="config.globalTimer.enabled" />
             <span>{{ t('build.trivia.session.globalTimer.enabled') || 'Enable time limit' }}</span>
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.trivia.session.globalTimer.enabled.hint') || 'Enable a time limit for the entire game'">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
           <label v-if="config.mode === 'speed' && config.globalTimer.enabled" class="toggle">
             <span>{{ t('build.trivia.session.globalTimer.duration') || 'Time limit (seconds)' }}</span>
             <input :id="ids.timerDuration" type="number" min="1" v-model.number="config.globalTimer.durationSeconds" />
+            <span class="info-tooltip-trigger" :data-tooltip="t('build.trivia.session.globalTimer.duration.hint') || 'Total time limit for the entire game in seconds'">
+              <font-awesome-icon :icon="['fas', 'circle-info']" />
+            </span>
           </label>
         </div>
 
         <!-- Theme Settings -->
         <div class="theme-settings">
-          <h3>{{ t('build.trivia.theme.title') }}</h3>
+          <div class="theme-settings__header">
+            <h3>{{ t('build.quiz.theme.title') || t('build.trivia.theme.title') }}</h3>
+            <div class="header-actions">
+              <button type="button" class="random-all-btn" @click="randomizeAllTheme">
+                 <font-awesome-icon :icon="['fas', 'palette']" />
+                 {{ t('build.quiz.theme.random') || 'Shuffle All' }}
+              </button>
+            </div>
+          </div>
+
           <div class="theme-grid">
             <div class="field">
-              <label>{{ t('build.trivia.theme.primaryLabel') }}</label>
+              <label>
+                {{ t('build.quiz.theme.primaryLabel') || 'Question Card Background' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.theme.primaryLabel.hint')">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+                <button type="button" class="random-field-btn" @click="shufflePrimaryColor()">
+                  <font-awesome-icon :icon="['fas', 'shuffle']" />
+                </button>
+              </label>
               <input type="color" v-model="config.theme.primaryColor" />
             </div>
             <div class="field">
-              <label>{{ t('build.trivia.theme.secondaryLabel') }}</label>
+              <label>
+                {{ t('build.quiz.theme.secondaryLabel') || 'Answer Card Background' }}
+                <span class="info-tooltip-trigger" :data-tooltip="t('build.quiz.theme.secondaryLabel.hint')">
+                  <font-awesome-icon :icon="['fas', 'circle-info']" />
+                </span>
+                <button type="button" class="random-field-btn" @click="shuffleSecondaryColor()">
+                  <font-awesome-icon :icon="['fas', 'shuffle']" />
+                </button>
+              </label>
               <input type="color" v-model="config.theme.secondaryColor" />
             </div>
+          </div>
+
+          <div class="theme-advanced">
             <div class="field">
-              <label>{{ t('build.trivia.theme.backgroundColorLabel') }}</label>
+              <label>{{ t('build.quiz.theme.backgroundType') || 'Background Style' }}</label>
+              <div class="select is-fullwidth">
+                <select v-model="config.theme.backgroundType">
+                  <option value="color">Solid Color</option>
+                  <option value="gradient">Gradient</option>
+                  <option value="image">Background Image</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'color'" class="field">
+              <label>
+                {{ t('build.quiz.theme.backgroundColorLabel') || 'Background Color' }}
+                <button type="button" class="random-field-btn" @click="shuffleBackgroundColor()">
+                  <font-awesome-icon :icon="['fas', 'shuffle']" />
+                </button>
+              </label>
               <input type="color" v-model="config.theme.backgroundColor" />
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'gradient'" class="theme-grid">
+              <div class="field">
+                <label>
+                  {{ t('build.quiz.theme.backgroundColorStart') || 'Start Color' }}
+                  <button type="button" class="random-field-btn" @click="shuffleGradientStart()">
+                    <font-awesome-icon :icon="['fas', 'shuffle']" />
+                  </button>
+                </label>
+                <input type="color" :value="gradientStart" @input="updateGradient($event, 'start')" />
+              </div>
+              <div class="field">
+                <label>
+                  {{ t('build.quiz.theme.backgroundColorEnd') || 'End Color' }}
+                  <button type="button" class="random-field-btn" @click="shuffleGradientEnd()">
+                    <font-awesome-icon :icon="['fas', 'shuffle']" />
+                  </button>
+                </label>
+                <input type="color" :value="gradientEnd" @input="updateGradient($event, 'end')" />
+              </div>
+            </div>
+
+            <div v-if="config.theme.backgroundType === 'image'" class="field">
+              <label>{{ t('build.quiz.theme.backgroundImageLabel') || 'Background Image' }}</label>
+              <ImageUploader
+                :modelValue="config.theme.backgroundImageUrl || null"
+                @update:modelValue="config.theme.backgroundImageUrl = $event || ''"
+                :uploadFolder="`images/trivia/${validatedGameId}/theme`"
+                :cropWidth="1920"
+                :cropHeight="1080"
+              />
+            </div>
+
+            <div class="field">
+              <label>{{ t('build.quiz.theme.emojiLabel') || 'Background Emoji (optional)' }}</label>
+              <input v-model="config.theme.backgroundEmoji" placeholder="✨" class="input" maxlength="2" />
+              <small class="help-text">Add emoji pattern overlay to any background type</small>
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Mode Info Modal -->
+    <div v-if="showModeInfo" class="info-modal">
+      <div class="info-modal__backdrop" @click="closeModeInfo"></div>
+      <div class="info-modal__content">
+        <button type="button" class="info-modal__close" @click="closeModeInfo">
+          <font-awesome-icon :icon="['fas', 'times']" />
+        </button>
+        <div class="info-modal__body">
+          <h2 class="info-modal__title">
+            {{
+              showModeInfo === 'general' ? t('build.trivia.intro.title') :
+              showModeInfo === 'classic' ? t('build.trivia.type.classic.label') :
+              t('build.trivia.type.speed.label')
+            }}
+          </h2>
+          <div class="info-modal__description">
+             <template v-if="showModeInfo === 'general'">
+               <p>{{ t('build.trivia.intro.description') || 'Choose the game mode that best fits your trivia experience.' }}</p>
+               <div class="info-modal__modes">
+                 <div class="info-modal__mode-item">
+                   <h4>{{ t('build.trivia.type.classic.label') || 'Classic' }}</h4>
+                   <p>{{ t('build.trivia.type.classic.info') || 'Perfect for learning and casual play with unlimited lives and immediate feedback.' }}</p>
+                 </div>
+                 <div class="info-modal__mode-item">
+                   <h4>{{ t('build.trivia.type.speed.label') || 'Speed' }}</h4>
+                   <p>{{ t('build.trivia.type.speed.info') || 'Fast-paced gameplay with limited lives and optional time limits for competitive play.' }}</p>
+                 </div>
+               </div>
+             </template>
+             <template v-else-if="showModeInfo === 'classic'">
+               <p>{{ t('build.trivia.type.classic.info') || 'Classic trivia mode is perfect for educational content and relaxed gameplay.' }}</p>
+               <ul>
+                 <li><strong>{{ t('build.trivia.session.lives.title') || 'Lives' }}:</strong> {{ t('build.trivia.session.lives.classic') || 'Unlimited lives - players can answer all questions' }}</li>
+                 <li><strong>{{ t('build.trivia.session.correctAnswers.title') || 'Correct Answers' }}:</strong> {{ t('build.trivia.session.correctAnswers.classic') || 'Shown after each question for learning' }}</li>
+                 <li><strong>{{ t('build.trivia.session.pace.title') || 'Pace' }}:</strong> {{ t('build.trivia.session.pace.classic') || 'Relaxed pace, no time pressure' }}</li>
+               </ul>
+             </template>
+             <template v-else-if="showModeInfo === 'speed'">
+               <p>{{ t('build.trivia.type.speed.info') || 'Speed trivia mode creates excitement with limited lives and optional time limits.' }}</p>
+               <ul>
+                 <li><strong>{{ t('build.trivia.session.lives.title') || 'Lives' }}:</strong> {{ t('build.trivia.session.lives.speed') || 'Limited lives (configurable) - game ends when lives are depleted' }}</li>
+                 <li><strong>{{ t('build.trivia.session.correctAnswers.title') || 'Correct Answers' }}:</strong> {{ t('build.trivia.session.correctAnswers.speed') || 'Hidden during gameplay, revealed at end' }}</li>
+                 <li><strong>{{ t('build.trivia.session.timer.title') || 'Timer' }}:</strong> {{ t('build.trivia.session.timer.speed') || 'Optional global time limit for entire game' }}</li>
+               </ul>
+             </template>
+          </div>
+          <button type="button" class="info-modal__ok" @click="closeModeInfo">{{ t('common.close') || 'Got it!' }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -317,11 +485,17 @@ import { computed, nextTick, ref, watch } from 'vue';
 import CustomButton from '@top-x/shared/components/CustomButton.vue';
 import ImageUploader from '@top-x/shared/components/ImageUploader.vue';
 import { useLocaleStore } from '@/stores/locale';
+import { getRandomGradientPreset } from '@top-x/shared';
 import type { TriviaAnswer, TriviaConfig, TriviaPowerUpRule, TriviaQuestion } from '@top-x/shared/types/trivia';
 import { computeAnswerHash, ensureSalt, hasHashSecret } from '@top-x/shared/utils/triviaHash';
 
 interface TriviaConfigWithTheme extends TriviaConfig {
-  theme: NonNullable<TriviaConfig['theme']>;
+  theme: NonNullable<TriviaConfig['theme']> & {
+    backgroundType?: 'color' | 'gradient' | 'image';
+    backgroundGradient?: string;
+    backgroundImageUrl?: string;
+    backgroundEmoji?: string;
+  };
   globalTimer: NonNullable<TriviaConfig['globalTimer']>;
   powerUps: TriviaPowerUpRule[];
   questions: EditableTriviaQuestion[];
@@ -423,6 +597,9 @@ const config = ref<TriviaConfigWithTheme>(hydrateConfig(props.modelValue));
 const isSyncing = ref(false);
 const activeSection = ref<string | null>(null);
 
+// Mode Info Modal
+const showModeInfo = ref<'classic' | 'speed' | 'general' | null>(null);
+
 // Section refs for scrolling
 const questionsSection = ref<HTMLElement | null>(null);
 const advancedSection = ref<HTMLElement | null>(null);
@@ -430,6 +607,25 @@ const advancedSection = ref<HTMLElement | null>(null);
 // Computed properties for each section
 const showAdvancedSettings = computed(() => activeSection.value === 'advanced');
 const showQuestions = computed(() => activeSection.value === 'questions');
+
+// Theme computed properties
+const gradientStart = computed(() => {
+  const grad = config.value.theme.backgroundGradient;
+  if (grad && grad.includes('linear-gradient')) {
+    const match = grad.match(/#([0-9a-fA-F]{6})/gi);
+    if (match && match.length >= 2) return match[0];
+  }
+  return '#6366f1';
+});
+
+const gradientEnd = computed(() => {
+  const grad = config.value.theme.backgroundGradient;
+  if (grad && grad.includes('linear-gradient')) {
+    const match = grad.match(/#([0-9a-fA-F]{6})/gi);
+    if (match && match.length >= 2) return match[1];
+  }
+  return '#ec4899';
+});
 
 // Toggle functions that close other sections and scroll to top
 function toggleSection(section: string) {
@@ -609,6 +805,19 @@ function hydrateConfig(value: TriviaConfig): TriviaConfigWithTheme {
   }
   if (!base.theme) {
     base.theme = {};
+  }
+  // Initialize new theme properties
+  if (!base.theme.backgroundType) {
+    base.theme.backgroundType = 'color';
+  }
+  if (!base.theme.backgroundGradient) {
+    base.theme.backgroundGradient = '';
+  }
+  if (!base.theme.backgroundImageUrl) {
+    base.theme.backgroundImageUrl = '';
+  }
+  if (!base.theme.backgroundEmoji) {
+    base.theme.backgroundEmoji = '✨';
   }
   applyThemeDefaults(base.theme);
   if (!Array.isArray(base.powerUps)) {
@@ -1163,6 +1372,74 @@ function addPowerUp() {
 
 function removePowerUp(index: number) {
   config.value.powerUps.splice(index, 1);
+}
+
+// Mode Info Modal methods
+function openModeInfo(mode: 'classic' | 'speed' | 'general') {
+  showModeInfo.value = mode;
+}
+
+function closeModeInfo() {
+  showModeInfo.value = null;
+}
+
+// Theme methods
+function randomColor(): string {
+  return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+}
+
+function randomizeAllTheme() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.primaryColor = preset.start;
+  config.value.theme.secondaryColor = preset.end;
+  if (config.value.theme.backgroundType === 'color') {
+    config.value.theme.backgroundColor = preset.start;
+  } else if (config.value.theme.backgroundType === 'gradient') {
+    setRandomGradientPreset();
+  }
+}
+
+function updateGradient(e: Event, part: 'start' | 'end') {
+  const val = (e.target as HTMLInputElement).value;
+  const start = part === 'start' ? val : gradientStart.value;
+  const end = part === 'end' ? val : gradientEnd.value;
+  config.value.theme.backgroundGradient = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+}
+
+function setRandomGradient() {
+  const start = randomColor();
+  const end = randomColor();
+  config.value.theme.backgroundGradient = `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
+}
+
+function setRandomGradientPreset() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.backgroundGradient = `linear-gradient(135deg, ${preset.start} 0%, ${preset.end} 100%)`;
+}
+
+function shufflePrimaryColor() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.primaryColor = preset.start;
+}
+
+function shuffleSecondaryColor() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.secondaryColor = preset.end;
+}
+
+function shuffleGradientStart() {
+  const preset = getRandomGradientPreset();
+  updateGradient({ target: { value: preset.start } } as any, 'start');
+}
+
+function shuffleGradientEnd() {
+  const preset = getRandomGradientPreset();
+  updateGradient({ target: { value: preset.end } } as any, 'end');
+}
+
+function shuffleBackgroundColor() {
+  const preset = getRandomGradientPreset();
+  config.value.theme.backgroundColor = preset.start;
 }
 </script>
 
