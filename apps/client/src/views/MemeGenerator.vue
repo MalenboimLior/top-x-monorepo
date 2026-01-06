@@ -48,10 +48,10 @@
               {{ t('meme.generate') }}
             </button>
 
-            <div v-if="isGenerating" class="mt-4">
+            <div v-if="isGenerating || (isSuccess && generationProgress < 100)" class="mt-4">
               <progress class="progress is-small is-primary" :value="generationProgress" max="100"></progress>
               <p class="help has-text-centered">
-                {{ t(generationStatusKey) }} 
+                {{ t(generationStatusKey) }}
                 <span v-if="framesCaptured > 0 && generationProgress < 100">({{ framesCaptured }} frames)</span>
               </p>
             </div>
@@ -242,6 +242,10 @@ const generateMeme = async () => {
   isSuccess.value = false;
   generationProgress.value = 0;
   generationStatusKey.value = 'meme.status.capturing';
+
+  // Calculate progress increments for frame capture (0-50% of total progress)
+  const totalFramesExpected = 70; // Approximate based on animation logic
+  let capturedFrameCount = 0;
   
   // Reset states
   cards.forEach(c => c.isOn = false);
@@ -279,6 +283,9 @@ const generateMeme = async () => {
       if (blob) {
         frames.value.push(blob);
         framesCaptured.value = frames.value.length;
+        capturedFrameCount++;
+        // Update progress during frame capture (0-50%)
+        generationProgress.value = Math.min(50, Math.round((capturedFrameCount / totalFramesExpected) * 50));
       }
     } catch (err) {
       console.error('Frame capture error:', err);
@@ -428,7 +435,7 @@ const generateMeme = async () => {
 const generateVideo = async () => {
   if (frames.value.length === 0) return;
   generationStatusKey.value = 'meme.status.video';
-  
+
   try {
     const canvas = document.createElement('canvas');
     // HIGH QUALITY: Use 2x resolution (Scale 2) for the final video
@@ -438,7 +445,7 @@ const generateVideo = async () => {
     if (!ctx) throw new Error('Could not get canvas context');
 
     const stream = canvas.captureStream(CONFIG.videoFPS);
-    
+
     // Modern Chrome/Safari support video/mp4
     let mimeType = 'video/webm';
     videoExtension.value = 'webm';
@@ -460,8 +467,8 @@ const generateVideo = async () => {
     }
 
     console.log('Selected MIME type for video:', mimeType);
-      
-    const recorder = new MediaRecorder(stream, { 
+
+    const recorder = new MediaRecorder(stream, {
       mimeType,
       videoBitsPerSecond: 8000000 // 8 Mbps for high quality
     });
@@ -472,9 +479,10 @@ const generateVideo = async () => {
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: mimeType }); 
+      const blob = new Blob(chunks, { type: mimeType });
       videoUrl.value = URL.createObjectURL(blob);
       generationStatusKey.value = 'meme.status.ready';
+      generationProgress.value = 100;
     };
 
     recorder.start();
@@ -484,14 +492,17 @@ const generateVideo = async () => {
 
     // OPTIMIZATION: Preload all images first for faster rendering
     const images: HTMLImageElement[] = [];
-    for (const blob of frames.value) {
+
+    for (let i = 0; i < frames.value.length; i++) {
       const img = new Image();
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(frames.value[i]);
       img.src = url;
       await new Promise((resolve) => {
         img.onload = () => {
           images.push(img);
           URL.revokeObjectURL(url);
+          // Update progress during image loading (50-75%)
+          generationProgress.value = 50 + Math.round((i + 1) / frames.value.length * 25);
           resolve(null);
         };
       });
@@ -504,18 +515,25 @@ const generateVideo = async () => {
     const renderFrame = () => {
       if (frameIndex >= images.length) {
         // All frames rendered, stop recording
-        setTimeout(() => recorder.stop(), 200);
+        generationProgress.value = 99; // Almost done
+        setTimeout(() => {
+          generationProgress.value = 100;
+          recorder.stop();
+        }, 200);
         return;
       }
 
       const expectedTime = frameIndex * msPerFrame;
       const actualTime = performance.now() - startTime;
-      
+
       // Draw the current frame
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(images[frameIndex], 0, 0, canvas.width, canvas.height);
-      
+
       frameIndex++;
+
+      // Update progress during rendering (75-99%)
+      generationProgress.value = 75 + Math.round((frameIndex / images.length) * 24);
 
       // Schedule next frame to maintain exact FPS timing
       const timeUntilNextFrame = Math.max(0, expectedTime + msPerFrame - actualTime);

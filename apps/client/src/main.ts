@@ -76,6 +76,8 @@ import {
   faTriangleExclamation,
   faChevronDown,
   faUsers,
+  faCamera,
+  faDice,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -151,6 +153,8 @@ library.add(
   faTriangleExclamation,
   faChevronDown,
   faUsers,
+  faCamera,
+  faDice,
 );
 
 import 'bulma/css/bulma.min.css';

@@ -29,7 +29,6 @@
                 :title="t('build.game.fields.cover.upload') || 'Upload Image'"
               >
                 <font-awesome-icon :icon="['fas', 'camera']" />
-                <span>{{ t('build.game.fields.cover.upload') || 'Upload Cover' }}</span>
               </button>
               <button
                 v-if="game.image"

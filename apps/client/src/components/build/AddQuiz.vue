@@ -71,13 +71,13 @@
       </button>
       <p v-if="showPersonalityBuckets" class="section-hint">
         <template v-if="personalityQuizType === 'scoreRange'">
-          Single bucket with score ranges: Users get different results based on their score range.
+          {{ t('build.quiz.buckets.hint.singleBucket') || 'Single bucket with score ranges: Users get different results based on their score range.' }}
         </template>
         <template v-else-if="personalityQuizType === 'multiBucket'">
-          Multiple buckets: Users get the result from the bucket with the highest score.
+          {{ t('build.quiz.buckets.hint.multiBucket') || 'Multiple buckets: Users get the result from the bucket with the highest score.' }}
         </template>
         <template v-else>
-          Define the possible personality types and their results. Add multiple buckets for type-based quizzes, or one bucket with score ranges for score-based quizzes.
+          {{ t('build.quiz.buckets.hint.general') || 'Define the possible personality types and their results. Add multiple buckets for type-based quizzes, or one bucket with score ranges for score-based quizzes.' }}
         </template>
       </p>
       
@@ -98,7 +98,7 @@
                 type="button"
                 class="bucket-remove"
                 @click="removeBucket(bIndex)"
-                title="Remove bucket"
+                :title="t('build.quiz.buckets.remove.title') || 'Remove bucket'"
               >
                 <font-awesome-icon :icon="['fas', 'times']" />
               </button>
@@ -110,9 +110,9 @@
           <!-- Results within this bucket -->
           <div class="bucket-results">
             <h4 class="bucket-results__title">
-              Results
+              {{ t('build.quiz.buckets.results.title') || 'Results' }}
               <span class="bucket-results__hint">
-                {{ bucket.results?.length > 1 ? '(score ranges)' : '(default)' }}
+                {{ bucket.results?.length > 1 ? t('build.quiz.buckets.scoreRanges') || '(score ranges)' : t('build.quiz.buckets.default') || '(default)' }}
               </span>
             </h4>
             
@@ -121,11 +121,11 @@
               <table class="score-range-table">
                 <thead>
                   <tr>
-                    <th>Min Score</th>
-                    <th>Max Score</th>
-                    <th>Result Title</th>
+                    <th>{{ t('build.quiz.buckets.table.minScore') || 'Min Score' }}</th>
+                    <th>{{ t('build.quiz.buckets.table.maxScore') || 'Max Score' }}</th>
+                    <th>{{ t('build.quiz.buckets.table.resultTitle') || 'Result Title' }}</th>
                      <th>{{ t('build.quiz.buckets.resultDescription.label') || 'Result Text' }}</th>
-                    <th>Actions</th>
+                    <th>{{ t('build.quiz.buckets.table.actions') || 'Actions' }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -156,7 +156,7 @@
                       <div class="result-title-wrapper">
                         <input
                           v-model="result.title"
-                          placeholder="You are a Lion!"
+                          :placeholder="t('build.quiz.buckets.result.placeholder') || 'You are a Lion!'"
                           class="field-input"
                         />
                         <div class="result-image-upload-inline">
@@ -173,7 +173,7 @@
                     <td>
                       <input
                         v-model="result.description"
-                        placeholder="Description..."
+                        :placeholder="t('build.quiz.buckets.result.description.placeholder') || 'Description...'"
                         class="field-input field-input--compact"
                       />
                     </td>
@@ -192,7 +192,7 @@
                           class="result-variant__remove"
                           @click="removeResultVariant(bIndex, rIndex)"
                           :disabled="bucket.results.length <= 1"
-                          title="Remove result"
+                          :title="t('build.quiz.buckets.result.remove.title') || 'Remove result'"
                         >
                           <font-awesome-icon :icon="['fas', 'trash']" />
                         </button>
@@ -268,7 +268,7 @@
               class="add-result-variant"
               @click="addResultVariant(bIndex)"
             >
-              + Add Score Range Result
+              {{ t('build.quiz.buckets.addScoreRange') || '+ Add Score Range Result' }}
             </button>
           </div>
         </div>
@@ -302,7 +302,7 @@
           ▼
         </span>
       </button>
-      <p v-if="showArchetypeAxes" class="section-hint">Define the spectrums/dimensions (e.g., Introvert ↔ Extrovert)</p>
+      <p v-if="showArchetypeAxes" class="section-hint">{{ t('build.quiz.archetype.axes.hint') || 'Define the spectrums/dimensions (e.g., Introvert ↔ Extrovert)' }}</p>
       
       <div v-if="showArchetypeAxes">
         <div v-if="(config.archetypeAxes?.length ?? 0) > 0" class="axes-list">
@@ -366,7 +366,7 @@
           ▼
         </span>
       </button>
-      <p v-if="showArchetypeAxes && showArchetypeResults" class="section-hint">Define results for specific axis patterns (e.g., ENFP = E+N+F+P)</p>
+      <p v-if="showArchetypeAxes && showArchetypeResults" class="section-hint">{{ t('build.quiz.archetype.results.hint') || 'Define results for specific axis patterns (e.g., ENFP = E+N+F+P)' }}</p>
       
       <div v-if="showArchetypeAxes && showArchetypeResults">
         <div v-if="(config.archetypeResults?.length ?? 0) > 0" class="results-list">
