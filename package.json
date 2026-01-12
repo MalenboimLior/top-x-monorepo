@@ -23,7 +23,8 @@
   "license": "ISC",
   "dependencies": {
     "@top-x/shared": "file:./packages/shared",
-    "firebase": "^11.6.0"
+    "firebase": "^11.6.0",
+    "firebase-functions": "^7.0.2"
   },
   "devDependencies": {
     "@types/node": "^24.0.10"

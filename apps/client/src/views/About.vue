@@ -72,6 +72,24 @@
             <p class="footer-p">{{ t('about.what.footer') }}</p>
           </div>
         </section>
+        
+        <!-- TapToTransform Tool -->
+        <section class="info-card fade-in-up" :style="{ animationDelay: '0.65s' }">
+          <h2 class="section-heading">
+            <span class="heading-icon">🪄</span>
+            {{ t('nav.tapToTransform') }}
+          </h2>
+          <div class="info-body">
+            <p class="subtitle-p">{{ t('ttt.title') }}</p>
+            <p>{{ t('ttt.explanation') }}</p>
+            <div class="has-text-centered mt-4">
+              <button class="cta-button mini" @click="$router.push('/tools/tap-to-transform')">
+                <span class="cta-text">Try the Tool</span>
+                <div class="cta-glow"></div>
+              </button>
+            </div>
+          </div>
+        </section>
 
         <!-- How To -->
         <section class="info-card fade-in-up" :style="{ animationDelay: '0.7s' }">
@@ -533,6 +551,8 @@ onMounted(() => {
 }
 
 .cta-button:hover { transform: scale(1.05); }
+.cta-button.mini { padding: 1rem 2.5rem; }
+.cta-button.mini .cta-text { font-size: 1.1rem; }
 
 .cta-text {
   position: relative;

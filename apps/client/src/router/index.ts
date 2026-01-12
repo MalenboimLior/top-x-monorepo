@@ -199,9 +199,14 @@ const routes = [
     component: () => import(/* webpackChunkName: "meme-generator" */ '@/views/MemeGenerator.vue'),
   },
   {
-    path: '/tools',
-    name: 'Tools',
-    component: () => import(/* webpackChunkName: "meme-generator" */ '@/views/MemeGenerator.vue'),
+    path: '/tools/tap-to-transform',
+    name: 'TapToTransform',
+    component: () => import(/* webpackChunkName: "tap-to-transform" */ '@/views/TapToTransform.vue'),
+  },
+  {
+    path: '/tools/books',
+    name: 'BookListBuilder',
+    component: () => import(/* webpackChunkName: "book-list-builder" */ '@/views/BookListBuilder.vue'),
   },
   {
     path: '/:pathMatch(.*)*',

@@ -37,6 +37,7 @@
           <router-link class="navbar-item" to="/about" @click="closeMenu">{{ t('nav.about') }}</router-link>
           <router-link class="navbar-item" to="/games" @click="closeMenu">{{ t('nav.games') }}</router-link>
           <router-link class="navbar-item" to="/meme-generator" @click="closeMenu">{{ t('nav.memeTool') }}</router-link>
+          <router-link class="navbar-item" to="/tools/tap-to-transform" @click="closeMenu">{{ t('nav.tapToTransform') }}</router-link>
           <router-link class="navbar-item build-link" to="/build" @click="closeMenu">{{ t('nav.build') }}</router-link>
         </div>
 

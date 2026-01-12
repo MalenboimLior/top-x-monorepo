@@ -3,7 +3,11 @@
     {
       "target": "top-x-co",
       "public": "apps/client/dist",
-      "ignore": ["firebase.json", "/.*", "/node_modules/"],
+      "ignore": [
+        "firebase.json",
+        "/.*",
+        "/node_modules/"
+      ],
       "headers": [
         {
           "source": "**/*.@(html)",
@@ -38,34 +42,48 @@
     {
       "target": "admin-top-x-co",
       "public": "apps/admin/dist",
-      "ignore": ["firebase.json", "/.*", "/node_modules/"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "ignore": [
+        "firebase.json",
+        "/.*",
+        "/node_modules/"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     }
   ],
-
   "functions": {
     "source": "functions",
     "predeploy": [
       "npm --workspace @top-x/shared run build",
       "npm --workspace @top-x/shared pack --silent --pack-destination functions",
-      "npm --prefix functions i ./functions/top-x-shared-*.tgz"
+      "npm --prefix functions i ./functions/top-x-shared-*.tgz",
+      "npm --prefix functions run build"
     ]
   },
-
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-
   "storage": {
     "rules": "storage.rules"
   },
-
   "emulators": {
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8080 },
-    "hosting": { "port": 5000 },
-    "ui": { "enabled": true },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true
+    },
     "singleProjectMode": true
   }
 }
